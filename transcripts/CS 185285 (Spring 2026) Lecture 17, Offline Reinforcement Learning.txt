@@ -1,0 +1,4792 @@
+Mhm.
+
+
+>> All right. Uh welcome everybody. Let's
+
+
+get started.
+
+
+Today, uh we're going to discuss offline
+
+
+reinforcement learning.
+
+
+So, so far all of the RL methods we
+
+
+talked about um have
+
+
+kind of a uh an iterative structure
+
+
+where we collect some samples.
+
+
+Uh if you remember the diagram of the
+
+
+anatomy of an RL algorithm, we collect
+
+
+some samples, fit something like a value
+
+
+function or a model, and then use that
+
+
+to improve the policy. And classically,
+
+
+reinforcement learning always goes in
+
+
+this loop iterating between additional
+
+
+sample collection and uh some kind of
+
+
+model fitting and some kind of policy
+
+
+improvement.
+
+
+Uh today, we're going to talk about what
+
+
+happens when we break that loop, when we
+
+
+set up reinforcement learning algorithms
+
+
+that learn from static data sets. And
+
+
+this can be very appealing in certain
+
+
+cases, but introduces some new
+
+
+challenges. And it's not only
+
+
+interesting to talk about the actual
+
+
+methods that we can derive, but also
+
+
+these methods will shed light on some
+
+
+interesting underlying statistical
+
+
+properties of reinforcement learning.
+
+
+So, it's not just useful to learn about
+
+
+the methods, it's also useful to learn
+
+
+about why these methods have these
+
+
+additional challenges, and what that
+
+
+tells us about RL in general.
+
+
+Okay. So, what is offline reinforcement
+
+
+learning?
+
+
+Well, regular reinforcement learning uh
+
+
+can be on-policy or off-policy. So, we
+
+
+learned about this back when we talked
+
+
+about actor-critic algorithms and policy
+
+
+gradients. An on-policy algorithm is
+
+
+basically an algorithm that like the
+
+
+original reinforce method that we
+
+
+learned about, collects some data, uses
+
+
+that data to make the policy better,
+
+
+throws that data in the garbage, and
+
+
+then collects new data with the latest
+
+
+policy. So, on-policy just means that in
+
+
+order to improve your policy, you always
+
+
+collect new samples from your latest
+
+
+policy.
+
+
+So, an example of an on-policy method
+
+
+was the original reinforce algorithm.
+
+
+Off-policy RL is when we additionally
+
+
+buffer the data that we're collecting.
+
+
+So, Q-learning, for example, is a very
+
+
+classical off-policy RL algorithm, where
+
+
+you collect data, but instead of
+
+
+immediately training on that data, you
+
+
+put that data into a replay buffer, and
+
+
+then when you want to train your Q
+
+
+function in Q-learning, you load it from
+
+
+the replay buffer.
+
+
+Uh and that can be desirable because
+
+
+you're reusing old data that you've
+
+
+collected. You don't throw things in the
+
+
+garbage uh as soon as you've changed
+
+
+your policy. Uh
+
+
+Now, of course, on-policy methods are
+
+
+simpler, off-policy methods are in
+
+
+general more efficient.
+
+
+So, offline RL is a bit like off-policy
+
+
+RL, except that
+
+
+you stop collecting more data to add to
+
+
+your buffer. So, in offline RL, the
+
+
+assumption is that you're essentially
+
+
+handed a replay buffer that somebody
+
+
+else collected somehow, and in general
+
+
+you don't know how, and all you have to
+
+
+to work with is that data set, and you
+
+
+have to extract the best policy you can
+
+
+from that data set.
+
+
+Okay?
+
+
+So, uh
+
+
+maybe the first question we might ask
+
+
+is, "Well, why why would we be
+
+
+interested in doing this? Uh surely
+
+
+collecting more data and making the
+
+
+policy better that way would be
+
+
+desirable."
+
+
+The issue is that there are many cases,
+
+
+especially when you want to learn from
+
+
+data in the real world, when it can be
+
+
+logistically quite challenging to
+
+
+constantly deploy your latest policy.
+
+
+So, for example, if you are actually
+
+
+driving an autonomous vehicle on the
+
+
+road, maybe you would rather not
+
+
+constantly have your off-policy
+
+
+actor-critic method deploying new
+
+
+policies on your autonomous car without
+
+
+having had the opportunity to test that
+
+
+policy to ensure that it's safe and
+
+
+reliable.
+
+
+Or maybe you have a task that is um very
+
+
+um
+
+
+long horizon, such that perhaps you have
+
+
+historical data, maybe you have um
+
+
+healthcare data, for instance, right?
+
+
+You have historical data of uh uh
+
+
+traces of uh
+
+
+you know, from your system, but
+
+
+collecting new data might take you a
+
+
+very long time. Uh it might take you
+
+
+years. It may be that the data that you
+
+
+have was collected not by an autonomous
+
+
+policy, but maybe by a person doing
+
+
+something. Uh and perhaps it's a domain
+
+
+where there is no autonomous policy that
+
+
+can actively collect data, and your your
+
+
+goal is to get one. So, there are many
+
+
+of these cases where it's much more
+
+
+practical to start with an offline data
+
+
+set.
+
+
+And I I will say right now that
+
+
+generally the case where you start with
+
+
+an offline data set without the ability
+
+
+to interact interact with the
+
+
+environment is quite a bit harder.
+
+
+Beca- Why is it harder? Well, a lot of
+
+
+the methods that we learned about, if
+
+
+you think back to the model-based RL
+
+
+lecture, there's always some punchline
+
+
+that says like, "Hey, there's this big
+
+
+problem, and the way we solve the
+
+
+problem is by going and deploying our
+
+
+latest policy and collecting data from
+
+
+the latest policy." And now we're saying
+
+
+we can't do that anymore. So, we're
+
+
+going to, of course, have challenges.
+
+
+Now, there is kind of a a deeper reason
+
+
+uh why we might
+
+
+be very interested in understanding
+
+
+offline RL that has also uh quite a bit
+
+
+to do with um
+
+
+the sorts of things that have worked out
+
+
+very well in the rest of the world of
+
+
+machine learning in recent years. So, um
+
+
+this is maybe like a little bit of
+
+
+philosophy, but I think it's uh it's fun
+
+
+philosophy to talk about. Uh if we think
+
+
+about like uh the big successes of
+
+
+reinforcement learning, um AlphaGo, for
+
+
+example, right? So, uh in AlphaGo, the
+
+
+thing that was so exciting is that it
+
+
+could figure out some moves in the game
+
+
+of Go that were
+
+
+very different from the kinds of moves
+
+
+that people would have thought of. So,
+
+
+like the famous move 37 in the Lee Sedol
+
+
+championship match was an impressive
+
+
+move not because it was so human-like,
+
+
+but for exactly the opposite reason. It
+
+
+was so different than how human players
+
+
+uh knew how to play the game.
+
+
+But then,
+
+
+we also have this other world of machine
+
+
+learning, the data-driven world, the
+
+
+world of generative models, where what
+
+
+we find impressive is that generative
+
+
+models, like image generation models,
+
+
+can produce pictures that look just like
+
+
+the kind of pictures that people might
+
+
+draw. So, data-driven methods
+
+
+uh methods that learn from data produced
+
+
+by humans, they're kind of impressive
+
+
+because they seem to reproduce some of
+
+
+the capabilities of of people. The RL
+
+
+stuff maybe is exciting because uh it
+
+
+produces results that are very different
+
+
+from what people can do. So, they're
+
+
+very These are very different benefits.
+
+
+And of course, it's uh very tempting
+
+
+looking at this kind of picture to think
+
+
+about, "Well, can you get a method
+
+
+that's the best of both worlds, that can
+
+
+use lots of data to kind of achieve like
+
+
+human-level competence, but then go
+
+
+beyond that data and and figure out
+
+
+emergent capabilities building on those
+
+
+large data sets.
+
+
+So,
+
+
+again, a little bit of philosophy, but
+
+
+maybe worth thinking about as
+
+
+motivation, that if we think about the
+
+
+ML world as having like this world of
+
+
+data-driven AI and this world of
+
+
+reinforcement learning, well, what makes
+
+
+data-driven AI work is the ability to
+
+
+leverage huge offline data sets that can
+
+
+be collected, you know, maybe from the
+
+
+web or from somewhere out in the world.
+
+
+What makes RL so powerful is its ability
+
+
+to optimize for maximum reward outcomes
+
+
+and lead to these emergent behaviors.
+
+
+The data-driven stuff learns about the
+
+
+world from data, but generally doesn't
+
+
+try to do better than the data, and the
+
+
+RL stuff optimizes for emergent
+
+
+behaviors, but it's hard to leverage
+
+
+real-world data because of this kind of
+
+
+iterative cycle, which is logistically
+
+
+difficult. So, maybe if you get the best
+
+
+of both, if you
+
+
+can use optimization and data together,
+
+
+then maybe something really good will
+
+
+happen. Now, that's maybe a little bit
+
+
+of a dream, but we can uh talk about uh
+
+
+methods that might help get us to that
+
+
+point.
+
+
+Okay.
+
+
+So, kind of the big picture that uh you
+
+
+would ideally like to see with an
+
+
+offline RL method is that you get some
+
+
+large offline data set, uh you use
+
+
+offline reinforcement learning to get
+
+
+kind of a a very good initial policy,
+
+
+and maybe you could even then deploy
+
+
+that policy for some additional online
+
+
+interaction to make it better.
+
+
+So, one of the reasons why people are uh
+
+
+interested in studying offline RL is not
+
+
+just for the offline problem, but also
+
+
+for the a possibility of having like an
+
+
+offline pre-training phase for regular
+
+
+online RL. And we'll actually talk about
+
+
+that a little bit on Friday.
+
+
+Okay. So, uh offline RL gives us maybe
+
+
+one way to use prior data for RL
+
+
+training.
+
+
+Uh and then, of course, the other reason
+
+
+that we want to study this is that
+
+
+understanding offline RL will actually
+
+
+also help us understand some of the
+
+
+deeper statistical challenges with RL
+
+
+more generally. And it always The The
+
+
+The spoiler here is it always comes back
+
+
+to distributional shift.
+
+
+Okay.
+
+
+Uh all right. Now, uh one thing that I
+
+
+want to also discuss here is
+
+
+uh
+
+
+how is this even possible, right? It's
+
+
+on the surface there might be kind of an
+
+
+objection that well, if you're not
+
+
+allowed to interact with the world and
+
+
+do this kind of trial and error stuff,
+
+
+doesn't that sort of negate the main
+
+
+benefit of RL? So, how could you even
+
+
+hope to use static offline data and
+
+
+actually get something that is better
+
+
+than the typical behavior in the data
+
+
+set?
+
+
+There are um a few kind of intuitive
+
+
+pictures of this that uh maybe help to
+
+
+see how or why it might be possible. So,
+
+
+one
+
+
+possible view is that if you have a data
+
+
+set that contains some behaviors that
+
+
+are good and some behaviors that are
+
+
+bad,
+
+
+well, offline RL could be thought of as
+
+
+essentially a way to have like an
+
+
+automated filter. You you figure out uh
+
+
+what is a good behavior and what is a
+
+
+bad behavior and effectively end up
+
+
+imitating just the good stuff rather
+
+
+than all the stuff. And that's
+
+
+definitely like a a valuable thing in
+
+
+many cases because of course getting
+
+
+data that you know to be entirely good
+
+
+is difficult. Getting data that's like a
+
+
+mix of good and bad is much easier. So,
+
+
+if if offline RL gives you a way to sort
+
+
+of crunch through that and pull out uh
+
+
+sort of separate the wheat from the
+
+
+chaff, so to speak, that could be
+
+
+desirable.
+
+
+But um
+
+
+there's actually potentially more that
+
+
+you can get out of doing this properly
+
+
+because of course the model that you're
+
+
+learning is going to generalize. So, uh
+
+
+good behavior in one place might tell
+
+
+you a little bit
+
+
+of information about how to have a good
+
+
+behavior in another place. So, maybe
+
+
+even the bad stuff can be helpful
+
+
+because you sort of make analogies like
+
+
+you know
+
+
+good to bad over here maps to good to
+
+
+bad over there.
+
+
+And then another one which is maybe a
+
+
+little bit more um
+
+
+more of a precise statement and this is
+
+
+kind of the the thing that we might
+
+
+really hope for in offline RL is uh this
+
+
+thing that sometimes referred to as
+
+
+stitching. It's basically a transitive
+
+
+property. Essentially, good behaviors
+
+
+can be recombined in new ways to achieve
+
+
+more complex tasks. The simplest way of
+
+
+thinking about this is that if in your
+
+
+data set, you've seen how to go from
+
+
+point A to point B,
+
+
+and separately in some other situation,
+
+
+you've seen how to go from point B to
+
+
+point C, then because you know that the
+
+
+Markov property holds, you should be
+
+
+able to figure out without collecting
+
+
+any more data that it is possible to go
+
+
+from point A to point C.
+
+
+And
+
+
+this is kind of a obviously a very
+
+
+simple toy example of this, but you
+
+
+could imagine scaling this idea up where
+
+
+maybe you have this this kind of a
+
+
+standard off-road RL benchmark. You have
+
+
+a little maze where in your data set you
+
+
+observe that green circle going to
+
+
+different places in the maze.
+
+
+And now you've seen lots of different
+
+
+sub-trajectories inside of that maze,
+
+
+which tells you a lot about how to
+
+
+navigate the maze in general ways, so
+
+
+that you can then optimize a policy for
+
+
+going from like the bottom left corner
+
+
+of the maze to the top right corner,
+
+
+even though you've never seen that
+
+
+entire trajectory in any of your
+
+
+examples, but you've seen lots of other
+
+
+traversals such that
+
+
+each little piece of that trajectory is
+
+
+covered by something in the data set.
+
+
+And
+
+
+this idea potentially is actually very
+
+
+powerful because if you can pull out the
+
+
+good parts out of a heterogeneous data
+
+
+set, you could, for example, imagine
+
+
+that you have a data set of people
+
+
+driving cars, and different people are
+
+
+good at different parts of the driving
+
+
+task. Maybe one person is very good at
+
+
+merging onto the freeway. Another person
+
+
+is very good at safely traversing an
+
+
+uncontrolled intersection. If you can
+
+
+figure out the best parts of each
+
+
+person's behavior, you can recombine
+
+
+them so that you can have a policy that
+
+
+is as good as the best person in each
+
+
+situation.
+
+
+And of course,
+
+
+assuming no one person is the best
+
+
+everywhere, that policy would be better
+
+
+than any single person overall, because
+
+
+it would be like the best person in each
+
+
+case.
+
+
+Okay. So, that's kind of the the why
+
+
+part of the picture. Any questions about
+
+
+this?
+
+
+Okay.
+
+
+So,
+
+
+what do we expect an offline RL method
+
+
+to do? Roughly speaking, if you just
+
+
+want kind of like a a simple concise
+
+
+picture,
+
+
+let's say that you have a task going
+
+
+from the green dot to the orange dot. In
+
+
+imitation learning, you would have data
+
+
+that kind of looks like this. Like
+
+
+different near-optimal ways of doing the
+
+
+task. And in imitation learning, you
+
+
+kind of just want to copy it.
+
+
+In offline RL, the right mental model is
+
+
+that you have data that looks like this.
+
+
+So, it's not necessarily data that is
+
+
+particularly good at the task, but you
+
+
+would like to pull out the bits of that
+
+
+data that solve the task well and then
+
+
+go and do that. So, that's, you know, if
+
+
+you want this in a nutshell, that's kind
+
+
+of the the right uh picture. And of
+
+
+course, this kind of transitive property
+
+
+A to B to C is just a very simplified
+
+
+special case of this.
+
+
+Okay.
+
+
+Um
+
+
+I'll skip through that.
+
+
+Uh all right. So, let's talk about some
+
+
+methods. Uh and before we talk about
+
+
+methods, maybe the first thing we have
+
+
+to ask is like, well, why can't we just
+
+
+use the methods we already learned
+
+
+about? Like Q-learning, for example, is
+
+
+this off-policy method. Could we just
+
+
+run Q-learning but without the
+
+
+additional data collection? And in fact,
+
+
+um if you were to go back in time about
+
+
+20 years, this would actually be exactly
+
+
+how people would approach offline RL,
+
+
+but it has a pretty severe problem that
+
+
+we'll learn about.
+
+
+Okay.
+
+
+So,
+
+
+let's first uh define the problem uh the
+
+
+the offline RL setting a little bit more
+
+
+precisely. So, we have a data set, uh
+
+
+which is in general a set of
+
+
+transitions. So, it's a set of S, A, and
+
+
+S prime tuples. Basically, the contents
+
+
+of a replay buffer.
+
+
+Um
+
+
+the states in that uh
+
+
+data set are assumed to come from the
+
+
+state distribution of some policy. And
+
+
+we call that policy pi beta. Beta for
+
+
+behavior. So, it's the behavior policy.
+
+
+The policy that somebody used to behave
+
+
+in the environment and collect some
+
+
+data. So, P beta is the state
+
+
+distribution, pi beta is the action
+
+
+distribution.
+
+
+And the
+
+
+of course, the next state comes from
+
+
+the transition dynamics.
+
+
+Generally in offline RL, you do not
+
+
+assume that the behavior policy is
+
+
+known.
+
+
+In some special cases it is, but
+
+
+generally your data might have come from
+
+
+anywhere. So,
+
+
+you believe it exists, but you don't
+
+
+know what it is. The pi beta.
+
+
+And then of course, your objective is to
+
+
+use this data set to maximize the
+
+
+expected sum of discounted rewards
+
+
+as usual.
+
+
+And it's just like this anatomy of the
+
+
+RL algorithm except that we remove the
+
+
+orange square. So, the orange square now
+
+
+doesn't exist. We we break the loop.
+
+
+Uh but the everything else can work the
+
+
+same way. So, we might still fit some
+
+
+kind of model or value function. Uh and
+
+
+we might still
+
+
+use that to uh improve our policy.
+
+
+>> [snorts]
+
+
+>> Now, let's imagine for instance that we
+
+
+use some kind of model-based method. We
+
+
+learned about model-based RL last week.
+
+
+That could be a nice place to get
+
+
+started.
+
+
+If you
+
+
+uh fit a model to your data set, we
+
+
+already saw last week kind of what
+
+
+happens. You fit the model on the SAS
+
+
+prime tuples. Your model is going to be
+
+
+valid
+
+
+when evaluated on states and actions
+
+
+that come from your data distribution,
+
+
+which is your behavior policy, but it's
+
+
+not necessarily going to be valid when
+
+
+evaluated on states and actions from the
+
+
+latest policy you're learning. We of
+
+
+course, we talked about this last week.
+
+
+Uh so,
+
+
+in general,
+
+
+this distributional shift problem is a
+
+
+really big deal in offline RL.
+
+
+If you were to do model-based offline
+
+
+RL, it's a big deal for exactly the
+
+
+reason we discussed last week, but this
+
+
+is not actually specific to models. If
+
+
+you were to train a Q function, exactly
+
+
+the same thing happens.
+
+
+Uh the Q function would be
+
+
+valid under the distribution of states
+
+
+and actions
+
+
+that came from the behavior policy, but
+
+
+not necessarily valid under the
+
+
+distribution of states and actions from
+
+
+the latest policy you're learning. And
+
+
+in fact, pretty much any RL method is
+
+
+going to have some version of this kind
+
+
+of problem, whether it's a Q function or
+
+
+uh or model-based RL or something else.
+
+
+Okay. So,
+
+
+this is actually a sort of a a surface
+
+
+symptom of a deeper problem, and the
+
+
+deeper problem is that
+
+
+when we are doing reinforcement learning
+
+
+as opposed to just prediction, we're
+
+
+really trying to answer counterfactual
+
+
+queries. Counterfactual means it's
+
+
+asking a question about something other
+
+
+than what you saw in the data.
+
+
+So, kind of one of the most fundamental
+
+
+counterfactual queries you might care
+
+
+about in RL is if I were to take a
+
+
+different action than I took at this
+
+
+state in my data set, would that be a
+
+
+better action or a worse action? Your
+
+
+ability to answer these kinds of
+
+
+counterfactual questions is actually
+
+
+absolutely fundamental to doing RL.
+
+
+Like, all RL is essentially asking these
+
+
+counterfactual questions, and the reason
+
+
+that we don't worry about that so much
+
+
+when we do online RL is because in
+
+
+online RL, uh if we ask a counterfactual
+
+
+question that's hard to answer, like is
+
+
+this action better or worse, we just go
+
+
+and try the action and see what happens.
+
+
+Like, that's the essence of trial and
+
+
+error. But now, when we have offline
+
+
+data, we can't just go and try it.
+
+
+So, things become more difficult. To
+
+
+give you an example that kind of
+
+
+illustrates that difficulty, uh let's
+
+
+say that your training data uh is is
+
+
+this uh
+
+
+driving data, right? Like, different
+
+
+people driving cars. And maybe some
+
+
+people are better, some people are
+
+
+worse, but nobody in your data set is
+
+
+like so awful that they would randomly
+
+
+drive off the road. Like, everybody at
+
+
+least stays on the road.
+
+
+So now, your policy, maybe you're
+
+
+training a Q function, right? And your
+
+
+policy wants to know, if I take the
+
+
+action to drive off the road, is that
+
+
+good or bad?
+
+
+Like you presume all of you know that
+
+
+it's not a good idea to do this, but you
+
+
+know that because you have a breadth of
+
+
+life experience and common sense and all
+
+
+that stuff. This Q function is going to
+
+
+have no idea what happens when you do
+
+
+this because this action is so different
+
+
+than anything it was trained on, it
+
+
+cannot possibly make an accurate
+
+
+prediction.
+
+
+It doesn't even know that going off the
+
+
+road is like a thing that could happen
+
+
+in this universe. So, you can't possibly
+
+
+expect it to know that this is a bad a
+
+
+bad thing to do.
+
+
+Right? Um
+
+
+if you haven't seen anything even
+
+
+remotely like it in the data.
+
+
+And this is basically distributional
+
+
+shift. This is the the this is an
+
+
+instance where you're testing the Q
+
+
+function under a distribution of actions
+
+
+that is very different than the
+
+
+distribution it was trained on.
+
+
+And again, online RL algorithms don't
+
+
+really worry about this because they can
+
+
+just go and try they can literally drive
+
+
+the car off the road and find out that
+
+
+it was a bad idea, but offline RL
+
+
+methods don't get to just try it.
+
+
+So, they have to somehow
+
+
+account for these
+
+
+unseen actions, ideally in a safe way,
+
+
+but at the same time, they still need to
+
+
+leave some room for generalization. They
+
+
+need to still allow the policy to take
+
+
+actions that are a little bit different
+
+
+than what was seen in the data set.
+
+
+At least in a situation where you
+
+
+believe that your model or Q function or
+
+
+whatever can generalize accurately to
+
+
+those actions.
+
+
+Okay? So, that's kind of the the the
+
+
+basic challenge that we have to deal
+
+
+with that we want to avoid doing stuff
+
+
+that is so different from our data set
+
+
+that we can't possibly predict whether
+
+
+it's a good idea or not, but we still
+
+
+want to leave room for generalization so
+
+
+that we are not
+
+
+rigidly constrained to do exactly what
+
+
+we saw in the data.
+
+
+And of course, that means striking kind
+
+
+of a balance.
+
+
+Any questions? Yes.
+
+
+>> A couple of lectures ago, you mentioned
+
+
+something about epistemic uncertainty.
+
+
+Is there any way to, I don't know, maybe
+
+
+like include down the cost function to
+
+
+basically prevent it from going to
+
+
+places where it wasn't seen in the data?
+
+
+>> Yeah, so the question was like, okay, um
+
+
+when we talked about model-based RL, we
+
+
+discussed epistemic uncertainty
+
+
+estimation and basically trying to
+
+
+figure out where your model would be
+
+
+right or wrong. And in fact, that is
+
+
+actually one of the tools that we can
+
+
+use in offline RL. We'll discuss this on
+
+
+Friday in the context of offline
+
+
+model-based RL.
+
+
+Any other questions?
+
+
+Okay.
+
+
+So, let's get to the more
+
+
+precise kind of version of this problem.
+
+
+And
+
+
+as I alluded to, the problem basically
+
+
+is a problem of distributional shift.
+
+
+So,
+
+
+uh
+
+
+as a reminder for those of you that
+
+
+don't remember distributional shift, it
+
+
+comes up in, you know, every fourth or
+
+
+fifth lecture and it's very important.
+
+
+Uh
+
+
+if you train your model on some data
+
+
+set, P train, like doesn't matter what
+
+
+the model is, I'll say it's an image
+
+
+classifier P of Y given X, you train it
+
+
+on P train of X,
+
+
+and then you test it on P test of X,
+
+
+distributional shift simply refers to
+
+
+the case where P test and P train are
+
+
+not the same.
+
+
+And of course, simply saying they're not
+
+
+the same doesn't really tell you that
+
+
+much. Like maybe they're extremely
+
+
+similar and they differ only a tiny bit,
+
+
+in which case maybe you're fine.
+
+
+But maybe they're quite different. And
+
+
+in general, if they are quite different,
+
+
+your model P theta trained on P train
+
+
+could be arbitrarily bad on P test.
+
+
+And remember that there's a big
+
+
+difference between saying you're testing
+
+
+on a different distribution versus
+
+
+saying you're testing on different
+
+
+samples. Right? Like if you have a set
+
+
+of
+
+
+if you have a training set and a test
+
+
+set that both came from the same
+
+
+distribution, but they contain different
+
+
+points, that is not distributional
+
+
+shift. That's okay.
+
+
+But if they literally came from
+
+
+different distributions, that is not
+
+
+okay.
+
+
+So, how bad could it be?
+
+
+Well, imagine that you prepare for a
+
+
+math exam, and then the exam you get is
+
+
+on Greek literature. Like that's
+
+
+distributional shift. Right? If you
+
+
+studied math, unless you happen to have
+
+
+studied
+
+
+the the works of Pythagoras or
+
+
+something, chances are the Greek
+
+
+literature test is going to really catch
+
+
+you by surprise. Or if you train your
+
+
+image classifier on pictures of exit
+
+
+signs in the United States and then
+
+
+someone takes your exit sign classifier
+
+
+and and uh applies it to signs in China,
+
+
+okay, good chance that uh it won't do so
+
+
+well.
+
+
+All right. So, uh more precisely, uh
+
+
+when we're doing supervised learning, we
+
+
+are doing what's called uh empirical
+
+
+risk minimization, which is just a fancy
+
+
+way of saying uh minimize your error
+
+
+under your training distribution. So,
+
+
+let's say you're doing mean squared
+
+
+error. This is mean squared error under
+
+
+P of X.
+
+
+Um that's standard maximum likelihood.
+
+
+And then you could ask, okay, if I train
+
+
+this uh
+
+
+uh distribution P of Y given X or if I
+
+
+train this this function f of X
+
+
+and I test it on some point X star,
+
+
+is
+
+
+uh f of X star going to be right or
+
+
+wrong?
+
+
+Okay, that's kind of a very basic
+
+
+machine learning uh question. And even
+
+
+though this might be a very basic
+
+
+question, uh weirdly enough, the answer
+
+
+to that question is um
+
+
+rather nuanced even in the easiest of
+
+
+cases.
+
+
+So,
+
+
+what machine learning theory actually
+
+
+tells you is that the expected value of
+
+
+your loss under the same distribution
+
+
+that you trained on is low. It doesn't
+
+
+actually even mean that the loss is low
+
+
+for any single point, right? Because
+
+
+it's it's all at the population level.
+
+
+It's all on average. But,
+
+
+what machine learning theory tells you
+
+
+is that on average over the distribution
+
+
+that you trained on, you expect your
+
+
+loss to be low.
+
+
+Under some other distribution, it is not
+
+
+low if the test distribution is not the
+
+
+same as train.
+
+
+So, even if X star came from P of X
+
+
+individually pointwise, it's not
+
+
+necessarily low, but on in expectation,
+
+
+it's low.
+
+
+So, um this is going to be important
+
+
+later.
+
+
+Now, usually when we're doing kind of
+
+
+regular supervised learning,
+
+
+the reason that we don't spend all of
+
+
+our time worrying about this issue is
+
+
+that we use big deep neural networks and
+
+
+big neural networks generalize well and
+
+
+machine learning practitioners
+
+
+who work on supervised learning spend a
+
+
+lot of time
+
+
+carefully curating and engineering their
+
+
+data sets
+
+
+maybe by making their data sets very
+
+
+representative so that this problem is
+
+
+not very bad.
+
+
+Okay? So, if you actually wanted to make
+
+
+an exit sign detector and this was
+
+
+actually your job rather than just like
+
+
+a thought exercise in a deep RL class,
+
+
+what you would probably do is you would
+
+
+carefully curate a data set of exit
+
+
+signs
+
+
+presumably from all around the world and
+
+
+even if your exit sign detector is then
+
+
+tested in a different country, chances
+
+
+are it's similar enough to things you've
+
+
+seen that it will be fine.
+
+
+So, in supervised learning because you
+
+
+have this fairly simple one-step
+
+
+prediction problem, actually
+
+
+you tend not to worry about
+
+
+distributional shifts so much and you
+
+
+just take some care to get a really good
+
+
+data set.
+
+
+But, in RL things are not so simple. In
+
+
+RL, you could take a great deal of care
+
+
+to curate a really nice data set
+
+
+but
+
+
+since your goal is to optimize your
+
+
+policy, something very bad might happen.
+
+
+And to get an intuition for this bad
+
+
+thing, let's say that instead of just
+
+
+evaluating an arbitrary point X star
+
+
+I specifically want to evaluate a very
+
+
+special point X star
+
+
+the point that is the argmax of my
+
+
+learned function.
+
+
+And now, even if my function
+
+
+was trained very well on a very
+
+
+carefully curated data set
+
+
+testing it on this very special point
+
+
+that is specifically chosen to maximize
+
+
+that function
+
+
+is potentially very very problematic.
+
+
+So, to show you what why it's so
+
+
+problematic, let's draw a function and
+
+
+and think about what this looks like.
+
+
+Let's say that my true function is this
+
+
+green curve.
+
+
+Okay?
+
+
+And I fit
+
+
+my F theta, my neural net, and I get
+
+
+this fit.
+
+
+Okay. So, blue is my learned neural net,
+
+
+green is my true function. Blue is not
+
+
+perfect. But, it's pretty good, right?
+
+
+Like, it's it's not that far off. Like,
+
+
+it generally captures the trend, you
+
+
+know, you can see that there's multiple
+
+
+peaks there. It's It's all right. I
+
+
+mean, it's not It's not like the best
+
+
+neural net, but it's not completely
+
+
+embarrassing, either.
+
+
+But, now if I go to find the argmax of
+
+
+my learned neural net, that's the blue
+
+
+curve, the argmax, of course, is going
+
+
+to be the point where it makes the
+
+
+largest error in the positive direction.
+
+
+When I maximize my learned function, I'm
+
+
+actually maximizing over the errors it
+
+
+makes.
+
+
+Yes.
+
+
+>> Why are you not maximizing over
+
+
+f theta of x minus
+
+
+y? Or what What is
+
+
+Why is f the I thought f is the learned
+
+
+approximation.
+
+
+>> Yeah, we'll we'll see in a second. Um
+
+
+but, if you want the preview, it's, you
+
+
+know, when you if if f was a Q function,
+
+
+you would maximize it with respect to
+
+
+its argument.
+
+
+This problem is actually very similar to
+
+
+the problem that we see with adversarial
+
+
+examples.
+
+
+Uh so, what are adversarial examples?
+
+
+Uh if you have an image classifier,
+
+
+maybe something that classifies panda
+
+
+versus gibbon,
+
+
+um you can actually, for pretty much any
+
+
+image classifier, you can find a small
+
+
+perturbation of the image,
+
+
+a little bit of noise.
+
+
+It's not random noise, it's very
+
+
+specially selected noise, that you can
+
+
+add to the image to fool the classifier
+
+
+into producing an incorrect uh
+
+
+classification.
+
+
+And pretty much at this point, it's
+
+
+widely accepted that for more or less
+
+
+any neural network, if you if you work
+
+
+hard enough, you can
+
+
+find an adversarial example that looks
+
+
+very similar to a correct example, but
+
+
+for which the neural net will make a
+
+
+mistake.
+
+
+And this this maximization thing, you
+
+
+know, what it's really doing is it's
+
+
+saying, find me an adversarial example
+
+
+that fools my neural net f theta into
+
+
+producing a large output.
+
+
+So, this is a lot worse than the
+
+
+situation with the exit signs or the
+
+
+Greek uh literature exam because in this
+
+
+case
+
+
+your test point is actually selected
+
+
+with an awareness of what your learned
+
+
+model is. So, it's actually selected to
+
+
+exploit the mistakes in your learned
+
+
+model.
+
+
+Yes.
+
+
+>> Are you saying that this is something
+
+
+that could happen
+
+
+or will happen or is just
+
+
+like
+
+
+>> Yeah.
+
+
+We're going to see that on the next
+
+
+slide. It's something that always
+
+
+happens.
+
+
+So,
+
+
+this was kind of an abstract story. Uh
+
+
+you know, this is an RL class. We don't
+
+
+worry about functions f of x uh matching
+
+
+y. We worry about like Q functions and
+
+
+models and all that stuff. So, the
+
+
+reason that I wanted to tell you that
+
+
+parable is that actually in pretty much
+
+
+every RL algorithm that you could use in
+
+
+an offline RL setting, some version of
+
+
+this arg max of f problem is going to
+
+
+come up.
+
+
+And it kind of shows up in a different
+
+
+place for different algorithms, but it
+
+
+always shows up somewhere.
+
+
+So, let's uh say we're
+
+
+wanting to do Q-learning or Q function
+
+
+actor-critic.
+
+
+Okay?
+
+
+So,
+
+
+the way that we train our Q function is
+
+
+by minimizing the error between the Q
+
+
+function and the target value, right?
+
+
+The target value is typically r plus
+
+
+gamma max over a prime of Q s prime a
+
+
+prime, right? But, doesn't matter. Some
+
+
+target And of course, if we're in the
+
+
+offline setting, we're minimizing that
+
+
+error
+
+
+under the distribution of states and
+
+
+actions from our behavior policy.
+
+
+That's That's our training set.
+
+
+And when we evaluate the target values,
+
+
+the target values have the Q function in
+
+
+expectation under
+
+
+our policy pi theta.
+
+
+And pi theta is not the same as pi beta,
+
+
+of course. So, here are expectations
+
+
+under pi beta, here are expectations
+
+
+under pi theta.
+
+
+And pi beta and pi theta are not the
+
+
+same thing.
+
+
+And now think back to that argmax, of
+
+
+course,
+
+
+uh
+
+
+it's even worse because theta is not
+
+
+just pi theta is not just some arbitrary
+
+
+policy, it's actually the policy
+
+
+selected to maximize my Q function.
+
+
+So, the policy, whether it's an explicit
+
+
+policy in actor-critic or an implicit
+
+
+policy where you directly take the
+
+
+argmax of Q, it's directly trying to
+
+
+find the actions for which the Q values
+
+
+are large. It's exactly trying to turn
+
+
+the panda into the gibbon.
+
+
+So, this is a problem because that means
+
+
+that if you are not allowed to generate
+
+
+new state-action samples, then your
+
+
+policy can happily figure out some
+
+
+action that is very far from your data
+
+
+for which your Q function makes a very
+
+
+large error to produce a very large
+
+
+value.
+
+
+Yes.
+
+
+>> I'm I'm wondering
+
+
+for your argmax, like why is it an issue
+
+
+to max over your Q function? Because I
+
+
+don't understand if it was like maxing
+
+
+over the
+
+
+like squared error between your Q
+
+
+function and your and your Y's because
+
+
+that would be this sort of adversarial
+
+
+case where you're trying to maximize the
+
+
+error, right? But
+
+
+>> Yeah.
+
+
+>> it's just finding the maximum value, why
+
+
+is that
+
+
+>> Yeah, it's a good question.
+
+
+So,
+
+
+let's say that um
+
+
+this is the action and this is the Q
+
+
+value.
+
+
+And the true Q function, which you don't
+
+
+know, maybe it looks like this, okay?
+
+
+So, the best action is this one. This is
+
+
+the best action you can take. And now in
+
+
+your data set, you have this point, and
+
+
+this point, and this point.
+
+
+Okay? So, now I fit a neural net to
+
+
+this, and my fit
+
+
+looks like this.
+
+
+Okay?
+
+
+So, now when I Well, maybe I should draw
+
+
+the rest of it. It looks like this.
+
+
+Okay. So, then when I maximize my
+
+
+learned function,
+
+
+I'm going to go here.
+
+
+And this value Well, first of all, not
+
+
+only is this a terrible action, but also
+
+
+this value is much larger than any value
+
+
+I could actually get.
+
+
+And if you think about what happens
+
+
+during Q-learning, this is going to be
+
+
+your target value, and then it's backed
+
+
+up. So, it's like this uh it's like a
+
+
+disease that propagates through your
+
+
+entire Q function, because you take this
+
+
+gigantic value, you back it up, and now
+
+
+other values in other places of your MDP
+
+
+also become gigantic, and it like
+
+
+spreads and spreads and spreads.
+
+
+So, this is actually very bad.
+
+
+Any questions about this stuff?
+
+
+Okay.
+
+
+Yes.
+
+
+>> You say in Q-learning, we we do this we
+
+
+do some sort of clipping, right?
+
+
+And we just do this in I I don't know,
+
+
+like probably we cannot do it for
+
+
+offline, given we cannot regenerate that
+
+
+pool.
+
+
+>> Yeah.
+
+
+>> But there should be some way to do it.
+
+
+>> Uh let's come back to that, but sort of,
+
+
+yes. You would do have to be very
+
+
+careful with that.
+
+
+Because you do need to retain the
+
+
+signal. Like you actually need to figure
+
+
+out exactly which action's the best one.
+
+
+So, you can do something like that, but
+
+
+you have to be smart.
+
+
+Um but I I want also uh
+
+
+make the point that this is not just
+
+
+like a Q-learning problem. Like
+
+
+sometimes we focus a little bit too much
+
+
+on the Q-learning thing, but there's
+
+
+other RL methods,
+
+
+and they all have some version of this
+
+
+issue. So, let's take model-based RL.
+
+
+In model-based RL, you train a model,
+
+
+let's go Let's say you have a
+
+
+deterministic model F, and you're
+
+
+minimizing the difference between F uh
+
+
+of SA minus S prime. Okay? A simple mean
+
+
+squared error uh model training
+
+
+objective.
+
+
+And
+
+
+again, based on what we saw before about
+
+
+supervised learning theory, you would
+
+
+expect the expected error under the
+
+
+training distribution to be low,
+
+
+but in general, if you were to sample
+
+
+state action tuples from your policy pi
+
+
+theta, you wouldn't expect the model
+
+
+error to be low under your policy
+
+
+because of course the policy visits
+
+
+different states and actions.
+
+
+And again, you have this problem because
+
+
+the policy selected to maximize the
+
+
+reward under F. So, if F makes a mistake
+
+
+somewhere, now F is not predicting the
+
+
+value, F is predicting transitions, but
+
+
+let's say that you have some really good
+
+
+state
+
+
+somewhere.
+
+
+Maybe you have a state where you won the
+
+
+lottery.
+
+
+And
+
+
+the world is pretty big and in maybe in
+
+
+some other state, your model erroneously
+
+
+predicts that for some crazy action,
+
+
+you'll enter that lottery winning state.
+
+
+Like maybe you drive the car off the
+
+
+road and because you have no idea what
+
+
+happens when you drive the car off the
+
+
+road, the model sometimes assumes that
+
+
+if you drive the car off the road in
+
+
+this very particular place, you're going
+
+
+to win the lottery. It's nonsense, but
+
+
+but because you're putting an input into
+
+
+the model that it's never seen before,
+
+
+it can make a nonsense prediction for
+
+
+completely unexpected inputs.
+
+
+And if there exists even a single state
+
+
+where the model makes that prediction,
+
+
+of course your policy will immediately
+
+
+go and and take that action.
+
+
+So, it's exactly the same problem, it's
+
+
+just showing up in a slightly different
+
+
+spot. And basically every RL method is
+
+
+going to have some version of this.
+
+
+Um
+
+
+One interesting uh thing I want to
+
+
+mention as a side note here is uh policy
+
+
+gradient methods.
+
+
+So, with policy gradient methods, we uh
+
+
+learned that if you use important
+
+
+sampled policy gradients,
+
+
+basically the derivative of this thing,
+
+
+uh that
+
+
+if you disregard the fact that we're
+
+
+ignoring the state distribution
+
+
+mismatch, uh this can be an unbiased uh
+
+
+objective uh if you have a good
+
+
+advantage estimator.
+
+
+Interestingly enough, if you have an
+
+
+unbiased
+
+
+uh objective like this,
+
+
+you get a slightly different problem,
+
+
+but it's conceptually very related.
+
+
+Basically, in this case,
+
+
+um
+
+
+what you're going to get is um you're
+
+
+going to get a kind of um
+
+
+uh adversarial sample problem. So, some
+
+
+of your samples will have higher reward
+
+
+than others.
+
+
+And
+
+
+as you drive the new policy pi theta
+
+
+further and further away from pi beta,
+
+
+your importance uh weights will go
+
+
+further and further away from one 1.0.
+
+
+Uh which means that your variance will
+
+
+essentially explode.
+
+
+And what will basically happen is that
+
+
+your policy will try to put all the
+
+
+probability mass on the best sample it's
+
+
+seen, the sample where it got the most
+
+
+lucky.
+
+
+Uh and again, like if you do this
+
+
+enough, eventually you get a policy
+
+
+that's completely nonsense because once
+
+
+the importance weights are very far from
+
+
+one, this the variance of this estimator
+
+
+explodes and it's no longer close to the
+
+
+true expected value of the reward.
+
+
+So,
+
+
+um
+
+
+it kind of makes sense because the
+
+
+answer to these counterfactual questions
+
+
+has high variance. It depends on whether
+
+
+you've seen that situation or not.
+
+
+Uh
+
+
+and interestingly enough,
+
+
+one of the things that people do, for
+
+
+example, in LLM world is they add some
+
+
+kind of
+
+
+uh reference
+
+
+model regularizer. And we saw that one
+
+
+of the ways to do that is to simply add
+
+
+log pi theta of your samples to the
+
+
+objective. We saw this when we talked
+
+
+about PPO.
+
+
+And in the case where you're not
+
+
+collecting more data, it actually makes
+
+
+sense that this just basically says,
+
+
+"Okay,
+
+
+um
+
+
+just try to stick to the actions that
+
+
+are in your data set. Don't make any of
+
+
+those actions have very low
+
+
+probability."
+
+
+And that actually constrains your policy
+
+
+to stick closer to the data.
+
+
+And this is the actually there's a theme
+
+
+to this, which is
+
+
+pretty much all the solutions we'll see
+
+
+to the this kinds of problems will have
+
+
+some kind of term that says, "Stay
+
+
+closer to the data.
+
+
+And the thing that we saw before with
+
+
+PPO is just one instance of this.
+
+
+So, this particular thing is an example
+
+
+of something called a policy constraint.
+
+
+Yes.
+
+
+>> Why do we take the log of the
+
+
+policy directly instead of using a KL
+
+
+divergence or
+
+
+>> So, that that So, we saw this when we
+
+
+talked about PPO before, but that term
+
+
+is basically a sample-based estimator of
+
+
+the KL divergence.
+
+
+So, let me write this down.
+
+
+So, if we have uh
+
+
+DKL of
+
+
+pi beta
+
+
+to pi theta
+
+
+right?
+
+
+This is the expected value
+
+
+under
+
+
+pi beta
+
+
+negative
+
+
+of
+
+
+log
+
+
+pi theta minus
+
+
+log pi beta.
+
+
+And when we're optimizing with respect
+
+
+to pi theta, this term doesn't matter.
+
+
+So, as long as So, log pi theta in
+
+
+expectation under pi beta, meaning
+
+
+generally samples from pi beta and take
+
+
+their log probability under theta, is
+
+
+actually just
+
+
+the scale divergence up to a constant
+
+
+that doesn't depend on theta.
+
+
+Okay.
+
+
+Um
+
+
+just to uh yes, question.
+
+
+Yeah, so the question was uh
+
+
+well, how would you figure out pi beta
+
+
+if you just have a data set? And this is
+
+
+actually one of the issues with the
+
+
+important sample policy gradient
+
+
+estimate is that actually requires
+
+
+knowing what pi beta is so that you can
+
+
+compute those importance weights. Um the
+
+
+answer is the following.
+
+
+We will endeavor in so far as possible
+
+
+to derive offline RL methods that do not
+
+
+require knowing pi beta. We will try to
+
+
+avoid that.
+
+
+Occasionally we will see algorithms that
+
+
+do require it, in which case we will do
+
+
+the obvious thing and fit a model to it.
+
+
+Uh but we would we would rather not do
+
+
+that and that's actually one of the
+
+
+reasons why this kind of method is
+
+
+for for purely offline RL often not the
+
+
+preferred choice. We will see some
+
+
+methods that require estimating pi beta
+
+
+and in that case you just you want to
+
+
+use the best model you can you can find.
+
+
+Okay. Uh so a quick quantitative example
+
+
+just to
+
+
+kind of convince you that this is not
+
+
+just a a fictional story.
+
+
+Um
+
+
+here is an an example with soft actor
+
+
+critic. So all of you know about soft
+
+
+actor critic, it was on the homework. Uh
+
+
+and you can take soft actor critic and
+
+
+you can run it in offline RL mode. So
+
+
+what you're seeing in this picture is um
+
+
+on the x-axis the number of training
+
+
+steps, on the y-axis is the reward that
+
+
+you get when you train with soft actor
+
+
+critic but with the additional data
+
+
+collection disabled. And the different
+
+
+colors are different size data sets,
+
+
+where the blue is 1,000 transitions, the
+
+
+orange is 10,000, the green is 100,000,
+
+
+and the red is 1 million. And looking at
+
+
+this, you know, if you were to see this
+
+
+on your homework, you'd probably say,
+
+
+"Hey, my algorithm is broken." Like it's
+
+
+not making any progress. It starts off
+
+
+at about minus 250 reward and it ends up
+
+
+at about minus 250 reward. So it's not
+
+
+making any progress.
+
+
+And this is the amount of data.
+
+
+But then you can ask, "Well, what does
+
+
+the Q function think it's getting?"
+
+
+Because you can look at the Q values and
+
+
+that should be the algorithm's
+
+
+prediction of the reward that it's going
+
+
+to get.
+
+
+And uh here I have to put the y-axis on
+
+
+a log scale. So uh for that blue curve,
+
+
+for example, the 1,000 points it thinks
+
+
+it's going to get 10 to the 20th power.
+
+
+It's going to get 10 to the 20th power
+
+
+and in fact it gets minus 250. So,
+
+
+clearly, the Q function thinks your
+
+
+you're doing really, really well.
+
+
+Uh but in fact, you are not. Um so,
+
+
+that's exactly this kind of uh
+
+
+maximization adversarial exploitation
+
+
+kind of problem that I mentioned before.
+
+
+So, it is real.
+
+
+Okay. So, basically, these issues uh
+
+
+with generalization and erroneous
+
+
+extrapolation are not corrected. If
+
+
+you're in an online RL setting, uh this
+
+
+is kind of like the curve that I drew on
+
+
+the board before. Uh if the Y axis is
+
+
+your uh reward and the X axis is your
+
+
+action, maybe these are the points that
+
+
+you saw. So, you might think that your Q
+
+
+function looks like this and you go over
+
+
+here. And if you got this wrong, maybe
+
+
+this is the true value. Well, in an
+
+
+online RL setting, you would actually
+
+
+observe that value and you would refit
+
+
+your function and figure out your
+
+
+mistake. But in offline setting, the
+
+
+problem is not corrected. So, uh
+
+
+existing challenges with uh sampling
+
+
+error and function approximation in
+
+
+standard RL, they basically become much
+
+
+more severe in the offline RL setting
+
+
+because you don't get the opportunity to
+
+
+observe your mistakes and fix them.
+
+
+Okay? And that's what we have to correct
+
+
+with our methods.
+
+
+So, there will be a number of different
+
+
+offline RL algorithms we'll talk about,
+
+
+and the one that I'll start on today is
+
+
+called uh policy constraint methods. And
+
+
+this is kind of the simplest way to
+
+
+think about offline RL. Basically, the
+
+
+principle behind a policy constraint is
+
+
+that distributional shift is the root of
+
+
+all evil. So, let's somehow limit our
+
+
+policy so that it doesn't change too
+
+
+much from pi beta. Let's keep pi theta
+
+
+close to pi beta so that it doesn't
+
+
+experience those really unusual actions.
+
+
+Okay?
+
+
+So, there are in general many different
+
+
+methods
+
+
+for doing offline RL, but there are a
+
+
+few principles that generally seem to be
+
+
+effective. One principle is that
+
+
+value-based methods, particularly
+
+
+methods based on Q functions, are quite
+
+
+good. Um why? Well, because Q functions
+
+
+can be trained with off-policy data, and
+
+
+if you're a little bit careful, you can
+
+
+train them with offline data.
+
+
+You can also use models. So, Q functions
+
+
+and models seem to be kind of the the
+
+
+more effective tools here.
+
+
+But, you have to somehow fix the
+
+
+distributional shift problem. And you
+
+
+have a variety of things at your
+
+
+disposal, some of which we'll talk about
+
+
+on Friday, and those are basically
+
+
+policy constraints, meaning limit the
+
+
+policy to not deviate from the behavior
+
+
+policy.
+
+
+Pessimism. Pessimism says, train your Q
+
+
+functions so that for actions that you
+
+
+didn't see,
+
+
+it tends to make errors in the negative
+
+
+direction rather than in the positive
+
+
+direction.
+
+
+So, pessimism is exactly exactly what it
+
+
+sounds like. Like, if you don't know
+
+
+that it's good, assume it's bad.
+
+
+Uh and then the other one is maybe the
+
+
+most exotic one, which is to structure
+
+
+your your algorithm in some very very
+
+
+clever way so that it never has to
+
+
+actually input unseen actions into the Q
+
+
+function or into the model. And if
+
+
+you're really crafty, you can do that as
+
+
+well, and we'll talk about that more on
+
+
+Friday.
+
+
+So, policy constraints.
+
+
+Um let's go back to this uh off-policy
+
+
+policy gradient. If you remember, we
+
+
+talked about how we can add this little
+
+
+term that says, let's maximize the log
+
+
+probability uh of our samples,
+
+
+and that essentially is a kind of policy
+
+
+constraint. It basically says, whatever
+
+
+the behavior policy did,
+
+
+make the probability of that under pi
+
+
+theta
+
+
+pretty decent. Like, don't make it too
+
+
+low.
+
+
+And that's like a pretty decent idea
+
+
+because that'll make sure that you don't
+
+
+experience too much distributional shift
+
+
+because if you were to assign a
+
+
+probability of zero to some action taken
+
+
+by the behavior policy, then that log
+
+
+probability would be negative infinity,
+
+
+and that would be a very poor objective
+
+
+value. So, your policy is strongly
+
+
+incentivized not to do that.
+
+
+And this first term, look, we can just
+
+
+abstract it and say that it's just the
+
+
+expected value under your policy of your
+
+
+Q function.
+
+
+Okay? So, whether you use important
+
+
+sampling or you use like
+
+
+reparameterization trick, it doesn't
+
+
+matter. Like, it it's it's just a this
+
+
+the first term is the estimator of the
+
+
+expected Q, and the second term is some
+
+
+kind of policy constraint. And that's
+
+
+like roughly a general sketch of a
+
+
+policy constraint method.
+
+
+And it doesn't have to be with PPO, you
+
+
+can do this with with soft actor critic.
+
+
+All you do is you just add a term that
+
+
+keeps the actor close to the behavior
+
+
+policy.
+
+
+Okay? And in fact, you might actually
+
+
+prefer to do this like expected Q thing.
+
+
+Why? Well, because the Q function can be
+
+
+trained with off-policy data.
+
+
+Whereas like GAE or something like that
+
+
+would require on-policy data.
+
+
+And this term here, as I wrote out on
+
+
+the board, is just an estimate of the KL
+
+
+divergence between pi beta and pi theta
+
+
+up to a constant. So, that's that's
+
+
+exactly what it says on the board right
+
+
+there.
+
+
+Okay, up to a constant.
+
+
+Um now, there's a choice to be made
+
+
+here. This is what is sometimes called
+
+
+the forward KL. Forward KL refers to the
+
+
+case where pi theta is the second
+
+
+argument to the KL divergence.
+
+
+You could also use the op- opposite KL
+
+
+divergence.
+
+
+This is sometimes called the reverse KL
+
+
+and it's you get a different equation if
+
+
+you do this.
+
+
+In general, you can use other
+
+
+divergences as well. You don't have to
+
+
+use KL divergence here. And in fact,
+
+
+there is a lot of
+
+
+um
+
+
+I guess like uh discussion and
+
+
+controversy in the offline RL world
+
+
+about what kind of divergence you should
+
+
+use.
+
+
+The easiest to use is forward KL, but
+
+
+the reverse KL, the that second one,
+
+
+also has some interesting
+
+
+properties. And we'll talk about those
+
+
+um in a second.
+
+
+Okay, so
+
+
+uh why does a policy constraint fix this
+
+
+problem we saw before? Well, uh remember
+
+
+our problem was that we trained our Q
+
+
+function in expectation under pi beta.
+
+
+Uh and when we evaluate our target
+
+
+values, we take the expected value under
+
+
+pi theta.
+
+
+Right? So, these are different
+
+
+distributions. And the root of all of
+
+
+our issues was that pi beta and pi theta
+
+
+are not the same thing.
+
+
+Um
+
+
+so
+
+
+maybe this is our uh pi beta, these are
+
+
+our data points and this is Q. So, if
+
+
+you go away from your data points, maybe
+
+
+your Q function extrapolates in some
+
+
+crazy way. That's the picture I drew on
+
+
+the board before.
+
+
+Uh so, you have basically unreliable Q
+
+
+values far from the data and reliable
+
+
+values close to the data.
+
+
+So, if you stay close to the data, you
+
+
+would expect to mostly have reliable
+
+
+values.
+
+
+So, if your policy pi theta is close
+
+
+over here, that's okay. Um
+
+
+and the policy constraint will keep it
+
+
+close.
+
+
+So, keeping pi theta close to pi beta
+
+
+basically limits distributional shift
+
+
+and it prevents
+
+
+that expected value over there from
+
+
+uh sending
+
+
+very unfamiliar actions through your Q
+
+
+function.
+
+
+Okay?
+
+
+Any questions about this?
+
+
+Okay. So, the um
+
+
+last question I want to talk about a
+
+
+little bit is what kind of constraint do
+
+
+we use? And there are many options
+
+
+available and for now I'll talk about
+
+
+just the forward and the reverse KL.
+
+
+Uh first, let's actually get a little
+
+
+bit more of a feel for what forward and
+
+
+reverse KL actually means. So, this is
+
+
+forward KL. Remember, forward means that
+
+
+pi theta is the second argument.
+
+
+And
+
+
+if I expand that out, it's basically the
+
+
+negative of the expectation under pi
+
+
+beta of log pi theta plus some constant
+
+
+that doesn't depend on theta.
+
+
+Okay? So, it's basically just the
+
+
+likelihood of samples from beta under pi
+
+
+theta.
+
+
+And if pi beta is this kind of
+
+
+complicated distribution
+
+
+and pi theta is a Gaussian,
+
+
+what this objective says is if you give
+
+
+a probability of zero
+
+
+to any sample from pi beta,
+
+
+the log of zero is negative infinity.
+
+
+So, this objective punishes you very
+
+
+harshly for assigning a low probability
+
+
+to any sample from pi beta.
+
+
+It doesn't actually it only rewards you
+
+
+a little bit for assigning a very high
+
+
+probability because it's a logarithm.
+
+
+So, if you
+
+
+assign a
+
+
+probability that's like twice as much,
+
+
+you
+
+
+your objective is a little bit better.
+
+
+But, if you assign a zero, then your
+
+
+objective is negative infinity.
+
+
+So, you really want to assign kind of a
+
+
+moderate probability to everything.
+
+
+So, that means that if my pi beta is
+
+
+this kind of bimodal thing and my pi
+
+
+theta is unimodal,
+
+
+I'll get a solution that's something
+
+
+like this.
+
+
+This is sometimes called moment matching
+
+
+or
+
+
+mean seeking. Basically, this kind of
+
+
+objective incentivizes pi theta to sort
+
+
+of cover everything that pi beta does.
+
+
+Even if it means covering things that pi
+
+
+beta didn't do.
+
+
+If you have the opposite KL divergence,
+
+
+the reverse KL,
+
+
+if I were to write it out, it looks like
+
+
+this. So, it's the expected value under
+
+
+pi theta of log pi beta plus the
+
+
+minus the entropy.
+
+
+So, now, if my pi beta is this bimodal
+
+
+thing, let's think about what this
+
+
+objective is doing. It's saying
+
+
+you get a high reward if you pick
+
+
+actions where pi beta has a high
+
+
+probability.
+
+
+And then because of that entropy term,
+
+
+you want to find as many of those
+
+
+actions as possible.
+
+
+You don't really pay a big price for
+
+
+missing out on some actions.
+
+
+If there are some actions where pi beta
+
+
+has like a medium probability and you
+
+
+miss them, it's okay, nobody cares. But,
+
+
+you get a big bonus if you really find
+
+
+those super high probability actions.
+
+
+So, because of that, this tends to be
+
+
+what's called mode seeking.
+
+
+Okay? So, that's that Here you can see
+
+
+the green curve there. So, the reverse
+
+
+KL will tend to pick up on the biggest
+
+
+mode. So, if your behavior policy has
+
+
+multiple peaks, it'll find the biggest
+
+
+peak and put all the mass there.
+
+
+The first one is um
+
+
+uh mode covering. It'll try to cover all
+
+
+the modes.
+
+
+If pi beta assigns a very, very low
+
+
+probability, if it assigns a probability
+
+
+of zero to some action,
+
+
+then the reverse KL will get a reward of
+
+
+negative infinity for that. So, it'll
+
+
+avoid things where pi beta has zero
+
+
+probability at all costs.
+
+
+The first one, the mode covering one,
+
+
+will not do that. It'll try to cover
+
+
+everything at all costs. So, these are
+
+
+very different behaviors.
+
+
+Okay. So, now in the last uh minute or
+
+
+so, I want to ask you guys a question.
+
+
+Which one of these do you think is
+
+
+better if we're doing offline RL?
+
+
+Yes?
+
+
+>> It seems like reverse would be
+
+
+>> Okay, so one answer is the reverse KL is
+
+
+better. Why?
+
+
+>> Uh
+
+
+because if you have mode seeking
+
+
+behavior, then you know that it's going
+
+
+to
+
+
+reward work at least, you know,
+
+
+okay, sort of that. We could you know
+
+
+have these kind of situations where it
+
+
+might be very low probability
+
+
+>> Yeah.
+
+
+>> But I
+
+
+>> Yep. So, to summarize this for everybody
+
+
+else, basically the problem with
+
+
+distributional shift was that sometimes
+
+
+you pick an action that was never seen
+
+
+in the data.
+
+
+If you're mode covering, if you avoid
+
+
+the zero probability actions at all
+
+
+costs, then
+
+
+you should really avoid those actions
+
+
+that that are too different from the
+
+
+data. So, the reverse KL, the second
+
+
+one, seems like a safer option.
+
+
+Can anyone think of a a reason why we
+
+
+might prefer the first one?
+
+
+The forward KL, yeah.
+
+
+>> It eats less prone to reward hacking.
+
+
+>> Okay, so one answer is that maybe it's
+
+
+less prone to reward hacking. So, what
+
+
+that could mean is, well, you have to
+
+
+figure out what those log pi betas are.
+
+
+You don't know pi beta, so you have to
+
+
+estimate it, and maybe you estimated it
+
+
+wrong.
+
+
+That's a good answer. Any other uh
+
+
+ideas?
+
+
+Yeah.
+
+
+>> There's not exploration. Like, this
+
+
+seems It's like close to imitation
+
+
+learning.
+
+
+>> Okay, so one answer is uh well, this is
+
+
+kind of close to imitation learning and
+
+
+we like imitation learning and that's
+
+
+actually valid. In fact, one class of
+
+
+methods that's sometimes referred to as
+
+
+uh actor critic plus BC does exactly
+
+
+this for exactly that reason. It's like
+
+
+imitation learning plus a little bit of
+
+
+RL.
+
+
+But there's another big reason why
+
+
+people prefer the first one.
+
+
+All right, I'll I'll give you guys the
+
+
+answer and then we'll adjourn. The
+
+
+reason people

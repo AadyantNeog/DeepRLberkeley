@@ -1,0 +1,4504 @@
+Hello.
+
+
+>> Do you feel like the lighting is a bit
+
+
+too
+
+
+dark today?
+
+
+>> It is a little dark, yeah.
+
+
+Do I have Oh, I do have lighting
+
+
+controls, yeah.
+
+
+No, I have I have it here.
+
+
+Oh.
+
+
+But, this might make it hard to see.
+
+
+Well, I'm very conscious of the fact
+
+
+that it's early in the morning and that
+
+
+maybe it's more like cinema might make
+
+
+it more like bedtime.
+
+
+So, I think this is a good
+
+
+Anybody have trouble seeing the screen?
+
+
+You guys all good? Okay. I think I think
+
+
+this is like the right level of
+
+
+illumination because I'm feeling my
+
+
+circadian rhythm going into reverse,
+
+
+too.
+
+
+All right.
+
+
+Let's get started. So, so far in the
+
+
+course, we've covered the the basics of
+
+
+model-free reinforcement learning. We
+
+
+talked about policy gradients,
+
+
+actor-critic, value-based methods. And
+
+
+now we're going to consolidate some of
+
+
+what we've learned. So, we'll have a
+
+
+couple of lectures on advanced policy
+
+
+gradients to derive the kind of policy
+
+
+gradients that we would actually use in
+
+
+state-of-the-art machine learning
+
+
+systems. And then we'll talk about all
+
+
+sorts of other advanced topics.
+
+
+So, today's lecture is
+
+
+actually, you know, it might seem like a
+
+
+slightly esoteric title, but we're
+
+
+actually going to derive what is
+
+
+probably the most widely used policy
+
+
+gradient algorithm today, which is PPO,
+
+
+which is what you would use
+
+
+certainly if you're working on language
+
+
+models, but also in lots of other areas.
+
+
+And then on Friday, we'll talk a lot
+
+
+more about kind of the theoretical
+
+
+underpinnings of that method.
+
+
+So,
+
+
+let's uh go back to policy gradients.
+
+
+And we're going to talk about some
+
+
+issues with policy gradients that make
+
+
+the kind of policy gradients we
+
+
+discussed so far pretty hard to use, and
+
+
+then we'll figure out a way to fix that.
+
+
+Okay. So,
+
+
+this is the
+
+
+uh
+
+
+policy gradient with GAE that we derived
+
+
+a few weeks ago. So, this is this should
+
+
+be familiar to all of you. It's exactly
+
+
+what we talked about before. Uh
+
+
+when you have uh
+
+
+policy gradient uh with uh GAE, you
+
+
+generate some samples, uh evaluate
+
+
+targets uh for your value function,
+
+
+train your value function, use your
+
+
+value function to get a GAE-based
+
+
+advantage estimator. So, it's a it's
+
+
+basically an estimator for the reward
+
+
+minus the current value, use that to
+
+
+compute the policy gradient, and take a
+
+
+gradient step on the policy gradient.
+
+
+And in the version of this method that
+
+
+we worked out before, the the on-policy
+
+
+batch actor-critic, aka policy gradient
+
+
+with GAE, all of these steps are done
+
+
+every single gradient update. So, all
+
+
+this work, steps one through six, all of
+
+
+that is there so that you can up update
+
+
+your policy network for one gradient
+
+
+step. And you might need many, many
+
+
+gradient steps to get a really good
+
+
+network.
+
+
+So,
+
+
+why do we like this?
+
+
+Well, we like it because uh all these
+
+
+Q-function methods, Q-function
+
+
+actor-critic and uh Q-learning, they
+
+
+might be hard to tune and they might not
+
+
+converge. So, they take kind of a lot of
+
+
+work to to get to get working well. They
+
+
+can be very efficient if you tune them,
+
+
+but it can be a little difficult.
+
+
+Uh and if you're if you use an on-policy
+
+
+method like this,
+
+
+if you really want kind of the most
+
+
+stable algorithm and you're willing to
+
+
+tolerate needing to generate lots and
+
+
+lots of samples, you could even use uh
+
+
+Monte Carlo advantage estimators, which
+
+
+is basically GAE with lambda equals one,
+
+
+where you just sum up future rewards and
+
+
+just subtract a baseline. And if you do
+
+
+this,
+
+
+uh then this is uh guaranteed to be an
+
+
+unbiased algorithm. Uh it might have
+
+
+high variance, you might need lots of
+
+
+samples, but it's like it's a pretty
+
+
+safe way to go, especially if you have a
+
+
+pretty large computational budget. So,
+
+
+it gives us a provably unbiased policy
+
+
+gradient estimator, and um
+
+
+if you are willing to pay the price of
+
+
+generating enough samples to get its
+
+
+variance down, it tends to be easier to
+
+
+get something like this to work. Easier
+
+
+equals less hyperparameter tuning, less
+
+
+experiments that blow up after training
+
+
+for half the night, and stuff like that.
+
+
+So, generally this is like a very
+
+
+popular kind of approach.
+
+
+And remember that it's unbiased no
+
+
+matter how wrong the critic is. So,
+
+
+uh if you use lambda less than one, then
+
+
+you start introducing a little bit of
+
+
+bias from those uh values at future
+
+
+steps, but if you use lambda equals one,
+
+
+then it is completely unbiased, and the
+
+
+critic The more correct the critic is,
+
+
+the more it lowers the variance, but it
+
+
+never introduces bias. So, that means
+
+
+it's pretty safe to use.
+
+
+Uh so, basically this makes policy
+
+
+gradients a great choice if you want
+
+
+stable, reliable RL methods, and you're
+
+
+not too concerned with sample
+
+
+efficiency. So, the reason for that last
+
+
+part is that in practice, to get this
+
+
+thing to have low enough variance that
+
+
+the noise doesn't completely overwhelm
+
+
+it, you would raise the number of
+
+
+samples. And if your samples are
+
+
+expensive, that's a bad trade, but if
+
+
+your samples are cheap, that's a good
+
+
+trade.
+
+
+And just to get us to think about the
+
+
+practicalities of this before we dive
+
+
+into all the math,
+
+
+can any can you guys think about problem
+
+
+settings where samples are very cheap to
+
+
+generate, where you wouldn't care so
+
+
+much about sample complexity? Any ideas?
+
+
+Yeah.
+
+
+Text. Yeah, so if you're if you're
+
+
+training a language model, okay,
+
+
+generating samples requires compute, but
+
+
+it doesn't really require running any
+
+
+physical process. So, if you're training
+
+
+an LLM to generate text, uh generating
+
+
+samples just means running decoding
+
+
+through your LLM. So, that's uh often a
+
+
+fairly affordable thing.
+
+
+Any other ideas?
+
+
+Cheap samples, yeah.
+
+
+Game simulation, yeah. So, if you have
+
+
+like a really fast emulator for Atari
+
+
+games or you're training a policy to
+
+
+play like chess or go, it's pretty easy
+
+
+to simulate games.
+
+
+What are some examples of settings where
+
+
+you have very expensive samples?
+
+
+Driving, yeah. So, if you're driving a
+
+
+real car, okay, that's that's like a
+
+
+pretty costly thing. You probably need
+
+
+like a safety driver in there. Another
+
+
+one would be
+
+
+generating text, but in a conversation
+
+
+with a person. So, if you actually if
+
+
+each of your rollouts requires talking
+
+
+to like a real person, that's probably
+
+
+going to be somewhat costly. So,
+
+
+this is something that we'll talk about
+
+
+more in later in the course, but
+
+
+oftentimes there's this dichotomy in RL
+
+
+algorithms between algorithms that are
+
+
+preferred in cheap sample settings and
+
+
+algorithms that are preferred in
+
+
+expensive sample settings. And today's
+
+
+discussion is about the the cheap sample
+
+
+setting.
+
+
+Okay.
+
+
+So, this kind of stuff is particularly
+
+
+good for sim-to-real robotics and for
+
+
+training LLMs and for games and things
+
+
+like that.
+
+
+Okay, but there's still a problem. Even
+
+
+if our samples are cheap,
+
+
+there is a lot of work that we're doing
+
+
+in this algorithm for every single
+
+
+gradient update.
+
+
+So, there's six different steps and one
+
+
+of those steps
+
+
+step three is literally training another
+
+
+neural network. So, probably
+
+
+even if your samples are cheap, training
+
+
+another neural network in the inner loop
+
+
+of gradient steps for your policy
+
+
+network is rather ex- travagant. And in
+
+
+practice, this version of the algorithm
+
+
+is actually not used very much. There's
+
+
+there's a modification that we'll make
+
+
+and that's the one that's actually used.
+
+
+So, each iteration on this takes one
+
+
+gradient step. And we know that training
+
+
+a neural net might take many gradient
+
+
+steps.
+
+
+Each iteration also requires generating
+
+
+entirely new samples.
+
+
+And the high variance of this means we
+
+
+usually want bigger batches than we
+
+
+would use with regular supervised
+
+
+learning and smaller learning rates. And
+
+
+smaller learning rates means we need
+
+
+more gradient steps, which means that
+
+
+this really expensive loop is now going
+
+
+to be done more times than what we're
+
+
+used to. So, that's kind of that seems
+
+
+like a bad combo. Um, so this actually
+
+
+can very quickly become intractable.
+
+
+So,
+
+
+what we would intuitively really like to
+
+
+be able to do is we'd like to be able to
+
+
+reuse some of that computation in steps
+
+
+one through four, generating the
+
+
+samples, fitting the value function,
+
+
+generating the advantage estimates. We'd
+
+
+like to do that step one through four,
+
+
+those are expensive steps, and then like
+
+
+somehow take more gradient steps based
+
+
+on that. So, do steps one through four,
+
+
+and then somehow like do steps five and
+
+
+six a few more times, not just once.
+
+
+Because then you can take like a few
+
+
+gradient steps, not just one, and uh,
+
+
+before you have to do all that hard work
+
+
+of steps one through four all over
+
+
+again.
+
+
+Um,
+
+
+so this is what we would like to do, and
+
+
+this is very wrong. This is not allowed.
+
+
+Do not do not try to do this.
+
+
+Uh, why is this not allowed?
+
+
+What why do you go to RL jail if you do
+
+
+this?
+
+
+Okay, so one answer is that your
+
+
+advantage estimates are off, right?
+
+
+Because this is the advantage estimator
+
+
+for your original policy, but now as
+
+
+soon as you took that first step in in
+
+
+in in step six, now you've got you've
+
+
+got a different policy, which has
+
+
+different advantages. Uh, that turns out
+
+
+to oddly enough not be as much of a
+
+
+problem as it seems.
+
+
+There is also another problem.
+
+
+Yeah?
+
+
+Okay, you might you might overfit to a
+
+
+particular batch, yes. Uh, but there's a
+
+
+more fundamental thing. Yeah, back
+
+
+there?
+
+
+>> You're using a trajectory from a
+
+
+previous policy.
+
+
+>> Yeah, you're using trajectories from the
+
+
+wrong policy. So, step five is an
+
+
+estimate of an expectation, Right? Step
+
+
+five is a sample-based estimate of the
+
+
+expected value of grad log pi times a in
+
+
+expectation under p theta.
+
+
+But as soon as you've changed theta, now
+
+
+you've got a mismatch because you're
+
+
+taking the expectation under
+
+
+one policy, but the stuff inside the
+
+
+expectation is coming from a different
+
+
+policy. So, it's basically just the
+
+
+wrong answer.
+
+
+Uh right? So, if you
+
+
+expand out the expectation, it's
+
+
+basically whatever you're computing
+
+
+there needs to be an
+
+
+an unbiased sample-based estimate of the
+
+
+sum over states and actions of the
+
+
+probability of that state and action
+
+
+under theta times grad log pi theta. And
+
+
+they have to be the same theta,
+
+
+otherwise it's not the correct equation.
+
+
+So, that's kind of a problem.
+
+
+So, the question for today's lecture is
+
+
+I would really like to have that kind of
+
+
+algorithm. I really like it because I
+
+
+can take multiple steps and reuse the
+
+
+work in steps one through four, but
+
+
+unfortunately that algorithm is
+
+
+incorrect. So, can I somehow correct it
+
+
+so that I do not go to RL jail for doing
+
+
+this and can take maybe like 100
+
+
+gradient steps over there and reuse the
+
+
+computation in steps one through four.
+
+
+And if I can do that, then I can get to
+
+
+an algorithm that I can actually code up
+
+
+and uh
+
+
+and use in practice. Yes.
+
+
+So, the problem is that if I iterate
+
+
+steps five and six,
+
+
+that if I iterate steps five and six
+
+
+multiple times, basically the first time
+
+
+I update the the policy in step six, now
+
+
+theta has changed.
+
+
+Which means that if I go around again,
+
+
+my samples came from the old policy
+
+
+distribution, but my grad log pi is from
+
+
+the new policy. So, they no longer
+
+
+match, which means that I'm not actually
+
+
+estimating that expectation anymore.
+
+
+Yeah.
+
+
+Yeah. So, um one thing that this may be
+
+
+something that's worth uh
+
+
+working through um
+
+
+kind of a uh maybe on a piece of paper
+
+
+at home after today's lecture is to
+
+
+imagine the kind of failure mode that
+
+
+might happen if we do this. And towards
+
+
+the end of the lecture, I'll give a few
+
+
+examples uh of uh particular situations
+
+
+we might get into. And essentially what
+
+
+ends up happening
+
+
+Maybe I can actually uh give this
+
+
+example right now. So, imagine that you
+
+
+have um
+
+
+uh two samples. One with uh one with a
+
+
+positive advantage, a small positive
+
+
+advantage. And the other one with a big
+
+
+negative advantage.
+
+
+And your policy is uh Gaussian, which
+
+
+means that grad log pi uh is basically
+
+
+the derivative of squared error.
+
+
+So, you have one repulsive term with a
+
+
+negative coefficient,
+
+
+a big negative coefficient, and one
+
+
+attractive term with a small positive
+
+
+coefficient. So, the negative one will
+
+
+always overpower the positive one, which
+
+
+means that your policy will get pushed
+
+
+away from that negative term.
+
+
+And if you push it away for multiple
+
+
+gradient steps, it can actually go very,
+
+
+very far away from all of your samples.
+
+
+It can go off to the stratosphere. Uh
+
+
+it'll assign extremely low probability
+
+
+to that bad sample, also extremely low
+
+
+probability everything else. But since
+
+
+it's not getting any more samples in
+
+
+location where it's currently uh
+
+
+located,
+
+
+your uh um policy get arbitrarily bad.
+
+
+So, it sort of goes off into a place
+
+
+where there's no samples.
+
+
+But of course, if you keep generating
+
+
+samples every gradient step, then that
+
+
+shouldn't happen because now you're sort
+
+
+of checking where you are.
+
+
+Okay.
+
+
+So,
+
+
+let's proceed. And I guess that's the
+
+
+spoiler. The way that we're going to
+
+
+deal with this is by using important
+
+
+sampling. And important sampling is a
+
+
+technique that we can use to estimate an
+
+
+expected value
+
+
+under a distribution that we did not
+
+
+generate samples from. And that's
+
+
+exactly what the problem we have here,
+
+
+right? Because we're changing our
+
+
+distribution, we're not generating new
+
+
+samples, so we need some way to estimate
+
+
+an expectation under a distribution that
+
+
+we did not sample from. So, we're going
+
+
+to use important sampling for this.
+
+
+Okay. So, um
+
+
+let's uh write this out in a slightly
+
+
+more abstract form. So, I'm going to go
+
+
+back to using this like P of tau and R
+
+
+of tau terminology. As a reminder, R of
+
+
+tau is just notational shorthand for the
+
+
+sum of rewards over all time steps in
+
+
+trajectory tau, and P of tau is
+
+
+shorthand for the probability of a
+
+
+trajectory, which, as we remember, can
+
+
+be expanded by the chain rule of
+
+
+probability into like P1 times the
+
+
+product of P S T + 1 given S T A T times
+
+
+pi of A T given S T.
+
+
+Okay. So, if I want to estimate the
+
+
+expected value of R of tau under P theta
+
+
+of tau, and I do not have samples from P
+
+
+theta of tau,
+
+
+and instead I have samples from some
+
+
+other distribution P bar of tau, it
+
+
+could be anything,
+
+
+then I can use important sampling. So,
+
+
+important sampling, just kind of the
+
+
+textbook summary,
+
+
+if I want expect expectation of f of x
+
+
+under P of x,
+
+
+uh that's just the integral over all x
+
+
+of P of x times f of x,
+
+
+and I can
+
+
+introduce Q of x divided by Q of x. I
+
+
+can stick that anywhere because Q over Q
+
+
+is 1, so I can multiply anything by 1
+
+
+and keep it the same.
+
+
+And now I can move this around.
+
+
+Uh
+
+
+I can
+
+
+put the Q up front and make a P over Q
+
+
+after that. Again, I didn't change
+
+
+anything, I'm just shifting things
+
+
+around in a big product. And then I can
+
+
+write this as an expectation under Q.
+
+
+So, important sampling, if you want
+
+
+expectation under P, you can instead you
+
+
+use an expectation under Q and just
+
+
+multiply your function by P over Q.
+
+
+So, all I have to do is generate my
+
+
+samples from Q, and then weight them by
+
+
+P over Q, which is basically a weight
+
+
+that corrects for the fact they came
+
+
+from the wrong distribution.
+
+
+Yes.
+
+
+>> Is the same issue still occur when you
+
+
+kind of like move away from the sample
+
+
+given this thing only works when P and Q
+
+
+are the same sample?
+
+
+>> Yeah, so the question was, okay, this
+
+
+thing only works when P and Q have the
+
+
+same support. That's absolutely true.
+
+
+But even more importantly, um
+
+
+even if you're in a region where Q has
+
+
+support, if it has very low probability
+
+
+in that region, then you might just get
+
+
+a very bad estimator. So that's
+
+
+definitely true. So this important
+
+
+sampling thingy, we should do it
+
+
+carefully, and it's not a panacea. It
+
+
+doesn't solve all problems. It just gets
+
+
+us a little bit more room to maneuver,
+
+
+but still finite room.
+
+
+Okay.
+
+
+So let's just substitute that important
+
+
+sampling formula in there. All I did is
+
+
+just change the symbols, but it's
+
+
+exactly the same formula. So I can
+
+
+estimate J theta by using samples from
+
+
+some other policy P bar, and all I have
+
+
+to do is multiply R of tau by P theta of
+
+
+tau divided by P bar of tau.
+
+
+Okay. So all I have to do is add this
+
+
+thing.
+
+
+Now, um
+
+
+a question to kind of uh wake you guys
+
+
+up and and and get everybody's kind of
+
+
+brain churning a little bit. Um
+
+
+if I try to directly use this formula,
+
+
+there is a problem that makes it very
+
+
+hard for me to naively evaluate
+
+
+P theta tau and P bar of tau in order to
+
+
+compute that ratio.
+
+
+What's that problem?
+
+
+Yeah, any ideas?
+
+
+Yeah.
+
+
+Right. So so P tau involves a product
+
+
+over the initial state probability, the
+
+
+policy, and the transition
+
+
+probabilities. But we typically don't
+
+
+assume that we know the initial state
+
+
+and the transition probabilities. So
+
+
+naively trying to evaluate P theta tau
+
+
+and P bar of tau is actually pretty
+
+
+difficult
+
+
+because they involve quantities that we
+
+
+do not have access to.
+
+
+So uh we We to do a little bit of
+
+
+algebra to make this all nicer.
+
+
+So, if I were to write out the ratio P
+
+
+theta tau over P bar of tau and just
+
+
+substitute it in that trajectory
+
+
+distribution, there is something nice
+
+
+that happens because these two
+
+
+trajectory distributions only differ in
+
+
+the policy terms. They have the same
+
+
+transition probabilities and the same
+
+
+initial state probabilities.
+
+
+Which means that the initial state
+
+
+probabilities cancel out in the ratio as
+
+
+do the transition probabilities.
+
+
+So, even though what I actually want is
+
+
+a ratio of the probabilities of the two
+
+
+trajectories, it turns out to be equal
+
+
+to the ratio of the products of the
+
+
+probabilities
+
+
+of the action distributions.
+
+
+And that's actually really nice because
+
+
+these are things that I would have
+
+
+access to.
+
+
+The policy is something that lives in my
+
+
+computer. The transition probabilities
+
+
+are things that live out in the world,
+
+
+which I may or may not know.
+
+
+Okay, so this actually makes it uh
+
+
+quite uh feasible and in fact at this
+
+
+point we do have an important sampled
+
+
+estimator that we could implement.
+
+
+Okay.
+
+
+Um
+
+
+So, let's um
+
+
+do an interesting exercise. Let's redel-
+
+
+rederive the policy gradient, the policy
+
+
+gradient that we had before, starting
+
+
+from this important sampled objective.
+
+
+So, one of the fun themes in this course
+
+
+is that we always derive the same thing
+
+
+like five different times. So, let's do
+
+
+that again.
+
+
+Uh so,
+
+
+let's say that I have my
+
+
+uh samples from P theta, and now I would
+
+
+like to estimate the value of some new
+
+
+parameter vector theta prime.
+
+
+Okay? So, the value of the policy with
+
+
+parameters theta prime is just given by
+
+
+this important sampled objective, uh
+
+
+where I weight my samples by P theta
+
+
+prime divided by P theta. So, theta
+
+
+prime is the new vec- parameter vector
+
+
+that I'm trying to find, and theta is
+
+
+the policy for that I generate my
+
+
+samples from.
+
+
+So, if I want to
+
+
+take the derivative of this with respect
+
+
+to theta prime,
+
+
+there's only one thing in this equation
+
+
+that on theta prime, which is the
+
+
+numerator of that
+
+
+um
+
+
+ratio.
+
+
+So, now I can apply my convenient
+
+
+identity in that blue square in reverse.
+
+
+So, I take the gradient of this.
+
+
+Again, the only place where theta prime
+
+
+appears is in the numerator.
+
+
+And then I substitute it in the
+
+
+left-hand side of that convenient
+
+
+identity. And I get this.
+
+
+Okay. So, all all I did here is take the
+
+
+derivative of that important sample
+
+
+estimator. That just puts a little
+
+
+gradient operator in the numerator.
+
+
+And then I substitute in the left-hand
+
+
+side of the convenient identity. And I
+
+
+get this equation.
+
+
+And this looks very similar to the
+
+
+original policy gradient. I've got my
+
+
+grad log P. Uh theta prime is the new
+
+
+parameter vector that I'm trying to
+
+
+find.
+
+
+And all I have is this weight up front.
+
+
+And if I am if I'm trying to improve my
+
+
+current policy if I'm in the special
+
+
+case where theta prime is equal to theta
+
+
+meaning that I'm currently sitting on
+
+
+the policy theta and I'm trying to find
+
+
+a better one theta prime.
+
+
+So, if theta prime is equal to theta
+
+
+then that ratio is just one and I
+
+
+recover the regular policy gradient.
+
+
+And if theta prime is not equal to
+
+
+theta, then I need to have that little
+
+
+correction.
+
+
+So, if I were to estimate this locally
+
+
+at theta equals theta prime, then this
+
+
+thing goes away and I recover the policy
+
+
+gradient that we saw before.
+
+
+So, that's kind of neat. Like, we can
+
+
+actually start from important sampling
+
+
+and re-derive the same old policy
+
+
+gradient.
+
+
+Or we could have a different value of
+
+
+theta prime, in which case we know we
+
+
+just need that correction.
+
+
+Any questions here?
+
+
+Yeah.
+
+
+>> Can you provide some intuition for why
+
+
+this is called
+
+
+uh importance sampling?
+
+
+>> Um yeah. So, the reason that this kind
+
+
+of uh weighting scheme is called
+
+
+importance sampling is that originally
+
+
+it was actually used for smartly
+
+
+estimating expectations of functions
+
+
+that are very peaky. So, if you imagine
+
+
+that you have a very broad distribution
+
+
+like maybe you have a uniform
+
+
+distribution over all values of X and
+
+
+your function f of X is mostly flat with
+
+
+a peak somewhere.
+
+
+If you generate a small number of
+
+
+samples, you're very unlikely to have a
+
+
+sample land on that peak.
+
+
+But if you bias your samples towards
+
+
+landing on the large values of the
+
+
+function, then you will get a more
+
+
+accurate estimate of the expected value
+
+
+with fewer samples. So, you selectively
+
+
+select the important samples and then
+
+
+weight them to recover the original
+
+
+expectation.
+
+
+The way we're using it here is actually,
+
+
+I guess,
+
+
+uh
+
+
+motivated differently where we really
+
+
+just care about a different
+
+
+distribution.
+
+
+Any other questions about this?
+
+
+Yes.
+
+
+Um so, all I'm saying here is, okay, we
+
+
+derived this uh
+
+
+this gradient and
+
+
+if you wanted to go back to the original
+
+
+case where you're on policy, that's just
+
+
+the case where theta is equal to theta
+
+
+prime.
+
+
+And for that, it's kind of nice to check
+
+
+that you still get the same formula that
+
+
+we had before.
+
+
+Okay.
+
+
+Um but now let's uh let's work on the
+
+
+off-policy case, the one where theta and
+
+
+theta prime are not the same.
+
+
+Okay. So, this equation tells you how to
+
+
+deal with that.
+
+
+And before uh we figured out that this
+
+
+ratio is just given by
+
+
+the ratio of the products of the action
+
+
+probabilities.
+
+
+So, we can plug that in and let's expand
+
+
+all of these, you know,
+
+
+R tau and grad log pi of tau, etc. So,
+
+
+if we're to expand it out and write it
+
+
+in terms of state and actions,
+
+
+the old policy gradient was a product of
+
+
+two terms, the grad log pis and the Rs.
+
+
+Now we have three terms, so the weights,
+
+
+the grad log pi, and the R.
+
+
+And if you remember back in the uh
+
+
+original
+
+
+policy gradient lecture, we could do a
+
+
+little bit of work to kind of
+
+
+produce a nicer estimator of this where
+
+
+we'd actually distribute the rewards
+
+
+inside the sum over grad log pi and then
+
+
+eliminate the ones that
+
+
+come from the past, basically taking
+
+
+advantage of causality in effect, and
+
+
+get a better estimator.
+
+
+So, we're going to go through that
+
+
+exercise, but now it's going to be a
+
+
+little bit more complex because now we
+
+
+also have these
+
+
+importance weights.
+
+
+So,
+
+
+here's
+
+
+what that's going to look like.
+
+
+The
+
+
+um
+
+
+sum over rewards now goes from
+
+
+little t to capital H, so that's using
+
+
+that causality trick from before. And
+
+
+the importance weights, I've split them
+
+
+up into into two parts. It's a big
+
+
+product, so I can put that product
+
+
+anywhere I want, and I put all of the
+
+
+terms that go from
+
+
+one to little t in that first product,
+
+
+and I put all the ones that go from t to
+
+
+um
+
+
+uh t prime in the
+
+
+inside the the reward sum.
+
+
+So, it's still exactly the same
+
+
+equation. I've just distributed the
+
+
+terms a little differently to um
+
+
+then make a bunch of approximations.
+
+
+So, here the the future actions don't
+
+
+affect the current weight. So, this is
+
+
+basically the representing the
+
+
+probability that you'll get to time step
+
+
+little t.
+
+
+And this term,
+
+
+I can actually eliminate it. I can set
+
+
+it to one. That's not
+
+
+quite correct. Like it actually does
+
+
+change the estimator, but it turns out
+
+
+to
+
+
+still
+
+
+work pretty well.
+
+
+So, if we ignore the weights
+
+
+that are multiplying the rewards,
+
+
+it's an approximation,
+
+
+but it turns out that approximation will
+
+
+still get us a valid policy improvement
+
+
+procedure. We'll talk about this more on
+
+
+Friday, but the rough intuition is that
+
+
+these weights, they represent the um
+
+
+the probability that uh
+
+
+that these rewards
+
+
+represent the actual rewards from the
+
+
+current policy. If I eliminate them,
+
+
+then I am multiplying by the rewards or
+
+
+the advantage of the old policy.
+
+
+And that actually turns out to still be
+
+
+okay because kind of for the same reason
+
+
+as we talked about and and this is like
+
+
+very
+
+
+hand-wavy uh intuition, but for the same
+
+
+reason that we talked about in the in
+
+
+the Q-learning lecture, if you maximize
+
+
+the
+
+
+the Q-value or the advantage of an old
+
+
+policy, you will get a better policy.
+
+
+And in this case, ignoring those weights
+
+
+kind of says that, well, instead of
+
+
+maximizing the advantage of my latest
+
+
+policy, I'm maximizing the advantage of
+
+
+my old policy. So, then you're improving
+
+
+over your old policy.
+
+
+And we'll make this much more precise uh
+
+
+with a proof on uh Friday.
+
+
+But for now, that's kind of the
+
+
+hand-wavy uh intuition for why ignoring
+
+
+those weights is actually pretty okay.
+
+
+The first set of weights is a much
+
+
+bigger problem.
+
+
+And
+
+
+if you imagine that um your time horizon
+
+
+is very long,
+
+
+basically
+
+
+uh that ratio uh
+
+
+it's going to be some number, like let's
+
+
+say that number is less than one
+
+
+uh because presumably uh your old
+
+
+samples are going to be less likely
+
+
+under your new policy than they were
+
+
+under the new one or under the old one.
+
+
+If you're multiplying a bunch of numbers
+
+
+that are less than one, you have maybe
+
+
+like a thousand numbers in there.
+
+
+Multiply enough of them and eventually
+
+
+get zero.
+
+
+If you have numbers greater than one,
+
+
+multiply enough of them and eventually
+
+
+get infinity. So, products over
+
+
+long time intervals, as long as your
+
+
+horizon, are going to be very poorly
+
+
+behaved. They will tend to either
+
+
+explode or shrink to zero.
+
+
+So, we really don't like it that that we
+
+
+have a big product there.
+
+
+Okay. So, uh we've got we've gotten this
+
+
+far.
+
+
+And this product, basically, it's it's
+
+
+going to be exponential in uh in the
+
+
+horizon in um
+
+
+in the length of our trajectory.
+
+
+We can make another approximation. This
+
+
+one is much cruder, but
+
+
+we kind of have to.
+
+
+Uh and to understand the next
+
+
+approximation, we have to write this a
+
+
+little bit differently. So, so far I've
+
+
+written everything out in terms of
+
+
+trajectory probabilities.
+
+
+You could also
+
+
+notice that the sum over um over all the
+
+
+different time steps, uh you can take
+
+
+the sum outside of the original
+
+
+expectation and basically write it as a
+
+
+sum of expected values under state
+
+
+action marginals.
+
+
+So,
+
+
+uh
+
+
+for every time step, your state and
+
+
+action is sampled from the state action
+
+
+marginal of the policy pi theta s t a t.
+
+
+And then you can uh
+
+
+write your estimator in a different way.
+
+
+Instead of important sampling over
+
+
+trajectories, you can important sample
+
+
+over state action marginals. So, for
+
+
+every time step, you have
+
+
+pi theta prime of
+
+
+s t a t divided by pi theta of s t a t.
+
+
+It's basically the same thing. And it
+
+
+kind of makes sense that if you're
+
+
+multiplying together the probabilities
+
+
+of all the actions up until time step t,
+
+
+what you're really waiting by is the
+
+
+probability of landing in that state and
+
+
+then taking that action. So, you could
+
+
+also just plug those probabilities in
+
+
+there directly.
+
+
+Um we don't usually do this because we
+
+
+don't actually know what the state
+
+
+probabilities are, but mathematically,
+
+
+this is a perfectly reasonable thing to
+
+
+do.
+
+
+And uh
+
+
+pi of s t {comma} a t just ends up being
+
+
+pi of a given s times pi of s.
+
+
+So, we could write that out like this.
+
+
+And uh this maybe makes it a little bit
+
+
+more obvious why we have that giant
+
+
+product, because that giant product at
+
+
+the top is basically representing the
+
+
+probability that we'll land in a
+
+
+particular state at time step t times
+
+
+the probability that we'll then take a
+
+
+particular action.
+
+
+And this way of writing it kind of seems
+
+
+a little bit less helpful because we
+
+
+don't actually know the state
+
+
+probabilities. We know the action
+
+
+probabilities, but we don't know the
+
+
+state probabilities.
+
+
+But, if we
+
+
+decide
+
+
+to ignore this part,
+
+
+it makes it a little bit more obvious
+
+
+what we're doing because what we're
+
+
+doing is we're disregarding the fact
+
+
+that the different policies have
+
+
+different state distributions.
+
+
+So, what we're actually going to do in
+
+
+practice is we're going to replace the
+
+
+giant product with just the probability
+
+
+of the current action.
+
+
+And that is an approximation. It is not
+
+
+correct, but it amounts to ignoring the
+
+
+mismatch in state distributions.
+
+
+So, this is a little bit wrong.
+
+
+On Friday, we'll actually derive exactly
+
+
+how wrong it is. We'll actually bound
+
+
+the error from doing this. But, for the
+
+
+time being, the um
+
+
+uh the kind of uh
+
+
+uh idea that I want to convey here is
+
+
+that
+
+
+if your policy changes
+
+
+only a little bit,
+
+
+then the state distribution should also
+
+
+change only a little bit.
+
+
+So, as long as we don't change theta
+
+
+prime too much, as long as we change it
+
+
+only a little bit,
+
+
+we should hope that disregarding that
+
+
+mismatch in state distributions will not
+
+
+be too terrible.
+
+
+And the word little bit is something
+
+
+that we'll make more precise on Friday.
+
+
+There's actually a very technical
+
+
+definition of what change a little bit
+
+
+actually means.
+
+
+But for now, change a little bit will
+
+
+basically mean
+
+
+don't take too many gradient steps on
+
+
+theta prime. Like, you can take more
+
+
+than one. You can take like
+
+
+10, maybe 20, maybe 50 if you're feeling
+
+
+brave. But don't take like a million.
+
+
+Because you don't want these state
+
+
+distributions to mismatch too much. Yes.
+
+
+>> So, can you use the argument that
+
+
+because theta prime is only a little bit
+
+
+different from theta,
+
+
+then the
+
+
+the um
+
+
+the multiplication
+
+
+uh at the top, the numerator will be
+
+
+very similar to the denominator.
+
+
+>> That's right. Yeah, so so the numerator
+
+
+will be similar to the denominator, but
+
+
+exponential is really really bad.
+
+
+So uh since it's a product of terms,
+
+
+then uh let's say that
+
+
+let's say that that ratio is like 0.99.
+
+
+But your horizon is like 10,000. 0.99 to
+
+
+the power of 10,000 is still really bad,
+
+
+even though 0.99 is very close to one.
+
+
+Yeah.
+
+
+Uh yeah, that's a typo. That should be
+
+
+capital H.
+
+
+Yes.
+
+
+Uh yeah, so the question was does this
+
+
+method have any problems? It has lots of
+
+
+problems. Uh so I I I've already done
+
+
+two slightly illegal things, uh and then
+
+
+I'll have to spend two hours on Friday
+
+
+trying to convince you that those
+
+
+slightly illegal things will only get me
+
+
+a small fine in in in math world. Um but
+
+
+in practice, it's well worth the trade
+
+
+because
+
+
+taking multiple gradient steps on the
+
+
+same set of samples will dramatically
+
+
+accelerate uh learning progress. So it
+
+
+it definitely has problems, uh but in
+
+
+practice those problems are small and
+
+
+the benefits are large.
+
+
+Any other questions?
+
+
+Yeah.
+
+
+Uh the superscript I just represents
+
+
+that it's the ith sample.
+
+
+So you're generating N samples and the
+
+
+samples are indexed by I.
+
+
+Okay.
+
+
+All right. So let's go back to the
+
+
+algorithm. Now we have we actually have
+
+
+the pieces to put it back together uh
+
+
+even though we don't quite
+
+
+uh yet fully know
+
+
+how wrong it is, but we can put it back
+
+
+together.
+
+
+So, we generate our samples by running
+
+
+the policy.
+
+
+We
+
+
+compute our target values for our value
+
+
+function.
+
+
+We fit our value function.
+
+
+We estimate our advantages using the GAE
+
+
+estimator.
+
+
+And then we're going to set theta prime
+
+
+to theta.
+
+
+And we have this inner loop where we
+
+
+compute a an important sample gradient
+
+
+now using just the ratio of
+
+
+probabilities at time step t. So, it's
+
+
+uh pi theta prime AT given
+
+
+uh given ST divided by pi theta AT given
+
+
+ST times grad theta prime of log pi
+
+
+theta prime of AT given ST times the
+
+
+advantage.
+
+
+And then we make a gradient update.
+
+
+And we do this some number of times.
+
+
+Let's say between 10 and 50 times.
+
+
+And then
+
+
+now we've got our theta prime. We put
+
+
+that
+
+
+uh back into theta and then repeat the
+
+
+whole thing.
+
+
+So, this is like now a legitimate
+
+
+multi-step
+
+
+uh
+
+
+kind of algorithm where we can take
+
+
+multiple gradient updates on the same
+
+
+set of samples with the same value
+
+
+function.
+
+
+And this is now a much more practical
+
+
+algorithm for doing policy gradient
+
+
+because we can take even smaller
+
+
+gradient steps, but we get to take many
+
+
+of them each time we go around this.
+
+
+Any questions about this?
+
+
+Yeah, back there.
+
+
+>> Uh
+
+
+remember earlier when you moved that
+
+
+term that you distributed?
+
+
+>> Mhm.
+
+
+>> Was that to also use the GAE?
+
+
+>> Um
+
+
+Yeah, good question. Uh kind of, yeah.
+
+
+So, basically what we're going what
+
+
+we're going to find out about in the
+
+
+future on Friday is that it's actually
+
+
+quite okay if the advantage is the
+
+
+advantage of the older policy.
+
+
+Uh it's uh uh
+
+
+it essentially amounts to a policy
+
+
+iteration algorithm of a sort.
+
+
+Okay.
+
+
+So, there are a few more details to make
+
+
+this kind of important sampled update
+
+
+actually work really well, and that's
+
+
+the last thing we're going to talk
+
+
+about.
+
+
+So,
+
+
+if I just do this exactly as written on
+
+
+the slide, I might have a little
+
+
+problem.
+
+
+Let's imagine that my action is
+
+
+two-dimensional and I have one time step
+
+
+just so I can visualize it for you, and
+
+
+imagine that this like heat map
+
+
+represents the the reward. So, uh the
+
+
+the axes, the X and Y axis here are
+
+
+action.
+
+
+And let's say that my current policy
+
+
+takes actions over here. So, my my
+
+
+policy's like a little Gaussian
+
+
+distribution
+
+
+uh
+
+
+located in that circle. And these are my
+
+
+samples. So, the color of the samples
+
+
+represents like roughly how good it is.
+
+
+So, you would expect that when you
+
+
+obtain these samples, what you will want
+
+
+the policy to do is sort of move down a
+
+
+little to the right towards that that
+
+
+yellow X, which is the good one.
+
+
+Okay?
+
+
+So, you would like to see something like
+
+
+this, right? You'd like to the policy to
+
+
+shift a little bit in the direction of
+
+
+that good thing.
+
+
+But if you just uh take many, many steps
+
+
+on this important sampling objective,
+
+
+what the important sampling objective is
+
+
+basically saying, "Well, let's
+
+
+change pi theta prime to put as much
+
+
+probability mass as possible on the best
+
+
+sample."
+
+
+And as little probability mass as
+
+
+possible on the bad sample.
+
+
+So, here's like a one-way to do that.
+
+
+Okay? So, that that horrible-looking
+
+
+ellipse thing would do very, very well
+
+
+uh against that important sampling
+
+
+objective because it assigns very, very
+
+
+little probability to all the bad
+
+
+samples and and the highest probability
+
+
+to the one good sample.
+
+
+It also assigns really high probability
+
+
+to a bunch of other horrible stuff, but
+
+
+that's not part of our sample set, so we
+
+
+don't see it.
+
+
+Okay? So, this horrible thing would
+
+
+actually be a perfectly good solution to
+
+
+that important sampling objective.
+
+
+And we generally do not like this.
+
+
+So, once the weights are too far from
+
+
+1.0, this estimator is no longer useful.
+
+
+So, uh formally, it's actually because
+
+
+its variance becomes really, really
+
+
+high.
+
+
+And once its variance is high,
+
+
+uh it's essentially not giving us an
+
+
+accurate estimate for the same set of
+
+
+samples.
+
+
+This is a very important problem to
+
+
+understand. So, if any of you guys have
+
+
+questions about this issue, or if it
+
+
+doesn't make sense to you, please ask a
+
+
+question.
+
+
+Yeah.
+
+
+So, pi theta is just the uh your
+
+
+previous policy.
+
+
+So, you would just uh store that. You'd
+
+
+like make a copy of your of your neural
+
+
+network,
+
+
+uh or you could just precompute all
+
+
+those numbers because the samples are
+
+
+fixed, so you could just uh store the
+
+
+numbers themselves.
+
+
+Yeah.
+
+
+There's a nuance here, which is that you
+
+
+are
+
+
+keeping the same exact samples
+
+
+and making multiple updates on them.
+
+
+So,
+
+
+technically, the problem is that the
+
+
+important sample estimator has high
+
+
+variance, but statistically, like, you
+
+
+really shouldn't be keeping the same
+
+
+samples and then and then changing the
+
+
+distribution, right? Like, that's that's
+
+
+really not allowed from a stat
+
+
+standpoint. So,
+
+
+Yeah.
+
+
+Yeah. Yeah, exactly.
+
+
+Okay. So, what we would like to do here
+
+
+to repair this issue is we would like to
+
+
+somehow tell this algorithm that making
+
+
+really big changes to the policy is not
+
+
+okay. So, this important sampled
+
+
+estimator will tell us how good they pi
+
+
+theta prime is using only samples from
+
+
+pi theta, but it will only be reliable
+
+
+when we're close to pi theta. So, if
+
+
+we're doing this horrible thing, this is
+
+
+really not
+
+
+a reliable estimate of this new policy
+
+
+anymore because the samples that we're
+
+
+using to estimate its value are very far
+
+
+from where it's currently located.
+
+
+So, we want to somehow change this to
+
+
+not let it go too far.
+
+
+And one of the ways we can do this is by
+
+
+the recognizing that only when the
+
+
+importance weights are close to one do
+
+
+we actually have a reasonable estimator.
+
+
+So, we're going to
+
+
+say, let's
+
+
+not pay attention to this thing when the
+
+
+importance weights are far from one.
+
+
+So, we're going to clip the importance
+
+
+weights. By the way, we call this thing,
+
+
+this important sampled estimator, in RL
+
+
+we often call it the surrogate
+
+
+objective. So, if you see me say
+
+
+surrogate objective, it means
+
+
+this, you know, whatever it is that
+
+
+we're actually optimizing in lieu of the
+
+
+actual expected reward.
+
+
+So, um
+
+
+this is our our gradient. I'm going to
+
+
+call this ratio
+
+
+W tau. So, P theta prime of tau divided
+
+
+by P theta tau, that's the weight W tau.
+
+
+And
+
+
+the issue is that as we shift the policy
+
+
+away from the the region where it
+
+
+started,
+
+
+W tau keeps decreasing on the bad
+
+
+samples and it keeps increasing on the
+
+
+good samples. So, the objective by
+
+
+itself really incentivizes the optimizer
+
+
+to move very, very, very far away from
+
+
+the bad samples,
+
+
+probably also far away from the good
+
+
+samples, but as long as the good samples
+
+
+remain the most probable, then it's very
+
+
+happy.
+
+
+So, by itself, like if we have a
+
+
+Gaussian policy, this objective actually
+
+
+incentivizes doing this horrible thing.
+
+
+So, what we're going to do is we're
+
+
+going to basically say
+
+
+there's a limit to how much you can
+
+
+increase or decrease the probabilities
+
+
+of the different samples. And we'll do
+
+
+that by redefining the weights to be uh
+
+
+these clipped weights. We'll say that if
+
+
+your weight goes below 1 - epsilon or
+
+
+above 1 + epsilon, it doesn't get to go
+
+
+up or down any further than that.
+
+
+And uh you know, for epsilon, you can
+
+
+set it like 0.1.
+
+
+So, that basically means that you're not
+
+
+getting any additional benefit from
+
+
+increasing the probability of the good
+
+
+sample by more than 10% of its original
+
+
+probability. If you go above that,
+
+
+uh it's not going the weight is not
+
+
+going to become any larger, and uh your
+
+
+objective is not going to become any
+
+
+larger from doing that.
+
+
+Yes.
+
+
+>> I think
+
+
+I believe these things should be related
+
+
+to how many iterations you run, right?
+
+
+Cuz like if you if you allow like 10%
+
+
+move every time, you run like 50 times,
+
+
+you still move a lot, right?
+
+
+>> Uh so, this would be uh
+
+
+And so, the the ratio is P theta prime
+
+
+divided by P theta, and P theta doesn't
+
+
+change. So, no matter how many gradient
+
+
+steps you take, uh you don't get any any
+
+
+larger weight from going more than uh
+
+
+10% over.
+
+
+Yeah, and and this is very important
+
+
+because you don't you actually don't
+
+
+want this to depend on the number of
+
+
+gradient steps you take.
+
+
+Okay, so if you do this, then you should
+
+
+actually
+
+
+uh get an updated policy that looks
+
+
+maybe more like that, where it's shifted
+
+
+towards the good sample, but not by an
+
+
+unreasonable amount, because it's it
+
+
+only benefits from making that good
+
+
+sample 10% more likely, and not like
+
+
+300% more likely. Yes.
+
+
+>> Can you explain again why it should be
+
+
+>> Um so, this clipped uh weight
+
+
+the um the ratio is P theta prime over P
+
+
+theta, and P theta is not changing.
+
+
+So, no matter how many gradient steps
+
+
+you take in that inner loop, P
+
+
+uh remains a constant.
+
+
+So, you're basically anchoring against
+
+
+the original policy that you generated
+
+
+samples from.
+
+
+Yes.
+
+
+Well, um
+
+
+Clipping the weights does limit the
+
+
+variance. It also means that once you
+
+
+hit the clipping limit, the estimator is
+
+
+biased now.
+
+
+But but hopefully it's not going to go
+
+
+too far over that limit because there's
+
+
+actually no benefit to this thing from
+
+
+going past the 1 plus epsilon or 1 minus
+
+
+epsilon.
+
+
+Because the numbers are like the numbers
+
+
+at that point are clipped and they're
+
+
+not getting any bigger or any smaller.
+
+
+Um yeah, let me think about how to
+
+
+answer that.
+
+
+If you don't clip the weights, then
+
+
+what the optimizer really really wants
+
+
+to do is it wants to zero out the
+
+
+probabilities on all samples except for
+
+
+the best one and drive the probability
+
+
+of the best sample to be as high as it
+
+
+possibly can.
+
+
+Uh so
+
+
+what ends up happening is that your
+
+
+optimizer is literally incentivized to
+
+
+blow up the variance and put all the
+
+
+probability mass on the best sample
+
+
+you've seen.
+
+
+Uh and it's it's because that sample
+
+
+wise estimate is not an accurate
+
+
+reflection of the world. It's saying,
+
+
+"Well, the the world is is
+
+
+complicated. There's uh lots of possible
+
+
+values of the action and you're sort of
+
+
+pretending that it's fully represented
+
+
+by this finite set of actions."
+
+
+And that's okay if you resample the
+
+
+actions every time, but you if you keep
+
+
+them fixed, uh then you can essentially
+
+
+get it to overfit up to the one best
+
+
+action that you sampled.
+
+
+Yes.
+
+
+Mhm.
+
+
+If So, the approximations from before
+
+
+were all intended to avoid having to
+
+
+multiply together lots of probabilities.
+
+
+So, actually, if you don't make those
+
+
+approximations, this would be a lot
+
+
+worse because the um
+
+
+the importance weights would explode or
+
+
+collapse much more quickly.
+
+
+Mhm.
+
+
+Yeah, definitely. Uh and and in some
+
+
+sense, that's kind of the point, right?
+
+
+So, this is a balance that you have to
+
+
+strike because you would like to make as
+
+
+much progress as you can with the
+
+
+samples available to you, but if you go
+
+
+too far, then you're no longer getting a
+
+
+reasonable estimate of your policy's
+
+
+value. So, you kind of have to slow it
+
+
+down, and in practice, there's a there's
+
+
+a tension between learning more quickly
+
+
+versus uh making sure that each update
+
+
+actually improves your policy.
+
+
+Yes.
+
+
+Yeah, that's actually what we're going
+
+
+to talk about on the next slide. Yes. I
+
+
+I actually I should I should probably
+
+
+get to that. So,
+
+
+there's one more detail that is a good
+
+
+idea to include to get this right. So,
+
+
+uh and that's related last question. So,
+
+
+let's look at
+
+
+the value of the objective and how it's
+
+
+affected by this uh ratio. So, I I I'm
+
+
+going to draw these plots where the
+
+
+vertical axis is basically the objective
+
+
+value I get, and the horizontal axis is
+
+
+the ratio P theta prime divided by P
+
+
+theta. And we'll draw two plots, one for
+
+
+terms that are multiplied by a positive
+
+
+reward, and one's uh and one for
+
+
+negative rewards. So, if the
+
+
+reward, or in general the advantage is
+
+
+positive, then you expect that between 1
+
+
+minus epsilon and 1 plus epsilon, as you
+
+
+increase the probability, it basically
+
+
+just linearly increases the objective.
+
+
+So, you have some You have this ratio
+
+
+that's being multiplied by a positive
+
+
+number, which means that as you increase
+
+
+the ratio, the objective value
+
+
+correspondingly increases in a linear
+
+
+way.
+
+
+Once you go over 1 plus epsilon or below
+
+
+1 minus epsilon, then it becomes flat
+
+
+because there changes to the ratio uh
+
+
+are not affecting the product of the
+
+
+clipped weights and the advantage
+
+
+because the weights are clipped. So, you
+
+
+get something that looks like this. And
+
+
+then, if you have a negative reward,
+
+
+it's the same thing but backwards. So,
+
+
+for negative reward, uh the objective
+
+
+would like to reduce the probability
+
+
+linearly until it hits uh the the clip,
+
+
+and then it stays
+
+
+um
+
+
+constant.
+
+
+So, ideally what you would get if you
+
+
+optimize this kind of clipped
+
+
+importance-weighted objective is that
+
+
+for all of the samples with a positive
+
+
+coefficient, they would end up maxing
+
+
+out, and for all the samples with a
+
+
+negative coefficient, they would end up
+
+
+minimizing out to 1 minus epsilon. So,
+
+
+that's what you'd like to see.
+
+
+But, you know, in reality, of course,
+
+
+the samples are all connected. You're
+
+
+not You're not just selecting the
+
+
+probabilities on samples linearly.
+
+
+You're training a model, and that model
+
+
+assigns probabilities to different
+
+
+samples. So, maybe you'll get into a
+
+
+situation where um you can get the
+
+
+um
+
+
+the the negative uh
+
+
+the the bad sample to have
+
+
+a high probability that hits the the
+
+
+maximum of the clip, and you and you're
+
+
+willing to pay that price for the sake
+
+
+of making the good sample a bit more
+
+
+likely.
+
+
+But now, at that point, you've paid the
+
+
+maximum price for the negative reward
+
+
+sample.
+
+
+So, I could slide
+
+
+the good sample a little bit higher,
+
+
+and maybe in the process increase the
+
+
+probability of the bad sample a lot, but
+
+
+I'm not paying any more price for the
+
+
+bad sample. So, going from this to this
+
+
+is strictly an improvement. Like look
+
+
+look what I did. I made the bad sample
+
+
+much more likely. I made the good sample
+
+
+a tiny bit more likely, but my objective
+
+
+has only increased because I'm already
+
+
+paying the maximum price for that bad
+
+
+sample.
+
+
+So, this is a bad trade because in
+
+
+practice what that means is that I might
+
+
+be radically increasing the probability
+
+
+of some really really bad outcomes, but
+
+
+because I'm already putting the maximum
+
+
+probability the one the one plus epsilon
+
+
+probability on them, I'm not paying any
+
+
+more price for them. So, this is
+
+
+actually a bad trade, but the objective
+
+
+the clipped objective makes this look
+
+
+like a good trade.
+
+
+So, I do not want this to happen.
+
+
+So, I'm not paying any price for
+
+
+drifting away from the data here.
+
+
+So, in practice there's a small change
+
+
+to this that fixes this problem.
+
+
+It looks
+
+
+a little bit complicated, but basically
+
+
+we're going to have two sets of weights.
+
+
+We're going to have the original weights
+
+
+and the clipped weights W and WC.
+
+
+And then when we evaluate the objective
+
+
+we're going to take the min of these.
+
+
+So, we're basically taking the minimum
+
+
+of the
+
+
+clipped and the unclipped objective. So,
+
+
+you see that there J theta prime is the
+
+
+min over W times R and WC times R. W is
+
+
+the original ratio, WC is the clipped
+
+
+ratio.
+
+
+So, all that does it takes the bad
+
+
+branch of this and makes it not flat.
+
+
+So, it's kind of pessimistic.
+
+
+It's saying that there's a limit to how
+
+
+much how good you can get by increasing
+
+
+the probability of the good stuff, but
+
+
+there's no limit to how bad you can get
+
+
+by increasing the probability of the bad
+
+
+stuff.
+
+
+And that will that will get you to avoid
+
+
+making this bad trade.
+
+
+So, this is the this is the thing that
+
+
+we actually would use in practice.
+
+
+It's basically the minimum of two
+
+
+weighted estimators, one that is clipped
+
+
+and one that is not clipped. Yes.
+
+
+>> Why would we do this instead of just
+
+
+like
+
+
+cutting off the
+
+
+room as soon as your
+
+
+like weights exceed
+
+
+the regulation
+
+
+>> Yeah. So, the question is well what why
+
+
+don't you just like stop optimizing as
+
+
+soon as the ratio is crossed the
+
+
+boundary? You could do that. Uh if you
+
+
+stop the optimizer once you go past 1
+
+
+plus epsilon or 1 minus epsilon, that
+
+
+will also limit how far you can go. In
+
+
+in practice, people would like to kind
+
+
+of just write down an objective and
+
+
+optimize it for as long as they can. Uh
+
+
+so, this makes it a little easier.
+
+
+But it's it's the same idea, basically.
+
+
+Okay. So, now with this last trick, we
+
+
+can summarize the method.
+
+
+Uh
+
+
+sample uh your samples as every evaluate
+
+
+your evaluate your target values,
+
+
+fit your value function,
+
+
+estimate your GAE advantage estimates,
+
+
+and then in the inner loop, you take
+
+
+gradients on this clipped uh objective,
+
+
+and the clipped objective is given by
+
+
+this horrible equation, but it's exactly
+
+
+what worked out before, so it's the
+
+
+minimum over the unclipped and the
+
+
+clipped importance weighted uh
+
+
+estimator,
+
+
+and then you take some gradient steps,
+
+
+and that's it.
+
+
+So, this is a an algorithm called PPO.
+
+
+There's actually two variants of PPO.
+
+
+This is the the clipped version of PPO.
+
+
+We'll talk about the KL divergence
+
+
+version on Friday. This is what you
+
+
+would often use if you're optimizing
+
+
+language models with RL, and this is
+
+
+also what you would often use if you
+
+
+want to train uh robots to do backflips
+
+
+in a simulator.
+
+
+Uh a few implementation details.
+
+
+Um
+
+
+Often times, you would also use GAE for
+
+
+the the target values for your value
+
+
+function as well as for the advantage
+
+
+estimator. It's a pretty common choice.
+
+
+Um another common choice is to add an
+
+
+entropy bonus to the objective. Um so,
+
+
+in the homework uh the you're there
+
+
+there's in homework three, there's a
+
+
+summary of uh of this idea, but
+
+
+basically, uh to prevent the policy from
+
+
+becoming too deterministic, you would
+
+
+actually look up the formula for entropy
+
+
+for whatever pol- uh policy class you're
+
+
+using. You can look it up on Wikipedia,
+
+
+and add that as a little penalty, and
+
+
+that keeps the policy from becoming too
+
+
+deterministic so that it explores
+
+
+nicely. So, that's a very common change.
+
+
+Um
+
+
+basically, make sure the probability
+
+
+distribution stays broad.
+
+
+Uh and uh
+
+
+that's kind of it. Uh so, this results
+
+
+in the widely used PPO algorithm. And uh
+
+
+this is what people often use in
+
+
+practice.
+
+
+Uh so, I'm about at time, but if anybody
+
+
+has any quick questions, I can answer
+
+
+some questions. Yeah.
+
+
+Yeah, so I'll talk about that in the LLM
+
+
+lecture a few weeks from now, but yeah,
+
+
+there's there's a nice relationship
+
+
+between reference models and uh entropy
+
+
+regularization.
+
+
+Yes.
+
+
+Um so, it is that's kind of what it's
+
+
+doing, right? So,
+
+
+the taking the min of these two things
+
+
+basically just says that the
+
+
+the bad branch is uh keeps getting
+
+
+more bad, right? So, I I I think the
+
+
+intuition you're articulating is kind of
+
+
+exactly why we're doing this.
+
+
+Any other questions?
+
+
+Okay. Uh well, let's conclude, and then
+
+
+we'll talk a lot more about the theory
+
+
+behind all this on Friday.
+
+
+>> Mhm.

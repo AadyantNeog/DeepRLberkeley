@@ -1,0 +1,8500 @@
+Yes.
+
+
+Okay.
+
+
+Okay, but do you think like if you
+
+
+didn't already have background
+
+
+and everything you needed like I know
+
+
+like from that class,
+
+
+would you know enough to like just take
+
+
+the next step?
+
+
+Yeah, it's um
+
+
+you have to be very careful how you plan
+
+
+my job.
+
+
+Especially considering like how much
+
+
+they got to do in the dental last
+
+
+semester.
+
+
+Yeah,
+
+
+and then
+
+
+>> All right, everybody.
+
+
+Let's get started. So, today we're going
+
+
+to
+
+
+conclude our discussion of model-based
+
+
+RL algorithms.
+
+
+So, as a recap from last time, we talked
+
+
+about how the basic structure of a
+
+
+model-based RL algorithm is that we
+
+
+collect some data using some policy,
+
+
+which we call pi beta. We use that data
+
+
+to train a model of the environment, a
+
+
+kind of a learned simulator, and then we
+
+
+use that model to somehow recover a
+
+
+behavior
+
+
+either by running an RL algorithm to get
+
+
+a policy or by doing planning.
+
+
+And as we saw on Wednesday, oftentimes
+
+
+we might want to actually repeat this
+
+
+cycle multiple times where we recollect
+
+
+additional data with the latest policy
+
+
+we learned, which of course structurally
+
+
+looks a lot like all of the other
+
+
+iterative RL algorithms that we've seen
+
+
+before. And the purpose of doing that is
+
+
+to get the distribution of states that
+
+
+we've seen in our data set to align
+
+
+between the data set and the states that
+
+
+would actually be visited by the policy.
+
+
+So,
+
+
+what we discussed on Wednesday is that
+
+
+when you're learning the model, if you
+
+
+would like to use that model to get as
+
+
+much improvement as possible every
+
+
+single iteration, then it could be a
+
+
+good idea to use an uncertainty aware
+
+
+model to deal with this distributional
+
+
+shift and be able to figure out in which
+
+
+situations will the model's predictions
+
+
+be reliable or unreliable or more
+
+
+generally how
+
+
+uncertain you are about the outcome of
+
+
+taking particular actions in particular
+
+
+states. So, that's kind of a generally
+
+
+good idea if you want to train your
+
+
+models, but there's of course a lot more
+
+
+that you need for a complete model based
+
+
+RL algorithm and that's what we'll talk
+
+
+about today.
+
+
+So, we'll talk about
+
+
+how to actually use a model to plan or
+
+
+to get a better policy and we'll go
+
+
+through a few complete model based RL
+
+
+algorithms that we can actually use.
+
+
+But, before we get into the the whole
+
+
+complete algorithm, let's talk a little
+
+
+bit about planning. So, let's say that
+
+
+you've learned a model and you are
+
+
+pretty happy with that model. Maybe it's
+
+
+a probabilistic model or maybe it's a
+
+
+deterministic model and you would like
+
+
+to use that model to make decisions.
+
+
+Let's talk about what you could do.
+
+
+So, perhaps the simplest case for this
+
+
+is the deterministic case. The case
+
+
+where your model is deterministic. It
+
+
+just predicts one S prime for every S
+
+
+and A.
+
+
+And in the deterministic case, what you
+
+
+can do is you can plan. So, you can your
+
+
+agent observes the current state,
+
+
+thinks about what action it would take,
+
+
+uses the model to evaluate those
+
+
+actions, and then tells the world that
+
+
+like this is the sequence of actions I
+
+
+came up with. This is my plan.
+
+
+Okay?
+
+
+So, if I were to write that
+
+
+mathematically, it would be like this.
+
+
+I would try to find a sequence of
+
+
+actions A1 through AT, that maximize the
+
+
+sum of rewards.
+
+
+Now, the rewards are function of ST and
+
+
+AT. So, of course, since I'm optimizing
+
+
+over actions, I need to get states in
+
+
+there somehow. The state S1 is given to
+
+
+me by the environment, and all
+
+
+subsequent states have to obey the
+
+
+constraint that ST + 1 Apologies, that's
+
+
+a typo. That should be
+
+
+ST + 1
+
+
+= f of ST AT.
+
+
+The constraint that the next state is
+
+
+given by f of ST AT.
+
+
+Okay? And
+
+
+constraint optimization sometimes looks
+
+
+a little scary, but uh a general rule of
+
+
+thumb is whenever you have an equality
+
+
+constraint, it's actually an
+
+
+unconstrained optimization in disguise
+
+
+because, of course, you can substitute
+
+
+in that equation for ST inside of the
+
+
+objective, and it's really an
+
+
+unconstrained optimization. It's just
+
+
+that if you were write it out that way,
+
+
+you would have a really, really long
+
+
+equation that would go off the end of
+
+
+the slide.
+
+
+So, writing it as a constraint
+
+
+optimization is purely uh a notational
+
+
+convenience.
+
+
+Okay, any questions here?
+
+
+Yes.
+
+
+>> So, this assumes that every every action
+
+
+AT is like seen uh the state before or
+
+
+at the state prior, like T - 1.
+
+
+But, I'm wondering like in the case of
+
+
+action chunking, um could you
+
+
+hypothetically like generate a chunk of
+
+
+actions and I guess evaluate this chunk
+
+
+in the uh through the model rather than
+
+
+doing this in the uh strictly like I
+
+
+guess Markovian way where you first you
+
+
+sample T then T + 1 and so on.
+
+
+So, I guess uh
+
+
+>> What So, you mean like actually have a
+
+
+have the model itself take in a sequence
+
+
+of actions?
+
+
+Like they basically change this so that
+
+
+it's like uh
+
+
+uh T + K and this is T through T + K
+
+
+like this?
+
+
+>> Yes, exactly.
+
+
+>> Yeah, you could do that.
+
+
+So, Hong Ouyang has a paper on doing
+
+
+that.
+
+
+So, you can go talk to him in office
+
+
+hours and he'll tell you all about it.
+
+
+But, yeah, that's a totally valid thing
+
+
+to do.
+
+
+Um
+
+
+the the trick with doing it this way is
+
+
+that uh you need to be a little careful
+
+
+if you have intermediate rewards because
+
+
+you need to evaluate the reward at t
+
+
+plus one, t plus two, t plus three, etc.
+
+
+But if you're lucky enough to have a
+
+
+reward function that is sparse, maybe
+
+
+it's only at the end of the trajectory,
+
+
+then this is very easy to use.
+
+
+Uh if not, then you need to sum up
+
+
+predicted rewards.
+
+
+Okay.
+
+
+Um now this is for deterministic
+
+
+dynamics. Uh and oftentimes the dynamics
+
+
+that we deal with in RL are not
+
+
+deterministic, so let's talk about the
+
+
+stochastic open loop case. Uh very
+
+
+similar setup. The environment tells you
+
+
+like here is your state. Uh you make a
+
+
+plan and say here are my actions. But
+
+
+now of course, since you have
+
+
+stochastic dynamics,
+
+
+you need to represent the probability
+
+
+distribution over all the states you'll
+
+
+encounter so that you can evaluate your
+
+
+rewards. So now your objective is to
+
+
+maximize the expected value of the
+
+
+rewards conditioned on the sequence of
+
+
+actions you took and of course also on
+
+
+the on the initial state.
+
+
+In principle,
+
+
+nothing here changes. It's just a
+
+
+slightly different equation.
+
+
+Uh in practice, the stochastic open loop
+
+
+case is very different from the
+
+
+deterministic open loop case both in how
+
+
+difficult it is and in how well it
+
+
+works. So in terms of difficulty, that
+
+
+one is maybe fairly obvious. If you have
+
+
+the deterministic case here, you can
+
+
+actually compute everything exactly
+
+
+because
+
+
+f is a model that you've learned, so you
+
+
+can literally just evaluate your
+
+
+objective uh and optimize it with your
+
+
+favorite optimization algorithm. In the
+
+
+stochastic case, you of course need to
+
+
+approximate this expectation somehow.
+
+
+Typically, you would do this using
+
+
+samples, but there's all sorts of other
+
+
+ways of doing it if you assume that your
+
+
+transition probabilities have some well-
+
+
+behaved structure like maybe they're
+
+
+Gaussian. There are some functions that
+
+
+can be integrated analytically under
+
+
+Gaussians. For example, in the linear
+
+
+quadratic setting. I won't talk about
+
+
+that in this course, but that's
+
+
+something that is often done in kind of
+
+
+more traditional controls. So the first
+
+
+difficulty with the stochastic case is
+
+
+you have to be able to evaluate that
+
+
+expectation. And if you're optimizing
+
+
+with derivatives, you have to be able to
+
+
+compute its derivatives.
+
+
+But there's a second problem with the
+
+
+stochastic open-loop case, which is that
+
+
+it can be very suboptimal.
+
+
+And this is something that I'd like you
+
+
+guys to think about. So, in the
+
+
+deterministic open-loop case, if you
+
+
+make that plan and the dynamics are
+
+
+deterministic and your model is very
+
+
+accurate, you will do well. In the
+
+
+stochastic open-loop case, there are
+
+
+some problems that where no matter how
+
+
+good you are at solving this
+
+
+optimization, and no matter how well
+
+
+your learned transition probabilities
+
+
+reflect the real transition
+
+
+probabilities, you will get a very bad
+
+
+solution by doing this.
+
+
+Does anybody have any ideas for
+
+
+a scenario like that, where this would
+
+
+be very bad?
+
+
+Yes, back there.
+
+
+>> I don't know if it's like a scenario,
+
+
+but I imagine you just need to
+
+
+effectively like re-plan or redo this
+
+
+optimization at every time step, because
+
+
+the state you're at
+
+
+may not be the one that you planned for
+
+
+at t minus one.
+
+
+>> Okay, so uh this is on the right track.
+
+
+So, the the answer for those of you that
+
+
+didn't hear is that, well, when you make
+
+
+this plan, when you plan out the actions
+
+
+A1 through AT, and then you take the
+
+
+first action A1, you end up in some
+
+
+state ST plus one.
+
+
+When you were in state
+
+
+when you were in the previous state, you
+
+
+had a distribution over states you could
+
+
+end up in, but once you take the action,
+
+
+that uncertainty resolves itself and
+
+
+you're in some actual state. So, there's
+
+
+sort of like additional information
+
+
+being revealed to you.
+
+
+Does anyone have any examples of a
+
+
+situation where this would be where it
+
+
+would be extremely bad if you just
+
+
+committed to this plan in advance and
+
+
+then just blindly executed it?
+
+
+Yes.
+
+
+>> Switching lanes.
+
+
+>> Okay, can you elaborate?
+
+
+>> Uh yes, you have you have prepared the
+
+
+the best trajectory to switch to the
+
+
+left lane, but mid-switch uh a car
+
+
+accelerates.
+
+
+>> Mhm.
+
+
+>> This is something you did not plan for,
+
+
+and you have a lawsuit.
+
+
+>> Okay, cool. So, the answer was, well,
+
+
+let's say you're driving on the highway
+
+
+and you want to switch lanes,
+
+
+uh and you plan out a sequence of
+
+
+actions to get into the lane to your
+
+
+left, but then when you start switching
+
+
+lanes, the car that was there
+
+
+accelerates and gets in your way. So,
+
+
+you need to observe that and react to it
+
+
+and presumably abort the lane switch.
+
+
+Here's another example, that's maybe a
+
+
+little bit more vivid. Um let's say that
+
+
+um
+
+
+I'm going to
+
+
+uh give you an a quiz. You get to take a
+
+
+quiz. And the current state is I have
+
+
+told you you are getting the quiz, but
+
+
+you haven't gotten the quiz yet. And you
+
+
+can make a choice. Uh you can either go
+
+
+home and not take the quiz, and maybe
+
+
+then you'll get like 50%. Uh that's not
+
+
+how the actual exam works, by the way.
+
+
+You have to actually take the exam. But
+
+
+let's say there's a funny quiz where you
+
+
+can like
+
+
+avoid the quiz and get half points. Uh
+
+
+or you can take it and you're pretty
+
+
+sure it's like an easy quiz, so you're
+
+
+going to get 100%. But if you mess up,
+
+
+then you might get a zero.
+
+
+And if you have to commit to a sequence
+
+
+of actions up front,
+
+
+you have to commit to the decision to
+
+
+take the quiz, and the answers you're
+
+
+going to write down.
+
+
+That's very hard because you haven't
+
+
+seen the quiz yet.
+
+
+So, even though if you were to see the
+
+
+quiz, you would know exactly how to do
+
+
+it. You wouldn't You would know all the
+
+
+answers, but you haven't seen it yet.
+
+
+You have a distribution in your mind of
+
+
+the possible questions I might ask, but
+
+
+if I ask you to commit to your answers
+
+
+before you've observed the actual
+
+
+questions, there's absolutely no way you
+
+
+could do it. So, in that case, you would
+
+
+probably choose to go home
+
+
+because you can't commit to a set of
+
+
+answers up front that you're confident
+
+
+would be correct. And that's of course a
+
+
+suboptimal decision. If you had just
+
+
+taken one more time step, observed the
+
+
+questions, then you would know the
+
+
+answers, and then you would be able to
+
+
+get 100% instead of 50%.
+
+
+So, there are many of these cases where
+
+
+new information reveals itself, and once
+
+
+that information has been revealed, you
+
+
+can take much better actions. And the
+
+
+open-loop uh approach to planning does
+
+
+not
+
+
+permit that.
+
+
+So, why do we call this a loop? What's
+
+
+the loop thingy? Well, this is the loop.
+
+
+So, the loop is that the world produces
+
+
+states, you look at those states, and
+
+
+you take actions. And when you draw it
+
+
+like this, it looks like a circle. So,
+
+
+we call it a loop.
+
+
+Uh and
+
+
+the open loop case is the case where
+
+
+it's not a circle, where the world tells
+
+
+you like, here's a situation you're in,
+
+
+and you have to commit to a course of
+
+
+action without being able to then look
+
+
+at what happened and adjust as you go.
+
+
+So, in a deterministic environment, the
+
+
+open loop case is actually quite fine
+
+
+because you know the environment will
+
+
+evolve according to known deterministic
+
+
+dynamics. So, it's like you basically
+
+
+can foretell the future perfectly. But,
+
+
+almost always in the real world, it is
+
+
+not deterministic. Even if you're
+
+
+modeling it as deterministic, it's
+
+
+probably not deterministic under the
+
+
+hood, and therefore, uh closing the loop
+
+
+leads to better policies than having an
+
+
+open loop strategy.
+
+
+Uh now, of course, uh in reality, uh you
+
+
+can um
+
+
+kind of mix the two. You can say, "Well,
+
+
+maybe I'll I will have an open loop plan
+
+
+that I will commit to for some fixed
+
+
+period of time, and then I will observe
+
+
+the state again, and create a new open
+
+
+loop plan."
+
+
+And that's kind of a compromise between
+
+
+these two things.
+
+
+And then, of course, we could also say,
+
+
+"Well, maybe we just want the
+
+
+closed-loop thing." And for the
+
+
+closed-loop thing, you're kind of right
+
+
+back to the original reinforcement
+
+
+learning objective. So, if you want a
+
+
+closed-loop planning approach,
+
+
+closed-loop planning is basically the
+
+
+same as uh finding a policy.
+
+
+In closed-loop planning, the environment
+
+
+tells you, "Here is where you're going
+
+
+to be." And you have to tell the
+
+
+environment, "Here is my policy that I
+
+
+will execute for whatever state I find
+
+
+myself in in the future."
+
+
+So, closed-loop planning, uh probably
+
+
+the most straightforward way to get that
+
+
+would be by running RL algorithms,
+
+
+although there are other ways of doing
+
+
+it. So, uh for example, if you've heard
+
+
+of linear quadratic regulators, uh
+
+
+that's a method for learning linear
+
+
+feedback policies, which are technically
+
+
+closed-loop policies. So, there are kind
+
+
+of
+
+
+open loop planning methods, there are RL
+
+
+methods that produce policies, but
+
+
+there's also stuff in the middle that
+
+
+kind of produces local policies, which
+
+
+we won't talk about in this course, but
+
+
+it's just there, so you should know
+
+
+about it.
+
+
+But for now, let's talk about open loop
+
+
+planning.
+
+
+And I'll discuss a few methods for doing
+
+
+this. And keep in mind that the way this
+
+
+kind of stuff would be used in practice,
+
+
+in a model-based RL algorithm, would
+
+
+typically not be fully open loop. It
+
+
+would be in the context of a method that
+
+
+plans some number of of actions into the
+
+
+future,
+
+
+take some of those actions, observes the
+
+
+environment again, and then replans. And
+
+
+that's a very classic way to do control
+
+
+with learned models. So, typically these
+
+
+kinds of methods will be designed to be
+
+
+effective for relatively short planning
+
+
+horizons,
+
+
+even though they might be used for much
+
+
+more long horizon behavior. And that's
+
+
+because they'll plan for short horizon,
+
+
+carry out those actions, and then
+
+
+replan.
+
+
+Okay, any questions so far before I get
+
+
+into the actual methods?
+
+
+Okay.
+
+
+So,
+
+
+first, when we talk about
+
+
+these these approaches, the one I want
+
+
+to start with is actually the simplest
+
+
+and actually quite widely used in
+
+
+model-based RL, and that's stochastic
+
+
+optimization.
+
+
+This is the kind of method that
+
+
+if you're careful about it and you're
+
+
+pretty crafty with Python, you can
+
+
+implement it in like three lines of
+
+
+code.
+
+
+So, first, let's
+
+
+write things down in a fairly abstracted
+
+
+way just so that it's easier with
+
+
+notation.
+
+
+We're going to abstract away the problem
+
+
+of planning by just framing it as an
+
+
+optimization of some objective with
+
+
+respect to a sequence of actions A1
+
+
+through AT. So, we'll call it J. For the
+
+
+purpose of these methods, we actually
+
+
+don't care what J is, but in practice,
+
+
+the way we would do it is we would take
+
+
+our model, we would step through the
+
+
+model using the actions A1 through AT,
+
+
+get the corresponding states, evaluate
+
+
+the rewards, and sum them together, and
+
+
+that's basically J.
+
+
+And if we want to write it even more
+
+
+abstractly, we can denote that entire
+
+
+sequence of actions as capital A. So,
+
+
+capital A is just A1 through AT all
+
+
+concatenated together, and that's again
+
+
+just so that we can write it more
+
+
+concisely.
+
+
+So, here's the simplest method, and this
+
+
+method is actually used more often than
+
+
+you might think. Uh it's guess and
+
+
+check.
+
+
+Uh it's exactly what it sounds like. You
+
+
+guess a bunch of A's, you check their J,
+
+
+their value, and then you take the best
+
+
+one. That's the method. So, you pick A1
+
+
+through AM from some distribution, like
+
+
+for example, a uniform distribution over
+
+
+action sequences,
+
+
+and then you choose the one with the
+
+
+highest value of J. And you can evaluate
+
+
+the objective value of all these action
+
+
+sequences because of course you have a
+
+
+model, so you can plug them into your
+
+
+model, predict the states, evaluate the
+
+
+rewards of those states, and sum them
+
+
+together.
+
+
+This is sometimes called a random
+
+
+shooting method if you want it to sound
+
+
+less embarrassing than saying that my
+
+
+method is guess and check, but it's
+
+
+basically guess and check.
+
+
+So, um maybe a question for all of you
+
+
+guys to think about uh I'm I want to
+
+
+know what's good about this and what's
+
+
+bad about this. So, let's start with the
+
+
+good news. What do you guys think is
+
+
+good about this?
+
+
+Go ahead.
+
+
+Okay, so one answer is like maybe this
+
+
+is pretty cheap. Uh it's cheap if uh if
+
+
+you can parallelize. So, if you can
+
+
+evaluate A1 through AN in parallel, like
+
+
+for example, vectorizing it with NumPy
+
+
+or with the uh you know, PyTorch or JAX
+
+
+or something, uh
+
+
+this can be actually quite cheap. Uh
+
+
+there's no gradient computation. You can
+
+
+evaluate all A1 through AN in parallel,
+
+
+so this is very convenient.
+
+
+Yes.
+
+
+>> It's a pretty good approximation, right?
+
+
+With N equals 32, I believe is the
+
+
+number or
+
+
+>> It's a good approximation. So, how good
+
+
+of an approximation it is depends on
+
+
+your um objective landscape. So, if you
+
+
+have a a low-dimensional objective
+
+
+landscape with big slabs of high-reward
+
+
+regions,
+
+
+good thing. If you have
+
+
+a worst-case scenario objective
+
+
+landscape that looks like
+
+
+this,
+
+
+you will almost never land over there.
+
+
+So, how how good this is depends on the
+
+
+dimensionality of your problem and the
+
+
+shape of your objective landscape. So,
+
+
+the worst case for this is
+
+
+you have one really good thing in a
+
+
+really tiny volume in a high-dimensional
+
+
+space, in which case almost certainly
+
+
+none of your samples will land there.
+
+
+Whereas, a good case for this is that
+
+
+you have some nice big region of good
+
+
+stuff and a fairly low dimensionality,
+
+
+so that a moderate number of samples
+
+
+will allow you to hit that good
+
+
+solution.
+
+
+So, that I got I'm unfortunately just
+
+
+gave away the answer, because that's the
+
+
+bad news.
+
+
+So, the bad news is that, uh, if your
+
+
+dimensionality is, uh, higher than like,
+
+
+you know, 30 to 50 or so, it's very hard
+
+
+to make this work. Uh, and depending on
+
+
+your objective landscape, like, you
+
+
+know, if you're trying to, um,
+
+
+do something extremely precise, if
+
+
+you're trying to thread a needle,
+
+
+basically, very unlikely that any of
+
+
+your samples will give you that.
+
+
+Now, there is something a little bit
+
+
+better that you could do, which is
+
+
+almost as simple, but significantly more
+
+
+effective.
+
+
+And that's to note that there's a choice
+
+
+that this method is making. The choice
+
+
+is that you pick these samples, these
+
+
+action sequence samples, from some
+
+
+distribution.
+
+
+And you can pick this distribution
+
+
+somewhat smartly and do a lot better. In
+
+
+fact, you can do so well that you can
+
+
+sometimes even solve difficult cases
+
+
+like this.
+
+
+So, here is the idea.
+
+
+Let's say that I'm going to pick four
+
+
+samples, and in this plot, the x-axis is
+
+
+my action sequence. I realize it's a
+
+
+little silly, because the sequence of
+
+
+actions that I'm making it
+
+
+one-dimensional, but just bear with me.
+
+
+And the vertical axis is J of A. And
+
+
+here are my samples. So, the height
+
+
+represents how good it is.
+
+
+Okay. And now, I'm going to say, "Well,
+
+
+what if I want to generate four more
+
+
+samples?" So, I just generated four
+
+
+samples, I I evaluated them, but instead
+
+
+of just committing to the best one, I'm
+
+
+going to generate four more.
+
+
+And now, where do I put those four
+
+
+additional samples?
+
+
+Well, you probably are going to say I'm
+
+
+going to put them next to the good ones.
+
+
+Cuz that stuff on the left looks pretty
+
+
+bad, so I probably don't want more
+
+
+samples there. I want them in the place
+
+
+where I've got the good stuff.
+
+
+So, maybe what I would like to do is run
+
+
+this whole procedure again, but instead
+
+
+of selecting the uniform distribution
+
+
+step one, I might select a distribution
+
+
+kind of like this, where I
+
+
+I'm going to generate more samples next
+
+
+to the good stuff.
+
+
+And then I get samples like that.
+
+
+And then I do this again. I generate
+
+
+more samples next to the good stuff.
+
+
+And if I do this repeatedly, then I
+
+
+might actually get a pretty good
+
+
+solution.
+
+
+In fact, if I do this enough and I
+
+
+generate enough samples, I will
+
+
+eventually get a very good solution,
+
+
+potentially even solving a difficult
+
+
+case like this.
+
+
+Maybe not quite that difficult, but
+
+
+maybe if it was like like that, you
+
+
+know, there's a little bit of of signal
+
+
+to go on even for slightly sub-optimal
+
+
+answers.
+
+
+So, um this is called cross-entropy
+
+
+method,
+
+
+and if I were to write it out, it would
+
+
+look like this.
+
+
+Sample some action sequences or whatever
+
+
+your variables are from some
+
+
+distribution P of A.
+
+
+For the first step, you could choose
+
+
+that distribution to be a Gaussian
+
+
+centered at zero with a standard
+
+
+deviation equal to like half your action
+
+
+bounds or something. Just pick pick some
+
+
+distribution.
+
+
+Evaluate the value of each of your
+
+
+samples.
+
+
+And then select what are called the
+
+
+elites, which is a really cool sounding
+
+
+term for just the best M, the top or the
+
+
+top M.
+
+
+And then refit your distribution to
+
+
+those elites.
+
+
+If you're using a Gaussian distribution,
+
+
+fit the mean and let's say a a diagonal
+
+
+covariance.
+
+
+Or even a full covariance if your
+
+
+dimensionality is low enough.
+
+
+And then repeat this whole process.
+
+
+This method is almost as simple as guess
+
+
+and check. It is almost as easy to
+
+
+implement, maybe it requires like five
+
+
+lines of code instead of three lines,
+
+
+but it works a lot better.
+
+
+And typically it's done with a Gaussian
+
+
+distribution for continuous variables.
+
+
+Um you can do this for uh all sorts of
+
+
+different distributions. If you're
+
+
+really crafty, you could even do do this
+
+
+for discrete variables, although that's
+
+
+rarely done.
+
+
+There are also more advanced versions of
+
+
+cross-entropy methods, so if you really
+
+
+like this stuff, you can check out
+
+
+something called CMA-ES, which stands
+
+
+for covariance matrix adaptation
+
+
+evolutionary strategies, which roughly
+
+
+speaking is just cross-entropy method
+
+
+with momentum. So kind of if if you've
+
+
+been going in a particular direction, it
+
+
+like takes you into that direction a
+
+
+little bit a little bit faster.
+
+
+So if you really want a kind of
+
+
+easy-to-implement off-the-shelf
+
+
+stochastic optimization methods, this is
+
+
+a good thing to use and it is often used
+
+
+as a short-term planning method in
+
+
+model-based RL.
+
+
+Any questions about this?
+
+
+Okay.
+
+
+Uh all right. So what's good about this?
+
+
+Uh it's very fast if it's parallelized.
+
+
+It's extremely simple, but it has some
+
+
+problems. There's generally a pretty
+
+
+harsh dimensionality limit for these
+
+
+kinds of methods because they're not
+
+
+using gradients, so you can't really
+
+
+take them up to like thousands or
+
+
+hundreds of thousands of dimensions. Um
+
+
+and of course, as I've described them so
+
+
+far, they're just optimization methods.
+
+
+They So they only provide open-loop
+
+
+planning. They're not going to give you
+
+
+a closed-loop policy.
+
+
+There are other methods for planning
+
+
+that you can use. Uh these won't be
+
+
+covered in this course, but if you want
+
+
+to uh learn about them, you can read up
+
+
+uh on your own. Uh Monte Carlo tree
+
+
+search is a very popular method for
+
+
+planning, especially in discrete spaces.
+
+
+So this is very often used in stochastic
+
+
+uh uh settings.
+
+
+Uh very often used for games. Uh AlphaGo
+
+
+used Monte Carlo tree search.
+
+
+Continuous trajectory optimization
+
+
+methods uh are often used in continuous
+
+
+spaces in robotics. Uh trajectory
+
+
+optimization algorithms like LQR.
+
+
+And there's also tree-based methods uh
+
+
+which are kind of a a cross between
+
+
+uh MCTS and continuous methods. And
+
+
+these are often used for kind of
+
+
+problems with lots of local optimum
+
+
+optima in continuous spaces. Yes.
+
+
+>> So, could you explain again why we
+
+
+aren't using the RL algorithms we've
+
+
+learned before for this task for like
+
+
+the open-loop actions?
+
+
+>> Yeah. So, we're about to. Uh that's
+
+
+actually what I'm going to talk about
+
+
+next. But, the reason that I wanted to
+
+
+describe these kinds of methods is that
+
+
+a very popular class of model-based RL
+
+
+approaches are methods that don't even
+
+
+bother learning a policy, but just learn
+
+
+a model and then do some kind of
+
+
+planning through that model.
+
+
+So, if you want to do that, uh there's
+
+
+lots of fancy ways of doing it and
+
+
+that's that's stuff on the right. And if
+
+
+you want really simple ways of doing it,
+
+
+it's the stuff on the left.
+
+
+Okay.
+
+
+Uh now, just to kind of complete this
+
+
+story,
+
+
+I want to make it a little bit more
+
+
+explicit how this actually fits with all
+
+
+these learned models. So, on Wednesday,
+
+
+we talked about uh
+
+
+bootstrap ensembles and uh ways of
+
+
+actually learning and representing
+
+
+models. So, let's put these pieces
+
+
+together.
+
+
+So, in this case, uh
+
+
+if you have a deterministic setting,
+
+
+your J of A1 through AH is just the sum
+
+
+of rewards, where the next state is
+
+
+given by your dynamics. That's the easy
+
+
+case. And in practice, the way you
+
+
+evaluate it is literally like exactly
+
+
+what you think. Take your initial state
+
+
+S1, take the action A1, which is an
+
+
+argument to this function,
+
+
+plug it into F, get S2, use that to get
+
+
+S3, S4, etc., etc., etc., and then sum
+
+
+the rewards.
+
+
+In the stochastic case,
+
+
+um you would generate
+
+
+um
+
+
+samples.
+
+
+Uh and uh then you would average over
+
+
+the you would average sum over all time
+
+
+and average over all the samples.
+
+
+And
+
+
+if you use a bootstrap ensemble, what
+
+
+that basically gives you is uh
+
+
+a set of models or in general if you
+
+
+have a posterior of parameters, you have
+
+
+a distribution over models. And you
+
+
+would choose a different model for each
+
+
+of your samples.
+
+
+And there's a subtlety here, which is
+
+
+that you can choose a different model
+
+
+for each of your trajectory samples or
+
+
+you can choose a different model at
+
+
+every single step.
+
+
+It makes a bit more sense to choose a
+
+
+different model for each of your
+
+
+trajectory samples and keep it constant
+
+
+over all the steps.
+
+
+Why is that?
+
+
+So, option one, at every step I can
+
+
+choose a different model from my model
+
+
+posterior. Option two, I can choose a
+
+
+model from a model posterior and then
+
+
+roll it out all the way to the end.
+
+
+And option two makes more sense. Why is
+
+
+that?
+
+
+So, on Wednesday what we ended up with
+
+
+is
+
+
+P theta
+
+
+given data, okay?
+
+
+And this P theta, this is the
+
+
+distribution over dynamics.
+
+
+So,
+
+
+this posterior of a models represents
+
+
+our uncertainty about how the world
+
+
+works.
+
+
+So, what it means is that we don't know
+
+
+which world we're in and we have
+
+
+a distribution over different worlds
+
+
+essentially. Every theta induces a
+
+
+different dynamics.
+
+
+So, if you would like to
+
+
+get the expected behavior uh the
+
+
+expected consequence of your actions
+
+
+under some uncertainty about which world
+
+
+you're in, then it makes sense that you
+
+
+would sample a possible world, evaluate
+
+
+your actions in that possible world, and
+
+
+then repeat this process a few times
+
+
+averaging it together. Resampling a new
+
+
+world every single step doesn't actually
+
+
+make sense because
+
+
+uh
+
+
+that's a that actually leads to a
+
+
+different overall dynamics. Like it it
+
+
+would be um
+
+
+The simple example of this is let's say
+
+
+that there's two exits from this room.
+
+
+There's an exit on the left and an exit
+
+
+on the right. And I don't know which of
+
+
+those is locked and which one is
+
+
+unlocked. So, I have an uncertainty
+
+
+about the world. There is one
+
+
+possibility that the left door is
+
+
+unlocked and the right door is locked.
+
+
+Another possibility that the right door
+
+
+is unlocked.
+
+
+And left door is locked.
+
+
+But there But I have very low
+
+
+probability assigned to the world where
+
+
+the locked or unlocked door
+
+
+spontaneously changes every single step
+
+
+because that'll be really weird. I mean,
+
+
+I I guess we've all had trouble with the
+
+
+gentleman that unlocks the room in the
+
+
+morning, but I think they would be
+
+
+rather nefarious to be running back and
+
+
+forth and locking and unlocking the door
+
+
+all the time. So, that world has a very
+
+
+low probability.
+
+
+And if you resample the model every
+
+
+single step, it's like that world where
+
+
+someone runs back and forth and locks
+
+
+and unlocks the door all the time. It's
+
+
+very unlikely. So, you want to actually
+
+
+keep the model consistent over the
+
+
+course of that rollout. Yes.
+
+
+Um yeah, so the question was well, is a
+
+
+second option easier to optimize? For
+
+
+the stochastic optimization methods,
+
+
+they really don't care. Like as long as
+
+
+you can plug something into that sum and
+
+
+sum it together, it all it's all fine.
+
+
+Okay. So,
+
+
+now here's the method in general for a
+
+
+candidate action sequence A1 through AH,
+
+
+you sample
+
+
+a
+
+
+model parameter vector from your
+
+
+posterior. And remember that if we're
+
+
+doing ensembles, that posterior is just
+
+
+a sum of Dirac delta functions. So, it's
+
+
+just a set of parameters and we're going
+
+
+to choose one element of that set.
+
+
+Then, generate your state samples. So,
+
+
+in general, your dynamics will actually
+
+
+be stochastic.
+
+
+Deterministic is a special case of this,
+
+
+but in general, let's say they're
+
+
+stochastic. So, you're going to sample
+
+
+some states
+
+
+uh for that entire trajectory with that
+
+
+parameter vector that you picked in step
+
+
+one.
+
+
+Then, you will calculate the reward of
+
+
+that sequence.
+
+
+And then, repeat the steps one through
+
+
+three and accumulate uh to average
+
+
+together the reward. And that'll get you
+
+
+the expected reward in expectation under
+
+
+your epistemic uncertainty about the
+
+
+model and the model's aleatory
+
+
+uncertainty over the state transitions.
+
+
+And that's J.
+
+
+And then, you plug this into your
+
+
+favorite optimization algorithm.
+
+
+Okay. Any questions about this?
+
+
+Yes, back there.
+
+
+>> Would like one reason you might choose
+
+
+to actually like average them on like a
+
+
+per time step basis is because like
+
+
+at a certain point in time, you don't
+
+
+know which world you are in. And so, you
+
+
+would want to
+
+
+act to effectively hedge your bets
+
+
+until, say, the information reveals
+
+
+itself then.
+
+
+And then, commit to
+
+
+one world, let's say.
+
+
+>> Yeah, that's a very That's a very
+
+
+complex question. So,
+
+
+there are a lot of things going on here.
+
+
+So, what I would say is this, that um
+
+
+this is already hedging your bets in the
+
+
+sense that because you're averaging
+
+
+together the estimated rewards for
+
+
+different model samples from P theta
+
+
+given D,
+
+
+if you optimize this, you will take the
+
+
+actions that lead to good expected
+
+
+outcomes under the distribution of
+
+
+possible worlds.
+
+
+But there is something about what you
+
+
+said that is very, very subtle, which is
+
+
+that
+
+
+as you actually choose those actions,
+
+
+information reveals itself, which not
+
+
+only helps you understand which state
+
+
+you're in, it also helps you understand
+
+
+which world you're in. So, if you try
+
+
+the door on the left and you find that
+
+
+it doesn't open, well, you're actually
+
+
+resolving your uncertainty about the
+
+
+model.
+
+
+This does not account for that
+
+
+whatsoever.
+
+
+If you want an algorithm that will
+
+
+correctly reason about your uncertainty
+
+
+about the model and this kind of
+
+
+revealed information, that's very
+
+
+complicated. Uh typically in that case,
+
+
+you have to consider this a partially
+
+
+observed environment where theta
+
+
+represents the unobserved variables that
+
+
+determine the dynamics of the world.
+
+
+And that that would lead to a much
+
+
+smarter strategy like you should go and
+
+
+try that door, figure out that it's
+
+
+locked, and go over to the other one and
+
+
+all that stuff, but this method will not
+
+
+do that.
+
+
+Okay.
+
+
+This method would uh basically hedge
+
+
+your bets under the uncertainty about
+
+
+which world you're in and then commit to
+
+
+an action strategy.
+
+
+I think for the door case, it would do
+
+
+something really dumb.
+
+
+Because there is no way to hedge that.
+
+
+You can't both go to the left side and
+
+
+the right side.
+
+
+Okay.
+
+
+Um now, if you're wondering whether this
+
+
+actually works or not, uh I'll show you
+
+
+a video. Uh this was uh done
+
+
+7 years ago by Anusha Nagabandi, who
+
+
+used to be a student here at UC
+
+
+Berkeley.
+
+
+Um and in this experiment, Anusha is
+
+
+using this uh cross-entropy method in
+
+
+combination with a learned model to
+
+
+control a robotic hand. Uh don't mind
+
+
+the robotic arm. Anusha is a very
+
+
+capable engineer, so she wanted another
+
+
+robot to like reset the environment for
+
+
+her so that she could go home and run
+
+
+the experiment while she's uh
+
+
+sleeping.
+
+
+But, this is the robotic hand, and this
+
+
+is training. So, what what happens
+
+
+during training is that it's running
+
+
+that CEM method, collecting more
+
+
+experience, and using that experience to
+
+
+update the model. And what it's trying
+
+
+to do is spin the two uh the two balls
+
+
+in the hand, which is a very complex
+
+
+kind of dexterous behavior. And on the
+
+
+left side, you can see how long it's
+
+
+been training. So, this is
+
+
+between 1 and 1.5 hours.
+
+
+It's already starting to make progress,
+
+
+and this is after 2 hours of training.
+
+
+So, all he's doing during those 2 hours
+
+
+of training is just updating the model.
+
+
+There's no policy at all. The actions
+
+
+are selected with cross-entropy method
+
+
+with re-planning every couple dozen
+
+
+steps.
+
+
+And you can see that after 2 hours of
+
+
+training, it can actually spin the two
+
+
+two balls in the hand.
+
+
+So, it actually does work for continuous
+
+
+and potentially even somewhat fairly
+
+
+complicated tasks.
+
+
+Okay.
+
+
+Uh but now uh enough of this planning
+
+
+stuff. This is an RL class, and we
+
+
+really want to talk about learning
+
+
+policies. So, let's get to the uh the
+
+
+fun part, the policy learning with
+
+
+models.
+
+
+So,
+
+
+we're going to discuss other ways of
+
+
+doing number three, and we're going to
+
+
+do the stochastic closed-loop case,
+
+
+which as I mentioned is basically a
+
+
+synonym for uh doing RL.
+
+
+So, we're going to basically run RL
+
+
+with our model as though it were a
+
+
+simulator of the world.
+
+
+And there are a variety of different
+
+
+ways of doing this. Mostly, these things
+
+
+are going to work the same way as the
+
+
+model-free RL methods we had before.
+
+
+It's just that now your method gets to
+
+
+essentially have some free data by
+
+
+running the model. But, there are a few
+
+
+things that are [clears throat] a little
+
+
+different where we're going to account
+
+
+for the fact that our model might be a
+
+
+little bit incorrect.
+
+
+Um now, the simplest thing we could do
+
+
+is we could just run like policy
+
+
+gradients, but use the model to generate
+
+
+samples, uh optimize with policy
+
+
+gradient for a few steps, and then run
+
+
+that policy in the real world to get
+
+
+more data to update our model. That's a
+
+
+pretty reasonable strategy.
+
+
+And now, some of you might look at this
+
+
+and say like, "Hey, uh policy gradient
+
+
+was designed for the case where the
+
+
+dynamics are unknown, and you can only
+
+
+improve your policy using samples. But
+
+
+now, the dynamics are known, and maybe
+
+
+you can just like implement that whole
+
+
+evaluation function running your actions
+
+
+through F and getting ST + 1 in PyTorch
+
+
+and call dot gradients on it, and just
+
+
+do gradient uh uh on your model
+
+
+parameters that way."
+
+
+Um and you can actually do that. So, the
+
+
+policy gradient is what's called a
+
+
+likelihood ratio gradient. You can also
+
+
+implement what's called a pathwise
+
+
+gradient, which is basically a fancy
+
+
+word for backprop. And if your model is
+
+
+known,
+
+
+this is generally possible. With
+
+
+stochastic models, you need to take some
+
+
+care to do it, but basically you can do
+
+
+it. And don't worry about the giant
+
+
+scary equation. This is basically just
+
+
+chain rule. This is like basic calculus.
+
+
+I just use chain rule with a
+
+
+deterministic model to write out the
+
+
+derivative uh of the policy parameters.
+
+
+Now, these are two gradient estimators
+
+
+for the same thing. These are two two
+
+
+different ways of estimating the same
+
+
+exact gradient.
+
+
+Okay?
+
+
+And the question I have for you guys is
+
+
+which one is better?
+
+
+Yeah, back there.
+
+
+>> Shouldn't pathwise be better? Because
+
+
+>> Okay, so one answer is shouldn't
+
+
+pathwise be better? Why?
+
+
+>> Because
+
+
+I mean, policy gradient is like assuming
+
+
+you can't get the gradient, so like
+
+
+pathwise has some
+
+
+better assumptions.
+
+
+>> Yeah, so you're using more information.
+
+
+Uh and uh maybe stated more precisely,
+
+
+you're not going to suffer from the high
+
+
+variance issues that we had in policy
+
+
+gradient.
+
+
+Okay?
+
+
+Uh anybody want to have a vote for the
+
+
+good old-fashioned policy gradient? And
+
+
+yeah.
+
+
+>> If the fully known true function is not
+
+
+differentiable, then highly
+
+
+uh you know,
+
+
+you know, we exchange that.
+
+
+>> Right. So, just because the function is
+
+
+known doesn't mean it has nice
+
+
+gradients. So, maybe you know your what
+
+
+your dynamics are and they look like
+
+
+this.
+
+
+Okay. Using a gradient for that is not
+
+
+such a good idea.
+
+
+There's another reason which maybe might
+
+
+have jumped out at some of you from
+
+
+looking at that giant scary equation,
+
+
+which is that it's a big product.
+
+
+Everything that says D something over D
+
+
+something else is a Jacobian. It is a a
+
+
+matrix. And you're multiplying all of
+
+
+them together. And when you take lots
+
+
+and lots of matrices, in general O of H
+
+
+matrices, and you multiply them
+
+
+together, you get either a really,
+
+
+really big matrix or a really, really
+
+
+small matrix. More precisely, if the
+
+
+eigenvalues of the matrices are larger
+
+
+than one, then multiplying lots of them
+
+
+together gets you a gigantic number, and
+
+
+if they are less than one, then it gets
+
+
+you a really, really small number.
+
+
+And that is bad. That is that is
+
+
+numerical instability. Formally, you
+
+
+would say that the resulting
+
+
+optimization problem ill-conditioned.
+
+
+And ill-conditioned means that if you
+
+
+try to optimize it with gradient ascent
+
+
+or gradient descent, you will not get a
+
+
+good answer.
+
+
+In fact, this problem is so severe that
+
+
+often times you prefer the likelihood
+
+
+ratio gradient, unless you happen to
+
+
+have either an extremely short horizon
+
+
+task or extremely simple dynamics.
+
+
+So, the policy gradient is often more
+
+
+stable because it doesn't require
+
+
+multiplying together lots of Jacobians.
+
+
+If you want to read about this,
+
+
+here this is a nice paper that discusses
+
+
+that, but if you want the short version,
+
+
+generally backprop through learned
+
+
+dynamics does not work well unless
+
+
+you're in a very special case. So, I
+
+
+would not recommend the pathwise
+
+
+gradient unless you know that your
+
+
+dynamics are close to linear or for
+
+
+whatever reason your eigenvalues are
+
+
+close to one or the horizon is very
+
+
+short.
+
+
+Okay.
+
+
+So, let's
+
+
+do the policy gradient thing, and let's
+
+
+write out a basic version of model-based
+
+
+reinforcement learning.
+
+
+I actually realized that I changed my
+
+
+slide on Wednesday. I used to have like
+
+
+model-based RL version 0.5 and version
+
+
+1.0 and version 2.0, so then I called
+
+
+this version 2.5, but now I cut that
+
+
+part, so it's just version 2.5.
+
+
+But, you know,
+
+
+bear with me here.
+
+
+All right, so here's model-based RL
+
+
+version 2.5.
+
+
+Run your policy, and let's say you start
+
+
+with a policy pi zero to collect your
+
+
+data.
+
+
+Learn the dynamics model using that
+
+
+data, and in general you would use like
+
+
+some stochastic dynamics, but I'll write
+
+
+it out as a deterministic dynamics just
+
+
+to keep it things simple.
+
+
+Um use your dynamics model to generate
+
+
+more trajectories.
+
+
+So, basically just like simulate your
+
+
+policy. Um
+
+
+and then use those additional simulated
+
+
+trajectories with policy gradient. And
+
+
+you can repeat step three and four a few
+
+
+times. So, optimize your policy quite
+
+
+well on these additional samples. Then
+
+
+if you use like an ensemble or something
+
+
+like that, then maybe you can take into
+
+
+account the epistemic uncertainty about
+
+
+your model and make sure that this
+
+
+process doesn't run away from you too
+
+
+much. And then once you're pretty happy
+
+
+with that, then run your model in the
+
+
+real world, get more
+
+
+data added to your data set, and relearn
+
+
+your model.
+
+
+Okay. So, this is like a fairly sensible
+
+
+method, but it still has a few problems
+
+
+before we can turn this into something
+
+
+practical.
+
+
+What are some potential problems with
+
+
+this approach?
+
+
+The problem is that when you generate
+
+
+trajectories with your model in step
+
+
+three,
+
+
+you might get
+
+
+extremely inaccurate trajectories.
+
+
+And this is there's kind of a this curse
+
+
+with long model-based rollouts. It's
+
+
+very similar to what we saw before when
+
+
+we discussed imitation learning. So,
+
+
+when we discussed imitation learning, we
+
+
+saw that
+
+
+if you are running your learned policy,
+
+
+your imitation learning policy, it might
+
+
+be very good, but it makes some small
+
+
+mistakes. And when it makes small
+
+
+mistakes,
+
+
+it finds itself in unexpected states.
+
+
+Unexpected meaning states that were
+
+
+different than those it saw during
+
+
+training.
+
+
+And in these states, it makes larger
+
+
+mistakes.
+
+
+And then it finds itself in states that
+
+
+are even more different than what it saw
+
+
+during training and makes even larger
+
+
+mistakes.
+
+
+And what that means is that if you
+
+
+remember think back to the that fancy
+
+
+math proof that we had way back in the
+
+
+very beginning of the course, what it
+
+
+means is that your error accumulates
+
+
+quadratically in your time horizon,
+
+
+which means that if you make your
+
+
+trajectories twice as long,
+
+
+you're not two times less accurate,
+
+
+you're actually four times less
+
+
+accurate.
+
+
+So, we can call this the curse of
+
+
+horizon or the curse of long model-based
+
+
+rollouts because exactly the same logic
+
+
+applies to using a learned model as to
+
+
+using a learned policy. So, in imitation
+
+
+learning we had a learned policy that we
+
+
+were running through the true dynamics.
+
+
+Here, we have the true policy. We run
+
+
+the same policy in the real world as we
+
+
+as we did in our model-based rollouts,
+
+
+but we have the wrong dynamics.
+
+
+The same exact logic applies because
+
+
+when you put the the system into a state
+
+
+that is different than the ones in which
+
+
+the model was trained, then the model
+
+
+will make a mistake.
+
+
+In fact, you could actually rederive
+
+
+that whole proof
+
+
+using approximate models and exact
+
+
+policies instead of exact policies and
+
+
+approximate models and get exactly the
+
+
+same answer, which is that the error
+
+
+accumulates quadratically with the
+
+
+horizon.
+
+
+And what that means is that doing very
+
+
+long rollouts through your model is
+
+
+quite bad.
+
+
+And what you would like to do is use
+
+
+your model for short rollouts.
+
+
+Okay. So, how do we use how do we get
+
+
+away with short rollouts? Okay, clearly
+
+
+if we roll out the whole thing, that's
+
+
+bad, huge accumulating error. So, we
+
+
+could just say like, "Hey, let's just
+
+
+change our problem.
+
+
+We'll still start in the same initial
+
+
+state, but we'll just shorten
+
+
+everything."
+
+
+That can be kind of bad because
+
+
+remember Anusha's experiment with the
+
+
+dexterous manipulation task, if we
+
+
+change the horizon to like 10 time
+
+
+steps, it might be impossible to
+
+
+complete the task in 10 time steps. So,
+
+
+unless your task can actually be done in
+
+
+a short amount of time, in which case
+
+
+why the heck did you set a long horizon
+
+
+to begin with,
+
+
+just truncating your rollouts like this
+
+
+is not going to work.
+
+
+But, there is something that you can do
+
+
+that is a bit more clever.
+
+
+You can generate some long rollouts in
+
+
+the real world
+
+
+and then you can generate some short
+
+
+rollouts not from the initial state but
+
+
+from randomly chosen states
+
+
+from your real world rollouts.
+
+
+Yeah, so basically what we're doing here
+
+
+is
+
+
+we're still making rollouts through a
+
+
+model that are short but we are changing
+
+
+the initial state distribution so that
+
+
+instead of always starting these
+
+
+rollouts in the true initial state
+
+
+that's the one in the top left we are
+
+
+starting the rollouts from states chosen
+
+
+at random from essentially our replay
+
+
+buffer from the states that we saw
+
+
+during the real world rollouts.
+
+
+And this is a compromise solution.
+
+
+The advantage of this is that we have
+
+
+lower error because we have short
+
+
+rollouts
+
+
+and we are changing the state
+
+
+distribution overall but not as much. Uh
+
+
+so we still see all of those situations
+
+
+that we'll encounter at the later time
+
+
+steps in the trajectory.
+
+
+And the overall state distribution that
+
+
+we get when we
+
+
+put together all of these model-based
+
+
+rollouts is kind of a weird mix between
+
+
+the policy that generated the data and
+
+
+our latest policy. So it's kind of the
+
+
+wrong state distribution but it's not
+
+
+that wrong.
+
+
+So
+
+
+this is not completely correct but it is
+
+
+a a nice compromise solution.
+
+
+And it's a compromise solution that
+
+
+works especially well with
+
+
+off-policy algorithms because off-policy
+
+
+algorithms can use the real world data
+
+
+and they can use this model-based data
+
+
+and they're going to be a little bit
+
+
+more tolerant of having a slightly
+
+
+incorrect state distribution.
+
+
+And in practice this trick is
+
+
+extremely popular because it's kind of
+
+
+the only way that you can both have
+
+
+short rollouts and see the kind of
+
+
+events that will happen in the later
+
+
+time steps of the trajectory.
+
+
+Because basically otherwise your
+
+
+alternative is either the first thing or
+
+
+the second thing. The first thing
+
+
+doesn't work because the error is too
+
+
+high and the second thing doesn't work
+
+
+because the truncation prevents you from
+
+
+ever seeing the events that only happen
+
+
+in later steps of the trajectory.
+
+
+Okay. So, if I were to put this together
+
+
+and now it's model-based RL version 3.0,
+
+
+uh the way that this might look is you
+
+
+get your initial data, you train your
+
+
+dynamics model,
+
+
+uh you pick states from your data.
+
+
+>> What do you call this?
+
+
+>> Sorry?
+
+
+>> What do you call this program?
+
+
+>> This is just a name I made up. I'm
+
+
+calling it model-based RL version 3.0
+
+
+because this is not a real algorithm.
+
+
+But, I will show you some real
+
+
+algorithms in a second. This you can
+
+
+think of this as kind of a template.
+
+
+So,
+
+
+uh pick some states from your data set
+
+
+and use your learned model uh to make
+
+
+short rollouts
+
+
+from those states. Short meaning like 10
+
+
+steps, let's say.
+
+
+Uh and then use both real data and the
+
+
+data from your model to improve your
+
+
+policy with an off-policy reinforcement
+
+
+learning algorithm. So, you can use
+
+
+Q-learning, you can use uh your favorite
+
+
+Q-function actor-critic. Basically, one
+
+
+of the things that you implement in a
+
+
+homework three. Use homework three.
+
+
+Uh and then you can repeat this a few
+
+
+times.
+
+
+And once you're happy with it, use the
+
+
+latest policy
+
+
+uh to collect more data in the real
+
+
+world and append it to your data set.
+
+
+And this is, believe it or not, an
+
+
+actual algorithm that you can use. Uh
+
+
+you can instantiate this in various ways
+
+
+um and I'll talk about some concrete
+
+
+actual methods with a with a name that
+
+
+is not model-based RL 3.0.
+
+
+Uh but, this is a basic template for a
+
+
+class of methods that they're sometimes
+
+
+called Dyna-style methods named after
+
+
+Richard Sutton's Dyna framework from the
+
+
+early '90s and it's an actual framework
+
+
+for model-based RL that works. And
+
+
+typically, you would choose very short
+
+
+rollouts, uh sometimes as little as two
+
+
+or three steps, maybe 10 steps if you're
+
+
+feeling lucky. Uh and it's a good way to
+
+
+get away with, you know, fairly
+
+
+inaccurate models, but still get some
+
+
+benefit from them.
+
+
+Okay, any questions about this?
+
+
+Yeah.
+
+
+>> I'm curious that if if this idea has
+
+
+been I guess in existence for so long,
+
+
+why have we only now like why
+
+
+in version three, the most recent
+
+
+edition, have we returned to this?
+
+
+And I guess as a follow-up, does it have
+
+
+any uh connection to like diffusion
+
+
+forcing and other like
+
+
+I guess the emergence of
+
+
+better methods for doing this long-term
+
+
+uh horizon rollout?
+
+
+Uh actually
+
+
+>> I'm I'm trying to think about how to
+
+
+answer this.
+
+
+It is really a history question rather
+
+
+than a an RL question. Um I
+
+
+It has connections to
+
+
+um
+
+
+various variants of teacher forcing in
+
+
+so far as teacher forcing is a way to
+
+
+deal with distributional shift for
+
+
+sequence models.
+
+
+And since we're dealing with sequences
+
+
+and we need to deal with distributional
+
+
+shift, the solutions are going to look
+
+
+similar.
+
+
+Yes.
+
+
+>> So, sort of a more general question
+
+
+about these model-based
+
+
+algorithms. So, we're learning a model
+
+
+function, and we're also learning a
+
+
+policy.
+
+
+Um
+
+
+is there um
+
+
+any
+
+
+uh strife between these two
+
+
+>> Mhm.
+
+
+>> uh systems where like we get a like on
+
+
+this step, we get a pretty bad model
+
+
+that creates a kind of bad policy, and
+
+
+then that sort of degenerates
+
+
+both of them being bad?
+
+
+>> Yeah, uh that's a good question. So, for
+
+
+those of you that didn't hear, like, is
+
+
+there some kind of like bad feedback
+
+
+between these things where if you have
+
+
+like a bad model, then you'll get a bad
+
+
+bad policy, and then you're going to get
+
+
+even worse model. Um
+
+
+so sort of although the structure of the
+
+
+algorithm is actually a little bit
+
+
+self-correcting. Basically, the key here
+
+
+is step number five.
+
+
+If you have a model that is bad such
+
+
+that a policy optimized with respect to
+
+
+that model takes actions that the model
+
+
+thinks lead to good outcomes but
+
+
+actually lead to bad outcomes.
+
+
+Um that's a bad thing. But then you will
+
+
+run that policy in step number five. And
+
+
+it's almost like running an experiment.
+
+
+Like if I think that the left door is
+
+
+unlocked, maybe I'll go there and I'll
+
+
+try it but then I'll see that it's
+
+
+actually locked. So then I will update
+
+
+my model and then I will hopefully avoid
+
+
+making that mistake in the future. So
+
+
+step number five here is the key to kind
+
+
+of correcting those things. Um but there
+
+
+is a lot of truth to what you said which
+
+
+is that in general there is a kind of a
+
+
+tension between the model and the policy
+
+
+because what the policy is trying to do
+
+
+is kind of like trick the model into
+
+
+producing a good state.
+
+
+Like that's literally what the
+
+
+optimization is doing. It's saying like
+
+
+given this model, find behavior that
+
+
+leads to high reward and the policy
+
+
+doesn't care whether the behavior truly
+
+
+leads to high reward or just fools the
+
+
+model into thinking it leads to high
+
+
+reward.
+
+
+Um this is actually also the other
+
+
+reason why um an off-policy method in
+
+
+that in step four can mix both real and
+
+
+model data is a good idea. It also kind
+
+
+of forces the policy to hedge a little
+
+
+bit because now
+
+
+it's trained with off-policy RL on both
+
+
+real data and model data which means
+
+
+that it can't like cheat that much.
+
+
+Um now that mechanism by itself you kind
+
+
+of shouldn't count on it but it does
+
+
+help a little bit.
+
+
+Okay.
+
+
+So
+
+
+um let's talk about
+
+
+uh uh
+
+
+Richard Sutton's original Dyna algorithm
+
+
+and I mentioned that these algorithms
+
+
+are referred to as Dyna-like. So uh Dyna
+
+
+was the first algorithm as far as I know
+
+
+that proposed this kind of framework
+
+
+although it actually proposed something
+
+
+a little bit uh more simplistic.
+
+
+Um so Dyna was a variant of online
+
+
+Q-learning. And this is, by the way,
+
+
+this entire slide is essentially like
+
+
+kind of a historical footnote for you
+
+
+guys. You don't really need to know
+
+
+this, but it's kind of nice to know
+
+
+where this stuff comes from. Um, so,
+
+
+this is how Dyna works.
+
+
+Uh, given some state S, pick an action A
+
+
+using your favorite exploration policy.
+
+
+So, that's just like classic Q-learning.
+
+
+Um, step two, observe the next state S
+
+
+prime and the reward, and get a
+
+
+transition SAS prime R.
+
+
+Then step three, update your model P hat
+
+
+and your reward model R hat using the
+
+
+transition you just observed.
+
+
+Okay?
+
+
+Uh, and then update your Q function. So,
+
+
+this is online Q-learning. Uh, so, you
+
+
+basically just
+
+
+Don't worry about what that equation is.
+
+
+That's just a regular online Q-learning
+
+
+update.
+
+
+And then
+
+
+repeat the following procedure K times.
+
+
+Sample some state and action from your
+
+
+buffer of past
+
+
+states and actions. This would be what
+
+
+we would call a replay buffer. Back
+
+
+then, they didn't call it that.
+
+
+Uh, and then update your Q function
+
+
+on that sampled state and action, where
+
+
+S prime comes from your
+
+
+model.
+
+
+So, this is a truncated roll out. It's
+
+
+actually a truncated roll out of length
+
+
+one.
+
+
+Um,
+
+
+I It would have made more sense to me to
+
+
+plug in the action that you would
+
+
+actually would take with your latest
+
+
+policy, but the original Dyna method did
+
+
+not do that. It just did this.
+
+
+Okay. Um, so,
+
+
+people kind of took took inspiration
+
+
+from this and said like, "Hey, this
+
+
+seems like a
+
+
+a special case of a more general class
+
+
+of methods, where maybe in step number
+
+
+seven, we could plug in any action from
+
+
+any policy, like let's say our latest
+
+
+policy, and instead of doing just one
+
+
+step, we can do multiple steps." So,
+
+
+that leads to kind of the more general
+
+
+class of Dyna-style methods, where you
+
+
+collect some data consisting of
+
+
+transitions. Uh, so, this is your data.
+
+
+Uh, learn your model and optionally your
+
+
+reward model if you don't assume you
+
+
+know the reward.
+
+
+And then what you repeat K times is you
+
+
+sample some states from your buffer,
+
+
+choose the action using
+
+
+maybe your latest policy or using your
+
+
+exploration policy, whatever you want.
+
+
+Uh simulate the resulting next state and
+
+
+the resulting reward, and optionally
+
+
+uh maybe even do this a few times to get
+
+
+like little short rollouts. And then you
+
+
+train all of that.
+
+
+So, uh this is the general recipe of a
+
+
+Dyna-style algorithm. It only requires
+
+
+short rollouts from your model, maybe as
+
+
+few as one step or a few steps, and it
+
+
+still sees uh a diverse range of states.
+
+
+Okay?
+
+
+So, if someone says Dyna, what they
+
+
+really mean is this slightly crazy thing
+
+
+on the previous slide. But if they say
+
+
+Dyna-style or Dyna-like, what they mean
+
+
+is this general class of methods where
+
+
+you get to choose how long those
+
+
+rollouts are and which policy is used to
+
+
+produce the rollouts.
+
+
+Now, the other thing we can do is uh you
+
+
+know, this way of writing the algorithm
+
+
+kind of makes it seem very sequential.
+
+
+But if you remember when we talked about
+
+
+Q-learning, we discussed how Q-learning
+
+
+can also be seen as a set of different
+
+
+parallel processes. You have one process
+
+
+that is interacting with the world and
+
+
+collecting data. Another process that is
+
+
+training your Q function on that data.
+
+
+And then maybe another process that is
+
+
+periodically replacing your target
+
+
+Q function with your current Q function.
+
+
+And that's actually a good way to think
+
+
+about these model-based methods, too.
+
+
+So, we can draw a picture
+
+
+that makes this look much more like a
+
+
+set of parallel processes rather than a
+
+
+sequential algorithm. So, you've got
+
+
+your buffer of transitions, and this is
+
+
+like your gold standard transitions.
+
+
+These are real transitions from the real
+
+
+world. And periodically you go back out
+
+
+and refresh them by running your latest
+
+
+policy.
+
+
+So, that's process one, data collection.
+
+
+And if you put too much stuff in your
+
+
+buffer, you make it a ring buffer so
+
+
+that you have evict the old stuff.
+
+
+And then you've got your target network
+
+
+and your current network and you got
+
+
+another process that periodically
+
+
+updates and that's just like just like
+
+
+in Q-learning.
+
+
+And then you've got your other process
+
+
+which is your actual RL training and if
+
+
+you have actor-critic then this process
+
+
+three would update your actor and your
+
+
+critic. If you have Q-learning then it
+
+
+just updates your Q function.
+
+
+And so this is just exactly the picture
+
+
+we had before
+
+
+when we talked about Q-learning.
+
+
+And now we're going to add process four
+
+
+which is model training.
+
+
+So you've got this other worker that's
+
+
+going to go in and load stuff from your
+
+
+buffer and update your model.
+
+
+And you also have process five which is
+
+
+going to take your model, sample states
+
+
+from your buffer, and make little
+
+
+rollouts using your model to collect
+
+
+some additional auxiliary data and stuff
+
+
+it into a second buffer of model-based
+
+
+data.
+
+
+And then when you go and train your
+
+
+actor and critic, you can load some data
+
+
+from the real buffer and some data from
+
+
+the model-based buffer. It's good to
+
+
+keep them separate because you know once
+
+
+you once you mix them up you don't know
+
+
+what is what. So if you keep them
+
+
+separate then you can balance things.
+
+
+You can say like, "Oh, I want like 50/50
+
+
+real versus fake data." In reality that
+
+
+fake buffer might be spinning much more
+
+
+quickly. You might be refreshing it more
+
+
+quickly which is very good because then
+
+
+it'll be more on policy
+
+
+but it's also not as accurate.
+
+
+So now you can kind of imagine looking
+
+
+at this picture and you have to evict
+
+
+this occasionally. Looking at this
+
+
+picture you can imagine now there's all
+
+
+these knobs you can turn. How fast does
+
+
+process four go? How fast does process
+
+
+five go? How fast does process one go?
+
+
+When do you pull in new data? And you
+
+
+can tweak all these things to your
+
+
+heart's content depending on how you
+
+
+want to balance sample efficiency,
+
+
+computational efficiency, and the error,
+
+
+how you're trading off the error between
+
+
+using your model versus getting stale
+
+
+data from an older policy. And depending
+
+
+on your problem setting you might choose
+
+
+to turn those knobs in all sorts of
+
+
+various ways.
+
+
+So in my opinion this is probably
+
+
+actually a better way to look at the
+
+
+structure of these algorithms than the
+
+
+more linear version because it makes it
+
+
+a little clearer that you're you have
+
+
+all these choices to make.
+
+
+Any questions about this picture?
+
+
+Yeah.
+
+
+>> Um so,
+
+
+based on the title, the purpose of
+
+
+model-based RL in the first place is um
+
+
+sample efficiency.
+
+
+And we can accelerate this like
+
+
+Yeah, is
+
+
+is that sort of the underlying like
+
+
+motivation?
+
+
+>> Yeah, so the question was the purpose of
+
+
+this is sample efficiency. Generally,
+
+
+yes. So, the textbook answer would be
+
+
+you would want to do this to have a more
+
+
+efficient algorithm.
+
+
+Okay. So, um if you want to look up like
+
+
+actual algorithms that do this, uh
+
+
+there actually quite a few methods that
+
+
+all
+
+
+are kind of variants on this template.
+
+
+Um there are actually many more than
+
+
+this, but these are maybe like three
+
+
+examples that are fairly canonical. Uh
+
+
+model-based acceleration, model-based
+
+
+value expansion, and model-based policy
+
+
+optimization. They differ a little bit
+
+
+in how they turn these knobs and stuff
+
+
+like that, but mostly they're based on
+
+
+the same template. And again, the
+
+
+template is
+
+
+collect some data, sample uh a mini
+
+
+batch from your buffer, use that mini
+
+
+batch to update your model,
+
+
+sample some states from your buffer, and
+
+
+for each of those states perform a
+
+
+little model-based rollout. That's a
+
+
+little short rollout. And then use all
+
+
+these transitions uh along these
+
+
+rollouts to update your Q function.
+
+
+Um and
+
+
+basically, this is exactly the picture I
+
+
+had before, just it written out in more
+
+
+linear form. And what the different
+
+
+methods kind of differ in is how they do
+
+
+these rollouts, which policy they use,
+
+
+uh how they mix model-based versus
+
+
+real-world rollouts in updating the Q
+
+
+function or value function, all that
+
+
+kind of stuff.
+
+
+Okay.
+
+
+Um so, let's do an intermission here.
+
+
+We'll come back at 9:10, and then we
+
+
+will continue with some model
+
+
+architecture stuff.
+
+
+>> Just got to make sure she's
+
+
+>> All right. Let's get started. So,
+
+
+in the next part of the lecture we're
+
+
+going to talk about models a little bit
+
+
+more. So, remember that there's these
+
+
+three stages. There's collecting data,
+
+
+learning your model, and then using your
+
+
+model to recover a policy or a plan. And
+
+
+we talked a lot about number three so
+
+
+far, but let's talk about models a
+
+
+little bit more.
+
+
+And I mentioned way back on Wednesday
+
+
+that kind of like number one is the
+
+
+fancy statistical thing, number three is
+
+
+like the kind of the RL thing, and
+
+
+number two, that's more like the deep
+
+
+learning thing. So, the next part of the
+
+
+lecture is a lot less RL and a lot more
+
+
+like machine learning, a lot more deep
+
+
+learning.
+
+
+So, one thing that
+
+
+is
+
+
+worth learning about, I think, is latent
+
+
+state space models.
+
+
+So, so far we've talked a lot about
+
+
+fully observed domains, but uh
+
+
+learning models can be especially
+
+
+good if you have partial observability.
+
+
+That's when you have a lot of like fun
+
+
+stuff to talk about for model
+
+
+architectures. If you have full
+
+
+observability and low-dimensional
+
+
+states,
+
+
+well, there's just not that much to talk
+
+
+about. Like you just train your model.
+
+
+It's pretty straightforward to use an
+
+
+MLP or something. But if you have
+
+
+images, then there's some fun stuff for
+
+
+us to discuss. So, let's say that you're
+
+
+doing these Atari games, and
+
+
+uh you would like to actually properly
+
+
+capture the fact that the Atari games
+
+
+are partially observed MDPs, meaning
+
+
+that the image is only a partial
+
+
+reflection of what's going on underneath
+
+
+in the computer, and uh you believe that
+
+
+there are some states underlying that,
+
+
+and you don't know what the states are.
+
+
+All you get to observe are the image
+
+
+pixels.
+
+
+Um
+
+
+then um
+
+
+you could have tried to actually learn
+
+
+this kind of state space model.
+
+
+In fact, you could even try to learn it
+
+
+even when it's not partially observed.
+
+
+You might say, "Well, maybe I believe my
+
+
+image is fully captured the state of the
+
+
+world." So, maybe you are not in the
+
+
+partially observed setting. Even then,
+
+
+you might prefer to learn an underlying
+
+
+state space because you might believe
+
+
+that a better state representation is
+
+
+actually smaller, lower dimensional, or
+
+
+more disentangled, meaning that it's a
+
+
+representation on top of which it'll be
+
+
+easier to do RL. Maybe you don't want to
+
+
+learn like big complicated ConvNet or
+
+
+VIT Q-functions, and would prefer to use
+
+
+model learning to recover that state.
+
+
+So, whether you are in the partially
+
+
+observed setting, or even if you are
+
+
+not, it might be interesting to think
+
+
+about trying to learn an underlying
+
+
+state from high-dimensional
+
+
+observations.
+
+
+And I'll I'll talk about a particular
+
+
+way of doing this. I'll I'll preface
+
+
+this by saying that there are actually
+
+
+various ways of doing it. The one that
+
+
+I'm going to talk about is based on
+
+
+variational autoencoders, which is what
+
+
+we learned about earlier in the course.
+
+
+Uh
+
+
+there are other ways of doing this as
+
+
+well, but very the variational
+
+
+autoencoder framework, I think, is good
+
+
+to know about, not necessarily because
+
+
+it's the most effective, but because
+
+
+it's sort of like um
+
+
+uh it captures an essential idea that
+
+
+pretty much any other latent variable
+
+
+model is going to have. So, I think it's
+
+
+kind of good to understand because once
+
+
+you understand it, then any other
+
+
+latent variable method kind of, you
+
+
+know, is a small
+
+
+uh delta from there.
+
+
+So, as a reminder, when we have these
+
+
+kinds of sequence models, and we want to
+
+
+apply the variational inference
+
+
+framework, well, we need to choose like
+
+
+what are the observed variables and what
+
+
+are the latent variables. And the
+
+
+observed variables are our observations,
+
+
+and the latent variables are the states.
+
+
+So, in this case in the case of Atari
+
+
+game, since all you get are images, you
+
+
+don't actually even know what the
+
+
+underlying state is. Like, you know, you
+
+
+believe that it maybe has something to
+
+
+do with like the location of the little
+
+
+Montezuma's Revenge guy and the and the
+
+
+skull and the key and all that stuff,
+
+
+but you don't have those in a computer.
+
+
+Like, you don't have that
+
+
+representation.
+
+
+Okay. So, if we're if we're going to
+
+
+apply a variational autoencoder kind of
+
+
+framework to this, we have to pick a
+
+
+prior,
+
+
+and we have to pick an encoder and a
+
+
+decoder.
+
+
+So, what is the prior? Well, the prior
+
+
+that that's a distribution over S that
+
+
+it doesn't depend on O.
+
+
+That doesn't depend on the observations.
+
+
+So, the prior basically is going to
+
+
+somehow involve those dynamics, because
+
+
+the dynamics, that's the distribution
+
+
+that involves S and doesn't involve O.
+
+
+And the way that we would do this is we
+
+
+would set the prior over these sequences
+
+
+of states to be the probability of the
+
+
+initial state multiplied by the
+
+
+transition probabilities. So, the prior
+
+
+is actually action-dependent.
+
+
+Uh you get a different uh prior
+
+
+distribution over states depending on
+
+
+what actions you chose.
+
+
+And I'm kind of I'm torturing the
+
+
+notation here, because I'm calling S1
+
+
+through SH Z, but then it's actually
+
+
+dependent on A, so apologies for the
+
+
+tortured notation. It's kind of a
+
+
+trade-off between clarity and
+
+
+preciseness, and I chose clarity at the
+
+
+cost of preciseness.
+
+
+Um so, the initial state distribution,
+
+
+you could choose to be anything you
+
+
+want. You can choose it to be like a
+
+
+zero-mean unit variance Gaussian, but
+
+
+the transition probabilities you have to
+
+
+actually learn.
+
+
+And that's a little weird, because
+
+
+before we talked about VAEs, typically
+
+
+the prior was just fixed. You just
+
+
+choose it to be like zero-mean unit
+
+
+variance, but now you're actually
+
+
+learning a piece of the prior. You're
+
+
+learning these transition probabilities.
+
+
+So, the prior basically captures the
+
+
+notion that you start off somewhere in
+
+
+the latent space, and then you walk
+
+
+around in that latent space as your
+
+
+trajectory evolves.
+
+
+Okay? So, it's kind of a slightly weird
+
+
+notion of a prior, but it still makes
+
+
+sense in the VAE framework.
+
+
+Now, you need a decoder. So, the decoder
+
+
+is the thing that maps from
+
+
+X uh from Z to X, and Z is a sequence of
+
+
+states. Uh X is a sequence of
+
+
+observations. So, the decoder uh is
+
+
+going to turn states into observations.
+
+
+And we would like the decoder to accord
+
+
+with the structure of our POMDP, which
+
+
+means that every observation is produced
+
+
+independently of every other one given
+
+
+the corresponding state.
+
+
+And this is important because we want
+
+
+the states to be Markovian. So, the
+
+
+current state should d-separate past
+
+
+observations from future observations.
+
+
+And then we need an encoder.
+
+
+And the encoder, if you remember, that's
+
+
+the variational distribution. So, the
+
+
+encoder is a choice that we make.
+
+
+And remember that the variational lower
+
+
+bound that we use for these kinds of
+
+
+models is actually valid for any choice
+
+
+of encoder.
+
+
+But of course, not all encoders are made
+
+
+equal.
+
+
+The best encoder is the one that can
+
+
+accurately capture the posterior, that
+
+
+can actually accurately capture the
+
+
+distribution over the sequence of states
+
+
+given uh a sequence of observations. So,
+
+
+we have a choice to make.
+
+
+Um there are actually many different
+
+
+choices. I'll I'll write down one, but
+
+
+then I'll talk about how we can have
+
+
+lots of others. So, one choice is to
+
+
+factorize it over time steps such that
+
+
+at every time step you have a Q 5 ST
+
+
+given all of the observations up to T
+
+
+and all of the actions up to T. So, this
+
+
+is sometimes called a filtering
+
+
+posterior. Uh but there are other kind
+
+
+of posteriors you can you can choose.
+
+
+So, this is a choice that you make.
+
+
+Okay. So, let's uh
+
+
+work through this. Uh
+
+
+so, decoder, uh if we want to visualize
+
+
+this, it's basically just a network
+
+
+that's going to take your state and
+
+
+produce an image.
+
+
+Um so, some kind of, you know, what
+
+
+maybe a deconvolutional network or
+
+
+something like that.
+
+
+And it's independent every time step.
+
+
+The encoder
+
+
+is going to take a sequence of
+
+
+observations, maybe a sequence of
+
+
+actions, and it's going to produce a
+
+
+distribution over states. So, this could
+
+
+be some kind of sequence model. Maybe
+
+
+you have a transformer that reads in
+
+
+many images, all the images you've seen
+
+
+so far,
+
+
+uh and produces a distribution over the
+
+
+current state, maybe a Gaussian
+
+
+distribution.
+
+
+Okay. So, these are kind of the
+
+
+complicated parts of this. And then the
+
+
+dynamics, that's just going to be
+
+
+uh uh an MLP that takes in your current
+
+
+latent state and your current action and
+
+
+produces a let's say Gaussian
+
+
+distribution over the next latent state.
+
+
+So, typically in a setup like this, the
+
+
+more complicated things to represent are
+
+
+going to be the decoder and the encoder,
+
+
+with the encoder typically being the
+
+
+more complex one because that's going to
+
+
+represent some kind of uh
+
+
+filtering procedure or sequence model.
+
+
+But, we can choose many different types
+
+
+of encoders.
+
+
+Okay. So, let's actually like put these
+
+
+two together and try to work something
+
+
+out. So, we've got our
+
+
+uh observation model or uh decoder,
+
+
+we've got our dynamics, which is part of
+
+
+our prior, and we've got uh in general
+
+
+also reward model. Uh
+
+
+We don't worry about that too much. We
+
+
+just treat the rewards as like another
+
+
+one of those observation variables. You
+
+
+can also even concatenate your rewards
+
+
+to your observations, but typically you
+
+
+would use a separate network for it
+
+
+because
+
+
+if your observations are like images,
+
+
+you would have something
+
+
+uh suitable for images for that.
+
+
+And then you have to train this.
+
+
+And you train it
+
+
+uh well, if you knew the the states,
+
+
+then you would do just do maximum
+
+
+likelihood, but we don't know the
+
+
+states. So, it's a latent variable
+
+
+model, so we would use a
+
+
+uh variational lower bound.
+
+
+Okay. So, here is the big scary uh
+
+
+bound, and I'll walk you through this,
+
+
+but the punchline is that this is really
+
+
+like exactly the same as what we had
+
+
+back when we talked about VAEs. I've
+
+
+just plugged in states in place of Zs
+
+
+and observations in place of X's, and I
+
+
+conditioned everything on the actions.
+
+
+So, everything So, the actions are on
+
+
+the right side of the conditioning bar
+
+
+for all these things.
+
+
+So, you have an expectation with respect
+
+
+to your approximate posterior, your
+
+
+encoder, and inside of the expectation,
+
+
+you have your transition probabilities,
+
+
+your observation probabilities, and then
+
+
+uh you have the entropy of the encoder.
+
+
+Okay. So, it's literally just
+
+
+substitution of our choice of
+
+
+uh observation model or decoder,
+
+
+dynamics model or prior, and our
+
+
+approximate posterior or encoder into
+
+
+the VAE equations that we had before
+
+
+when we talked about variational
+
+
+inference.
+
+
+And something you might note at this
+
+
+point is that inside of the expectation,
+
+
+you're seeing ST and ST + 1. So, in
+
+
+general, whatever we take that
+
+
+expectation under needs to produce a
+
+
+distribution over ST and ST + 1.
+
+
+So, if our encoder just produces ST,
+
+
+then we need to actually sample two
+
+
+states, a current state and a next
+
+
+state, or change our approximate
+
+
+posterior so that it actually
+
+
+uh produce a distribution a distribution
+
+
+over ST and ST + 1. So, this is where
+
+
+the choice of our uh encoder really
+
+
+matters.
+
+
+Okay. Any questions about this
+
+
+derivation before I I talk about the
+
+
+choice of encoder?
+
+
+>> [snorts]
+
+
+>> Okay.
+
+
+So,
+
+
+the approximate posterior, the encoder,
+
+
+uh
+
+
+you have many different choices. So,
+
+
+this one,
+
+
+uh Q uh ST given the previous O's and
+
+
+the previous A's, this is sometimes
+
+
+called a um filtering posterior. Uh
+
+
+filtering because probabilistic
+
+
+filtering is the process of inferring a
+
+
+latent state given your observations so
+
+
+far.
+
+
+The filtering posterior has some
+
+
+interesting trade-offs. It's generally
+
+
+considered kind of like a good balanced
+
+
+choice.
+
+
+Uh but it has a pretty major downside.
+
+
+So, it's a good balanced choice.
+
+
+Um but
+
+
+what is the downside of the of this
+
+
+filtering posterior?
+
+
+Uh I'll give you a hint. If you look at
+
+
+the variational lower bound equation at
+
+
+the top,
+
+
+something might jump out at you that
+
+
+might suggest that
+
+
+encoding each of the STs independently
+
+
+of each other using this kind of
+
+
+filtering posterior might be a bad
+
+
+decision.
+
+
+So, look at the equation at the top
+
+
+and
+
+
+see if anything jumps out at you about
+
+
+why using this kind of posterior might
+
+
+be bad.
+
+
+Yeah.
+
+
+>> By modeling
+
+
+each ST independently, you're not
+
+
+considering the
+
+
+very like intricate uh weak relationship
+
+
+between like ST and ST + 1.
+
+
+>> Right. So, um if we look at the equation
+
+
+at the top, you'll notice that inside of
+
+
+that expectation, there is the dynamics
+
+
+term, log P phi ST + 1 given STAT. And
+
+
+now imagine that our posterior is this
+
+
+filtering posterior. So, ST and ST + 1
+
+
+are encoded independently of each other
+
+
+given all the history.
+
+
+So, what that means is let's say that
+
+
+this is your distribution over ST. And
+
+
+then the the circle represents one
+
+
+standard deviation of a Gaussian
+
+
+distribution. And this is your
+
+
+distribution over ST + 1.
+
+
+Okay? So, it makes sense. You have some
+
+
+uncertainty about both of them.
+
+
+Now, if you
+
+
+take the expectation under this
+
+
+and this, treat as two independent
+
+
+variables, what you're training your
+
+
+dynamics to do is basically all pairs.
+
+
+So, the dynamics are supposed to
+
+
+assign a high probability to all of
+
+
+these transitions.
+
+
+But this is kind of silly because
+
+
+obviously ST and ST + 1 are not
+
+
+independent of each other. So, what you
+
+
+probably actually want
+
+
+is something that looks more like
+
+
+this.
+
+
+Okay?
+
+
+Right? Cuz if you if you think that
+
+
+you're over here at time step T,
+
+
+probably you're going to be over here at
+
+
+time step T plus one, not over here.
+
+
+So, in practice, if you use this kind of
+
+
+setup, if you if you use a factorized
+
+
+posterior over your states,
+
+
+what you will end up doing is like this
+
+
+kind of dynamics is impossible, right?
+
+
+Like you can't have you can't go from
+
+
+everywhere to everywhere. So, what
+
+
+you'll actually get is a different
+
+
+thing. You'll get something like this.
+
+
+Because now now it's easy. So, um this
+
+
+is actually a very common problem with
+
+
+variational inference that if you te- if
+
+
+you factorize your posterior too much,
+
+
+meaning that you have insufficient
+
+
+dependencies between the different
+
+
+latent variables, you uh get what's
+
+
+called posterior collapse, where your
+
+
+encoder will
+
+
+have less variance than it should. It'll
+
+
+be kind of overconfident about the
+
+
+latent states because you're forcing it
+
+
+to represent these things independently
+
+
+and accord with the prior, and the only
+
+
+way it can do that is by
+
+
+reducing the uncertainty, erroneously
+
+
+reducing the uncertainty to be lower
+
+
+than it really is.
+
+
+Now, as to whether this is a bad thing
+
+
+or not, is that's kind of a interesting
+
+
+question. If you really want a very
+
+
+faithful probabilistic method that will
+
+
+accurately capture the uncertainty you
+
+
+have about the underlying latent state,
+
+
+this is a big problem.
+
+
+But, if you're doing deep learning, and
+
+
+we are definitely doing deep learning,
+
+
+then maybe what you really want out of
+
+
+this framework is not really a faithful
+
+
+representation of uncertainty, but what
+
+
+you might actually want is just good
+
+
+representational learning.
+
+
+Like you you just you don't really care
+
+
+about how uncertain you are about the
+
+
+state. You just want a state that is
+
+
+represented nicely, as like a nice
+
+
+10-dimensional vector that kind of
+
+
+roughly disentangles the underlying
+
+
+factors of variation in the image. And
+
+
+if you're playing Montezuma's Revenge,
+
+
+well, the images already basically get
+
+
+you the entire state, so it's not like
+
+
+you have that much uncertainty about
+
+
+what the situation is, and you really
+
+
+really just want to like break up that
+
+
+image into more elegant representation,
+
+
+in which case this thing is totally
+
+
+fine.
+
+
+And that's why the filtering posterior
+
+
+is actually very popular. Now, if you
+
+
+want to do the fancy thing, you could
+
+
+have uh
+
+
+a fancier posterior, you could have
+
+
+what's called a full smoothing
+
+
+posterior, where you take your entire
+
+
+sequence of observations and your entire
+
+
+sequence of actions,
+
+
+shove it into a transformer, and get
+
+
+joint distributions over pairs ST and ST
+
+
++ 1. And then you can model all these
+
+
+dependencies. And that's very fancy, and
+
+
+it's quite nice, and it's the most
+
+
+accurate, and if you want um very nice
+
+
+uh uncertainty estimation, that's a good
+
+
+thing to do, but of course it's more
+
+
+complex. And then if you want to go in
+
+
+the other extreme, you can have even a
+
+
+single-step encoder.
+
+
+Like no, don't even look at the history.
+
+
+Forget sequence models. Just take the
+
+
+current image and turn it into a state.
+
+
+And if you believe that you are in a
+
+
+mostly fully observed environment, even
+
+
+that might already be good enough to do
+
+
+some nice representation learning.
+
+
+So, these are kind of the two extremes.
+
+
+The full smoothing posterior is the most
+
+
+accurate and the most complicated, and
+
+
+the single-step encoder is the simplest
+
+
+and the least accurate. And which one to
+
+
+use kind of depends on how much you
+
+
+believe you're in a partially observed
+
+
+setting, and how much you you care about
+
+
+capturing the uncertainty about the
+
+
+state as opposed to just doing
+
+
+representation learning.
+
+
+Uh now, I'll I'll tell you right now
+
+
+that like, you know, from the papers
+
+
+I've read and the methods that I've seen
+
+
+people use, and uh the methods that I've
+
+
+worked on,
+
+
+I haven't seen people use a full
+
+
+smoothing posterior. Uh it seems like a
+
+
+very elegant thing, and it seems like
+
+
+good uncertainty estimation would
+
+
+greatly benefit from it, but it's It's
+
+
+rare thing to actually see people use.
+
+
+So, typically people use a filtering
+
+
+posterior if they're in a partial
+
+
+observed setting and a single step
+
+
+encoder if they just want to do some
+
+
+quick and dirty representation learning.
+
+
+All right. That was kind of a lot to
+
+
+take in. Any questions about this?
+
+
+Okay.
+
+
+Um
+
+
+So, if we want like a really minimal
+
+
+simple version of all this,
+
+
+uh we can talk about even the single
+
+
+step encoder and we can see what all of
+
+
+this looks like just as an exercise.
+
+
+So, let's imagine that we
+
+
+use now the simplest possible posterior
+
+
+uh Q uh Q gives us ST given OT.
+
+
+Um
+
+
+So, this kind of encoder might be a bad
+
+
+idea, of course, because uh maybe we're
+
+
+losing a lot of uncertainty. Uh but, we
+
+
+can even double down on this. We can say
+
+
+let's take this
+
+
+very approximate thing and make it even
+
+
+more approximate.
+
+
+Let's actually make the encoder be
+
+
+deterministic.
+
+
+Like, forget all this like uncertainty
+
+
+estimation business. We just want
+
+
+representation learning. Uh let's just
+
+
+have it be a function that takes an OT
+
+
+and just spits out a single ST.
+
+
+And then, if you plug this into the very
+
+
+short inference framework, a lot of
+
+
+things simplify really nicely and you
+
+
+get something even simpler, which is
+
+
+you know, sometimes used for model-based
+
+
+RL. It's sometimes a good choice. Uh
+
+
+okay. So, making it deterministic just
+
+
+basically means that your posterior is a
+
+
+delta function and you can have some
+
+
+function G
+
+
+uh of OT that gives just spits out ST.
+
+
+>> What would be the use case for this?
+
+
+>> Uh the use case would be to make it
+
+
+easier to code up, to make it easier to
+
+
+code up a method for learning these
+
+
+state space models that is very
+
+
+probabilistically inaccurate, but might
+
+
+serve the job of providing you with good
+
+
+enough representations.
+
+
+Um the other use case is to let us do a
+
+
+little exercise to help us understand
+
+
+how the variational inference framework
+
+
+can simplify.
+
+
+Okay. So, now what I'm going to do is
+
+
+I'm going to take this function G and
+
+
+I'll just plug it into the uh equation
+
+
+at the top. Right? Uh now the entropy
+
+
+term at the end basically means nothing
+
+
+at this point because uh since G is uh
+
+
+a delta function, it has minimal entropy
+
+
+and nothing you could you do to it will
+
+
+ever change its entropy. So, I can just
+
+
+disregard the entropy term because I'm
+
+
+not going to make that term any better.
+
+
+It's a it's a lost cause. But, I can
+
+
+look at all the other terms. So, the
+
+
+expectation under a delta function can
+
+
+just be obtained by plugging in the
+
+
+function G everywhere where I see S. And
+
+
+this is the objective I get. So, I just
+
+
+I just took that equation at the top and
+
+
+I plugged in G. So, now this actually
+
+
+kind of looks pretty reasonable. Uh so,
+
+
+what this is saying is that over all of
+
+
+my samples and over all of my time
+
+
+steps, I'm going to maximize the log
+
+
+probability of G evaluated at OT + 1
+
+
+given G evaluated at OT and my action.
+
+
+Okay, that's cool. That's just like
+
+
+dynamics on my encoded states. And then
+
+
+I'm going to maximize the log
+
+
+probability of the observation given G
+
+
+of that observation.
+
+
+So, that's just a straight-up
+
+
+autoencoder. Like make sure that G of O
+
+
+decodes back to O and make sure that G
+
+
+of O obeys my learned dynamics.
+
+
+This is actually really simple. Like
+
+
+there there is no fancy
+
+
+reparameterization trick. There's no
+
+
+uh complicated stuff. You can just
+
+
+literally implement all of this in
+
+
+PyTorch, call dot gradients on it, and
+
+
+you get gradients.
+
+
+Um
+
+
+So, of course, this might be a very bad
+
+
+idea because now there's no uncertainty,
+
+
+there's no partial there's no handling
+
+
+of partial observability, no sequence
+
+
+models, but
+
+
+G of O is a representation of your
+
+
+observation in a concise
+
+
+vector that obeys some dynamics that
+
+
+you've just learned. So, if all you want
+
+
+to get out of this is a better way of
+
+
+representing images without having to
+
+
+train a complicated image model end to
+
+
+end with RL, this is actually like a
+
+
+pretty possible way to do it.
+
+
+So, basically, if your alternative to
+
+
+doing this is to directly plug your
+
+
+observations O into Q-learning, this
+
+
+might actually be preferred. Because
+
+
+Q-learning is,
+
+
+as you've all seen in your homework,
+
+
+hard to get to work, a little bit
+
+
+unstable, a little bit sensitive to
+
+
+hyper-parameters, whereas this is just
+
+
+straight-up uh maximum likelihood
+
+
+estimation.
+
+
+So, this is an easier optimization than
+
+
+Q-learning. And for that reason, people
+
+
+sometimes use this thing to learn
+
+
+representations, which they then plug
+
+
+into RL algorithms.
+
+
+Um anybody who who like, you know, has
+
+
+studied statistics and probability
+
+
+theory will probably really dislike this
+
+
+thing and much prefer all the fancy
+
+
+stuff on the previous slide with all
+
+
+these expectations and variational lower
+
+
+bounds, but if you just want to be like
+
+
+a cool deep learning person, you can use
+
+
+this thing and it's okay.
+
+
+>> What What is this called?
+
+
+>> This is called an autoencoder.
+
+
+>> What is the deterministic autoencoder?
+
+
+>> Um it's just called an autoencoder.
+
+
+>> It's just an autoencoder.
+
+
+>> Yes.
+
+
+Um yeah, it would make sense to call it
+
+
+a deterministic autoencoder, but I guess
+
+
+historically autoencoders came first and
+
+
+the fancy variational version came
+
+
+second, so there is like the OG, I
+
+
+guess, autoencoder and then there is the
+
+
+variational autoencoder.
+
+
+Um all right. So, uh what is this doing?
+
+
+Well, it's just uh training this
+
+
+function that maps from O back to S. If
+
+
+you want to completely round it out into
+
+
+a complete model-based RL method, you
+
+
+probably also want to learn a reward
+
+
+model, so just stick that right in
+
+
+there. Also, maximize the probability of
+
+
+R given G of O. That's very
+
+
+straightforward. It's just like a little
+
+
+MLP that predicts reward.
+
+
+Um and uh and that's your method. So,
+
+
+you've got your latent space dynamics,
+
+
+you've got your image reconstruction,
+
+
+and you've got your reward model. And
+
+
+those are all the things that you would
+
+
+want to be able to generate some
+
+
+synthetic rollouts for one of those
+
+
+model-based RL method methods.
+
+
+There are many practical methods that
+
+
+use a stochastic encoder or more
+
+
+sophisticated smoothing posterior,
+
+
+handle partial observability. So, there
+
+
+are many many variants on this, but I
+
+
+want to go through like a few of these
+
+
+kind of
+
+
+I guess
+
+
+more reasonable default choices just to
+
+
+give you like a little menu to work
+
+
+from. But, keep in mind this is not an
+
+
+exhaustive list of all the different
+
+
+ways of doing this. This is just like a
+
+
+few samples on a spectrum from the fully
+
+
+probabilistic to the very naive.
+
+
+Okay. Um
+
+
+That's the modeling part of it, but now
+
+
+let's let's come back to the algorithms
+
+
+and let's try to plug one of these
+
+
+models into an actual RL algorithm to
+
+
+like put really put all the pieces
+
+
+together.
+
+
+So,
+
+
+um
+
+
+I'll skip this part. Let me just talk
+
+
+about the actor-critic version.
+
+
+Okay. So, let's work through an example
+
+
+actor-critic algorithm with learned
+
+
+representations from one of these
+
+
+models. So, the
+
+
+the the Q-learning version will be very
+
+
+similar. So, remember actor-critic we
+
+
+would just have a Q function and an
+
+
+actor. Q-learning we would have only the
+
+
+Q function. They're structurally very
+
+
+very similar. So, I'll go through the
+
+
+actor-critic version because that's
+
+
+maybe the more complicated one, but uh
+
+
+keep in mind that you can do a
+
+
+Q-learning version of this as well.
+
+
+Okay. So, step one, this is going to
+
+
+look structurally very similar to
+
+
+off-policy actor-critic from before.
+
+
+Step one, collect your transition by
+
+
+using your policy. And now I'm going to
+
+
+make it explicit that you you have
+
+
+observations here rather than states.
+
+
+So, I'll write it as O and A instead of
+
+
+S and A.
+
+
+And then put it into your replay buffer.
+
+
+So, just like in off-policy
+
+
+actor-critic, just like in SAC in
+
+
+homework three, get your transition, put
+
+
+it in the replay buffer.
+
+
+And then load up a batch from your
+
+
+replay buffer.
+
+
+And use that batch first to update your
+
+
+model.
+
+
+So, uh model here might consist of your
+
+
+dynamics, your uh uh reward model, your
+
+
+decoder, and your encoder. And if you
+
+
+want to use one of those simple
+
+
+deterministic encoders, that's fine,
+
+
+too. So, whatever choice you want to
+
+
+make here, plug that in there and update
+
+
+it using this batch that you just
+
+
+sampled from your buffer.
+
+
+Um step three,
+
+
+uh infer the state
+
+
+for each element in your batch and the
+
+
+next state. And you would use your uh
+
+
+encoder for this. If you have one of
+
+
+those fancy full posterior full
+
+
+smoothing posterior encoders, you can
+
+
+encode them jointly. Uh but if you have
+
+
+one of the simpler ones, then encode
+
+
+them independently.
+
+
+And now you have a transition in state
+
+
+space in your latent state space. So,
+
+
+you can use this to uh evaluate your
+
+
+target value. Now, this is in terms of
+
+
+these S's, and the S's are your latent
+
+
+codes.
+
+
+Um your policy might still be in
+
+
+observation space, and that's actually
+
+
+okay.
+
+
+Uh and then update your Q function.
+
+
+So, the exactly the the Q function
+
+
+update we had before.
+
+
+And then update your policy with policy
+
+
+gradient or reparameterized policy
+
+
+gradient or something like that.
+
+
+And uh that's the method.
+
+
+And you could further augment this like
+
+
+it you you this is only using the model
+
+
+for representational learning, but you
+
+
+could further augment this by using your
+
+
+model to also generate some additional
+
+
+data. And you you could do that as well.
+
+
+Uh you could do that, for example,
+
+
+between steps three and four. Uh you
+
+
+could run your latent space dynamics,
+
+
+generate some additional latent space
+
+
+trajectories, and add them uh to your uh
+
+
+to your samples.
+
+
+So, there's all sorts of ways to modify
+
+
+this, but this is kind of a a basic
+
+
+framework for actor-critic with learned
+
+
+representations.
+
+
+And uh uh you can use a your full
+
+
+posterior and all that kind of fancy
+
+
+stuff.
+
+
+Uh
+
+
+Why might I want to use this? Oh, a
+
+
+question, yes?
+
+
+>> So, this is actually a why would we
+
+
+actually like care about using a model
+
+
+in our recommendation besides the fact
+
+
+of like using it to just like simulate
+
+
+more data that we don't like collect
+
+
+from whatever our real data
+
+
+>> Yeah, good question. Uh so, there are a
+
+
+few things going on here. One is that as
+
+
+you said that you could use this to
+
+
+generate additional simulated data, but
+
+
+the other thing that's going on here is
+
+
+that you're doing representation
+
+
+learning with your model. Uh that's the
+
+
+thing in step two and step three. And
+
+
+that representation might be easier for
+
+
+RL. Uh for example, uh if you if your
+
+
+observations are images in your Atari
+
+
+games and your um
+
+
+latent states are 32-dimensional
+
+
+vectors,
+
+
+now your Q function and your actor can
+
+
+be small models that just read in a
+
+
+32-dimensional vector. And that might be
+
+
+easier because
+
+
+learning value functions, as we
+
+
+discussed before, uh can be very
+
+
+unstable because
+
+
+Q value function training is not
+
+
+gradient descent in the conventional
+
+
+sense. It's this kind of fixed point
+
+
+iteration. And because of that, it might
+
+
+require more hyperparameter tuning.
+
+
+So, it can sometimes be advantageous
+
+
+for the difficult task of representation
+
+
+learning to be handled by somebody else
+
+
+who is not being trained with uh
+
+
+Q-learning and for Q-learning to operate
+
+
+on these simpler representations.
+
+
+Now, this is a little bit of a
+
+
+controversial statement in the world of
+
+
+RL because uh in deep RL world, like
+
+
+some folks are kind of like really RL
+
+
+purists will then say, "Well, the whole
+
+
+point of doing deep RL is that it's like
+
+
+end-to-end and you're really optimizing
+
+
+for the representations that are most
+
+
+ideal for your Q function." Uh but then
+
+
+there's other folks that say like, "Man,
+
+
+I've been working on this thing
+
+
+all night and my Q function is not
+
+
+training and I'm sick of tweaking my
+
+
+hyper parameters and maybe if I just set
+
+
+up some other optimization objective
+
+
+that's a little bit easier to optimize
+
+
+that would give me better
+
+
+representations, maybe I wouldn't have
+
+
+to work as hard." So, both perspectives
+
+
+are valid. I think there's a a lot of um
+
+
+merit to the notion that the power of a
+
+
+deep RL algorithm is in its ability to
+
+
+learn end-to-end and to acquire
+
+
+representations that are best suitable
+
+
+for representing a policy or value
+
+
+function, but there's also a lot of
+
+
+merit to the perspective that it's
+
+
+simply hard to do, and it might be
+
+
+easier, especially with very complex
+
+
+observations, to set up one of these
+
+
+representation learning objectives.
+
+
+Yes.
+
+
+>> When we start using this algorithm, do
+
+
+we already assume we
+
+
+learned
+
+
+the
+
+
+the variational autoencoder?
+
+
+>> So, it's being trained in step two.
+
+
+So, in step two, when it says update P
+
+
+phi uh and all that stuff, that's
+
+
+training the encoder, the decoder, and
+
+
+the dynamics.
+
+
+>> [clears throat]
+
+
+>> You could, by the way, also pre-train
+
+
+it. So, you could have If you have some
+
+
+data, you could train it in advance and
+
+
+then update it in the online loop, but
+
+
+this version is the fully online version
+
+
+where everything is being updated
+
+
+together.
+
+
+Okay.
+
+
+Um all right. So, we've discussed the
+
+
+merits of this, and then if you want the
+
+
+the version with model-based RL, this is
+
+
+kind of the fully kind of fancy
+
+
+all everything combined into one kind of
+
+
+version, then we can just walk through
+
+
+it step by step, but this is exactly
+
+
+what you guys are all probably already
+
+
+expecting. You get your transition, put
+
+
+it in your buffer,
+
+
+load the batch from the buffer,
+
+
+update your model,
+
+
+infer the states, simulate additional
+
+
+data using your model, so that and you
+
+
+would use this branch rollout thingy,
+
+
+evaluate the target values, typically on
+
+
+a mix of real-world and simulated data,
+
+
+update your Q function,
+
+
+update the actor,
+
+
+and then repeat.
+
+
+Okay, so this is like the the full
+
+
+version that combines all the ideas in
+
+
+the lecture.
+
+
+There are a few things that people
+
+
+sometimes like to do with this. One
+
+
+thing that people sometimes like to do
+
+
+is they notice that
+
+
+when you're simulating those additional
+
+
+rollouts, if you're doing it in the
+
+
+latent space, maybe you can get away
+
+
+with
+
+
+never actually decoding full
+
+
+observations. So, if your If you both
+
+
+your policy and your Q function take in
+
+
+the latent state S, then all of these
+
+
+additional simulator rollouts can be
+
+
+done entirely in the latent space
+
+
+without ever touching the image pixels.
+
+
+And some people really like this because
+
+
+maybe the image pixels are very
+
+
+high-dimensional, but the latent space
+
+
+is very low-dimensional, so it can be a
+
+
+lot faster to produce lots of data
+
+
+without ever decoding it back to the
+
+
+images. So, you can do that as long as
+
+
+both your Q function and your policy
+
+
+depend only on the state and not on the
+
+
+image.
+
+
+Um
+
+
+So, then your policy given the
+
+
+observation requires actually running
+
+
+the encoder, getting a state, and then
+
+
+putting that state into the policy.
+
+
+All right. So, that's the kind of the
+
+
+final final method that puts together
+
+
+all of the parts that we've learned
+
+
+about today into one complicated
+
+
+everything in the kitchen sink kind of
+
+
+method. Any questions about this?
+
+
+Yeah.
+
+
+>> Can you put like other regularizations
+
+
+on the latent space
+
+
+like right away?
+
+
+Better or
+
+
+>> Yeah, so the question for those that
+
+
+didn't hear is, can we do other things
+
+
+to the latent space to get better
+
+
+representations? There's all sorts of
+
+
+things you can do. Um
+
+
+it's harder to say what you should do,
+
+
+but I can tell you what people have
+
+
+attempted to do. One of the things that
+
+
+people have attempted to do is impose uh
+
+
+more structure on the latent space
+
+
+dynamics. So, the logic is that well,
+
+
+the latent space is latent, so it can
+
+
+kind of be whatever you want. So, what
+
+
+if you have linear dynamics?
+
+
+So, can you find an encoder that encodes
+
+
+your images into a latent space where
+
+
+basically you have this.
+
+
+Uh
+
+
+something like that.
+
+
+You can do that. Um it's a kind of you
+
+
+you end up with a trade-off between um
+
+
+uh kind of between fitting your data
+
+
+well and having simpler dynamics, but
+
+
+sometimes this can be very desirable,
+
+
+like maybe uh you believe this
+
+
+regularizes the space, or maybe if
+
+
+you're doing planning, you you know,
+
+
+planning through a linear system is
+
+
+easier or something like that. Or you
+
+
+believe that error accumulates slower
+
+
+with linear dynamics. So, there's stuff
+
+
+like that that you can do.
+
+
+There are much more complex and
+
+
+interestingly structured VAE frameworks
+
+
+that people have developed. You can also
+
+
+do all of this with other models besides
+
+
+VAEs.
+
+
+I wanted to walk through the VAE version
+
+
+here because that's kind of like the
+
+
+simplest thing that has a well-defined
+
+
+variational lower bound. People have
+
+
+done this with diffusion models and with
+
+
+all sorts of other stuff.
+
+
+Yeah.
+
+
+>> Sorry if you already explained this.
+
+
+Why would we ever use the previous
+
+
+slide's algorithm over this?
+
+
+>> Yeah, that's a really interesting
+
+
+question.
+
+
+Um
+
+
+maybe I'll turn this back to you guys.
+
+
+So, so far, I mean, this is a this is a
+
+
+lecture on model-based RL, so I sort of
+
+
+feel like I have to make a good case for
+
+
+why model-based RL is good, otherwise
+
+
+all of you might walk out of the room
+
+
+and not want to learn about it. But
+
+
+model-based RL can also be bad. Uh and
+
+
+what are some reasons why we might
+
+
+actually prefer not to use the model to
+
+
+simulate more synthetic data? Any ideas?
+
+
+Yeah.
+
+
+>> You might not already have a pretty good
+
+
+simulator.
+
+
+>> Right, so it could just be that step one
+
+
+is cheap enough that you just want to
+
+
+get real data. That's a very good
+
+
+reason. Any other reasons?
+
+
+Kwan Young?
+
+
+>> Maybe the dynamics is much harder to
+
+
+learn compared to here.
+
+
+>> Right. So, there there there there's
+
+
+somebody who has worked on model-based
+
+
+RL, so I think Kwan Young has an
+
+
+appreciation for
+
+
+sometimes your model is just not very
+
+
+good. There's also another reason, which
+
+
+is that um
+
+
+sometimes it's computationally
+
+
+expensive.
+
+
+So, maybe you're
+
+
+frustrated by how long it takes to
+
+
+generate samples from your Atari
+
+
+emulator, but maybe if you were to
+
+
+replace the Atari emulator with a big
+
+
+neural network, it would be 100 times
+
+
+slower.
+
+
+And typically model-based RL methods
+
+
+actually involve a little bit of a
+
+
+trade-off where
+
+
+if done right, they should improve your
+
+
+sample efficiency, but often they
+
+
+actually degrade your computational
+
+
+efficiency.
+
+
+And if you you want a computationally
+
+
+efficient method, you might actually opt
+
+
+for something more
+
+
+like this.
+
+
+So, uh and this is by the way a common
+
+
+theme that we see in reinforcement
+
+
+learning that often times the more
+
+
+sample efficient the methods are, the
+
+
+less computationally efficient they are.
+
+
+So, uh
+
+
+policy gradients are actually very
+
+
+computationally efficient. Q-function
+
+
+actor-critic is computationally more
+
+
+expensive, but more sample efficient.
+
+
+And model-based RL is computationally
+
+
+even more expensive, but hopefully even
+
+
+more sample efficient.
+
+
+All right. Any other questions?
+
+
+Okay. So, uh just to wrap this up, uh I
+
+
+wanted to end with like a few examples
+
+
+of concrete uh methods that have done
+
+
+this just to convince you that we didn't
+
+
+just make everything up. Um so, here are
+
+
+uh two examples of uh papers that have
+
+
+done something of this sort. Um
+
+
+the method on the left is just doing the
+
+
+version with representation learning
+
+
+without generating synthetic data. The
+
+
+method on the right is additionally also
+
+
+generating synthetic data through a
+
+
+learned model of the environment and
+
+
+kind of putting everything together.
+
+
+There are many other methods that have
+
+
+done some version of this. One of the
+
+
+things that um
+
+
+maybe is worth saying here is that
+
+
+the literature on model-based RL is
+
+
+generally quite a bit more heterogeneous
+
+
+than the literature on model-free
+
+
+methods, meaning that there isn't sort
+
+
+of an established single best method
+
+
+across the board. There's a deeper
+
+
+reason for it. The deeper reason is
+
+
+actually something that I mentioned way
+
+
+back at the beginning of the course,
+
+
+which is the choice of model in
+
+
+model-based RL tends to be a little bit
+
+
+more domain specific. So, there are like
+
+
+basic building blocks like
+
+
+variational autoencoders and stuff like
+
+
+that
+
+
+that are kind of useful to know about,
+
+
+but it's not quite as straightforward to
+
+
+have one single method that works across
+
+
+all domains from like, you know, board
+
+
+games and Atari games to continuous
+
+
+robotic control to LLMs
+
+
+uh as it is with like a model-free
+
+
+method like PPO for instance. And
+
+
+because of that, you will see many
+
+
+different methods being proposed,
+
+
+sometimes with different choices made to
+
+
+trade off these different factors
+
+
+in ways that are more or less
+
+
+appropriate for certain domains.
+
+
+Okay. Uh I'll end there. Thank you very
+
+
+much for listening and I'll see you all
+
+
+next week for off offline RL.
+
+
+>> Mhm.
+
+
+>> Mhm.
+
+
+>> Mhm.
+
+
+>> Mhm.
+
+
+>> Mhm.

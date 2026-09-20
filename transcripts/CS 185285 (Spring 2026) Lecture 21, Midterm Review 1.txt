@@ -1,0 +1,4441 @@
+All right. Uh let's get started. So,
+
+
+today we are going to have, uh, you
+
+
+know, one of those, uh, episodes of our
+
+
+favorite, uh, CS 285 and 185 TV show
+
+
+where we don't actually talk about new
+
+
+materials, but we just have flashbacks
+
+
+to past episodes that we've seen in
+
+
+other weeks.
+
+
+Uh, maybe your favorite TV show has had
+
+
+an episode like this before.
+
+
+Um, but I I think there's, you know,
+
+
+besides helping you prepare for the
+
+
+exam, part of the purpose for today's
+
+
+lecture is also to take a little bit of
+
+
+retrospective on the things that we've
+
+
+learned about earlier in the semester,
+
+
+which now that we've learned about all
+
+
+of the different RL methods, we can put
+
+
+into context a little bit better and
+
+
+perhaps see in a clearer light.
+
+
+Uh, and you know, as I talk about this
+
+
+material,
+
+
+uh, more so even than usual, please feel
+
+
+free to uh, interrupt and ask questions
+
+
+because really the purpose of this is to
+
+
+uh, help you uh, review some of this
+
+
+material. So, if anything isn't making
+
+
+sense, this is a very good lecture uh,
+
+
+in which to ask for clarifications.
+
+
+All right. So, the uh, first class of
+
+
+methods that we learned about was
+
+
+imitation learning.
+
+
+In terms of the actual methods, they're
+
+
+actually really simple and uh, the main
+
+
+bit of complexity, hint hint, uh, is
+
+
+from some of the theoretical analysis,
+
+
+but you know, the methodology
+
+
+traditional behavioral cloning imitation
+
+
+learning is very straightforward. You
+
+
+collect data.
+
+
+Uh, so, what is data? Data is
+
+
+observations and actions, sequences.
+
+
+Uh, and then you run supervised learning
+
+
+on that data. So, basically, maximize
+
+
+the log probability of the actions
+
+
+you've seen given the observation then
+
+
+what that goes with that action. So,
+
+
+very very straightforward and of course
+
+
+all of you did this in your homework.
+
+
+So, you have a model that takes in the
+
+
+observation, maybe it's an image, maybe
+
+
+it's a vector of state and then it
+
+
+produces technically what it produces is
+
+
+the parameters of a probability
+
+
+distribution. So, the logits that go
+
+
+into a softmax are the parameters of a
+
+
+categorical distribution. The mean and
+
+
+covariance of a Gaussian are the
+
+
+parameters of a Gaussian distribution.
+
+
+So, this is the very precise statement
+
+
+of what an imitation learning method
+
+
+actually learns.
+
+
+And then you sample from that to get
+
+
+your action. Okay? And this is called
+
+
+behavioral cloning.
+
+
+And behavioral cloning is uh, kind of
+
+
+the most basic and also by far the most
+
+
+widely used imitation learning method.
+
+
+And then if we want to understand
+
+
+whether behavioral cloning is good or
+
+
+bad, then we needed to do a little bit
+
+
+of analysis and of course the first step
+
+
+of that analysis is to define what good
+
+
+or bad means. And there are actually a
+
+
+variety of ways to do this, but the one
+
+
+that we did in this course is uh this is
+
+
+sometimes called a zero-one loss. Uh we
+
+
+basically define a cost function uh
+
+
+that's a function of state and action,
+
+
+which is simply zero if you output the
+
+
+action that matches the demonstrator and
+
+
+one if it doesn't.
+
+
+Uh this gets a little bit more nuanced
+
+
+if you have a demonstration policy that
+
+
+is stochastic. And actually it turns out
+
+
+that if your demonstration policy is
+
+
+stochastic, then the natural cost is uh
+
+
+total variation divergence.
+
+
+Why? Well, because
+
+
+total variation divergence is uh
+
+
+is exactly the zero-one loss for a um
+
+
+deterministic expert.
+
+
+But you don't need to know that part. So
+
+
+uh just know that this is zero-one loss
+
+
+and this is the cost that we defined.
+
+
+And then
+
+
+this is not a an object that we actually
+
+
+use in imitation learning. It's purely a
+
+
+theoretical construct that we use for
+
+
+our analysis.
+
+
+And then
+
+
+in our analysis, what we want to
+
+
+understand is the expected value of this
+
+
+cost under, let's say, a standard
+
+
+behavioral cloning algorithm. Yes?
+
+
+>> Does this also assume
+
+
+categorical actions
+
+
+>> Um
+
+
+uh yes. Yeah, because the the whole
+
+
+equality thing is a little bit
+
+
+nonsensical otherwise.
+
+
+You can extend all this stuff to
+
+
+continuous actions, but probably you
+
+
+shouldn't use zero-one loss for that.
+
+
+Okay. So, when we write out that thing
+
+
+in the top left, the expected value of
+
+
+the cost under the uh action
+
+
+distribution and and the implied state
+
+
+distribution, basically the the
+
+
+picture you could have in your mind is
+
+
+okay, you've got this kind of plot, the
+
+
+black curve represents the example
+
+
+trajectory and your policy induces a
+
+
+distribution over state. So, you can
+
+
+think of it as like little little
+
+
+circles along this line. So, if you have
+
+
+a very stochastic policy, maybe the the
+
+
+size of those circles increases over
+
+
+time. If you have a nice feedback policy
+
+
+that sort of corrects mistakes, then
+
+
+maybe the size of the circles doesn't
+
+
+increase. But, those circles kind of
+
+
+represent the state distribution at each
+
+
+time step. And then, when you're taking
+
+
+the expected value of the cost, you're
+
+
+really integrating the cost over those
+
+
+circles.
+
+
+Um
+
+
+And of course, the state distribution at
+
+
+any given time step depends on past
+
+
+actions because those are the things
+
+
+that got you into that state.
+
+
+Um
+
+
+And the other kind of nice factoid is
+
+
+that
+
+
+this sum of these expected values is
+
+
+exactly the expected number of mistakes
+
+
+that you will make. So, under the 0-1
+
+
+cost,
+
+
+uh you get a cost of zero if you don't
+
+
+make a mistake and a cost of one if you
+
+
+did make a mistake.
+
+
+So, if you take the expectation of that
+
+
+over all the actions at a given time
+
+
+step,
+
+
+that's the expected number of mistakes
+
+
+at that time step, which is always
+
+
+between zero and one because you can't
+
+
+make more than one mistake at a given
+
+
+time step. But then, if you sum it over
+
+
+all time, then that's the total number
+
+
+of mistakes along a trajectory,
+
+
+which has to be between zero and capital
+
+
+H because capital H is the maximum
+
+
+number of mistakes you can make.
+
+
+So then, it makes a lot of sense to say,
+
+
+"Okay, if we're going to analyze the
+
+
+goodness of our imitation learning
+
+
+method, what we really care about is how
+
+
+does the number of mistakes scale with
+
+
+H?" Because the maximum number of
+
+
+mistakes is H, the minimum number is
+
+
+zero, and you want to understand like
+
+
+roughly how many mistakes to expect.
+
+
+Okay?
+
+
+So,
+
+
+this is where this uh analysis uh
+
+
+with the state distributions and the
+
+
+action distributions comes in and you
+
+
+know, the thing that um
+
+
+you might have noticed uh when we talked
+
+
+about uh PPO and RL theory and so on is
+
+
+that this result that we had introduced
+
+
+in the imitation learning lecture
+
+
+actually pops up multiple times in other
+
+
+algorithms in RL as well, not just for
+
+
+imitation learning. So, it's a very good
+
+
+idea to understand this.
+
+
+Um
+
+
+so, I'll go through the imitation
+
+
+learning form. This is from way back at
+
+
+the beginning of the course, but the
+
+
+same thing happens when we analyze PPO
+
+
+and so on.
+
+
+So, we start with some assumption, and
+
+
+the assumption basically says
+
+
+supervised learning works. So, this
+
+
+assumption is that the expected
+
+
+probability of taking a different action
+
+
+uh than the demonstrator policy
+
+
+on state sampled from the training
+
+
+distribution is bounded by epsilon. This
+
+
+is essentially generalization error.
+
+
+Okay? So, this is saying that if you
+
+
+test on the training distribution, test
+
+
+on the same distribution you trained on,
+
+
+then you are uh you have a bounded
+
+
+probability of making a mistake.
+
+
+Okay? This is a very reasonable thing to
+
+
+assume.
+
+
+And then, what you want to do is, given
+
+
+this assumption, figure out a bound on
+
+
+the actual cost that you will get
+
+
+using the 01 cost here
+
+
+if you actually run the policy pi theta.
+
+
+Okay?
+
+
+Yes.
+
+
+Um so, this is saying that the
+
+
+probability that pi theta uh assigns to
+
+
+all the actions that are not the action
+
+
+pi star will take. So, the probability
+
+
+is inside the expectation.
+
+
+You can You can think also think of that
+
+
+like probability that AT is not equal to
+
+
+that is actually itself a sum over all
+
+
+the actions that are not the action uh
+
+
+pi star.
+
+
+Okay.
+
+
+So,
+
+
+there are a few uh yes.
+
+
+Yeah, that thing is basically validation
+
+
+loss, only if you use 01 loss.
+
+
+So, that is literally the validation
+
+
+zero one loss.
+
+
+Notice that this is It says P train, but
+
+
+don't don't don't mistake that for the
+
+
+training set. It's the training
+
+
+distribution.
+
+
+So, validation loss is is an unbiased
+
+
+estimate of the expected loss under the
+
+
+training distribution.
+
+
+Okay. So, we have to use a few tricks to
+
+
+relate
+
+
+this thing to the expected cost. And
+
+
+basically, just to summarize where we're
+
+
+going, the expected cost is an
+
+
+expectation under the the state
+
+
+distribution. So, the main challenge we
+
+
+faced with here is actually just
+
+
+relating this expression, which is about
+
+
+action probabilities, to this
+
+
+expectation, which is under state
+
+
+distributions.
+
+
+So, really the the big the big issue is
+
+
+not with cost. The issue is with the
+
+
+difference between a probability of
+
+
+action and a probability of state. So,
+
+
+the most important thing we have to do
+
+
+in order to relate this assumption to
+
+
+that quantity in the upper left is
+
+
+relate action probabilities to state
+
+
+probabilities.
+
+
+Okay?
+
+
+And
+
+
+we start with a little trick.
+
+
+Uh and this trick is going to make it
+
+
+much easier to relate state
+
+
+probabilities to action probabilities.
+
+
+Basically, the insight is the following.
+
+
+If
+
+
+you always take exactly the same action
+
+
+that pi star took, then you will land on
+
+
+the same state distribution. Because
+
+
+both your policy and pi star are
+
+
+governed by the same transition
+
+
+probabilities.
+
+
+So, really the trick is a fairly
+
+
+straightforward trick. It's just saying
+
+
+for every time step, the probability of
+
+
+a state ST
+
+
+can be thought of as coming from two
+
+
+places.
+
+
+One world where you didn't make any
+
+
+mistakes, and one world where you did
+
+
+make at least one mistake.
+
+
+And the world where you didn't make any
+
+
+mistakes,
+
+
+your state probability is exactly the
+
+
+same as P train. Because you didn't make
+
+
+any mistakes.
+
+
+And in the world where you did make some
+
+
+mistakes, your state probability is
+
+
+who the hell knows. It could be
+
+
+literally anything.
+
+
+And so, therefore, we call it P mistake.
+
+
+Uh and we don't care what it is. We just
+
+
+assume in the worst case that any
+
+
+mistake gets you to fall off the
+
+
+tightrope and leads to complete
+
+
+nonsense. Yes.
+
+
+Yeah,
+
+
+it's a it's a little subtle, but it
+
+
+turns out to actually work out with
+
+
+expectations. Uh so this is this is
+
+
+actually an exact equality.
+
+
+I
+
+
+It's it's a little subtle,
+
+
+um
+
+
+but the um
+
+
+the main thing I want you to take away
+
+
+from this equation is just there's a a
+
+
+very simple kind of uh fact from this,
+
+
+which is good to know because that's the
+
+
+sort of thing that might pop up on a
+
+
+question. Uh
+
+
+If your probability of making a mistake
+
+
+is epsilon, then the probability you
+
+
+don't make a mistake is 1 minus epsilon,
+
+
+and the probability you don't make a
+
+
+mistake for T steps is just 1 minus
+
+
+epsilon to the T. And that's that's
+
+
+really the only trick that's being used
+
+
+here. And then the other part is just 1
+
+
+minus that.
+
+
+Okay.
+
+
+So
+
+
+this is really the only part that's like
+
+
+a little bit non-trivial, and the rest
+
+
+of the proof is basically just plugging
+
+
+this
+
+
+uh in into the um
+
+
+uh into some equations and doing a bit
+
+
+of algebra. So I'll go through that
+
+
+algebra, but really like insofar as
+
+
+there's a bit that requires some
+
+
+creativity, it's to note that uh we
+
+
+should write down this relationship. So
+
+
+it's a good idea to know where this
+
+
+property comes from.
+
+
+So then we introduce a bit of math, but
+
+
+it's not like it's it's fairly um it's
+
+
+kind of turning the crank.
+
+
+So
+
+
+uh first uh
+
+
+we have this definition. This
+
+
+you honestly don't need to really like
+
+
+think very hard about this definition.
+
+
+It's really just uh a way to
+
+
+uh
+
+
+it's it's like a funny name that we
+
+
+assign to differences of probabilities.
+
+
+So we often see this like one
+
+
+probability minus another probability,
+
+
+and you there's a name for it. The name
+
+
+is total variation divergence, but
+
+
+really it's just a very natural way to
+
+
+compare two probability distributions,
+
+
+take their difference, take the absolute
+
+
+value, and sum it over all the values of
+
+
+the random variable.
+
+
+It's like the equivalent of absolute
+
+
+value difference, but for probability
+
+
+distributions. And that's the that's the
+
+
+thing that we're actually going to
+
+
+analyze, but it's just like a little bit
+
+
+of window dressing. Um
+
+
+total variation divergences have a nice
+
+
+property. They're always between uh zero
+
+
+and one.
+
+
+Uh that's why we have the one half up
+
+
+front.
+
+
+And uh
+
+
+the first part of our cost analysis is
+
+
+to
+
+
+bound the total variation divergence
+
+
+between uh the state distribution in the
+
+
+training data, P train, and the state
+
+
+distribution of our policy, P pi theta.
+
+
+Okay? So, this is just the definition of
+
+
+DTV up there. And we're going to use our
+
+
+clever property,
+
+
+and we're going to basically plug that
+
+
+in for P pi theta.
+
+
+So, that's what we get if we plug it in.
+
+
+And then for P train,
+
+
+we have kind of a silly way of writing P
+
+
+train. You can you know, if you have
+
+
+like some
+
+
+P of X,
+
+
+you can write it as 1 - A
+
+
+P of X
+
+
++ A P of X, okay? Kind of a silly thing
+
+
+to do, but obviously true because 1 - A
+
+
++ A sums to 1. So, that's essentially
+
+
+what we're doing. So, we do uh 1 -
+
+
+epsilon to the T uh
+
+
++ 1 - 1 - epsilon to the T, and they're
+
+
+both multiplied by P train.
+
+
+And we did that because then this slice
+
+
+cancels out, and we're just left with
+
+
+the other part. So, we can take the
+
+
+multiplier 1 - 1 - epsilon to the T
+
+
+outside of the sum,
+
+
+and we have this.
+
+
+And now we're just using the fact that
+
+
+total variation divergence is bounded by
+
+
+1. Remember, we assumed that P mistake
+
+
+could be anything. So, in general, we
+
+
+can't say anything smart about the
+
+
+difference between P train and P
+
+
+mistake. So, we basically make a
+
+
+worst-case assumption. In the worst
+
+
+case, if they're totally different
+
+
+distributions, then their total
+
+
+variation divergence is at most 1.
+
+
+So, that gives us this bound.
+
+
+And then there's a little bit of like
+
+
+kind of clean up that we can do
+
+
+uh because we know that epsilon is a
+
+
+small number.
+
+
+So, for epsilon between 0 and 1, 1 -
+
+
+epsilon to the t is upper bounded by 1 -
+
+
+epsilon * t. We don't actually have to
+
+
+do this. We can keep things in this kind
+
+
+of exponential form, but it's, you know,
+
+
+it's nice it when you're doing analysis
+
+
+to be able to express bounds as being
+
+
+polynomial, and then the exponent of
+
+
+that polynomial kind of tells you how
+
+
+good it is. So, we can express this
+
+
+being linear in this case.
+
+
+But, this last step, like I mean, this
+
+
+last step makes the bound strictly worse
+
+
+as a bound. It makes it strictly looser.
+
+
+It just makes it more interpretable. So,
+
+
+that's why we do it.
+
+
+Okay. Any questions about this
+
+
+derivation?
+
+
+Yes.
+
+
+So, what's growing linearly is the
+
+
+difference between the training data
+
+
+state distribution and the policy state
+
+
+distribution. So, um if we go back,
+
+
+yeah, this is a very good question and
+
+
+it's good to have clarity on this. Look
+
+
+at these ellipses over there.
+
+
+So, you can imagine that there is
+
+
+ellipse the black ellipses and red
+
+
+ellipses. I didn't draw them on the
+
+
+slide, but like the black ellipses are
+
+
+the data state distribution, the red
+
+
+ellipses are the policy state
+
+
+distribution, and the difference between
+
+
+those, the total variation divergence,
+
+
+is growing linearly with the time step.
+
+
+So, you would expect the not not that
+
+
+the red things are getting bigger, but
+
+
+that if there were black ellipses there
+
+
+too, the overlap between them is
+
+
+linearly decreasing.
+
+
+Yes.
+
+
+Uh
+
+
+actually, yeah. Let me just draw it. Uh
+
+
+I don't think I have a red marker, but
+
+
+okay.
+
+
+So, these are
+
+
+P-train.
+
+
+And
+
+
+these are
+
+
+P pi theta.
+
+
+Okay? It's the overlap, this thing.
+
+
+So this thing should be linearly
+
+
+decreasing.
+
+
+Linearly decreasing uh
+
+
+as a
+
+
+in terms of the the total volume.
+
+
+So the ellipses might be getting bigger
+
+
+or smaller. It's really they're they're
+
+
+overlap is decreasing.
+
+
+Yeah.
+
+
+Yeah, so the question was why did we use
+
+
+DTV instead of DKL? Um
+
+
+it's because with DKL, the algebra would
+
+
+be much messier because with DTV, it's
+
+
+all subtraction. So uh you can use
+
+
+linear combinations of probabilities.
+
+
+Whereas with DKL, you get log
+
+
+probabilities. So all these nice linear
+
+
+operations wouldn't work out.
+
+
+So the way that this is actually done,
+
+
+in the end for like for the PPO proof
+
+
+which comes later, we want a
+
+
+relationship between
+
+
+uh action a KL divergence and state KL
+
+
+divergence, but the way we use it is
+
+
+using Pinsker's inequality where you can
+
+
+basically bound the KL divergence using
+
+
+the total variation divergence.
+
+
+So the way you do it is you actually
+
+
+show the relationship for total
+
+
+variation divergence first
+
+
+and then say that well, okay, if total
+
+
+variation divergence is bounded, then
+
+
+that should also bound the KL divergence
+
+
+because one is related to the other
+
+
+through an inequality.
+
+
+Yeah.
+
+
+You mean like this the very last step?
+
+
+Yeah, so the last step and and this is
+
+
+good to understand. The last step you
+
+
+don't need to do this. You can just keep
+
+
+it as 1 minus 1 minus epsilon to the T.
+
+
+It's just um you know, the purpose of
+
+
+this kind of analysis is for us to get a
+
+
+rough intuition for how the errors grow
+
+
+and most people, myself included, find
+
+
+them it much easier to understand what
+
+
+linear means than to understand what 1 -
+
+
+1 - epsilon to the T means. But, it's
+
+
+like purely interpretability thing.
+
+
+Yeah.
+
+
+Yeah.
+
+
+So, the question was uh
+
+
+this is like a very worst-case analysis
+
+
+that assumes that as soon as you make a
+
+
+mistake, you like go to some other world
+
+
+that you can never come back from. And
+
+
+that's it. Like it's like that that that
+
+
+that tends to the example of the
+
+
+tightrope walker. Like once the
+
+
+tightrope walker falls off the rope,
+
+
+they never come back. And this is the
+
+
+worst case. Now, the
+
+
+the question was, well, can you somehow
+
+
+incorporate recovery into this? Uh the
+
+
+answer is uh yes, but it's extremely
+
+
+complicated. And we will not test you on
+
+
+that on on the exam. But, it's a good
+
+
+question because in some sense that
+
+
+question carries with it the
+
+
+a certain truth about imitation
+
+
+learning, which is that the reason that
+
+
+it works and the reason that this kind
+
+
+of worst-case situation is not the one
+
+
+that we're really concerned with is that
+
+
+in the real world you can recover. And
+
+
+because you can recover, this worst case
+
+
+is not the thing that you would
+
+
+typically hit.
+
+
+But, it's good to know the worst case to
+
+
+kind of understand what could
+
+
+potentially happen.
+
+
+Okay. So,
+
+
+at this point, we are basically done.
+
+
+Now, we do need to one one last step to
+
+
+kind of clean this up to related to the
+
+
+cost. But, the cost is is an integral
+
+
+under this uh P pi theta. So, that part
+
+
+is actually fairly natural. Okay. So,
+
+
+let let me just go through the last part
+
+
+to relate this to the cost. This is the
+
+
+expected value of the cost. Um
+
+
+here I've just written out the
+
+
+expectation as a sum over states uh
+
+
+just by definition of expec- expected
+
+
+value. And then what I'm going to do
+
+
+basically what I want to do is I want to
+
+
+somehow change that P pi theta to have a
+
+
+KL divergence between P pi theta and P
+
+
+train in there because that's the thing
+
+
+that I've bounded. So, I'm going to add
+
+
+a P train into this equation by by it
+
+
+and subtracting it.
+
+
+And then I'm going to put an absolute
+
+
+value around the difference. So, if you
+
+
+if you have like A - B and you take the
+
+
+absolute value of that, it can only get
+
+
+larger. So, hence the bound.
+
+
+And now I'm I can split this into two
+
+
+terms. One term that has P train times
+
+
+that that
+
+
+cost and one term that has the absolute
+
+
+value difference times the cost.
+
+
+And at this point we've basically done
+
+
+it because the first term is just
+
+
+training distribution
+
+
+error. So, that's the our assumption
+
+
+bounds exactly this first term. And the
+
+
+second term has our total variation
+
+
+divergence.
+
+
+Now, it's not quite a total variation
+
+
+divergence because it's multiplied by
+
+
+this cost.
+
+
+So, we're going to make a bunch of
+
+
+worst-case assumptions. We're going to
+
+
+say, "Well, that cost is at most one
+
+
+because you can't make more than one
+
+
+mistake per time step." So, if you
+
+
+assume that it's at most one, then this
+
+
+is the total variation divergence times
+
+
+two.
+
+
+And that's the thing we bounded before.
+
+
+So, then you add these things together
+
+
+and you get epsilon plus two times
+
+
+epsilon T, which is on the order of
+
+
+epsilon T. And it's summed over all the
+
+
+steps. So, then once you sum it, then it
+
+
+becomes
+
+
+squared.
+
+
+So, that means that our overall error is
+
+
+on the order of epsilon H squared.
+
+
+And just to be clear where the two H
+
+
+terms come from, why it's H squared is
+
+
+that you have an error that increases
+
+
+with H inside the sum and the sum itself
+
+
+is over H terms.
+
+
+Okay. So, this tells us that the error
+
+
+increases quadratically with the
+
+
+horizon.
+
+
+In the worst case.
+
+
+Okay? Yeah?
+
+
+>> So, what if you start with the 1 - 1 -
+
+
+E?
+
+
+>> Yeah.
+
+
+>> Then everything increases at the rate of
+
+
+>> Yeah, then you would have something like
+
+
+uh
+
+
+H times 1 - 1 - epsilon to the H.
+
+
+>> Okay.
+
+
+I think.
+
+
+I might have done my mental math
+
+
+incorrectly. But
+
+
+roughly something like that. But the
+
+
+point is that
+
+
+that's actually kind of good enough
+
+
+because what we care about like is like
+
+
+is it linear or is it super linear? And
+
+
+the answer is it's super linear because
+
+
+it's a linear term times a bunch of
+
+
+other stuff that's also increasing.
+
+
+Um okay. So
+
+
+that this is this is the proof and this
+
+
+is good to know because this comes up
+
+
+also for PPO. So good to know this this
+
+
+thing.
+
+
+And then we talked about ways that we
+
+
+could fix this because we were maybe a
+
+
+little discouraged that it's quadratic.
+
+
+And here there's basically two classes
+
+
+of fixes that we learned about. There is
+
+
+the really principled fix which requires
+
+
+some significant changes to our
+
+
+procedure. And then there is the very
+
+
+practical fix which requires using nicer
+
+
+models and nicer
+
+
+representations. And that's like all the
+
+
+flow matching stuff. So first let's talk
+
+
+about the principled fix and then let's
+
+
+talk about the models. So the principled
+
+
+fix was well let's collect more data to
+
+
+address the distributional shift
+
+
+problem.
+
+
+So the way that we do this is we
+
+
+basically change P data or P train.
+
+
+And that's the dagger method.
+
+
+And the method is actually very simple.
+
+
+So the idea is to basically add data
+
+
+from your policy to your training set.
+
+
+Now the problem is that your policy
+
+
+didn't take potentially very good
+
+
+actions. So you have to add the
+
+
+observations that your policy saw but
+
+
+you have to get a person to relabel them
+
+
+with the optimal actions that the policy
+
+
+should have taken in those situations.
+
+
+So you run your policy and then you get
+
+
+a person to relabel them. So first you
+
+
+initialize by training on your demos.
+
+
+Then you run the policy to get the
+
+
+observations that the policy sees. And
+
+
+then you get ask a person to relabel all
+
+
+those observations with the actions that
+
+
+should have been taken with the optimal
+
+
+actions. And then you add that to your
+
+
+data set and then repeat.
+
+
+And this fixes the distributional shift
+
+
+problem because essentially the way you
+
+
+can think about it is that each time you
+
+
+add those observations from the policy
+
+
+and you relate relabel them with the
+
+
+optimal actions, you're sort of mixing
+
+
+in more data from the correct state
+
+
+distribution. And if you run this for
+
+
+enough iterations, eventually your data
+
+
+set consists mostly of observations from
+
+
+your
+
+
+actual visitation uh from your actual
+
+
+policy but labeled with the optimal
+
+
+actions.
+
+
+So, it just to like kind of
+
+
+reiterate the point here, what makes
+
+
+this work is that you are adding
+
+
+observations that your policy actually
+
+
+sees. Yes.
+
+
+Yes, so the question was, well, how many
+
+
+times do you have to run this procedure?
+
+
+Um there is actually a way to analyze
+
+
+it. So, uh in the original um Stefan
+
+
+Ross paper from 2011,
+
+
+uh they use basically online learning
+
+
+theory to
+
+
+uh to quantify how many iterations you
+
+
+need. In practice, often even just one
+
+
+iteration goes a really long way.
+
+
+Um
+
+
+and you know, the the other thing that I
+
+
+I I
+
+
+I would suggest for all of you to kind
+
+
+of take away from this is
+
+
+there are many ways to implement this
+
+
+procedure.
+
+
+There are many ways to like select which
+
+
+things to label, a lot of other kind of
+
+
+stuff. The important thing about this
+
+
+algorithm is that you will bridge the
+
+
+distributional shift problem as long as
+
+
+you are adding observations that the
+
+
+policy actually sees when it's
+
+
+That's the most important thing.
+
+
+Okay.
+
+
+Uh and then the other class of
+
+
+solutions, the ones that that are
+
+
+less principled but quite widely used,
+
+
+is to just use a better model.
+
+
+And you The point of using a better
+
+
+model is essentially to reduce epsilon.
+
+
+Right? So, your error is like epsilon h
+
+
+squared.
+
+
+Uh one way to make that small is to
+
+
+change the algorithm so it's not h
+
+
+squared anymore, but the other way to
+
+
+fix it is to make epsilon incredibly
+
+
+small.
+
+
+Because if epsilon is like almost zero,
+
+
+it doesn't matter what you multiply it
+
+
+by. So, uh essentially the this class of
+
+
+approaches basically says, let's use a
+
+
+good enough model that the divergence
+
+
+will be very small.
+
+
+And then you can ask, well, why might
+
+
+why might my model not fit the data as
+
+
+well as I would like? What are possible
+
+
+sources of mistakes?
+
+
+And
+
+
+the big ones are
+
+
+non-Markovian behavior and multimodal
+
+
+behavior.
+
+
+Non-Markovian behavior means that my
+
+
+policy, it's a function of only the
+
+
+current observation.
+
+
+But the person who produced the
+
+
+demonstrations, they might have memory.
+
+
+Most of us have memory, hopefully. Uh
+
+
+certainly if you want to do well in the
+
+
+exam, you should have memory. Uh and if
+
+
+you have memory, then your action
+
+
+doesn't just depend on the present, it
+
+
+also depends on the past.
+
+
+And this is a mismatch. So, your policy
+
+
+can't understand that because the policy
+
+
+might not have memory.
+
+
+Uh and the memory might not even be
+
+
+necessary for your task, right? Like
+
+
+maybe you're doing a task where you're
+
+
+okay without memory, but people still
+
+
+have memory and they're affected by it.
+
+
+So, one of the ways to deal with that is
+
+
+to just add memory to your policy.
+
+
+There's really not that much to say
+
+
+there other than like find some way to
+
+
+read in a a history of prior
+
+
+observations. You can do this by just
+
+
+concatenating them all into a big a big
+
+
+long vector, if your observations are
+
+
+small enough, or if they're bigger than
+
+
+use like a some kind of sequence model.
+
+
+So, there isn't really anything terribly
+
+
+clever about that other than that that
+
+
+statement.
+
+
+The other thing is a bit more subtle,
+
+
+the multimodal behavior. Uh this
+
+
+basically says that, well, the
+
+
+distribution class that you're using to
+
+
+represent your actions might not be able
+
+
+to capture all of the nuances of the
+
+
+randomness in the demonstrator behavior.
+
+
+For discrete actions, this is not
+
+
+usually a problem because for discrete
+
+
+actions, like you're playing Atari
+
+
+games, you have like, you know, five
+
+
+different buttons,
+
+
+your um model outputs logits for each
+
+
+one, and it can represent any
+
+
+distribution over those five
+
+
+uh random values.
+
+
+But for continuous actions, it's much
+
+
+more of a problem because for continuous
+
+
+actions, you would pick some
+
+
+distribution class like Gaussians, and
+
+
+Gaussians represent a unimodal behavior.
+
+
+They have one peak. Whereas the
+
+
+demonstrated behavior might have many
+
+
+peaks.
+
+
+So, like in this example where maybe
+
+
+somebody might randomly go around the
+
+
+tree to the left or randomly go around
+
+
+the tree to the right. If you
+
+
+approximate this with a unimodal
+
+
+behavior, then you get that cartoon over
+
+
+there,
+
+
+uh which is probably not what you
+
+
+actually want.
+
+
+So, this is a problem, but it's mostly a
+
+
+problem for continuous actions.
+
+
+And we learned about a few solutions,
+
+
+and the two that I think are kind of the
+
+
+the most worth knowing are
+
+
+autoregressive discretization and flow
+
+
+matching.
+
+
+They're worth knowing because they're
+
+
+both very general. They can both
+
+
+represent pretty much any distribution,
+
+
+uh and they're also like maybe a little
+
+
+bit non-trivial to fully understand.
+
+
+So, autoregressive discretization
+
+
+basically is based on the idea that
+
+
+you can discretize a continuous
+
+
+distribution, and once you discretize
+
+
+it, you can represent it with a softmax
+
+
+and capture any distribution you want
+
+
+over the discretization.
+
+
+But,
+
+
+if you have a high-dimensional action,
+
+
+discretizing it into bins requires
+
+
+exponentially many bins in the
+
+
+dimensionality. So, imagine discretizing
+
+
+like a 10D space,
+
+
+if you have uh
+
+
+you know, 10 bins along each dimension,
+
+
+then you get 10 to the 10th power total
+
+
+bins, which is too much.
+
+
+So, autoregressive discretization says,
+
+
+"Well, let's instead pretend that your
+
+
+10-dimensional action vector is a
+
+
+sequence with 10 steps.
+
+
+And we're going to discretize one
+
+
+dimension at a time, but then for the
+
+
+subsequent dimensions, we'll tell it
+
+
+which bin we picked for the previous
+
+
+dimensions.
+
+
+And by the chain rule of probability,
+
+
+that will allow you to represent any
+
+
+distribution.
+
+
+So, that's the principle, but let me
+
+
+walk through the details of this.
+
+
+So,
+
+
+let's say you have some action,
+
+
+three-dimensional. You can say, "Well,
+
+
+it consists of three values AT0, AT1,
+
+
+and AT2. Those are the three dimensions
+
+
+of the vector.
+
+
+And
+
+
+what we'll do is we'll take our
+
+
+observation
+
+
+and then we'll have some kind of
+
+
+sequence model, maybe a transformer.
+
+
+And at the first time step of that
+
+
+sequence model, it will output a softmax
+
+
+over a discretization of the first
+
+
+dimension. So, maybe we take that first
+
+
+number AT0, break it up into like 50
+
+
+bins, and we have a 50-way softmax.
+
+
+Okay?
+
+
+In this case, a three-way softmax.
+
+
+And then we have a second time step. And
+
+
+we're going to feed in the bin that we
+
+
+selected, that we sampled for the first
+
+
+time step.
+
+
+And based on that, we'll output a
+
+
+discretization over AT1.
+
+
+And then at the next one, we feed in
+
+
+what we sampled for AT1, and we output a
+
+
+discretization over AT2. Now, notice
+
+
+that for that third time step, you're
+
+
+feeding in AT1, but it's also one big
+
+
+sequence model. So, when you're
+
+
+predicting AT2, you have access to both
+
+
+AT0 and AT1.
+
+
+So, you're conditioning on all of the
+
+
+past dimensions, not just the previous
+
+
+one.
+
+
+And because of that, this is a fully
+
+
+expressive.
+
+
+So, the first step is modeling P of AT0
+
+
+given ST. The second one is modeling P
+
+
+of AT1 given ST, AT0. And the third one,
+
+
+and this is very important, is modeling
+
+
+P of AT2 given ST, AT0, and AT1.
+
+
+So, in general, every step is
+
+
+conditional on all of the past
+
+
+dimensions, and because of that, by the
+
+
+chain rule of probability,
+
+
+the product of these probabilities is
+
+
+the full joint,
+
+
+which means that it can represent any
+
+
+distribution up to the resolution of
+
+
+your discretization.
+
+
+So, this does not involve making any
+
+
+kind of independence assumption on your
+
+
+action dimensions. It's fully general.
+
+
+Okay.
+
+
+So, that's the that's the idea behind
+
+
+auto-regressive discretization. Yes.
+
+
+>> I'm just wondering what kind of
+
+
+inductive bias you're introducing
+
+
+by saying that some
+
+
+entries are to be
+
+
+like predicted before others.
+
+
+>> Yeah.
+
+
+Right, so the question was well there's
+
+
+an ordering on these things, so what's
+
+
+up with that? Um
+
+
+very good question. Nobody really knows.
+
+
+So,
+
+
+you know, sometimes it's kind of if you
+
+
+like really squint at this thing and
+
+
+and pretend like something is true when
+
+
+it might not be, you can say well maybe
+
+
+there's an ordering that's natural like
+
+
+if you're driving the car, maybe you
+
+
+like decide to accelerate or decelerate
+
+
+first and then decide which way to steer
+
+
+like I don't know, maybe that makes
+
+
+sense. But in reality I think we should
+
+
+just accept that it's a
+
+
+it's a
+
+
+neural network architecture trick. It
+
+
+doesn't really have any meaning. Yes.
+
+
+>> So, do you
+
+
+sample in between each step or do you
+
+
+pass in the whole
+
+
+distribution
+
+
+>> Yeah, so the question is like do you
+
+
+sample at each step or not?
+
+
+When you train this,
+
+
+this is this train the same exact way as
+
+
+any sequence model, the same way that
+
+
+you train language models. So when you
+
+
+train it, you pass in the ground truth
+
+
+actions. So when you train, at each step
+
+
+you're feeding in the true AT0 and the
+
+
+true AT1. And then it's just max
+
+
+likelihood exactly the same as you would
+
+
+train any sequence model. When you
+
+
+sample, you do auto-regressive sampling.
+
+
+Again, same way as language models, you
+
+
+first sample AT0, then feed it in and
+
+
+generate AT1.
+
+
+Okay.
+
+
+Um the the other class of uh
+
+
+distributions we learn about is flow
+
+
+matching and this is something that you
+
+
+guys implemented in your homework. So
+
+
+flow matching is a way to model very
+
+
+complex distributions with a neural
+
+
+network that doesn't directly output the
+
+
+samples or the probabilities, but it
+
+
+represents a process that gradually
+
+
+turns random noise into samples from
+
+
+your target distribution.
+
+
+So this picture I think is kind of a
+
+
+nice illustration of the flow matching
+
+
+process at least at sampling time. You
+
+
+You off with a sample from some simple
+
+
+distribution on the left like
+
+
+Gaussian noise, and then by performing a
+
+
+series of integration steps, you turn
+
+
+that sample into a sample from the
+
+
+distribution we you want on the right.
+
+
+So, uh the way that the sampling
+
+
+procedure works is you first
+
+
+get your random noise, and then you
+
+
+integrate over a
+
+
+a sequence of time steps, and what you
+
+
+integrate is the flow field. So, V V of
+
+
+X T {comma} T, that's the thing that
+
+
+you've learned, and you compute it at
+
+
+the current location multiplied by some
+
+
+time step delta T like 0.1, and then you
+
+
+add it to your current uh point. And
+
+
+then you run this thing uh and get your
+
+
+sample.
+
+
+So, the sampling procedure is a bit
+
+
+costly, but pretty straightforward. The
+
+
+training procedure is
+
+
+kind of clever.
+
+
+So, for training, basically, you don't
+
+
+want to train this the whole like
+
+
+sequence of steps. You want to train
+
+
+one step at a time because that makes it
+
+
+really, really convenient. So, that
+
+
+means that you have to somehow figure
+
+
+out intermediate noisy steps for your
+
+
+data points.
+
+
+So, what you do is you actually just
+
+
+pick random noise that goes with each of
+
+
+your data points.
+
+
+You pick a corresponding data point from
+
+
+your data set, again just at random.
+
+
+And then you take an intermediate step
+
+
+to train on, and you interpolate these
+
+
+two things.
+
+
+So, you uh pick a time step T, and then
+
+
+you compute the intermediate point as
+
+
+just a linear interpolation between
+
+
+these two things. It's not at all
+
+
+obvious that uses that using this as uh
+
+
+as the data will lead to a good flow
+
+
+field, but it is true.
+
+
+Uh and what you train for the the target
+
+
+velocity at this intermediate point is
+
+
+just
+
+
+this direction, the the green line here
+
+
+that goes to X1. And you can do that by
+
+
+taking X1 minus X0
+
+
+uh
+
+
+divided by the length, which is one. So,
+
+
+X1 minus X0 divided by one is just X1
+
+
+minus X0, and that's your target
+
+
+velocity. And then you regress onto
+
+
+that.
+
+
+And the reason that this works is
+
+
+because
+
+
+you have different velocity targets for
+
+
+data points at that intermediate point,
+
+
+but
+
+
+they are biased towards the nearest
+
+
+point. So, generally for these
+
+
+intermediate points XT, your vectors
+
+
+will point in many different directions,
+
+
+but on average they'll more often than
+
+
+not point towards the closer point X1
+
+
+than they will to some distant point at
+
+
+the top of that distribution. Yeah.
+
+
+Yeah, so the question was why why isn't
+
+
+it a straight line? Um
+
+
+So, the reason it's not a straight line
+
+
+is that it's not always uh
+
+
+Mm.
+
+
+How can I answer this?
+
+
+So, if this is it's a complex question.
+
+
+The straight line would be the best
+
+
+vector field you could possibly hope
+
+
+for.
+
+
+And that would be very nice. The the
+
+
+reason that we can't quite get that is
+
+
+because of how we're training it. So,
+
+
+let me just reproduce this picture on
+
+
+the whiteboard.
+
+
+Okay.
+
+
+So, when we start off for some random
+
+
+noise over here, this is X0,
+
+
+and we have some data point that we want
+
+
+to get to, X1.
+
+
+Over here,
+
+
+all data points are equally likely to be
+
+
+sampled.
+
+
+So, a completely random bit of random
+
+
+noise is just as likely to be associated
+
+
+with this as it is with with this. So,
+
+
+that means that the target vectors here
+
+
+will point in all directions without any
+
+
+any kind of coherence.
+
+
+But over here,
+
+
+not all of these are equally likely
+
+
+because you were you are you are much
+
+
+more likely to interpolate some bit of
+
+
+random noise to this point if your
+
+
+data points are in this region.
+
+
+Much less likely over here. So, here
+
+
+they'll point
+
+
+kind of like this.
+
+
+And over here, right next to X1,
+
+
+probably like this.
+
+
+So, as you get further along,
+
+
+more of these vectors get biased towards
+
+
+the corresponding data point. So, you
+
+
+would expect that the path would be like
+
+
+something like that.
+
+
+And it kind of makes sense because over
+
+
+here, like you're really this the ideal
+
+
+path, but you're very unlikely to get
+
+
+that.
+
+
+Yeah.
+
+
+Uh take gradients with respect to what?
+
+
+Oh, I see. Okay, yeah. So, so your
+
+
+question is can you basically back
+
+
+propagate to the entire integration
+
+
+process? So, the answer is yes, you can.
+
+
+It's quite inadvisable because um
+
+
+it's almost like uh think about it as a
+
+
+how many layers there are, right? So,
+
+
+let's say that your your V network has
+
+
+10 layers, and now you take like 50
+
+
+denoising steps. In effect, it's as
+
+
+though you had 500 layers. So, it's just
+
+
+like a lot to back propagate through.
+
+
+There's nothing that makes it
+
+
+technically impossible. It's just uh
+
+
+it's numerically ill-conditioned.
+
+
+So, reflow doesn't actually back
+
+
+propagate through the integration
+
+
+process. What reflow does is
+
+
+distillation. So, for those of you that
+
+
+uh this is not on the test, but uh since
+
+
+somebody asked me, reflow basically
+
+
+refers to a process where you run this
+
+
+integration,
+
+
+and when you run the integration, notice
+
+
+that in at the in the top right, you
+
+
+sample X0, and then you compute X1. So,
+
+
+now you have an X0 X1 pair.
+
+
+And here, X0 and X1 are not chosen
+
+
+independently because X1 depends on X0.
+
+
+And then, you just regress from X0 to
+
+
+X1. That's essentially reflow.
+
+
+But, it doesn't require back propagating
+
+
+through the integration process. It just
+
+
+uses the integration process to produce
+
+
+data, essentially.
+
+
+Yes.
+
+
+Yeah, so the question was about
+
+
+dimensionality. Uh flow matching works
+
+
+very well for very high-dimensional
+
+
+problems. So, people use this to, for
+
+
+example, generate uh videos,
+
+
+high-resolution videos over, you know,
+
+
+hundreds of frames, uh which would be
+
+
+extremely high-dimensional, and it it
+
+
+works.
+
+
+Yeah.
+
+
+Um so, in order to go straight,
+
+
+at the very like
+
+
+there are many reasons, but one very uh
+
+
+simple reason is that in order to go
+
+
+straight, then the vector at the fully
+
+
+noised point needs to point towards the
+
+
+corresponding denoised point.
+
+
+And that's impossible because the noised
+
+
+point is chosen completely independently
+
+
+of the denoised point.
+
+
+So, basically, every single noise sample
+
+
+is just as likely to occur for every
+
+
+single sample over here.
+
+
+Okay.
+
+
+Um and then the last kind of imitation
+
+
+learning technique that we learned
+
+
+about, which was a little bit of a
+
+
+footnote, but it's like a nice footnote
+
+
+to know, is that um
+
+
+sometimes you want to use imitation
+
+
+learning to learn policies for many
+
+
+different tasks. And there's a fun trick
+
+
+you can use, uh
+
+
+which is called goal-conditioned
+
+
+behavioral cloning. So, in particular,
+
+
+if you want to learn a policy that
+
+
+reaches a particular state, uh and you
+
+
+don't have optimal data for that,
+
+
+uh what you can do is
+
+
+you can take whatever data you have,
+
+
+like maybe these trajectories that go to
+
+
+all sorts of random places,
+
+
+and you can treat them as though they
+
+
+were successful demonstrations for the
+
+
+state that they actually reached.
+
+
+So,
+
+
+then what you train is a model that
+
+
+takes in the state and the goal and
+
+
+predicts the action. All of these kind
+
+
+of suboptimal demonstrations can be
+
+
+viewed as though they were optimal for
+
+
+the state they reached. And then,
+
+
+insofar as your model
+
+
+generalizes over the goal, then you
+
+
+could use it to achieve the goal that
+
+
+you want. So, this is called goal
+
+
+conditioned behavior cloning.
+
+
+Uh and
+
+
+uh yeah, basically for for each demo,
+
+
+you maximize the log probability of the
+
+
+goal that you reached. You could also
+
+
+generalize this to say, "Well, this can
+
+
+work for any function of the final
+
+
+state."
+
+
+So, maybe the state here is you know,
+
+
+this is a car and it it has like
+
+
+position and velocity and so on, but all
+
+
+you care about is position, so you can
+
+
+just take the position dimensions of
+
+
+that last state. So, this is kind of a
+
+
+neat trick that can be used with very
+
+
+heterogeneous data that does not consist
+
+
+purely of optimal demonstrations for the
+
+
+task you want, but it's a little special
+
+
+because it's not, you know,
+
+
+accommodating any task, it's
+
+
+accommodating these kinds of
+
+
+goal-reaching tasks. Yeah.
+
+
+Yeah, so the question was, "Why use this
+
+
+instead of like some RL method?" Um if
+
+
+you want to avoid doing RL and you want
+
+
+to keep it simple. So, the
+
+
+implementation of this is
+
+
+only slightly more complex than what you
+
+
+implement in homework one, so it's
+
+
+pretty easy to use.
+
+
+Yeah.
+
+
+Correct.
+
+
+Yeah.
+
+
+Um well, so there isn't really a reward
+
+
+here. So, this is this is still an
+
+
+imitation learning method, and basically
+
+
+the trick is, "How do you take data that
+
+
+is not demonstrations of the thing you
+
+
+want and still use it for imitation
+
+
+learning?" And the answer is, "Well,
+
+
+relabel it with the task for which it
+
+
+might be close to optimal, and then
+
+
+generalize it over the quantity that
+
+
+you're relabeling with."
+
+
+But, there's no reinforcement learning
+
+
+process here. There's no reward here.
+
+
+Uh all right. So, uh, that's imitation
+
+
+learning.
+
+
+Uh, now let's talk a a bit about policy
+
+
+gradients. So, for policy gradients, uh,
+
+
+one of the things that's very good, uh,
+
+
+to really understand in preparing for
+
+
+the exam is the basic policy gradient
+
+
+derivation. It's not that complicated,
+
+
+but it's, uh, you know, a little bit
+
+
+mathematically nuanced. Uh, and
+
+
+the idea is this. Uh, first, we write
+
+
+down the probability of a trajectory.
+
+
+That we just do using the chain rule of
+
+
+probability. So,
+
+
+uh,
+
+
+you have the probability of the initial
+
+
+state, the probability of the actions,
+
+
+and the probability of the transitions.
+
+
+And then you take the logarithm of both
+
+
+sides.
+
+
+And you get this, okay? So, very, very
+
+
+good to know that that expression.
+
+
+And then if you want to differentiate
+
+
+the expected value of the reward under
+
+
+the, um,
+
+
+uh, the trajectory probability
+
+
+distribution,
+
+
+then
+
+
+what you, uh, sorry, I think I might
+
+
+have missed a slide. Okay. Um,
+
+
+then the most important thing is to
+
+
+first turn it into that expression over
+
+
+there. I think I actually don't have it
+
+
+on the slide, but I'll write it on the
+
+
+board.
+
+
+Okay.
+
+
+So, first we'll just do this
+
+
+over trajectory probabilities, and then
+
+
+we'll use that, uh, that expression over
+
+
+there. So, first don't worry about what
+
+
+the trajectory probability is. We just
+
+
+have our expected value
+
+
+over P theta tau
+
+
+of R of tau.
+
+
+And this is just sum over all possible
+
+
+trajectories of P theta tau
+
+
+R of tau, okay?
+
+
+And then we're going to take the
+
+
+gradient of this
+
+
+with respect to theta.
+
+
+And the clever property that we use for
+
+
+this is that
+
+
+the gradient with respect to theta of P
+
+
+theta tau
+
+
+is
+
+
+P theta tau
+
+
+times the gradient of log
+
+
+P theta tau.
+
+
+And this is easiest to prove in reverse
+
+
+starting from this end.
+
+
+So, the gradient of of a logarithm is
+
+
+grad theta
+
+
+P tau
+
+
+over
+
+
+P tau.
+
+
+This is just a result from calculus.
+
+
+So, uh
+
+
+your favorite calculus textbook
+
+
+just look up the formula for
+
+
+differentiation and you get something
+
+
+like this.
+
+
+So, then when you substitute this
+
+
+in here then this cancels out with this
+
+
+and you're just left with
+
+
+the derivative of your probability.
+
+
+Okay? So, this is kind of a fairly
+
+
+simple bit of algebra, good to know,
+
+
+uh and
+
+
+plugging that in here, you get
+
+
+sum over tau
+
+
+grad theta
+
+
+log
+
+
+P theta tau
+
+
+times R tau.
+
+
+Okay?
+
+
+So, that's where we get
+
+
+the thing inside the expectation there.
+
+
+And then we just have to use
+
+
+that identity for the log of the
+
+
+probability of our trajectory
+
+
+plug that in there
+
+
+and notice a few really useful things.
+
+
+Since this is a derivative with respect
+
+
+to theta, the only terms in the sum that
+
+
+we care about are the ones that depend
+
+
+on theta.
+
+
+And conveniently enough, those are also
+
+
+the terms that we actually know in
+
+
+model-free RL. So, we don't know the
+
+
+initial state probability and we don't
+
+
+know the transition probabilities, but
+
+
+they also don't depend on theta, so we
+
+
+actually don't care what they are if
+
+
+we're taking the derivative with respect
+
+
+to theta.
+
+
+So, then we get our classic expression
+
+
+for the policy gradient, which is just
+
+
+the sum over
+
+
+all of the time steps of grad log pi
+
+
+times the sum over all the time steps of
+
+
+the reward.
+
+
+So, this is the the basic derivation of
+
+
+the policy gradient, um
+
+
+it's, you know, basically the the main
+
+
+things you have to know for it are the
+
+
+decomposition of the trajectory
+
+
+distribution and this little math trick.
+
+
+So, as long as you know those two
+
+
+things, then you'll be in good shape for
+
+
+deriving this called the policy gradient
+
+
+theorem.
+
+
+Any questions about this? Yeah.
+
+
+Yes, it's a vector with dimensionality
+
+
+equal to the number of parameters.
+
+
+Okay.
+
+
+Um
+
+
+Now, there are a few other tricks that
+
+
+we needed to make policy gradient really
+
+
+work. Uh one very important one is the
+
+
+baseline.
+
+
+So,
+
+
+basically, here here's the intuition for
+
+
+the baseline. What you would really like
+
+
+policy gradient to do is to generate a
+
+
+bunch of rollouts, evaluate their
+
+
+rewards, and then make the good rollouts
+
+
+more likely, and the bad rollouts less
+
+
+likely.
+
+
+This this is the intuition. The problem
+
+
+is that as written, policy gradient
+
+
+doesn't quite do that, because it's just
+
+
+multiplying those gradients by the
+
+
+reward. Let's say the reward of the best
+
+
+rollout is 1,000,001, and the reward of
+
+
+the worst rollout is 1,000,000.
+
+
+Now, you're multiplying your rollouts by
+
+
+a bunch of numbers that are almost
+
+
+identical. So, everything is going to
+
+
+want to go up.
+
+
+Now, it's a probability distribution, so
+
+
+it it still needs to integrate to one,
+
+
+so you can't literally have everything
+
+
+go up, but it's not a very good
+
+
+gradient.
+
+
+So,
+
+
+intuitively, what you really like to do
+
+
+is you would like to multiply not by the
+
+
+rewards, but by whether the rewards are
+
+
+above average or below average.
+
+
+So, in my 1,000,000 and 1,000,001
+
+
+example, the average reward is like
+
+
+close to a to a million, so if you just
+
+
+subtract that out, then the good stuff
+
+
+gets a positive multiplier, and the bad
+
+
+stuff gets a negative multiplier, and
+
+
+that's exactly what you want.
+
+
+And surprisingly, you can do this, and
+
+
+it's still correct. That's kind of kind
+
+
+of a crazy fact, uh but it's it turns
+
+
+out to be pretty easy to prove. And the
+
+
+way you prove it is you just prove that
+
+
+in expectation
+
+
+the gradient uh of log P multiplied by
+
+
+any constant is zero.
+
+
+Now, it's zero in expectation, but it
+
+
+doesn't mean that for a finite sample
+
+
+estimate it doesn't do anything. For a
+
+
+finite sample estimate actually reduces
+
+
+your variance.
+
+
+You can prove that too, but that proof
+
+
+will not be on the test.
+
+
+Um so, the proof that
+
+
+this thing has an expected value of
+
+
+zero, which means that it's unbiased, uh
+
+
+basically just applies this same result
+
+
+in reverse.
+
+
+So, uh
+
+
+using this same result in reverse,
+
+
+uh grad log P is um
+
+
+well, this is the expected value. Grad
+
+
+log P * P is just grad P.
+
+
+And then
+
+
+the gradient is a linear operator, so
+
+
+you can take that outside the integral,
+
+
+and you can take the constant outside
+
+
+the integral. So, now you have
+
+
+B times the gradient of the integral of
+
+
+a probability distribution,
+
+
+and you know that probability
+
+
+distributions integrate to one. So, the
+
+
+gradient of one is zero.
+
+
+So, it's a very simple one-line proof,
+
+
+but it's good to know, and it's it's
+
+
+almost like a policy gradient in
+
+
+reverse.
+
+
+Okay.
+
+
+So, uh the average reward is not
+
+
+actually the best baseline to use, but
+
+
+it's it's okay. Yes.
+
+
+Yeah, so there's a there are a lot of
+
+
+things you can do for baselines.
+
+
+Um
+
+
+the what the the thing that we covered
+
+
+in the class, which I'll I'll go through
+
+
+on Friday, is to use baselines that are
+
+
+functions of state.
+
+
+Because grad log pi is a uh probability
+
+
+over actions, so you can actually use
+
+
+any baseline that doesn't depend on the
+
+
+action, and that gets you a better
+
+
+baseline. Um but you can also do all
+
+
+sorts of other things. The other thing
+
+
+that you can do is you can use a
+
+
+vector-valued baseline, i.e., a
+
+
+different baseline for every dimension
+
+
+of the parameter vector, and that's
+
+
+actually how you derive the optimal
+
+
+baseline.
+
+
+Um
+
+
+I don't know if there's any benefit to
+
+
+making it just a larger number than the
+
+
+average reward. Uh I I haven't seen
+
+
+that, but I don't know.
+
+
+Okay. Um so, let's stop there and then
+
+
+we'll continue on Friday with the the
+
+
+review of actor-critic and all that
+
+
+stuff.
+
+
+>> Mhm.

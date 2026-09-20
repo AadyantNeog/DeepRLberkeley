@@ -1,0 +1,4261 @@
+All right, welcome everybody. So we have
+
+
+uh three lectures left in the class. Um
+
+
+today's lecture is uh not deeply
+
+
+technical. This is a kind of a a little
+
+
+bit of a retrospective on some of the
+
+
+things we learned and maybe a few
+
+
+perspectives on things we can take away
+
+
+from that uh and why things are the way
+
+
+they are in the world of reinforcement
+
+
+learning. This Friday, we will have a
+
+
+guest lecture from Kevin France. The
+
+
+Friday lecture will start at 9:00 am
+
+
+rather than 8 am. So it'll be a one hour
+
+
+format rather than the usual two hours.
+
+
+And um Kevin uh will talk about how RL
+
+
+and LLM's uh kind of works in industry
+
+
+and things like that. He's been at many
+
+
+of the big industrial labs like OpenAI,
+
+
+Cursor, uh Reflection and stuff like
+
+
+that. And then next week on Wednesday,
+
+
+um our head TA Seahong Park will
+
+
+actually give a guest lecture. Uh some
+
+
+of you already know this, but Sihong is
+
+
+actually a fairly accomplished
+
+
+researcher uh in the world of uh uh
+
+
+offline and offline to online
+
+
+reinforcement learning. And since that
+
+
+is the topic of one of the final
+
+
+projects, uh those of you that are
+
+
+interested in that topic might
+
+
+appreciate some of the perspectives he
+
+
+might have to offer. Uh sometimes he has
+
+
+some controversial hot takes that uh
+
+
+might be a little different from mine
+
+
+and that might provide a val valuable
+
+
+alternative perspective for those of you
+
+
+that are interested in the topic. And
+
+
+then next week on Friday uh on May 1st,
+
+
+we will not have a lecture. So uh please
+
+
+take that time to focus on your final
+
+
+project and do the best job you can on
+
+
+the last assignment in the course. So
+
+
+today we'll talk about some uh general
+
+
+perspectives on the material that we
+
+
+learn about this semester.
+
+
+So first a brief overview. Um we covered
+
+
+a lot of things and we can organize the
+
+
+things that we covered into a kind of
+
+
+atlas where uh broadly speaking all the
+
+
+things we discussed are methods for
+
+
+learning based control uh which uh
+
+
+roughly splits into imitation learning
+
+
+and reinforcement learning. So imitation
+
+
+learning is when you would like to learn
+
+
+a policy that copies the behavior seen
+
+
+in some data and reinforcement learning
+
+
+is when you would like to learn an
+
+
+optimal policy.
+
+
+And for reinforcement learning, we
+
+
+learned about kind of classic model free
+
+
+algorithms. Methods like policy
+
+
+gradient, value based methods, actor
+
+
+critic, which is like a combination of
+
+
+policy gradient and value based methods,
+
+
+uh Q-learning, uh and Q function actor
+
+
+critic algorithms. And then we learned
+
+
+about more advanced policy gradient
+
+
+methods of the sort that are often used
+
+
+in practice. Uh we also learned about
+
+
+some other stuff. We learned about
+
+
+modelbased methods and how you can do
+
+
+model based RL both without a policy if
+
+
+you're doing just planning like random
+
+
+shooting and stuff like that and with a
+
+
+policy.
+
+
+And then we learned about a bunch of uh
+
+
+kind of related uh uh techniques around
+
+
+these things like exploration which is
+
+
+often used with all sorts of RL methods.
+
+
+Um unsupervised reinforcement learning
+
+
+and goal discovery and skill discovery
+
+
+and things like that. uh we learned
+
+
+about probabistic inference and how it
+
+
+could be tied to reinforcement learning
+
+
+via the controls inference framework and
+
+
+also how you can get inverse RL which
+
+
+kind of sits at the intersection between
+
+
+imitation learning and RL. Um so these
+
+
+are like roughly the topics that we went
+
+
+through this semester and a question
+
+
+that sometimes comes up uh when people
+
+
+see this kind of atlas is like well why
+
+
+is there so much stuff why don't we just
+
+
+learn about one RL algorithm on like you
+
+
+know in like lecture two and then just
+
+
+use it and be done with it just like we
+
+
+have in supervised learning where we
+
+
+just use gradient descent and back
+
+
+propagation for everything. And
+
+
+perhaps one way that I could answer this
+
+
+is that reinforcement learning methods
+
+
+are really trying to solve a few
+
+
+different kinds of problems. And even
+
+
+though at the level of the mathematical
+
+
+abstraction we formulate these problems
+
+
+in basically the same way in reality the
+
+
+constraints that we're operating under
+
+
+make these problems very different.
+
+
+Now most uh uh basically you know that
+
+
+in in the in the very first lecture of
+
+
+this course I had a slide like this that
+
+
+reinforcement learning is both a a
+
+
+mathematical formalism for learning
+
+
+based decision-m and an approach for
+
+
+learning decision-m and control from
+
+
+experience. Uh these are actually
+
+
+different things and there's sort of a
+
+
+historical reason for this uh which is
+
+
+that um
+
+
+classically the the term reinforcement
+
+
+learning actually came out of a study of
+
+
+uh learning in animals in psychology uh
+
+
+where it was proposed as a particular
+
+
+model of uh adaptation. Uh basically if
+
+
+you if you have a a creature that learns
+
+
+from like rewards and from like good
+
+
+outcomes and bad outcomes or from
+
+
+rewards and punishments, reinforcement
+
+
+learning, specifically temporal
+
+
+difference learning provides a model for
+
+
+how its behavior changes in response to
+
+
+like good and bad stimuli. Uh and that's
+
+
+a particular model of learning. But in
+
+
+computer science world, reinforcement
+
+
+learning is also taken to mean a
+
+
+definition of a problem like that
+
+
+problem where you maximize reward etc.
+
+
+And when you're using the term in that
+
+
+way, any method that solves that problem
+
+
+would be considered a reinforced
+
+
+learning method. And these are just
+
+
+different things. But that that's not
+
+
+actually the issue. That's not actually
+
+
+the reason why we have so many different
+
+
+algorithms. Although it is a a frequent
+
+
+source of uh misunderstanding. Um
+
+
+the um
+
+
+the the deeper reason why we have so
+
+
+many methods is that we might want to
+
+
+apply reinforcement learning to problems
+
+
+with very different constraints. Uh and
+
+
+the definition that that captures all
+
+
+these things kind of doesn't fully
+
+
+distinguish between those constraints
+
+
+but in practice the constraints matter a
+
+
+great deal. So the the formal definition
+
+
+and again this is like from the first
+
+
+lecture of the course is like this
+
+
+right? So you have your inputs uh state
+
+
+at every time step and output and action
+
+
+at every time step. Your data consists
+
+
+of trajectories all that kind of stuff.
+
+
+And we talked about like all these
+
+
+problems uh and how they can look like
+
+
+reinforcement learning problems whether
+
+
+it's like training a dog or uh getting a
+
+
+policy for a robot to run or managing
+
+
+like inventory for a network of
+
+
+warehouses like all these things can be
+
+
+cast as a reinforcement learning problem
+
+
+and that's very nice because then in
+
+
+principle we can kind of um as as
+
+
+Richard Sutton sometimes puts it we can
+
+
+make the problem small in the sense that
+
+
+the same definition captures all these
+
+
+different settings and that's very
+
+
+appealing for driving very general
+
+
+algorithms. Um but again it kind of
+
+
+doesn't like tell the whole story. So um
+
+
+if we think back to the examples of
+
+
+applications of RL that we saw in
+
+
+lecture one reflecting on them we might
+
+
+realize that they actually operate under
+
+
+very different constraints. So to recap
+
+
+a few of these
+
+
+this was the um robotics example that we
+
+
+saw in lecture one. This is a a
+
+
+quadripedal robot. This is an um
+
+
+actually quite an old work at this
+
+
+point. Uh this system actually used a
+
+
+version of uh PO and it was
+
+
+trained in simulation with a particular
+
+
+kind of randomization scheme and a
+
+
+system ID scheme. Uh so in principle
+
+
+actually the you you've actually learn
+
+
+about all the algorithms needed for
+
+
+stuff like this and then it was run in
+
+
+in the real world directly. We saw
+
+
+another robotics example and we might be
+
+
+tempted to think that well it's also a
+
+
+robot so maybe it's like kind of the
+
+
+same thing. Uh but this system operates
+
+
+under very different constraints. This
+
+
+is also a robot that used reinforcement
+
+
+learning but it used no simulation and
+
+
+it used demonstrations provided by
+
+
+humans as well as a kind of offline to
+
+
+online RL method. So even though it's
+
+
+also a robot it's operating under very
+
+
+different constraints. There is no
+
+
+simulator. You know the coffee task is
+
+
+hard to simulate. But on the other hand,
+
+
+there are these example demonstrations.
+
+
+And obviously for the the quadripedal
+
+
+robot, like people can't provide example
+
+
+demonstrations for a quadripedal robot
+
+
+because people aren't quadripedal
+
+
+robots. Uh and for the coffee case, it's
+
+
+hard to simulate the coffee because, you
+
+
+know, coffee is kind of complicated. So
+
+
+seemingly similar domains, very very
+
+
+different constraints.
+
+
+And of course, you know, other domains
+
+
+like language models, also very
+
+
+different constraints. language models
+
+
+tend to be trained at a larger scale. Uh
+
+
+they tend to use data uh more extensive
+
+
+data including highly sub-optimal data.
+
+
+So all these different cases even though
+
+
+we can write down the problem definition
+
+
+in basically the same way and we can
+
+
+apply methods based on similar
+
+
+conceptual foundations. The actual
+
+
+practical constraints in these domains
+
+
+are very very different.
+
+
+And you can think of reinforcement
+
+
+learning as
+
+
+uh kind of different a few different
+
+
+things. You can think of reinforcement
+
+
+learning methods as basically
+
+
+engineering tools for optimal control.
+
+
+And that gives us a good way of thinking
+
+
+about a very specific class of problems.
+
+
+You can think of reinforcement learning
+
+
+as something that we can run in the real
+
+
+world to solve problems that are
+
+
+difficult to solve with other kind of ML
+
+
+techniques. Uh you can also think of it
+
+
+as a very general and universal
+
+
+perspective on machine learning and the
+
+
+all these perspectives kind of give you
+
+
+a different notion of what reinforcement
+
+
+learning methods should be. So we'll
+
+
+start with the most pragmatic one which
+
+
+is if we think of reinforcement learning
+
+
+basically as an engineering tool for
+
+
+solving optimal control problems.
+
+
+So um
+
+
+when we go down this road we actually
+
+
+end up departing quite significantly
+
+
+from the kind of a psychology
+
+
+perspective of like oh it's like it's a
+
+
+way of training from um rewards and
+
+
+punishments. uh because you know if you
+
+
+think about that quadripedal walking
+
+
+robot it's not like somebody that you
+
+
+know that work was done at ETHZuric it's
+
+
+not like somebody was standing there and
+
+
+like giving the robot dog a treat every
+
+
+time it walked correctly like most of
+
+
+the work didn't go into giving the robot
+
+
+a treat most of the work went into
+
+
+setting up a simulation framework to
+
+
+simulate all sorts of different
+
+
+locomotion scenarios so this picture
+
+
+isn't really like you know even though
+
+
+there's nothing incorrect about it
+
+
+doesn't really tell the complete uh
+
+
+story about what's really going on with
+
+
+those kinds of applications and
+
+
+we can think about this instead from the
+
+
+standpoint of how you would engineer a
+
+
+control system like forget all the ML
+
+
+stuff. Let's say that you want to design
+
+
+a control system for a rocket. Okay,
+
+
+aerospace was uh one of the first uh
+
+
+really like kind of slam dunk
+
+
+application domains of modern optimal
+
+
+control. uh optimal control methods and
+
+
+probabistic estimation are what allowed
+
+
+like the Apollo program to go to the
+
+
+moon. And the idea at like a 30,000 foot
+
+
+view uh is that you write down a
+
+
+mathematical description of your system.
+
+
+Basically, this is what like you learn
+
+
+to do in introductory physics. Write
+
+
+down a bunch of differential equations
+
+
+that describe like this is how the
+
+
+rocket flies. This is how the state of
+
+
+the rocket depends on the controls at
+
+
+previous time steps. And then you take
+
+
+this mathematical model of your system
+
+
+and you invert it. You figure out the
+
+
+controls that will bring about the state
+
+
+that you want. This has nothing to do
+
+
+with machine learning. This is a uh an
+
+
+exercise in differential equations and
+
+
+optimal control. But this is the way
+
+
+that engineers typically approach
+
+
+control problems.
+
+
+And it works. like you know it it uh if
+
+
+you've flown on on a commercial airplane
+
+
+chances are it's using a control system
+
+
+that was built on these principles. Uh
+
+
+rockets that go to the moon are based on
+
+
+these principles. And the idea is write
+
+
+down the dynamics of your system and
+
+
+then invert those dynamics to figure out
+
+
+the controls that get you to a
+
+
+particular state. And if you think about
+
+
+what the simtoreal uh robot walking
+
+
+scenario entails, well, somebody wrote
+
+
+down a mathematical model of rigid body
+
+
+dynamics. That's the simulator for the
+
+
+robot. And then the reinforcement
+
+
+learning algorithm runs in that
+
+
+simulator. And what is it figuring out
+
+
+how to do? It's figuring out how to
+
+
+invert that mathematical model of the
+
+
+robot to figure out the controls that
+
+
+will get into a desired state. So in the
+
+
+olden days when somebody wanted to fly a
+
+
+rocket to the moon, they would write
+
+
+down differential equations and then
+
+
+spend a bunch of time in front of a
+
+
+whiteboard to derive their control law.
+
+
+Now somebody writes down differential
+
+
+equations, implements them in a
+
+
+simulator and runs an RL algorithm to
+
+
+invert them. But the outcome is kind of
+
+
+the same that it's not about learning
+
+
+what happens in the real world. It's
+
+
+about figuring out automatically how to
+
+
+invert your mathematical model of the
+
+
+system. And that's a good idea. That's a
+
+
+a very pragmatic way to approach solving
+
+
+a control problem. Um but the learning
+
+
+is sort of about your model and the
+
+
+model is actually important for this.
+
+
+And of course the reason this is highly
+
+
+desirable is that you can make the model
+
+
+extremely complex. So if you don't have
+
+
+to worry about standing in front of a
+
+
+whiteboard and figuring out the control
+
+
+law, you can have a model that is
+
+
+extremely inscrutable like a a
+
+
+complicated finite element whatever and
+
+
+still just run an RL and invert it. And
+
+
+this is really really powerful. So
+
+
+across a wide range of different areas
+
+
+in science and engineering this kind of
+
+
+stuff has uh become a very popular tool.
+
+
+Any questions about this?
+
+
+>> Yeah.
+
+
+>> Right. So this is a very good question.
+
+
+The question was well when you try to
+
+
+create a simulator what kind of things
+
+
+do you need to consider? So,
+
+
+one of the differences between
+
+
+reinforcement learning and the
+
+
+traditional optimal control approach is
+
+
+that traditionally with optimal control,
+
+
+you would write down a system of
+
+
+equations that describes your physical
+
+
+um system. And that system of equations
+
+
+would be pretty simple because you know
+
+
+as an engineer that you're going to be
+
+
+doing a whole bunch of algebra and
+
+
+calculus to invert it. So you don't want
+
+
+to write down a very complicated system
+
+
+of equations otherwise you're going to
+
+
+spend a lot of time at the white at the
+
+
+blackboard right whereas if the
+
+
+reinforcement learning algorithm is
+
+
+doing all the work then you can have an
+
+
+extremely complex simulator and you have
+
+
+very little incentive to simplify it and
+
+
+the trouble is that
+
+
+you get a kind of overfitting effect not
+
+
+because your algorithm is overfitting so
+
+
+much as that you as uh an engineer are
+
+
+overfitting when you build your
+
+
+simulator because RL methods are
+
+
+extremely good at exploiting flaws. Um,
+
+
+one of the reasons that it was quite
+
+
+challenging in the early days of DPRL to
+
+
+get, for example, a humanoid uh robot in
+
+
+a simulator to walk is not because it's
+
+
+that hard to walk, but because it's that
+
+
+hard to build a simulator of frictional
+
+
+rigid body contact that an RL can't
+
+
+exploit. So a very common issue was uh
+
+
+early versions of the Moko simulator for
+
+
+example uh good RL methods could
+
+
+discover a strategy that injects phantom
+
+
+energy into the system that is
+
+
+non-physical uh because if you make a
+
+
+contact and break it repeatedly every
+
+
+other frame it generates a little bit
+
+
+more energy than there should be and the
+
+
+robot flies forward happily in a
+
+
+extremely high reward manner that is
+
+
+completely impossible to do in the real
+
+
+world. uh and uh RL methods are very
+
+
+good at sort of debugging your simulator
+
+
+for you. And because of this uh if you
+
+
+want to do this kind of stuff, it's
+
+
+important to set up your simulation in a
+
+
+way that is hard for the RM method to
+
+
+exploit. Um a common trick that people
+
+
+use for this is to introduce a lot of
+
+
+randomization. So uh the principle there
+
+
+is to say well I don't really know how
+
+
+to build a perfect simulator of my
+
+
+system and I know that any individual
+
+
+deterministic simulator is pretty easy
+
+
+for my RL method to exploit to discover
+
+
+a solution that works in that sim but
+
+
+doesn't work anywhere else. So what I
+
+
+will do instead is I will run my RL
+
+
+algorithm on an ensemble of different
+
+
+simulators. really in reality it's like
+
+
+the same simulator but with different
+
+
+parameters in the hopes that if one
+
+
+policy solves the task in all the
+
+
+different simulation settings then
+
+
+perhaps it's robust enough that I can
+
+
+run it in the real world. So instead of
+
+
+flying just one kind of rocket or one
+
+
+kind of airplane, you design a random
+
+
+distribution of airplanes that are all a
+
+
+little bit different and hope that and
+
+
+try to train your one policy to control
+
+
+all of them. And if it can control all
+
+
+of them, then it's robust enough to the
+
+
+kind of variability that hopefully also
+
+
+encompasses the difference between the
+
+
+simulator and the real world. And that's
+
+
+a very powerful trick.
+
+
+Any other questions?
+
+
+Okay.
+
+
+So, um a kind of a a principle is if RL
+
+
+provides you with this general purpose
+
+
+way of inverting a simulator, then it
+
+
+kind of creates a situation that
+
+
+anything you can simulate within reason
+
+
+of course you can control. So you
+
+
+basically you run your training inside
+
+
+the matrix. Um and this provides a very
+
+
+powerful engineering tool. uh it it's
+
+
+not that different from a conventional
+
+
+engineering or optimal control approach.
+
+
+In some ways it has more more in common
+
+
+with the uh those differential equations
+
+
+and controllers from the Apollo program
+
+
+than it does with machine learning. Uh
+
+
+before you would characterize your
+
+
+system uh uh simulate it and then derive
+
+
+a controller. Now you would characterize
+
+
+a simulate and run RL to derive your
+
+
+controller. uh and it provides this
+
+
+ability to invert your mathematical
+
+
+model of the system. And of course the
+
+
+main weakness of this as is probably
+
+
+obvious is that what you get out depends
+
+
+on what you put in. Uh you you you do
+
+
+not have the algorithm necessarily
+
+
+running on real world data. You have the
+
+
+algorithm running on your model and it's
+
+
+up to you to design that model so that
+
+
+it captures all of the physical
+
+
+phenomena that matter in your domain.
+
+
+And I'll say that most RL methods in use
+
+
+today in industry are really based on
+
+
+this principle.
+
+
+I have some examples of these and the
+
+
+examples might surprise you a little
+
+
+bit. Um the first and perhaps most
+
+
+famous example of this kind of thing is
+
+
+Alph Go. Um the first version of Alph Go
+
+
+actually did use real data because it
+
+
+was bootstrapped with imitation
+
+
+learning. The second version alpha uh
+
+
+zero did not. But besides this, all of
+
+
+the training for Alph Go
+
+
+use simulation including for the
+
+
+opponent. Right? So, uh, board games are
+
+
+very well suited for this because in
+
+
+board games, the rules of the game are
+
+
+very simple and well known. The hard
+
+
+part of a board game, of course, is the
+
+
+other player. So what Alph Go did is use
+
+
+um older copies of itself as the
+
+
+opponent and then you essentially got a
+
+
+simulator for championship level Go
+
+
+games.
+
+
+So this is in some sense it's not really
+
+
+a learning method in that there is no
+
+
+outside kind of physical obs
+
+
+observations of the physical world that
+
+
+go into this but on the other hand it's
+
+
+an extremely effective method and it
+
+
+could learn to play the game of go uh
+
+
+more proficiently than the best human
+
+
+player.
+
+
+Another example is uh RL for LMS. Now RL
+
+
+for LMS is done in many different ways.
+
+
+uh oftentimes it does actually use real
+
+
+data and real experience. But a
+
+
+particularly powerful technique for
+
+
+training LLMs is to fine-tune them with
+
+
+RL on specific downstream problems. Uh
+
+
+so uh RLVR or RLVF uh is uh a term
+
+
+that's sometimes used for this. Uh if
+
+
+you want your LLM agent to be really
+
+
+good at solving math problems or really
+
+
+good at coding, what you do is you
+
+
+essentially set up a kind of a simulator
+
+
+for it, a sandbox environment for the
+
+
+task that you want and you train it
+
+
+inside that sandbox. It's very much like
+
+
+the language counterpart to the uh
+
+
+ETHZurich walking robot. Of course,
+
+
+instead of walking, it's solving math
+
+
+problems or coding, but very similar
+
+
+principles. The capabilities that you
+
+
+get in the system are determined by the
+
+
+kind of problems that you put into your
+
+
+sandbox.
+
+
+And it's worth noting that there's kind
+
+
+of a an obvious limitation with this,
+
+
+which is not all the things that you
+
+
+might like your agents to do are easily
+
+
+simul.
+
+
+What you might like to do is not just
+
+
+write code or solve math problems. You
+
+
+might like to be able to talk to people
+
+
+in a way that uh leads to particular
+
+
+outcomes. Maybe you want like a customer
+
+
+service agent that is very good at
+
+
+calming down irritated customers.
+
+
+Oddly enough, that's actually a harder
+
+
+problem than training an LLM agent to
+
+
+write code because code can be run in a
+
+
+sandbox and verified whereas your
+
+
+customer interaction
+
+
+uh cannot be. It's a lot harder.
+
+
+And we actually see this gulf reflected
+
+
+in practice that um uh even for big
+
+
+models like LLMs the RL training is
+
+
+often done in simulation a little bit
+
+
+like um alpha go.
+
+
+Now this stuff is having a very big
+
+
+effect in the real world and there are
+
+
+many many uh famous cases where this
+
+
+stuff works really well. Uh probably a a
+
+
+recent example that some of you might
+
+
+know about uh was the uh the spring
+
+
+festival demo uh with the unitry robots.
+
+
+Uh some of you might have seen these
+
+
+videos. Um
+
+
+these are all robotic policies that are
+
+
+trained in simulation uh with
+
+
+reinforcement learning.
+
+
+can you know presumably Unistry felt
+
+
+confident enough uh in these things that
+
+
+they would demo them to uh you know a
+
+
+huge number of viewers um uh for the
+
+
+spring festival general.
+
+
+Okay, so that's one perspective on RL
+
+
+and I think and it's very pragmatic. So
+
+
+chances are if there's some domain where
+
+
+you can build a sandbox or simulator,
+
+
+this would be the tool of choice right
+
+
+now for addressing that domain. But it's
+
+
+not the only perspective you could take.
+
+
+Um, you could also
+
+
+think about go asking instead, well, are
+
+
+there problems that are difficult to
+
+
+simulate? Uh, where perhaps
+
+
+reinforcement learning is harder to
+
+
+apply, but anything else would be even
+
+
+worse. And you can think about using
+
+
+reinforcement learning in the real
+
+
+world. And when you do this,
+
+
+you end up with a slightly different set
+
+
+of constraints that lead to different
+
+
+choices about which method you should be
+
+
+using. So here's a little bit of
+
+
+motivation for this. Um in um 1996
+
+
+um the uh world champion at chess uh
+
+
+Gasparov was defeated by a computer. It
+
+
+was actually not an RL system. It was a
+
+
+system based on a kind of a tree search
+
+
+method. Uh but in 1996 it was good
+
+
+enough to beat the world champion at
+
+
+chess. And in 2016 um 20 years later
+
+
+almost exactly uh the world champion at
+
+
+go uh was defeated by a computer this
+
+
+time with reinforcement learning. But uh
+
+
+it's not actually the program that was
+
+
+choosing the moves that I want to call
+
+
+your attention to. It's the fact that in
+
+
+both of these pictures there's a person
+
+
+sitting on the other side of the board.
+
+
+So, if the computer is beating these
+
+
+people at uh at these games, why isn't
+
+
+the computer moving the pieces?
+
+
+And there's a kind of a conundrum here.
+
+
+And the conundrum is in some ways um
+
+
+going to the core of uh what makes some
+
+
+AI problems harder or easier than
+
+
+others. So, you could have a computer
+
+
+beat the world champion at these things
+
+
+that we consider to be very cognitively
+
+
+demanding tasks, but the computer
+
+
+couldn't figure out how to move the
+
+
+pieces on its own. needed a a human
+
+
+avatar there to do it. And this comes
+
+
+back to something called um Moravik's
+
+
+paradox. It's a an old idea in AI. Um
+
+
+you can kind of summarize it. Well,
+
+
+there's the original quote from Hans
+
+
+Morvik and then I have a translation a
+
+
+more modern translation later. Uh so
+
+
+what Hans Morvik wrote is that uh we're
+
+
+all predigious Olympians in perceptual
+
+
+and motor areas. So good that we make
+
+
+the difficult look easy. Abstract
+
+
+thought though is a new trick perhaps
+
+
+less than 100,000 years old. and we have
+
+
+not yet mastered it. It is not all that
+
+
+intrinsically difficult. It just seems
+
+
+so when we do it. Steven Pinker had a a
+
+
+more modern take on this basic idea. He
+
+
+said that the main lesson of 35 years of
+
+
+AI research is that the hard problems
+
+
+are easy and the easy problems are hard.
+
+
+The mental abilities of a four-year-old
+
+
+that we take for granted, like
+
+
+recognizing a face, lifting a pencil,
+
+
+walking across a room, or answering a
+
+
+question, in fact solve some of the
+
+
+hardest engineering problems ever
+
+
+conceived. So the point here is that we
+
+
+have um a bit of an inherent um
+
+
+cognitive bias in terms of which
+
+
+problems we see as being easy or
+
+
+difficult because we see problems as
+
+
+difficult when they are kind of hard to
+
+
+cram into our brains. Uh but our brains
+
+
+are not just uh computational machines.
+
+
+Our brains evolve for solving certain
+
+
+problems and they are very good at
+
+
+solving problems that are similar to
+
+
+what they evolved for and very bad at
+
+
+solving other problems. So, uh, playing
+
+
+chess or playing go or determining the
+
+
+control law for a rocket flying to the
+
+
+moon are just not problems that we're
+
+
+inherently very well adapted to solve,
+
+
+but, uh, seeing faces, holding a
+
+
+conversation, things like that are
+
+
+things that we are inherently very good
+
+
+at. So, we might think that they're
+
+
+easy, but in fact, it's merely that they
+
+
+are easy for us.
+
+
+So, uh, more of paradox is not really so
+
+
+much a statement about AI per se. It's
+
+
+really a statement about the the
+
+
+physical universe, about the world. um
+
+
+that there are kind of easy universes
+
+
+and hard universes. And easy universes
+
+
+are things like the game of chess uh or
+
+
+the ballistic trajectory of a rocket.
+
+
+Basically, things that are sort of
+
+
+characterized by clean rules where there
+
+
+aren't really like a whole lot of
+
+
+exceptions or special cases that deviate
+
+
+outside of those rules. And these kind
+
+
+of easy universes are easy not because
+
+
+you don't need like lots of math, but
+
+
+because the rules can be well understood
+
+
+and once you have the rules, you kind of
+
+
+have everything. Like at that point,
+
+
+it's just an inversion problem. And then
+
+
+the hard universe are the ones that are
+
+
+full of complicated patterns and special
+
+
+cases where it's hard to write down a
+
+
+very concise set of rules that describe
+
+
+everything that could happen. Um, social
+
+
+interaction, uh, you know, the things
+
+
+that happen in open world settings with
+
+
+lots of different diverse physical
+
+
+phenomena. These are cases where it's
+
+
+very hard to just write down a set of
+
+
+rules or equations that describe
+
+
+anything that could happen. And
+
+
+therefore, what you really need is um a
+
+
+learning machine that can pick up on the
+
+
+patterns.
+
+
+So the underlying reason why Morovix
+
+
+paradox exists, why some of these
+
+
+problems are easier or harder than
+
+
+others really is because of how easy
+
+
+they are to characterize with a set of
+
+
+rules that we can write down.
+
+
+So this uh maybe uh gives us some food
+
+
+for thought. Um you know as a very vivid
+
+
+example of this, it's not very hard to
+
+
+design uh a control system. You don't
+
+
+even really need AI for this to navigate
+
+
+a giant container ship or oil tanker
+
+
+around the world. Like the the actual
+
+
+algorithmic aspect of this problem,
+
+
+provided that you have, you know, good
+
+
+sensing and all that stuff is quite
+
+
+straightforward. I'm sure any of you
+
+
+with, you know, a couple weeks of study
+
+
+could uh code up a navigation system for
+
+
+this, but you never see boats like this
+
+
+at sea without a human crew on board.
+
+
+Not because the crew is there to figure
+
+
+out how to solve the navigation problem,
+
+
+but because if something breaks in the
+
+
+engine room, someone has to go down
+
+
+there and fix it. And a lot of different
+
+
+things can happen, a lot of different
+
+
+unexpected situations that might demand
+
+
+a flexible and creative response with a
+
+
+lot of messy kind of physical stuff. So
+
+
+it's not really the cognitively
+
+
+demanding things, not the long horizon
+
+
+planning. It's really dealing with all
+
+
+the mess.
+
+
+So what does this have to do with RL?
+
+
+Well, um,
+
+
+basically
+
+
+in in these kind of open world settings
+
+
+where you can't characterize things with
+
+
+a concise set of rules that you can just
+
+
+write down, you have to somehow engineer
+
+
+a system that can deal with the
+
+
+unexpected, that can figure out how to
+
+
+produce reasonable behavior even when
+
+
+something that it was not designed for
+
+
+takes place. Like, if you want a a
+
+
+little scenario to kind of capture this,
+
+
+imagine that you're stranded on a desert
+
+
+island and you have to survive. like you
+
+
+have to find food, you have to build
+
+
+shelter, all this kind of stuff. Uh this
+
+
+is a if you had to like design a robot
+
+
+that could do this, this would be very
+
+
+difficult because the whole point is you
+
+
+don't know what you're going to find.
+
+
+Like there's maybe like a set of skills,
+
+
+a set of uh knowhow and and and uh kind
+
+
+of capabilities that you need, but
+
+
+really what you have to do when you when
+
+
+you're when you end up on the desert
+
+
+island is you have to creatively think
+
+
+about the problem, figure out uh what
+
+
+resources are available to you, and then
+
+
+put those things together into some
+
+
+solution. and you don't know in advance
+
+
+what you're going to find.
+
+
+So you have minimal external supervision
+
+
+about what to do, unexpected situations
+
+
+that require adaptation and you have to
+
+
+discover your solutions autonomously.
+
+
+Like you can bring some kind of
+
+
+knowledge with you but once you're there
+
+
+really it's up to you to explore and
+
+
+figure out uh what what's what kind of
+
+
+skills you'll need and you have to also
+
+
+be robust enough that you you know stay
+
+
+alive long enough to discover all these
+
+
+things. So everything in the real world
+
+
+of course is uh is uh uh uh on on a on
+
+
+some kind of a on a clock, right? So
+
+
+people are very good at this and current
+
+
+AI systems are unbelievably bad at these
+
+
+kinds of things. Uh because current AI
+
+
+systems uh are strongest when they can
+
+
+lean on their training and more or less
+
+
+kind of uh regurgitate those things. And
+
+
+that's actually that can be very
+
+
+powerful in some cases uh because if you
+
+
+train an AI system on lots and lots of
+
+
+data then it has a lot to lean on but
+
+
+the ability to discover these kind of
+
+
+new solutions can be very limited.
+
+
+RL in principle can do this and while RL
+
+
+doesn't do it well outside of uh
+
+
+settings where you can simulate the
+
+
+environment nothing else can do these
+
+
+things at all. So when it comes to
+
+
+discovering novel solutions, that's very
+
+
+difficult to do with anything other than
+
+
+reinforcement learning.
+
+
+So
+
+
+um this is I think a valuable
+
+
+perspective to think about because there
+
+
+is um
+
+
+a body of problems that we have not uh
+
+
+as a you know uh as a research community
+
+
+succeeded in tackling uh with AI. And
+
+
+many of those problems are problems
+
+
+where in principle RL could actually
+
+
+solve them. And these are basically the
+
+
+things that that are in the in the hard
+
+
+universes. So the easy universes are
+
+
+ones where um you really care about
+
+
+getting to high reward. You have known
+
+
+rules, lots of simulation. The main
+
+
+question is really can you like optimize
+
+
+an objective really well and the hard
+
+
+universes are the ones where it's not
+
+
+about whether you're more optimal or
+
+
+less optimal. It's about whether you
+
+
+succeed at all. Uh you have to exist in
+
+
+the open world. Uh and everything has to
+
+
+come from your own experience from data.
+
+
+uh you don't have simulation because the
+
+
+whole point is that you don't know what
+
+
+you're going to discover and the main
+
+
+question is can you generalize and adapt
+
+
+um so in principle RL should be actually
+
+
+the best choice in these hard universes
+
+
+but u the kind of issues that come up
+
+
+when we when you start to deal with this
+
+
+they're a little different than what
+
+
+comes up when you take the more
+
+
+pragmatic engineering approach um for
+
+
+example it's often a lot less obvious
+
+
+what should be the the correct reward
+
+
+signal uh if you have um a video game,
+
+
+then the score gives you the reward. But
+
+
+if you're stranded on a desert island,
+
+
+well, it's kind of hard to say that your
+
+
+reward is like, do you survive on the
+
+
+desert island? Because uh one failure
+
+
+means that you don't get to try a second
+
+
+time. So, you clearly need something a
+
+
+little bit more um uh informative.
+
+
+If you fail at the task, you need to
+
+
+somehow set yourself up to try that task
+
+
+again. And sometime and uh oftentimes
+
+
+you don't worry about this for example
+
+
+in a board game because if you lose a
+
+
+chess game well you like reset the game
+
+
+and you play the game again and you
+
+
+don't have to worry about how the game
+
+
+gets reset because that's sort of part
+
+
+of the rules of the simulator. But if
+
+
+you are interacting with the world
+
+
+continually the way that a person does
+
+
+then you have to think about well you
+
+
+know I I tried to like chop down this
+
+
+tree and I failed. What do I do to try
+
+
+it again? So you have to have this
+
+
+continual setting. Um, you have to
+
+
+remain robust as things change around
+
+
+you. And uh, you have to still leverage
+
+
+the things that you've seen in the past,
+
+
+your past experience, but not just to
+
+
+directly reproduce what you've done
+
+
+before, but to build up a body of
+
+
+knowledge. Essentially, use your past
+
+
+experience as information about what can
+
+
+be possible and then use that to
+
+
+synthesize new solutions to what you
+
+
+should actually do. Um, and you have to,
+
+
+you know, uh, uh, have the right way to
+
+
+bootstrap exploration with prior
+
+
+experience. Um I um I'll have a few
+
+
+examples after this that they're that
+
+
+all in the robotics domain. That's
+
+
+because my research is actually in
+
+
+robotics, but this is not really about
+
+
+robots per se because uh robots are just
+
+
+the most natural for us to think about
+
+
+uh because they're like embodied like we
+
+
+are. So it's like very easy to make that
+
+
+analogy. But in lots of other domains,
+
+
+you end up with RL systems that exist in
+
+
+the real world under constraints of the
+
+
+real world. So if you're doing inventory
+
+
+management and you really want to learn
+
+
+about the kind of patterns that come up
+
+
+in the real world with like actual
+
+
+customers buying products from your
+
+
+warehouses etc then you have to deal
+
+
+with all these same issues. If you want
+
+
+to have like a medical assistant that
+
+
+helps like prescribe medications or
+
+
+something like that and it's actually uh
+
+
+learning on the fly during some kind of
+
+
+crisis where something unexpected
+
+
+happens like the covid pandemic. Well
+
+
+that's also capturing a lot of this.
+
+
+There's prior knowledge you can lean on.
+
+
+you're not starting in a vacuum, but
+
+
+you're faced with something unexpected,
+
+
+and you have to learn and adapt through
+
+
+experience.
+
+
+So, here here are some examples of
+
+
+problems and potential solutions that
+
+
+come up in this setting that we might
+
+
+not expect from the more uh kind of
+
+
+simulationcentric approach. Here we have
+
+
+uh I'll play this video in a second. We
+
+
+have a setting where a robotic hand
+
+
+needs to manipulate this object uh into
+
+
+a particular pose. So, you pick it up
+
+
+and then you turn it in the hand to get
+
+
+to a particular pose. And the idea is,
+
+
+well, can you set up an experiment where
+
+
+the robot learns this task without
+
+
+having to have a simulation and without
+
+
+having to have somebody helping it? So,
+
+
+if it picks up the object and it
+
+
+reorients it, okay, great. But if it
+
+
+drops it, it needs to figure out on its
+
+
+own how to then reset and try again. And
+
+
+one way you can do this is you can say,
+
+
+well, let's go to the multitask setting
+
+
+where you can learn a repertoire of
+
+
+skills so that a failure with one skill
+
+
+is an opportunity to practice a
+
+
+different skill. Um, to give you an
+
+
+example of this, if you are um
+
+
+practicing making coffee with a coffee
+
+
+machine, if you pick up the cup and you
+
+
+spill the coffee, well, maybe that's an
+
+
+opportunity to practice cleaning up the
+
+
+spill. Okay, so here's this video in
+
+
+action. And uh this is actually one very
+
+
+long uncut take uh where uh well sorry
+
+
+it's actually cut a little bit but it's
+
+
+a you know just for your for your
+
+
+visualization where the robot is
+
+
+continuously playing with this object.
+
+
+And you can see that in the beginning it
+
+
+was mostly just moving it around on the
+
+
+table because those were the easier
+
+
+skills for it to discover. And once it
+
+
+figured out how to pick up the object
+
+
+then it could uh reorient it in the hand
+
+
+and start practicing. And then if it
+
+
+drops it then it goes back to practicing
+
+
+to pick it up. So you have a repertoire
+
+
+of skills that you're developing even as
+
+
+you uh learn the task.
+
+
+The um the coffee demo that I that I
+
+
+showed before uh this one was also
+
+
+actually uh using reinforcement learning
+
+
+directly in the real world but with a
+
+
+different set of constraints. So here
+
+
+it's not learning from scratch the way
+
+
+that that robotic hand did it but it's
+
+
+bootstrapped with a lot of prior
+
+
+experience which in this case is
+
+
+provided by human demonstrations and
+
+
+then it runs a number of real world
+
+
+trials to kind of fine-tune and perfect
+
+
+that strategy. So it's it's again a
+
+
+different kind of constraint. It
+
+
+necessitates a different kind of
+
+
+algorithm uh but also in the real world.
+
+
+So,
+
+
+one of the nice things about being able
+
+
+to run RL in the real world is that the
+
+
+real world sort of simulates itself. Um,
+
+
+so you don't have to worry about where
+
+
+the simulation comes from or what kind
+
+
+of human insight you have to design the
+
+
+right simulation. Like the simulation is
+
+
+always perfect because it is actually
+
+
+the real world. Um, but on the other
+
+
+hand, learning under real world
+
+
+constraints is very hard. It emphasizes
+
+
+sample complexity a lot more. If you
+
+
+have a fast simulator, you don't really
+
+
+care about sample complexity. But if you
+
+
+have to run this in the real world, then
+
+
+you care about that a great deal. It uh
+
+
+emphasizes all these other problems like
+
+
+reward specification and resets and
+
+
+robustness.
+
+
+Um and getting this right is perhaps the
+
+
+key to have truly continual learning or
+
+
+self-improving systems. Uh you could
+
+
+even imagine that maybe for some domains
+
+
+you might want your system to be
+
+
+bootstrapped from some kind of sandbox
+
+
+environment, but then have a continual
+
+
+learning phase in the real world. And
+
+
+that's kind of at the frontier of what's
+
+
+possible with current methods.
+
+
+Um, okay. So, this is still kind of at
+
+
+the boundary what we can do.
+
+
+All right. And the last topic I uh the
+
+
+last kind of perspective I want to talk
+
+
+about this one is maybe even more out
+
+
+there maybe a little bit more
+
+
+philosophical but I think it's also
+
+
+worth um reflecting on which is that in
+
+
+some ways reinforcement learning
+
+
+provides kind of a more universal way to
+
+
+think about machine learning um than
+
+
+other paradigms.
+
+
+Why? Well, because reinforcement
+
+
+learning is basically about
+
+
+finding a better solution to the problem
+
+
+than the one in any of your past
+
+
+experience. And that means that you're
+
+
+essentially leveraging your experience,
+
+
+your data as merely examples of what's
+
+
+possible and then using the algorithm
+
+
+itself to figure out what's the right
+
+
+thing to do as opposed to supervised
+
+
+learning where there is no distinction
+
+
+between what's possible and what's
+
+
+desirable. Like in supervised learning,
+
+
+you always just do whatever you saw in
+
+
+the data. Whereas reinforced learning is
+
+
+about going beyond what you saw in the
+
+
+data. Uh and uh this is perhaps more
+
+
+broadly applicable. The reason this
+
+
+might be so important is that
+
+
+the big lesson from the revolution with
+
+
+large scale machine learning is that
+
+
+using lots of data is a really good
+
+
+idea. And um basically modern deep
+
+
+learning works uh because you can have
+
+
+large models that are trained on like
+
+
+lots of compute that you pay lots of
+
+
+cash for on big data sets. And
+
+
+originally the big data sets came from
+
+
+people doing a lot of hard work like
+
+
+somebody would say uh somebody would uh
+
+
+curate like the imageet data set and
+
+
+then go in and label all of that and all
+
+
+that stuff. But then uh people realize
+
+
+that if you really want very powerful AI
+
+
+systems, just relying entirely on kind
+
+
+of bespoke human labor to produce the
+
+
+data is not sufficiently scalable. And
+
+
+um typically the way that current large
+
+
+scale systems are actually trained is by
+
+
+using large amounts of kind of
+
+
+lowquality data, garbage data if you
+
+
+will, um to bake a lot of knowledge into
+
+
+the system and then maybe a smaller
+
+
+amount of higher quality data in some
+
+
+kind of post-training phase. And
+
+
+basically all large scale AI systems
+
+
+work this way. LLMs, generative models,
+
+
+video models, all this stuff. Um, and
+
+
+that makes a lot of sense because this
+
+
+kind of largecale lowquality garbage
+
+
+data is much easier to get and therefore
+
+
+you can get enough of it that you can
+
+
+get a really like deep understanding of
+
+
+the world into the model.
+
+
+Um, and uh, these days this is typically
+
+
+done with um, some form of unsupervised
+
+
+learning. So like next token prediction,
+
+
+generative modeling these are all
+
+
+unsupervised learning techniques. Um,
+
+
+but unsupervised learning methods are
+
+
+basically about estimating the
+
+
+distribution of the data. They're about
+
+
+estimating P of X. Like if you're
+
+
+training a language model with next
+
+
+token prediction, your data consists of
+
+
+text sequences X and what you're
+
+
+estimating is P of X, which actually
+
+
+maybe is like a little bit of a
+
+
+conundrum for us because if what we want
+
+
+is to be able to use lowquality data,
+
+
+but fundamentally unsupervised learning
+
+
+is estimating the data distribution,
+
+
+then the data distribution really
+
+
+matters because that's what you're
+
+
+estimating. So if your data distribution
+
+
+is like garbage data, well, you're
+
+
+estimating garbage data. Um,
+
+
+so, uh, if you are training on images
+
+
+from the web, the distribution is the
+
+
+distribution of pictures people take and
+
+
+put on the internet. If you're training
+
+
+on text from the web, then the
+
+
+distribution you're training on is the
+
+
+distribution of uh, text that people
+
+
+type on keyboards and put on the
+
+
+internet. And this is actually
+
+
+part of why um, like LLM alignment is
+
+
+such a complex issue. This is why you
+
+
+hear stories about how uh oh like you
+
+
+know OpenAI's latest model did some
+
+
+crazy thing. It's because there is
+
+
+actually deep down a tension between the
+
+
+fact that the large scale pre-training
+
+
+data comes from you know essentially a
+
+
+very unccurated source and the fact that
+
+
+you then want to adapt these systems to
+
+
+solve particular tasks. And people have
+
+
+to work really hard at setting up the
+
+
+training process so that the inherent
+
+
+undesirable tendencies in these models
+
+
+that come from training on essentially
+
+
+garbage data can be kind of like uh uh
+
+
+tamped down and turn into something
+
+
+productive. And uh people have gotten
+
+
+pretty good at this kind of training,
+
+
+but it's a very much like a uh uh a um a
+
+
+labor intensive and complex undertaking
+
+
+where you have to understand all the
+
+
+ways in which that bad data causes
+
+
+undesirable behavior and build some kind
+
+
+of like little patch or some kind of fix
+
+
+in your post- training phase to correct
+
+
+this. So that's very laborious and it's
+
+
+very prone to failure and in the end you
+
+
+don't know whether you fixed all of the
+
+
+issues or whether all of a sudden when
+
+
+the model is prompted in some unexpected
+
+
+way it'll pop out with some crazy
+
+
+behavior that you would find highly
+
+
+undesirable.
+
+
+So, of course, um what you might want to
+
+
+do instead is not treat this uh uh large
+
+
+uh garbage data set quite like a
+
+
+set of examples of of what you should do
+
+
+the way that unsupervised learning does,
+
+
+but instead as merely a source of
+
+
+knowledge about possibilities,
+
+
+as information about like, oh, this is
+
+
+what might happen in the world. And then
+
+
+you reflect on those possibilities with
+
+
+reinforcement learning and figure out
+
+
+what you should do.
+
+
+Um to um maybe make this argument a
+
+
+little bit more strongly, you can step
+
+
+back a little bit and say like why do
+
+
+you need machine learning at all? And uh
+
+
+you can step back and ask an even more
+
+
+basic question. Why do you need a brain?
+
+
+It's actually worth pondering this
+
+
+question. There's a a neuroscientist
+
+
+Daniel Walpert uh who had this answer.
+
+
+He knows quite a bit about brains and he
+
+
+said we have a brain for one reason and
+
+
+one reason only and that's to produce
+
+
+adaptable and complex movements.
+
+
+Movement is the only way we have of
+
+
+affecting the world around us and I
+
+
+believe that to understand movement is
+
+
+to understand the whole brain. Now it
+
+
+won't surprise you to know that Daniel
+
+
+Walpert works on the neuroscience of
+
+
+motor control. So of course he has a
+
+
+vested interest in saying this but I
+
+
+think there's like some deeper truth to
+
+
+the statement which is that whatever
+
+
+kind of intelligence or computation your
+
+
+AI system is doing it matters only in so
+
+
+far as the output of that AI system is
+
+
+actually useful. So perhaps the purpose
+
+
+of machine learning is to produce
+
+
+adaptable and complex decisions because
+
+
+regardless of how deep and smart the
+
+
+thoughts of your AI system are if it
+
+
+doesn't make the right decision at the
+
+
+end then it's not good. And if it makes
+
+
+no decision then it's doing nothing at
+
+
+all. So in the same way that the purpose
+
+
+of our brains is to move our bodies, the
+
+
+purpose of machine learning is to make
+
+
+decisions.
+
+
+And uh viewed in this way, we can cast
+
+
+actually all machine learning and AI
+
+
+problems as fundamentally decision-m
+
+
+problems. Like there's some obvious ones
+
+
+like controlling a robot like yeah
+
+
+clearly the decision is to like move the
+
+
+robot arms or controlling a car. The
+
+
+decision is how you drive the car. But
+
+
+even if you have something like an image
+
+
+classifier, you know this is the kind of
+
+
+stuff you learn about in introductory
+
+
+ML. say, well, in for an image
+
+
+classifier, the purpose is to predict
+
+
+the label. But that's not actually true.
+
+
+Like when you use an image classifier
+
+
+for some real world application, it's
+
+
+making a decision. Like maybe it's
+
+
+detecting um you know, cars running a
+
+
+red light for a red light camera or it's
+
+
+uh uh detecting somebody's face in a
+
+
+photograph for for for Facebook. Like
+
+
+all of these are decisions that are
+
+
+going to lead to some kind of action in
+
+
+the world which will have a good or a
+
+
+bad outcome. And if you view uh all of
+
+
+these things as um decisions, then it
+
+
+makes sense to think of them all as
+
+
+essentially reinforcement learning
+
+
+problems because reinforcement learning
+
+
+is our formalism for setting up an
+
+
+optimization problem to make good
+
+
+decisions, decisions that lead to high
+
+
+utility. So perhaps then what we should
+
+
+be thinking of is reinforcement learning
+
+
+as a way to have a kind of a a universal
+
+
+learning engine that can capture all of
+
+
+this kind of garbage data uh and use it
+
+
+to make better decisions. So
+
+
+specifically use it uh not as a source
+
+
+of supervision about what your system
+
+
+should do but rather as a source of
+
+
+knowledge about possibilities on top of
+
+
+which we then optimize for decisions
+
+
+that actually have high utility. Okay.
+
+
+Um so you could imagine that your system
+
+
+gets a bunch of data of all like
+
+
+different experience uh and then uh it
+
+
+trains on that data to achieve outcomes
+
+
+and then when has a new task then it can
+
+
+kind of use that experience and
+
+
+fine-tune a little bit with RL and and
+
+
+do a good job. So if you want like a
+
+
+notional recipe start with a very large
+
+
+and diverse lowquality data set with
+
+
+many different tasks run some kind of RL
+
+
+procedure on it. Maybe this would be an
+
+
+offline procedure because you know data
+
+
+is easier to get than uh environments
+
+
+that you can interact with. And there
+
+
+are a few choices here. You could learn
+
+
+a model, you can learn skills, you could
+
+
+learn goal conditioner like something
+
+
+fairly general that can consume all this
+
+
+experience but not learn to copy it but
+
+
+rather learn to use it to achieve
+
+
+outcomes with high reward. And then that
+
+
+can serve as a basis a kind of a
+
+
+functional understanding of the world
+
+
+that you can use to uh learn downstream
+
+
+tasks effectively with less concern
+
+
+about you know having this meticulous
+
+
+post training to remove all of the
+
+
+possible issues.
+
+
+Um I I want to to make to bring this a
+
+
+little bit back down to earth and give
+
+
+you a more concrete example. Uh I want
+
+
+to walk through a kind of a a research
+
+
+example for training dialogue agents
+
+
+using data. Um, so this is actually an
+
+
+LLM example, uh, but with a with a kind
+
+
+of a twist. So oftent times when we work
+
+
+on RL for LLMs, we're concerned with
+
+
+what are essentially bandit problems. So
+
+
+the LLM gets some problem like a math
+
+
+problem and has to work through that
+
+
+math problem and produce an answer. But
+
+
+you could also imagine using LMS to um
+
+
+interact with people. This is an example
+
+
+of a tutoring agent. So somebody comes
+
+
+to this uh uh agent and says like can
+
+
+you teach me about behavioral cloning?
+
+
+Basically, imagine this is like, you
+
+
+know, the TA in office hours, uh, and
+
+
+they say like, of course, I'd be happy
+
+
+to explain behavioral coding to start.
+
+
+Could you tell me if you're if you ever
+
+
+come across the term artificial
+
+
+intelligence or machine learning before,
+
+
+like that's pretty reasonable. If you're
+
+
+just talking to a person that you've
+
+
+never met before and they ask you to
+
+
+explain some complex technical topic,
+
+
+the first thing you would do is not give
+
+
+them like a big wall of text the way
+
+
+that Chad GPT would do it, but you would
+
+
+ask them some question to calibrate the
+
+
+level of expertise so you can deliver
+
+
+the lesson at an appropriate level of
+
+
+sophistication.
+
+
+And this is the kind of stuff that like
+
+
+current AI assistants wouldn't do. If
+
+
+you ask a uh Chad GPT, you get a big
+
+
+wall of text that kind of tries to like
+
+
+brain dump everything on you uh because
+
+
+it's framed as a singlestep problem.
+
+
+So
+
+
+um you could imagine for example
+
+
+training dialogue agents with a kind of
+
+
+modelbased RL procedure. Uh so you could
+
+
+uh
+
+
+treat the LM itself as a simulator.
+
+
+That's offline modelbased RL. You had it
+
+
+to generate a bunch of synthetic data of
+
+
+hypothetical conversations. And they
+
+
+could do this pretty well because well,
+
+
+you trained it on data of people
+
+
+generating text. So you can use it to
+
+
+generate fake conversations. But these
+
+
+are not necessarily good conversations.
+
+
+They're just examples of what could
+
+
+happen. And then you could use them as
+
+
+training data for some kind of RL like
+
+
+an offline RL method that would then
+
+
+look at the patterns in those behaviors
+
+
+and figure out the kinds of utterances
+
+
+that might lead to good outcomes that
+
+
+might lead to uh the student at the end
+
+
+of the lesson having uh you know correct
+
+
+answers to questions for example test
+
+
+questions. Uh and this is very different
+
+
+than uh using the model to directly like
+
+
+than directly prompting the model and
+
+
+getting it to be a good tutoring agent
+
+
+because you're actually reflecting on
+
+
+that experience and trying to figure out
+
+
+more optimal strategies to optimize some
+
+
+reward.
+
+
+So the here the um
+
+
+uh the LLM is essentially acting as both
+
+
+a simulator and a policy. Um here's some
+
+
+examples. Uh this is from a paper by
+
+
+Joey Hong um who was a PhD student here
+
+
+at UC Berkeley.
+
+
+First he compared this to uh Chad GPT
+
+
+with a great deal of prompt engineering.
+
+
+So you kind of prompt engineer chat GPT
+
+
+to basically tell it like hey um try to
+
+
+respond with clarifying questions
+
+
+ascertain the students level of
+
+
+experience all that kind of stuff. And
+
+
+he got something that's like a bit
+
+
+better than that initial brain dump
+
+
+where it actually says like let's start
+
+
+by understanding your background AI blah
+
+
+blah blah blah blah blah. Uh, and
+
+
+chances are if you were uh, you know,
+
+
+casually trying to use this tool to
+
+
+interactively learn about some topic,
+
+
+when you get all the blah blah blah, you
+
+
+would tune out a little bit and uh, not
+
+
+engage very thoroughly. And here's uh,
+
+
+Joey's agent that he trained using this
+
+
+RL procedure. And you'll notice that the
+
+
+responses from the agent there shown in
+
+
+blue are much more concise and much more
+
+
+targeted. Like it says, I'd be happy to
+
+
+explain behavior cloning. Could to
+
+
+start, could you tell me if you've ever
+
+
+uh, come across the term artificial
+
+
+intelligence? And then it says like, no
+
+
+problem. Let's take it step by step.
+
+
+Have you ever used a computer or
+
+
+smartphone? So much more interactive and
+
+
+much more information seeking. And this
+
+
+is the kind of stuff that of course RL
+
+
+should do because RL is about taking
+
+
+actions that are not greedy but that
+
+
+lead to rewards later after a long-term
+
+
+interaction.
+
+
+Okay. So um I think I'll conclude there.
+
+
+Uh we're at time now. But just to
+
+
+summarize what I wanted to get across
+
+
+here, we have many different RL methods.
+
+
+And the reason we have so many different
+
+
+RL methods is that we can apply RL in
+
+
+different cases that impose very
+
+
+different constraints. And you could
+
+
+view it as a kind of a an engineering
+
+
+tool that you can use for problems where
+
+
+you can easily set up uh a sandbox or
+
+
+simulation that's very pragmatic and
+
+
+that's where you'd want tools with uh uh
+
+
+good parallelism. Maybe you don't care
+
+
+so much about sample complexity, but you
+
+
+really prioritize stability and things
+
+
+like that. And that's why that's why we
+
+
+talk about things like policy gradient
+
+
+methods. You might want to use these
+
+
+things in real world settings for things
+
+
+like continual learning and there you
+
+
+want high sample efficiency methods. And
+
+
+you could also think about taking this
+
+
+broader perspective that perhaps RL in
+
+
+the future could be a way to build
+
+
+towards universal learning methods where
+
+
+we are prioritizing much more the
+
+
+multitask learning setting some of the
+
+
+topics that we cover towards the end of
+
+
+the course and using this as a way to
+
+
+build up u an understanding of the world
+
+
+that's fundamentally more functional
+
+
+that's less about imitating what we saw
+
+
+in the data and more about treating it
+
+
+as a space of possibilities. All right u
+
+
+I hope to see you all uh for the guest
+
+
+lectures um and uh that's my last
+
+
+lecture for the course. So, thank you
+
+
+all for for joining me this semester.

@@ -1,0 +1,1411 @@
+All right.
+Looks like that's working.
+>> [snorts]
+>> All right. Welcome everybody to CS 285.
+Uh apologies for the um
+surprise
+uh outdoor excursion this morning. And
+uh you know, hopefully everything is
+working. Hopefully everything is
+recording. If it all goes well, the
+first day of class is always a little
+tricky, but uh let's hope for the best.
+And since we're a little late, let's
+dive right in.
+All right. Let's uh let's think about a
+little um problem to get us started,
+something to get us thinking in the
+morning. Let's say that you've got uh a
+robotic arm like this that has a camera
+looking at a a bin full of objects, and
+you want to train a machine learning
+system to pick up those objects. Very
+useful thing, you know, warehouse
+automation is all the rage, so maybe a
+pretty valuable problem to solve. And
+seems like machine learning can get us a
+handle on this. So, you've got a bin
+full of objects, and you need to train
+some kind of model that will figure out
+how to move this robotic arm to go and
+pick up those objects.
+Uh and you know, basically, your model
+needs to output like XYZ coordinates for
+where the robot needs to go so that it
+picks up the object successfully.
+Okay. So, there are a few ways you could
+approach this. Like, option one, you
+could like really try to understand this
+problem in depth and design a solution
+with motion planning and model-based
+reconstruction and all that kind of fun
+fun stuff. But, this is a machine
+learning class, so uh we'd like
+something a little bit more uh machine
+learning-y. And also, you know, there's
+only so much that you can understand.
+Like, some objects are pretty easy to
+pick up, like rigid objects. You just
+put the fingers on either side and pick
+it up. But, some objects are kind of
+messy. You need to figure out like where
+the center of mass is and how it's going
+to balance in the grip. Or and if it's
+like a soft and deformable object, how
+the material is going to be affected by
+the robot. So, it's pretty hard to
+actually just think through this problem
+and design a solution by hand, by manual
+programming.
+So, let's rather set it up as a machine
+learning problem. And as we uh learn in
+our introductory machine learning class,
+to set it up as a machine learning
+problem, you have to get some data, and
+then you train on that data to basically
+produce the outputs that are associated
+with the training examples in your data
+set.
+The problem is that it's actually pretty
+hard to get a a training set for a task
+like this that is supervised with
+correct outputs, because people don't
+necessarily know how to control a robot
+arm perfectly to pick up objects.
+So, what you could do instead is you
+could get all these robots to practice,
+like let them try picking up objects,
+see what works and what doesn't work,
+and use that to construct a data set
+that you can then learn how to do this
+task. The problem, of course, is that if
+these robots are just kind of practicing
+picking stuff up randomly, they're not
+necessarily producing optimal
+supervision.
+Writing this kind of random stuff isn't
+going to tell you exactly how to pick up
+objects. It'll just show you what works
+and what doesn't work.
+Okay, so what can you do with this?
+So, now you have a a different data set.
+It's not a data set of inputs and
+correct outputs. It's a data set of
+inputs and outputs, like what the robot
+saw and what it did, associated with a
+label that indicates whether that worked
+or not, whether it was successful or
+not. So, it's a different kind of
+learning problem.
+And this is basically a microscopic
+version of a reinforcement learning
+problem. Reinforcement learning is about
+learning not from correct labels, but
+from examples that succeeded or failed,
+or in general achieved some kind of
+intermediate level of utility.
+So, you'd like to take this data set,
+which is not labeled with optimal
+outputs, do something with it, and then
+learn a model that can do this task
+autonomously, and ideally very, very
+well.
+So, that's kind of the microscopic
+version of a reinforcement learning
+problem.
+Okay. Um now,
+why should we care about this sort of
+problem setting? I mean, you know, you
+can just get human labelers. Maybe
+they're not going to be perfect, but
+perhaps they're going to be good enough.
+So, there's a little bit of kind of big
+picture vision that I'd like to share
+with you to maybe get you thinking about
+why these problem settings are
+important.
+If we think about advances in AI over
+the last few years that
+you know, we find very compelling that
+maybe some of them we use every day,
+things like generative models, language
+models, and so on. These are all
+things that are pretty exciting to us
+because they can allow machines to
+reproduce some capabilities that
+you know, humans are really good at.
+Ordinarily we'd think that writing text,
+generating pictures, like these are
+things that people should be doing. So,
+if machines can do it in some ways maybe
+almost as well as people, sometimes even
+better, that's pretty cool.
+But, um
+you know, the main idea behind a lot of
+current generative AI systems is still
+fundamentally very similar to that
+supervised learning paradigm. The idea
+is that you get some kind of data set
+and then you either model the
+distribution
+of the data or a conditional
+distribution. Maybe the distribution of
+images given text.
+So,
+whether it's unsupervised learning or
+supervised learning, whether it's a
+language model or an image generation
+model, fundamentally it's trying to
+reproduce what it sees in the data. So,
+it's kind of like a a very, very
+massively scaled-up version of what you
+learn about introductory statistics.
+And of course, because of that, what's
+in the data really, really matters. So,
+if for example, you're learning to
+generate pictures given text, well, at
+some level what you're really doing is
+trying to teach this model what are the
+kinds of pictures that people put on the
+internet and how do they associate them
+with language tags.
+Or if you're training a language model
+on data from the web, fundamentally what
+you're trying to get it to do is predict
+what kind of keystroke a person would
+hit on a keyboard next. Now, it turns
+out to be a very rich signal, but it's
+still about kind of reproducing what
+people would do.
+So,
+what does reinforcement learning do
+differently?
+There are kind of um
+two um
+sources
+of kind of I guess like
+two intellectual ancestors to
+reinforcement learning. One is in
+psychology and the other one is in
+computer science. So
+the
+psychological roots of reinforcement
+learning come from studying
+learning and behavior in animals. Um you
+know, folks like B.F. Skinner who would
+study how animals adapt to to stimuli to
+reward and punishment. And that led to a
+particular model of learning that looks
+very different than supervised learning.
+It's not about learning from examples
+that tell you what to do, it's learning
+from essentially reward and punishment,
+learning from successes and failures.
+And that's been actually a very powerful
+model of primitive animal learning for a
+very long time. There's a lot of
+controversy actually about what happens
+with more sophisticated forms of
+learning, but at least for very
+primitive learning that's considered a
+pretty good model.
+But reinforcement learning the way that
+we
+study today also has a lot of its roots
+in
+computer science
+domains that have to do with
+optimization. This is a video from Karl
+Sims from
+quite a long time ago at this point
+showing a
+simulated robotic system that is
+evolving. It's actually evolving both
+behaviors and the form of its body. And
+this is a very early illustration of how
+you can get emergent behaviors through
+optimization. Now back then these kinds
+of things weren't really associated with
+reinforcement learning as it was
+practiced in
+as it was studied in psychology, it was
+just an attempt to apply optimization
+techniques, in this case evolutionary
+optimization techniques, to try to find
+emergent solutions. So the idea here is
+that the designer of this program didn't
+really know what kind of morphology
+would be best at this point in this case
+of chasing the red dot. They
+programmed a machine that would generate
+all sorts of different designs, see
+which ones worked, and then double down
+on the most successful ones to find
+emergent solutions.
+And here's kind of a more modern
+incarnation of this. This is from 2012
+from Yuval Tassa using an optimization
+technique. This is not actually a
+reinforcement learning algorithm,
+something called a trajectory
+optimization to get emergent locomotion
+gates and standing strategies for
+humanoid robots. So this is actually
+optimized on the fly, and again, the
+designer here didn't tell this humanoid
+how it should stand or how it should
+walk, but instead implemented an
+optimization method that would discover
+these kinds of strategies automatically.
+And these two
+streams, they kind of come together in
+what we today would call reinforcement
+learning. And
+the
+idea here is that
+the study of reinforcement learning
+psychology and early reinforcement
+learning algorithms like Q-learning
+provide us with with an algorithmic
+foundation to make these kinds of
+optimization things in the bottom row
+much more efficient. So, early methods
+like these evolutionary methods were
+very inefficient computationally, and
+that made them extremely difficult to
+apply to complex and long horizon
+decision-making problems, like for
+example, playing the game of Go. But,
+it was still enough to convince people
+that optimization had a lot of power to
+achieve these kind of emergent
+behaviors. So, combining that with the
+right algorithms, the right ideas to
+make all this work well, allowed people
+to develop very effective reinforcement
+learning algorithms that could achieve
+this kind of emergent behavior, but now
+for very complex problems. So, one of
+the things about
+AlphaGo that was
+so exciting for a lot of people is that
+it's not that it played the game like a
+person would,
+but rather that it played it very
+differently from how people would would
+do it. That it would actually discover
+moves that people wouldn't have thought
+of. Now, the game of Go is a very old
+game. Many of you probably know this. If
+you don't, it's an extremely old game.
+So, the fact that in 2016,
+somebody could implement a reinforcement
+learning algorithm that would discover
+strategies for playing the game that
+people hadn't thought of for thousands
+of years is actually pretty remarkable.
+And if we contrast this with generative
+AI,
+actually
+the
+capabilities are very complementary
+because as I said, generative AI
+is impressive to us because it
+reproduces some aspect of human
+behavior. Reinforcement learning is
+interesting because it leads to emergent
+behaviors that are different from what
+people would have done.
+So, perhaps these are very complementary
+strengths. This is impressive because it
+looks like something that a person might
+draw. This is impressive because no
+person had thought of it.
+Okay. Well, hopefully this gets you
+thinking a little bit about the kinds of
+things that you might learn about in
+this course. I don't know if you'll be
+you know, coding up AlphaGo or not.
+Although you could try that for your
+final project, but hopefully you'll
+learn a lot of the algorithmic
+underpinnings of these techniques.
+So, now that I hopefully got you all to
+wake up, I'm going to talk about
+something much less interesting, which
+is course logistics, but it has to be
+done. And by the way, for this lecture,
+if any of you have any questions, please
+don't hesitate to raise your hand and
+ask me a question.
+You know, the
+I don't know if I'll get through
+everything, but it's more important for
+us to have like a nice discussion.
+Okay, course logistics.
+Prerequisites and enrollment. So,
+this is a fairly advanced class.
+I
+do not intend to go easy on you guys.
+This was originally designed as a
+graduate level class for PhD students,
+but
+I think the
+generally the capabilities of UC
+Berkeley students get greater and
+greater every year. So, I think that all
+of you can
+hopefully handle this material if you've
+taken the prerequisites and have a
+decent understanding of machine
+learning. So, do be prepared for a
+fairly challenging class.
+You know, I believe in you guys. I think
+you can do it, but
+if you are not sure,
+definitely pay attention to the first
+homework. I would recommend trying to
+start on the first homework earlier and
+see how it is, especially if you're
+unsure about whether you have the the
+right foundations. And if the first
+homework is kind of a struggle, please
+come see the TAs or see me.
+And
+please do take the prerequisite
+seriously. So, in this class, I would
+like everybody taking this class to have
+taken a machine learning class before.
+Something like CS 182 or CS 189 at
+Berkeley is a great way to fulfill that
+prerequisite. So, if you've taken one of
+these classes, you're probably going to
+be in decent shape.
+There are other classes, you know, 281A,
+etc. that would also fulfill it. Or if
+you're a graduate student who took
+machine learning at their home
+institution, if it was a rigorous
+machine learning class, it probably
+would provide you with the right
+foundations. And if you're not sure,
+send me a syllabus, drop me a note, and
+we can figure that out.
+Assignments will require training neural
+networks with standard auto-diff
+packages.
+By default, we expect everybody to use
+PyTorch. If you can figure out how to
+make our auto-grader happy by using
+something other than PyTorch, more power
+to you. But, it's unsupported. So, the
+TAs will help happily answer your
+questions about PyTorch.
+Some of them know a thing or two about
+Jackson, pretty much every other
+auto-diff library, but I've told them
+that they are not required to answer
+those questions. So, only the PyTorch
+path is
+supported. We will have a review section
+about PyTorch uh
+in the next couple of weeks.
+Uh
+but, uh it's a good idea if you're in
+shaky on your neural network and PyTorch
+fundamentals, to start on the homework
+early and make sure that that's going
+smoothly.
+Uh if you are a concurrent enrollment
+student, we will have some small number
+of slots for current enrollment
+students. I suspect we probably will not
+be able to enroll
+everybody who wants to, but we do we did
+get some slots from the department.
+Please make sure you fill out the
+enrollment form on the course website if
+you are concurrent enrollment student,
+because that's the only way that we can
+know whether you have the prerequisites
+or not.
+For everyone else, uh
+uh if you can't enroll in the class, and
+probably you can't at this point because
+it's full, please add yourself to the
+waitlist in CalCentral.
+>> [clears throat]
+>> Uh and for I've received a few questions
+about whether the class will be expa-
+expanded. Unfortunately, it has already
+been expanded about as far as it'll go.
+If we expand it any further, you know,
+as you can see in this room, it'll pop
+and then everything will go flying. So,
+this is about as big as as it's going to
+get.
+Uh all right, class format. Lectures.
+So,
+uh I will do my utmost to make sure the
+lectures are recorded.
+As you probably noticed, there's no
+projectionist in this room, so I kind of
+have to leave it up to faith that the
+recordings all make their way from this
+room over to BCourses and into the media
+gallery. And occasionally there are
+snafus with that, so I'll do my best to
+ensure that you guys get your recordings
+if it's difficult for you to wake up in
+the morning and come in so early.
+And I definitely do not require
+attendance in lecture. I would very much
+like it if you guys come here and ask me
+questions and interact with me and with
+each other, but I understand that it's
+an early morning and if you would like
+to watch the lectures from home in your
+pajamas in the BCourses media gallery,
+you are welcome to do so and I'll do my
+best to make sure the recordings end up
+there.
+And here's the link for that. The slides
+will be on the course website.
+I'll try to make a YouTube playlist if
+you guys don't like the the BCourses
+video UI.
+Still TBD, I'll work on this weekend.
+Every lecture has a quiz except for this
+one.
+The quiz is very very short and in
+principle should be very very easy if
+you listen to the lecture and like
+absorb the material.
+The quizzes are on GradeScope. They're
+literally like three to five questions
+for each lecture. You can have it open
+next to your browser while you're
+watching the lecture online or on your
+laptop while you're listening to me or
+just do it like right after class. So
+it's really just meant to to be there to
+make sure that you kind of see what is
+the the five important things in lecture
+and that you've absorbed them.
+So pretty straightforward, it's 10% of
+your grade.
+If you mess up on the quiz, you can take
+it again. There's a second try quiz. So
+really the quiz should not be a source
+of grade stress. It's really just there
+to make sure that the lectures register.
+All right, and yeah, you can you can
+take it twice. Sections, for the first
+time ever in this class we will have
+sections. So the TAs have
+graciously made a plan to teach a
+section every uh
+On the website uh
+on on the official Berkeley website,
+this class is listed having six
+sections. Um
+I have uh
+10-hour TAs. They are very very hard
+working, but they don't have that many
+hours, so we're going to reduce the
+number of sections to three rather than
+six. And hopefully that'll be okay. If
+it proves to be a mess, we still have
+the flexibility to ask them to work a
+little harder and expand it. We'll see
+if we can make it work with with three.
+So, uh look out on Ed for a post about
+when the sections are happening, and
+they will begin next week.
+Uh so, TAs will do that.
+And the sections will review material in
+lecture. You do not have to go to the
+section. No new material will be
+introduced, but if you would like a
+little bit more uh reinforcement uh for
+the lecture materials, section will
+cover that. And the first two sections
+will be kind of review sections on
+PyTorch and probability. So, if you're
+feeling like, you know, you might be a
+little shaky on that, good to go to
+those. We'll use them for um
+going through things like proofs in more
+detail. And then, of course, we'll use
+them for exam review.
+All right. Um so, speaking of uh which,
+grades, the exam is uh
+Oh, this is out of order. Okay. The exam
+uh is going to be in in uh April. It's
+kind of like a late midterm or like a
+three-quarter term. Uh it's basically a
+final exam that is not being held at the
+end to give you guys all time to work on
+your final project. And it's going to be
+20% of your grade. So, it's held in week
+12 of class.
+And we'll get you practice exam and uh
+yeah.
+Uh homework's 50% of the grade, five
+homeworks, 10% each. Uh they're
+programming homeworks. Uh
+you'll get about 2 weeks per homework.
+Um
+I would ask you not to use AI coding
+tools for the homeworks. I know that
+that's like not the traditional
+developer workflow these days, but uh
+you know, these are fairly standard
+algorithms and uh I it's very hard to
+come up with a fair grading rubric if
+you use AI tools extensively. Um so, we
+ask you not to use the coding tools.
+Come to office hours if you need help
+with homeworks. Generally,
+if you utilize the resources available
+to you like office hours, you should all
+be able to do the homework successfully.
+So, if you're struggling come to office
+hours. Everyone should be able to get
+full score. Start early. Go to office
+hours. A lot of these things will take a
+long time to train. All the more reason
+to start early because it really sucks
+when it's due like an hour from now and
+you realize it's going to take 2 hours
+to train.
+And then and then there will be a final
+project and that's 20% of your grade.
+So, we'll give you a few options. So,
+the the final project will be a little
+bit of like a make your own adventure.
+Those of you that are in the graduate
+section 285,
+you can design your own project and in
+fact that's very strongly encouraged.
+For those of you that in the that are in
+the 185 section, we will give you a few
+options for a project plan. If you are
+in the 185 section and you would like to
+do a more open-ended project, please
+come talk to me or to talk or to one of
+the TAs. But, in the 185 section we
+would really recommend for you to use
+one of the
+default projects and they're open-ended
+enough that I promise you they'll be a
+lot of fun.
+Okay, that's course logistics. Any
+questions?
+Yes.
+That's right.
+Yes.
+>> If you don't meet the formal
+prerequisites for this class, will you
+be retroactively dropped if you're
+already enrolled?
+>> I I I will not retroactively drop
+anybody. In fact, I cannot drop you even
+if I wanted to. The system literally
+doesn't allow allow me, but I would
+never do that to you anyway. However,
+please do take it seriously and if
+you're not sure if you meet the
+pre-reqs, please start on the homework
+early and just get a a feel for that.
+I I would really really strongly
+encourage all of you guys to take the
+pre-reqs seriously because Uh, know,
+there's a lot of cool reinforcement
+learning material to cover, but I have
+to go pretty fast for that.
+Any other questions? Yes.
+>> Uh, will this class provide resources
+for training the model, or do we have to
+go find our own?
+>> Right, compute. Uh, so this often comes
+up. Uh,
+we have secured a, uh, generous, uh,
+compute grant from a certain Silicon
+Valley organization. We'll post our
+information on that about that shortly.
+Uh, we still need to do a little bit of
+work to confirm that we can like set up
+the infrastructure for you guys to be
+able to use it. So, we will provide
+something that, if it is usable and all
+goes smoothly, should be adequate for
+all of the homeworks in the class. That
+said, if you have very ambitious plans
+for the final project, uh, or something
+like that,
+having your own compute certainly will
+be a plus, but we'll post information
+about compute that we can get you guys
+shortly, hopefully within a week.
+Any other questions?
+Yes.
+Yeah, so that, uh, there's a lecture one
+quiz on GradeScope, which you can like
+take to just learn how the interface
+works. But, we're not grading it. So,
+like lecture two is when we start the
+official graded quizzes.
+Yes.
+>> Is there a textbook for the class you're
+referencing?
+>> Um, there is no textbook that actually
+follows along with the class. On the
+course website, there are some like
+materials that if you want, you know,
+essentially enrichment materials, the
+Sutton and Barto textbook is quite nice.
+Uh, but, you know, I go into some pretty
+advanced stuff, and I don't know of any
+textbook that covers it.
+I thought about writing one, but I
+didn't get around to it over winter
+break.
+Any other questions?
+All right. Uh, let's let's get through
+some, uh, some more fun stuff. What is
+reinforcement learning? So, some of you
+maybe guessed already from the, uh,
+introduction, but reinforcement
+learning, um,
+it really is, uh, kind of two things.
+It's a little bit of an overload of
+term. Reinforcement learning is often
+used to mean a mathematical formalism
+for learning based decision making. So,
+basically, a definition of a problem.
+Reinforcement learning is also used to
+refer to
+an approach for learning decision making
+and control from experience. And there's
+a subtlety here because these are
+actually not the same thing and the
+ambiguity sometimes causes a bit of
+confusion. So, if someone says, like,
+"I'm working on reinforcement learning."
+It could mean they're just working on a
+problem where they have learning based
+control. Like, basically, they're
+they're trying to get
+a machine to do something controlled by
+a model that has learned with with ML.
+The more narrow definition of
+reinforcement learning, as opposed to
+like optimal control or planning, is
+that it's about learning to do control
+specifically from experience,
+specifically from trial and error. And
+that's a more narrow definition. And
+unfortunately, people kind of use both,
+so it can be a little confusing.
+Um, so keep that in mind.
+But maybe more importantly, how's this
+different from other machine learning
+topics?
+So, standard machine learning, standard
+supervised machine learning, typically
+the first thing that we learn about in
+an introductory machine learning class,
+has a very simple definition. You're
+given a data set of inputs and outputs,
+so X and Y, and you want to learn to
+predict Y from X. This is kind of the
+first machine learning, uh, kind of
+problem setting that we typically learn
+about, and it's pretty straightforward.
+But underneath that straightforward
+statement, there's a set of assumptions.
+And we sometimes don't think about those
+assumptions, but they can actually be
+pretty limiting. So, one assumption is,
+uh, what's called the IID assumption,
+the independent identically distributed
+data assumption, which basically says
+that if you're doing a supervised
+learning problem, you're assuming that
+your X's and Y's, that your X's are all
+distributed identically, meaning they
+all come from the same distribution, and
+they're independent of one another. So,
+if you have a data set of images with
+labels,
+the content of image A is statistically
+independent of the content of image B.
+So, it's not like someone looked at A
+and then added B based on what was there
+in A.
+And that's kind of a subtle assumption,
+but very important.
+Um
+of course, you also assume that you know
+the ground truth outputs during
+training, and that's
+a pretty strong assumption as we learned
+from our robotics example at the
+beginning.
+Reinforcement learning
+uh has a number of challenges because it
+breaks these assumptions. So, first, in
+reinforcement learning, typically the
+data is not independent identically
+distributed. So, if you imagine a
+control problem like driving a car on a
+high on a highway,
+the current image that your camera on
+the car is seeing depends on the
+previous image. It also depends on your
+previous action. So, if the if at the
+previous time step you chose to drive
+the car off the road, that will
+definitely affect what you see right
+now.
+The ground truth answer is not known.
+What you know is
+uh whether you succeeded or failed or in
+general how good your behavior was, and
+we quantify that in terms of utility or
+reward.
+So,
+coming back to that example in the
+beginning,
+uh in the simplified robotic learning
+scenario, that means that you have a
+data set of
+what you saw, and what you did, and
+whether it succeeded or failed.
+And then you have to somehow use that to
+get a working
+uh model, a working policy.
+So,
+in um
+if we want to dig deeper into the
+definition, supervised learning,
+basically what I already said. In
+reinforcement learning, defining the
+problem takes a little bit more care. In
+reinforcement learning, you um model an
+agent that is interacting with an
+environment, and it interacts with an
+environment in a sequential process.
+We'll define this much more precisely in
+a in a future lecture, but uh if you
+would like a a rough definition of it,
+the agent observes something about the
+environment at every point at every step
+of time, and we call that a state or an
+observation, and it chooses an output,
+uh which we refer to as an action. And
+they play the same role as X and Y do in
+supervised learning. And now your data
+consists of these
+sequences of S A S A S A. Here's what I
+saw, here's my driving command for the
+car, here's what I saw next, here's my
+next driving command. So, the data
+structure differently. The individual
+time steps in such a trajectory are not
+independent of one another, and uh the
+agent needs to contend with the fact
+that it lives inside of a dynamical
+system.
+In supervised learning, someone tells
+you which Y's to output. In
+reinforcement learning, you have to
+figure out on your own from observing
+the consequence of your actions. Yes?
+>> Do you do have the ID assumption between
+the sequences?
+>> Right. So, this is a subtlety that I'll
+talk about in a future lecture, but
+typically, what you
+in lieu of the standard ID assumption,
+what you assume is that between
+trajectories, you are reset to an
+independently selected state. Uh and
+that's kind of the equivalent of that in
+RL.
+Yes?
+>> Do you mean all the people that are
+related to be Markov somehow?
+>> So, we'll we'll actually talk about
+that, and you can formulate
+reinforcement learning in settings where
+S is essentially adequate to select the
+state, and that that's what Markov
+means. You can also formulate
+reinforcement learning problems in
+settings where S is not by itself
+adequate to fully choose the state the
+the action, and you need to actually
+remember what happened before, and both
+settings can be addressed.
+Okay.
+Um all right. So, the goal in general is
+to learn what we call a policy. So, a
+policy is basically a model that maps S
+to A. That's not actually that
+revolutionary, you know, in supervised
+learning, you learn a model that maps X
+to Y, here it maps S to A, so you've
+just renamed the variables. Uh
+the what's different is the assumptions
+on the objective. So, the objective is
+to
+learn a policy that maximizes the
+reward, rather than necessarily the one
+that reproduces the actions that were
+seen in the data set.
+Okay. So, what are some like examples of
+states, observations, and rewards? Um
+maybe this is this is a fun audience
+participation example. Let's say that
+you're training a dog. I mentioned that
+um reinforcement learning has its roots
+in psychology. So, for each of these
+problems, let's think about what is the
+state, what is the action, and what is
+the reward. So, you're training your dog
+to do a trick. What might be the state
+for the dog, not for you?
+Any ideas?
+Yeah.
+Right. So, like the configuration of the
+dog. The dog has a body, that body has a
+has a has a configuration. Yeah?
+That's right. Yeah. So, so maybe part of
+the state for the dog is not just the
+configuration of its own body, but also
+what it perceives about the world, like
+maybe the owner's command. And you can
+just like append that to the list of dog
+state values. Uh actions. Any ideas for
+actions?
+You want to take a shot at that?
+That's right. Yeah. That's like the dog
+API, right? So, so the dog has a set of
+actions it can take, and it you you you
+can maybe it's a Depending on how you
+want to define the problem, maybe it's a
+discrete set, like bark, wag, whatever.
+Or maybe it's like a continuous vector
+of like muscle activations for the
+entire dog. So, choose whatever
+representation fits with your dog's API.
+Uh reward function. What's the dog's
+reward function?
+Yeah.
+There you go. Yeah, that's a good one.
+So, whether it gets the treat. So,
+that's pretty straightforward. Uh muscle
+contractions, observations, sight,
+smell, reward, food.
+Uh robot. I want to train my robot to
+run really fast. Uh what could be the
+state, the action, and the reward? Maybe
+this time I'd like to the volunteers to
+give me all three.
+State, action, and reward for my robot
+learning to run.
+Yeah.
+>> Yeah.
+Yeah, that's great. So, to summarize for
+everyone that didn't hear, state is uh
+the robot's joint angles. Maybe you you
+could add the velocities too, but
+something about its joints. Actions are
+like the the amount of power that it
+sends to the motors, torque, uh current,
+whatever. And reward is like the reading
+on the robot's speedometer. That seems
+great to me.
+Um other things, you know, you can
+formulate lots of other problems as
+reinforcement learning problems.
+Inventory management. Your state might
+be Your actions might be like what do
+you purchase for each of the warehouses
+in your warehouse network? And your
+state might be the level of inventory.
+And your reward is like the profit, like
+revenue minus costs. So, lots of
+different things can be formulated as
+reinforcement learning problems.
+Um to give you a few examples uh of like
+fun reinforcement learning things.
+Um reinforcement learning can be used to
+do some pretty complex physical tasks.
+Uh this is a a video from quite a while
+back, from 2022, from um ETH Zurich
+using reinforcement learning to train a
+robot to like climb on things and stuff
+like that. Uh back in 2022, this was
+considered state-of-the-art. Of course,
+since then things have come a long way.
+This is a video from some researchers
+here at Berkeley.
+Uh Now, more recently training a
+humanoid to like walk around and do all
+sorts of cool things.
+So, here it's like climbing stairs. Uh
+this is I believe using some like human
+videos to get rewards.
+Uh walking on the grass
+after a party.
+You know, you get the idea. Okay. And
+I'm sure that if you search for like
+humanoids doing backflips online, you'll
+find even cooler videos. Typically, if
+you see humanoids doing something really
+agile, almost certainly it was trained
+with reinforcement learning.
+Um this is one that I'm personally very
+proud of.
+This is a robot that
+used a combination of imitation learning
+and reinforcement learning to uh make
+espresso. So, this is a policy that
+actually used both human demonstrations
+and rewards to figure out how to
+uh
+make the entire espresso. You can make
+lattes and Americanos, too, apparently.
+So, there it goes.
+And for this one, the rewards are
+actually provided by a person labeling
+after the fact. They don't label how
+tasty it is. They just label like did it
+succeed or not.
+So, that's pretty neat. Like
+reinforcement learning can do some
+pretty complicated stuff. The other
+thing, you know, I mentioned to you guys
+at the beginning that one of the cool
+things about RL is immersion behaviors,
+and this is something that was noted
+even in the very early days of deep
+reinforcement learning. So, here is a
+classic
+result from
+>> [clears throat]
+>> over 10 years ago from
+Vlad Mnih and his colleagues showing a
+reinforcement learning system learning
+to play Atari, and it figures out this
+cool strategy that if you bounce the
+ball to the top, then you can be pretty
+lazy and it'll break all the bricks for
+you. So, that's an emergent strategy
+that the policy figured out without
+being told that this is what it should
+do.
+Now, RL is not just for games and
+robots.
+This This is a video that I like to show
+from Kathy Wu, who's now a professor at
+MIT and used to be a PhD student here at
+Berkeley. What Kathy studied in her PhD
+is traffic.
+So,
+the setup here is that the white cars
+are kind of simulating human drivers.
+The red car is controlled by an RL
+agent, and the blue just indicates like
+the car in front of the agent that that
+it can see. And what this video is going
+to show you is that first, it just kind
+of runs
+as though everybody's a human driver.
+So, the the red car is controlled by a
+virtual human. And then, partway
+through, it'll switch where the red car
+will
+start being controlled by an RL agent
+that's trying to remove traffic jams.
+Let's see if this plays. Okay, so you
+can see that when they're kind of normal
+human drivers, these jams kind of bunch
+up and they occur naturally. This
+happens with humans, two people actually
+done uh studies on this. And then
+eventually what the red car decides to
+do to avoid traffic jams is actually
+slows down and creates more space and
+regulates the entire flow of traffic so
+that the cars don't bunch up. So if you
+had very like, you know, uh publicly
+minded autonomous cars on the road, they
+could actually prevent other cars from
+getting to traffic.
+Here's another example. This is like a
+little figure eight intersection.
+Um if you just have a bunch of um
+human drivers, they will of course
+Let's see if this is playing.
+Yeah, they'll do what you expect.
+They'll kind of bunch up at this
+intersection and start blocking each
+other. And then if you get
+uh an
+autonomous car, the red one, it will
+actually try to smartly avoid
+bunching up at the intersection by
+creating this little like snake thingy
+that is just the right length so that
+everyone goes through the intersection
+without having to wait. Okay, maybe that
+that one is like a little artificial,
+but since then, this thing has been
+scaled up to much more realistic highway
+simulators and you can in fact use RL,
+at least in realistic highway
+simulators, to regulate traffic and
+avoid traffic jams.
+Okay. And maybe that'll like get you
+thinking about what else you could do
+with RL.
+Of course, as you probably know, RL can
+be used for language models. Uh you can
+train language models with RL from human
+feedback to get them to produce overly
+flattering and slightly obnoxious
+replies that like, you know, make you
+feel really good. Uh but you can also
+use it to increase how correct your
+solutions are.
+Um you can also do reinforcement
+learning for image generation. This is a
+fun one. So, a while back, um some of my
+uh graduate students wanted to see if
+they could train stable diffusion to
+generate like really weird pictures. Um
+and this was like a few years back, so
+back then it was actually hard to do
+this. So, if you ask make a picture of a
+dolphin riding a bike, um
+stable diffusion I think 1.6 would give
+you this picture. I think these days if
+you like ask any good generator to give
+you it, it'll probably actually do
+something reasonable, but this is what
+it was back then. And it kind of makes
+sense because, you know, a dolphin
+riding a bike is not something that you
+see very much on the internet. It's also
+something that I believe is not
+physically possible, so it's a little
+bit hard to make a picture of it. Uh so,
+um Kevin Black and Michael Jenner uh
+implemented a reinforcement learning
+algorithm that would actually optimize
+this diffusion model to create pictures
+that accord with an image captioner that
+would provide it rewards uh indicating
+whether or not the image actually had
+the content specified in the prompt. And
+they visualized what this looked like
+over the course of optimization. So,
+here in step two, you can see there's
+now a bike and there's like a dolphin
+that's sort of like peeking out from the
+side
+hoping that it will get to ride the
+bike, I guess. And then later on,
+there's some dolphin-shaped creature,
+but it has legs now. And then over time,
+it gets like more dolphin-like, and then
+there's like another dolphin jumping
+over it, so there's like lots of dolphin
+and lots of bike. So, this is like a the
+thing on the right is high reward. Uh
+there were also some, you know, glitches
+with this thing. Like sometimes, if you
+asked it to make like two dolphins, it
+would just write the number two in big
+letters and show like three dolphins.
+So, there's lots of reward hacking, but
+you can do this.
+RL has also been used for chip design,
+and this is like an actual thing that's
+done now. Like chances are, if you've
+ever run something on a TPU on uh
+Google Cloud, it was using a chip that
+was designed by a reinforcement learning
+algorithm.
+Um so, there's lots of cool stuff that
+you can use RL for.
+But there's also some bigger picture
+stuff. Maybe I'll I'll I'll pause here
+to see if anyone has any questions about
+applications.
+Yes, back there.
+>> Has RL been used
+>> For algorithmic trading?
+Yes.
+But the people that do it don't tell me
+about it because it's a secret. But yes,
+definitely.
+Any other questions? Yes.
+>> Are there any principal ways to control
+the learned solution so that
+they're
+sort of as you want them to be?
+>> Yeah, yeah. So, this is a good question.
+So, the question for those that didn't
+hear is, how do you control the solution
+that you get out of these RL systems?
+So, the way that you control it is by
+modifying the reward function. So, just
+like the way that you control what your
+dog is going to do is by deciding when
+to give it a treat, you have to sort of
+design the right function to give treats
+to your RL agent. And this is not always
+very easy. So, in some cases it's like,
+you know, pretty straightforward. Maybe
+for that grasping robot it's pretty easy
+to just say like plus one if you grasp
+and zero otherwise. But in other cases,
+it's not that obvious. Like for chip
+design, these guys have to figure out
+how much do they value latency versus
+how long the wires are versus whatever
+other stuff. And you have to choose that
+and you have to just break you have to
+bring it down to a single scalar value
+and that's not always trivial.
+Any other questions? Yes.
+>> How would you approach the
+the reward function for the dolphin
+trick?
+>> For the dolphin? So, the reward function
+here is uh dependent on an image
+captioner. So, the image that is
+generated by the model is given to
+another model that produces a textual
+caption and then the system uses a BERT
+score, which is basically a textual
+similarity score, to see how similar the
+caption is to the text that originally
+went in.
+So, that's why you get these uh glitches
+like writing the number two on the page
+because, you know, if you write the
+number two, chances are the image
+caption will say two.
+All right, any other questions? Uh yes.
+>> How for most complex applications, is
+the reward function designed by humans
+or learned?
+>> Yeah. So, the reward function is
+typically designed by humans and that's
+that makes sense because like a human
+needs to tell the algorithm what they
+want to produce. But, there are some
+advanced algorithms that we'll learn
+about in the second half of the class
+that actually learn reward functions.
+You can learn reward functions from
+demonstrations. You can also learn them
+from human preferences. So, probably the
+most classic example of a learned reward
+function is the language model stuff
+because for language models, almost
+always people use learned reward
+functions that are obtained by showing
+people pairs of responses and asking
+them which one they prefer. And learning
+reward functions is also not without its
+pitfalls. So, uh there's been a lot of
+uh
+uh
+analysis about
+issues with language models like being a
+little too flattering, a little bit too
+annoying sometimes, uh just based on the
+kind of things that humans prefer. But
+yeah, you can you can learn the reward
+functions.
+Any other questions?
+Yeah.
+Yeah. Yeah. So, um
+chances are if you see a humanoid robot
+doing something cool,
+it was trained with reinforcement
+learning. Uh
+currently the dominant paradigm for
+training for for controlling humanoid
+robots is to
+train policies in simulation with
+reinforcement learning and use some
+tricks to get them to transfer to the
+real world. Uh there's also been some
+interesting work in like areas like
+operations research, aerospace, etc. for
+essentially learning high-level
+strategies through reinforcement
+learning, things like deconflicting uh
+aircraft for air air traffic control to
+avoid collisions. These are not
+typically systems that directly control
+the low-level like physical actuation of
+a system, but they control a strategy.
+Often times that that's mediated by a
+human uh in production.
+Any other questions?
+Yeah.
+Yeah. So, uh the question for those who
+didn't hear is if the reward function is
+learned, are the rewards going to be
+delayed? In general, re- one of the
+biggest challenges of the reinforcement
+learning algorithms is dealing with
+delayed rewards, whether they're learned
+or specified by hand. So, the idea is
+that a reward function specifies
+what success means. It doesn't
+necessarily specify how to achieve
+success. So, for the robotic grasping
+example in the beginning, success means
+like you're holding the object in your
+hand. It tells you nothing about where
+you should actually put your hand to
+pick it up successfully. So, almost
+always we have to deal with delayed
+rewards.
+All right. Let's uh continue to the last
+part of today's lecture,
+uh which
+is
+why learn about reinforcement learning.
+Uh well, maybe uh
+I provided a little bit of motivation
+when I talked about how exciting it is
+to get machine learning algorithms come
+up with emergent solutions.
+And how we can go beyond just
+uh reproducing the distribution of the
+data and actually um acquiring new
+concepts. So, uh data-driven AI learns
+about the real world from data, but it
+doesn't try to do better than what's in
+the data by itself. So, if you really
+want a system that does better than than
+the data, well, either you have to be
+you have to spend a lot of effort
+curating your data, or you have to use
+optimization.
+Reinforcement learning by itself is
+about optimizing for particular goal. Uh
+and that can lead to emergent behavior.
+Now, there are challenges with
+reinforcement learning. One of them is
+of course defining the reward as we just
+discussed, but the other big challenge
+is it's kind of challenging to figure
+out how to get reinforcement learning
+algorithms to scale. So, one of the
+things that's been really successful
+with generative AI is that it's very
+scalable. You can not You can use very
+large data sets and get models that can
+do some pretty complex stuff. With
+reinforcement learning, getting it to be
+more scalable
+has been hard. Uh and there are a lot of
+kind of uh new ideas uh coming up in
+recent years that we'll learn about in
+this course about making reinforcement
+learning more scalable, but it remains
+an open problem. So, data-driven AI is
+all about using data. Reinforcement
+learning is in its present state all
+about optimization and figuring out how
+to combine that optimization with data
+in the right way is a big challenge. So,
+uh data without optimization doesn't
+allow us to solve new problems in new
+ways, but for the optimization
+algorithms, they need somewhere to get
+that knowledge from data as well, and
+that's a little bit of a problem.
+Um
+One of the things I wanted to mention uh
+some of you might have already
+uh read this essay before, some of you
+might not, uh but there's a really nice
+essay that Richard Sutton wrote some
+number of years back. For those of you
+that don't know, Richard Sutton
+more or less invented the current study
+of of reinforcement learning um
+some number of decades back. And he
+wrote an essay in 2019 called The Bitter
+Lesson. If you haven't read this essay,
+I would strongly encourage you to read
+it, and it's become kind of a
+uh a summary of the general philosophy
+of modern machine learning.
+What he says in the essay to summarize
+it very briefly is we have to learn the
+bitter lesson that building in how we
+think we think does not work in the long
+run. The two methods that seem to scale
+arbitrarily are learning and search. So,
+what does it mean? Well, you could
+design an AI system by programming it to
+think the way that you think that a
+person thinks.
+Um that's kind of a mouthful, but uh you
+know, that's kind of reasonable. You say
+like, "Well, maybe when I decide how to
+go to work, I have like a planning
+algorithm, and here is my planning
+algorithm. I'll code it up. I'll solve
+the planning algorithm." And look, my
+robot can go to work. Uh and the trouble
+with that is that it kind of works in
+the short run, but in the long run, it's
+very hard to extend it, to make it
+general enough to apply to all sorts of
+different problems. And things like
+language models, generative AI, they're
+so powerful because there's a single
+recipe that is very scalable, that can
+be uh provided with more and more data,
+and then thrown at more and more
+problems with not so much additional
+engineering.
+But something that people sometimes miss
+when they read this essay is uh that's
+that last word, search. So, learning is
+great, of course, and maybe if you just
+stop there, if you put the period after
+the word learning, you might say, "Well,
+maybe this just means that like I should
+like shovel more data into lots of
+GPUs."
+But there's this other word, search. And
+word the word search actually has kind
+of a technical meaning, and maybe
+Rich didn't do any favors by using a
+rather technical term, but search in the
+parlance of RL really uh means any
+algorithm that solves a sequential
+decision problem.
+So, basically, it's like this. Learning
+is using data to extract patterns. So,
+you pull some data from the world, stuff
+it into your network, and now your
+network understands something about the
+world. Search is about kind of
+ruminating on what you've learned.

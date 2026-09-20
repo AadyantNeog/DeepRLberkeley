@@ -1,0 +1,8488 @@
+Okay.
+
+
+You guys
+
+
+All right. Uh, let's get started. Oh,
+
+
+that's loud. This class is uh so early
+
+
+that the coffee shop I was relying on to
+
+
+sustain me through this lecture hadn't
+
+
+opened. So I had to beg them to give me
+
+
+something to keep me caffeinated through
+
+
+this. Thank you all for waking up early
+
+
+and coming to class. Today we're going
+
+
+to talk about supervised learning of
+
+
+behaviors uh also called imitation
+
+
+learning.
+
+
+So to start us off, let's uh
+
+
+[clears throat] think of a potential
+
+
+machine learning problem. We've got uh
+
+
+images from a camera uh mounted on the
+
+
+dashboard of a car. And you want to do
+
+
+something with these images. Maybe you
+
+
+want to classify them or you want to
+
+
+predict a bounding box, some kind of
+
+
+machine learning task. Uh typically if
+
+
+uh you were doing standard supervised
+
+
+learning, you'd say, "Okay, I'm going to
+
+
+call my inputs X. I'm going to call my
+
+
+outputs Y. And my goal with a machine
+
+
+learning problem like this is to train
+
+
+some kind of model, let's say, uh a big
+
+
+neural network. I guess these days you'd
+
+
+use like a VIT or something for this
+
+
+with parameters theta. So theta you can
+
+
+think of as uh a big long vector
+
+
+concatenating all the weights in this
+
+
+neural network. Everything that you're
+
+
+going to be training
+
+
+the neural network technically
+
+
+represents the conditional distribution
+
+
+y given x meaning the distribution over
+
+
+labels given the input images. And in
+
+
+this uh course I'm going to write it
+
+
+with a subscript p theta to just make it
+
+
+very clear that this is a distribution
+
+
+represented by a model with parameters
+
+
+theta. Okay. So in a traditional
+
+
+supervised learning setting, you would
+
+
+be given a training set consisting of
+
+
+x's and y's uh images and ground truth
+
+
+labels and then you would use this data
+
+
+set to estimate
+
+
+to estimate what you can shout out
+
+
+the parameters theta. So uh formally you
+
+
+can state it like this. Your goal is to
+
+
+take this data set and find the
+
+
+parameters that maximize the sum of the
+
+
+log likelihood of the label on all of
+
+
+your examples. So hopefully for all of
+
+
+you this looks familiar. Um if it
+
+
+doesn't, you should probably go and uh
+
+
+review your um introductory ML
+
+
+materials, but this is like a basic
+
+
+classic supervised learning uh
+
+
+formulation. It's also sometimes called
+
+
+maximum likelihood estimation or
+
+
+empirical risk minimization. So standard
+
+
+kind of supervised learning method that
+
+
+all of us learn to use in um intram
+
+
+machine learning. Okay. Now let's take
+
+
+this formulation and kind of gradually
+
+
+morph it to turn it into a control
+
+
+problem and see what we can do with it.
+
+
+So, uh, if you wanted to actually drive
+
+
+the car instead of just detecting, uh,
+
+
+objects or bounding boxes or whatnot,
+
+
+uh, now maybe your output is the
+
+
+steering and throttle command. Maybe
+
+
+it's two numbers, how much you turn the
+
+
+steering wheel left or right, or how
+
+
+much you accelerate or decelerate. It
+
+
+might also be a categor a categorical
+
+
+label. You could simply take those two
+
+
+numbers,
+
+
+render them out on a grid, discretise,
+
+
+and have a discrete label indicating the
+
+
+point on that grid that you're
+
+
+commanding. So you can represent your
+
+
+actions in many different ways.
+
+
+Okay. Uh so so far this is still a
+
+
+regular machine learning problem. Like
+
+
+I've just redefined what it is that I'm
+
+
+predicting, but everything still makes
+
+
+sense. But now because this is a
+
+
+reinforcement learning class, I'm also
+
+
+going to change the symbols for these
+
+
+variables. um not just to mess with you
+
+
+but to make it kind of accord with uh
+
+
+standard terminology in the field. So
+
+
+instead of representing uh instead of
+
+
+denoting the im image with X, I'm going
+
+
+to denote the image with O for
+
+
+observation.
+
+
+And instead of denoting the output with
+
+
+Y, I'm going to denote it with A for
+
+
+action. And then I'm going to rename
+
+
+that uh model in the middle. Instead of
+
+
+calling it P theta, I'm going to call it
+
+
+pi theta because pi is first letter in
+
+
+the word for policy. Um I didn't
+
+
+actually change anything. This just
+
+
+purely changing the symbols. so that
+
+
+they accord with what people typically
+
+
+use in uh reinforcement learning,
+
+
+imitation learning, and optimal control.
+
+
+Okay? Uh and now we're going to
+
+
+recognize that all of this exists in a
+
+
+dynamical system that evolves through
+
+
+time. So you observe an image now, you
+
+
+take an action now, and you'll observe
+
+
+another image at the uh next point in
+
+
+time. Typically, we're going to deal
+
+
+with discrete time. You can deal with
+
+
+continuous time as well, but usually if
+
+
+you're handling continuous time and you
+
+
+go to implement it in a computer, the
+
+
+first thing you're going to do is you're
+
+
+going to discretize your continuous time
+
+
+into discrete time steps. So, we might
+
+
+as well just pretend like time steps are
+
+
+discrete in the first place and keep
+
+
+things simple. Now, this is at this
+
+
+stage still purely a notational change.
+
+
+Uh just because I put a subscript t on
+
+
+everything doesn't actually change the
+
+
+uh the definitions here. uh but it will
+
+
+make a difference later because it'll
+
+
+affect the distribution of the
+
+
+observations and we'll come back to that
+
+
+in the uh second portion of today's
+
+
+lecture. So underneath all of this in
+
+
+the real world the action you take
+
+
+actually affects your next observation
+
+
+but for now we'll disregard this and
+
+
+we'll treat that subscript t as purely a
+
+
+notational change. [snorts]
+
+
+Okay. Now, at this point, we kind of
+
+
+have the basics for setting up a
+
+
+decision-m problem. We just took a
+
+
+supervised learning problem and renamed
+
+
+the symbols. And in principle, that is
+
+
+kind of the bare minimum. But it would
+
+
+help us to better understand a little
+
+
+bit more what like underlies uh all of
+
+
+these symbols and what's really going on
+
+
+in the real world where our model is
+
+
+going to try to control this car.
+
+
+So
+
+
+imagine that this is your car in the
+
+
+middle and the observations are images
+
+
+from a camera.
+
+
+Generally when you train a policy in the
+
+
+most general setting the policy is going
+
+
+to take in observations because that's
+
+
+what that's what's available to you.
+
+
+Like the car is recording images. So you
+
+
+have to give your policy images because
+
+
+that's what you've got. But in many of
+
+
+the algorithms that we'll learn about in
+
+
+this class, oddly enough, not the ones
+
+
+we'll learn about today, but the ones
+
+
+we'll learn about in future lectures,
+
+
+there is another concept that is very
+
+
+very important uh which is the concept
+
+
+of state as distinct from observation.
+
+
+Basically in this world um in this
+
+
+highway um
+
+
+you are observing images but the world
+
+
+has a particular configuration and the
+
+
+images you observe are a result of that
+
+
+configuration. So you see the car in
+
+
+front of you because its location is you
+
+
+know in front of you and uh in general
+
+
+you know you could say that in some
+
+
+normative sense there is like a
+
+
+configuration of the entire universe
+
+
+like the positions and momentum of all
+
+
+the particles but in reinforcement
+
+
+learning typically we don't want that
+
+
+level of detail because we will very
+
+
+quickly run out of memory and as you'll
+
+
+learn in your homeworks running out of
+
+
+memory is no fun. So we typically use a
+
+
+state representation that is more
+
+
+appropriate to our task. So even though
+
+
+there are many many things happening on
+
+
+this highway, a reasonable way to think
+
+
+about state might be the positions,
+
+
+orientations and velocities of the
+
+
+vehicles and not worry about like you
+
+
+know the um the hubcap that that's lying
+
+
+on the side of the road or the piece of
+
+
+trash and so on. So you kind of pick a
+
+
+representation that sort of makes sense
+
+
+for the granularity of your
+
+
+decision-making problem and that's your
+
+
+state and we use the letter S to denote
+
+
+the state. Now, not all methods that
+
+
+we'll learn about uh actually care about
+
+
+the state or its existence or how it's
+
+
+represented, but as um uh folks that
+
+
+want to learn about reinforcement
+
+
+learning, you do have to care that the
+
+
+state exists. And many times we'll talk
+
+
+about the state, but just keep in mind
+
+
+that you don't always literally have a
+
+
+state in the computer. And in fact, for
+
+
+the imitation learning methods we'll
+
+
+talk about today, your algorithm doesn't
+
+
+need to know the state, doesn't need to
+
+
+know what it is, and doesn't need to
+
+
+know how to represent it. But some
+
+
+algorithms do.
+
+
+Yes.
+
+
+>> Yeah. So the question for those that
+
+
+didn't hear is if the state is well
+
+
+defined why do we care about the
+
+
+observation? So the reason is that
+
+
+typically you assume that the
+
+
+observation is what you actually get to
+
+
+see uh when you run your policy. Uh so
+
+
+uh there there might be all sorts of
+
+
+ways to like estimate the state. You can
+
+
+train a different model to infer the
+
+
+state from the observation. But it's
+
+
+awfully nice if your policy can act
+
+
+directly on the observation so that at
+
+
+uh test time you can just take those
+
+
+camera images and pipe them in and get
+
+
+actions. Any other questions?
+
+
+>> Yes.
+
+
+>> Yeah. Uh so the question was if you have
+
+
+a policy that takes in the observation
+
+
+and outputs the action but the state is
+
+
+sort of the uh the minimal configuration
+
+
+of the world does that kind of imply
+
+
+that your policy learns the state u and
+
+
+the answer is usually no. Uh the reason
+
+
+is that you might have very simple
+
+
+control rules that are quite adequate to
+
+
+do the task really well that don't need
+
+
+to go through state. U in the highway
+
+
+example you might not even be paying
+
+
+attention to the cars on your left and
+
+
+on your right if all you want to do is
+
+
+drive straight. So in general the
+
+
+internal representations in a policy
+
+
+like this will not be sufficient
+
+
+statistics of the state. Uh and there is
+
+
+actually quite a lot of research on
+
+
+analyzing what kind of representations
+
+
+you get and yeah that's how it is. It's
+
+
+actually a very interesting question as
+
+
+to what would result in a sufficient
+
+
+representation of the state and we might
+
+
+come back to that at the very end of the
+
+
+class. Any other questions?
+
+
+Okay.
+
+
+All right. Now, if I want to get a a
+
+
+little bit more detailed into what's
+
+
+going on underneath all of this, I can
+
+
+actually draw a baset that relates the
+
+
+three things we learned about actions,
+
+
+observations, and states to one another.
+
+
+Hopefully, all of you remember basets.
+
+
+Basets
+
+
+um probability distributions with
+
+
+conditional independencies. So uh
+
+
+roughly speaking uh if you draw an arrow
+
+
+from one variable to another in a baset
+
+
+that means that the variable that the
+
+
+arrow is going into there's a
+
+
+conditional probability distribution
+
+
+that depends on the variable that the
+
+
+arrow is coming out of. So this is the
+
+
+baset that relates states actions and
+
+
+observations. U this baset uh it it's
+
+
+what's called a dynamic baset which
+
+
+means that you essentially take a single
+
+
+template and you copy it for every time
+
+
+step. Uh that's a pretty standard thing
+
+
+for dynamical systems. And um there are
+
+
+three conditional probability
+
+
+distributions.
+
+
+One conditional probability distribution
+
+
+is obviously your policy. That's the one
+
+
+at the top. Pi theta A given O. That's
+
+
+the thing you're going to be learning.
+
+
+And there are two other conditional
+
+
+probability distributions. There is P of
+
+
+O given S meaning the probability of an
+
+
+observation occurring given a state. So
+
+
+in our highway example, this is the
+
+
+probability that you'll see a particular
+
+
+image given that the cars are in a
+
+
+particular configuration. And in general
+
+
+this is a probability distribution
+
+
+because there's all sorts of other
+
+
+things uh other nuisances let's say that
+
+
+would affect your image uh given the
+
+
+state random noise perturbations all
+
+
+that sort of thing. So O given S is
+
+
+representing the noise in your
+
+
+observation and then the third
+
+
+conditional probability distribution is
+
+
+P of the next state at like S2 given the
+
+
+previous state in action S1 and A1. And
+
+
+this is basically physics like this is
+
+
+like the the dynamics that govern your
+
+
+system. The probability that you will
+
+
+enter a particular state given where
+
+
+you're at now and given what action you
+
+
+take. Okay. So uh this is a a
+
+
+description an abstract description of
+
+
+this world that relates states actions
+
+
+and observations. And I actually missed
+
+
+one probability distribution in my
+
+
+description that would be needed to
+
+
+fully define all of this stuff. Does
+
+
+anyone know what I missed?
+
+
+Yes.
+
+
+Yes. So there's a prior on the uh uh
+
+
+initial state. So all of this is
+
+
+condition on S. So there needs to be a P
+
+
+of S1 as well. And that's basically the
+
+
+probability of the state that you start
+
+
+in.
+
+
+All right. Any other questions about
+
+
+this?
+
+
+Okay. So for today, you don't actually
+
+
+have to worry about this picture all
+
+
+that much because imitation learning
+
+
+methods are actually really really
+
+
+simple. And you know like if you know
+
+
+that this is the baset that's that
+
+
+underlies your uh system you'll probably
+
+
+implement your imitation learning
+
+
+algorithm correctly and you won't make
+
+
+an a mistake but the algorithm itself
+
+
+actually doesn't care about this. So you
+
+
+you know for doing homework one you
+
+
+could probably just sleep through this
+
+
+slide and you'll be fine. But for
+
+
+homework two and homework three it'll be
+
+
+really important to understand this.
+
+
+Okay. Now the purpose of drawing a baset
+
+
+like this is to allow us to see the
+
+
+conditional independence properties of
+
+
+the system. Conditional independence
+
+
+means that roughly speaking if I want to
+
+
+find out about some variable and it is
+
+
+conditionally independent of another
+
+
+variable I don't really have to care
+
+
+about the value of that other variable
+
+
+uh to find out what I want to find out.
+
+
+Okay. So there's a very particular
+
+
+conditional independence property in
+
+
+this baset that is very important uh in
+
+
+reinforcement learning although again
+
+
+it's actually not important for
+
+
+imitation learning that we'll learn
+
+
+about today uh which is the Markoff
+
+
+property. The Markoff property basically
+
+
+says that um the future state is
+
+
+conditionally independent of the past
+
+
+state given the present state. This is
+
+
+another way of saying that the present
+
+
+state captures everything you need to
+
+
+know. So if you know the positions and
+
+
+velocities of all the cars on the road
+
+
+right now and you want to predict
+
+
+something about the future or you want
+
+
+to predict the right action to take
+
+
+knowing the positions and velocities of
+
+
+those cars in the past will make no
+
+
+difference whatsoever.
+
+
+So that is the markoff property.
+
+
+Now here's a question for you guys. Um
+
+
+the Markoff property uh is this
+
+
+statement about states. Does the same
+
+
+thing hold true about observations in
+
+
+this baset in general? Is it true that
+
+
+the future observation is conditionally
+
+
+independent of the past observation
+
+
+given the present observation which
+
+
+would imply that if you see the present
+
+
+observation past observations do not
+
+
+give you any more information about the
+
+
+future or about the action to take. Is
+
+
+that a true statement in general in this
+
+
+basement?
+
+
+Yes.
+
+
+Right. So the answer is no because we
+
+
+don't observe the full state. uh and if
+
+
+you actually you know go back to your u
+
+
+uh intro or intro ML class refresh
+
+
+yourself on the algorithm for
+
+
+determining conditional dependencies in
+
+
+a baset and actually play that game with
+
+
+this baset to see what's conditionally
+
+
+independent you'll find that indeed the
+
+
+observations are not conditionally
+
+
+independent that way yes
+
+
+>> yeah so the the question for those that
+
+
+didn't hear is
+
+
+Um, okay. Uh, but if the observations
+
+
+are not don't have this property, why do
+
+
+we hang the actions off the
+
+
+observations? That seems kind of bad. If
+
+
+we hang them off the state, that'll be
+
+
+better. Uh, and that's definitely true.
+
+
+It's just that we usually don't know the
+
+
+state. So, we do this because uh because
+
+
+we must. Uh, and in fact uh there is uh
+
+
+something to be said which will be said
+
+
+um next week on Wednesday about what
+
+
+happens if you actually want to do a
+
+
+little bit better. So what you're kind
+
+
+of getting at and this is a very valid
+
+
+point is that if your policy works like
+
+
+this, it is not in general going to be
+
+
+optimal. And a very good example of how
+
+
+it might not be optimal is let's say the
+
+
+camera in your car breaks.
+
+
+Now your observation it contains no
+
+
+information about the state whatsoever.
+
+
+And you don't have to be uh you know a
+
+
+reinforcement learning uh expert to know
+
+
+that driving a car with a broken camera
+
+
+is probably not going to work. So in
+
+
+general uh the observation may not be
+
+
+adequate and a policy resulting from it
+
+
+may not be optimal.
+
+
+Any other questions?
+
+
+Okay, let's proceed. Um so
+
+
+so far I described the partially
+
+
+observed case which is kind of the
+
+
+general formulation of these control
+
+
+problems. So it's got policy uh
+
+
+observation probability and dynamics or
+
+
+as we sometimes call transition
+
+
+probability. And typically for a lot of
+
+
+reinforcement learning algorithms and
+
+
+virtually all imitation learning
+
+
+algorithms, you do not need to know the
+
+
+observation probability or the
+
+
+transition probability. In some in some
+
+
+sense kind of the whole point of doing
+
+
+reinforcement learning is that you don't
+
+
+have to know these things and you will
+
+
+just train your policy directly through
+
+
+some reinforcement learning magic. Uh
+
+
+unless you're doing what's called model
+
+
+based RL in which case the first thing
+
+
+you do is you actually learn those
+
+
+things and then use it to solve
+
+
+everything else. But for many of the
+
+
+algorithms we'll cover, basically we
+
+
+need to know that those probabilities
+
+
+exist. But we do not need to know what
+
+
+they are. And we're not going to bother
+
+
+figuring out what they are.
+
+
+Now, a very important special case is
+
+
+what is called the fully observed case.
+
+
+The fully observed case is simply the
+
+
+case where O is equal to S. Uh, and I
+
+
+know we just had a long conversation
+
+
+about observations and now I'm kind of
+
+
+giving you the disappointing uh
+
+
+statement that sometimes we don't have
+
+
+to care about any of this. So in the
+
+
+special case that O is equal to S, we
+
+
+can draw a greatly simplified baset
+
+
+where we simply remove all the O's, make
+
+
+the S's observed uh and then all is good
+
+
+in the world. And in this case, you can
+
+
+actually recover the optimal policy. You
+
+
+don't have to worry about your camera
+
+
+breaking because you are always
+
+
+observing exactly the full state.
+
+
+And in this case, you only have uh two
+
+
+conditional probabilities plus the
+
+
+initial state probability to care about
+
+
+the policy and the transition
+
+
+probabilities. And for some of the
+
+
+reinforcement learning algorithms that
+
+
+we'll learn about in this course, they
+
+
+actually assume or require that you are
+
+
+in the fully observed case. But some of
+
+
+them do not assume that and not do not
+
+
+require that. So I'll try to point that
+
+
+out to you uh whenever feasible. The
+
+
+other thing that you'll notice me do
+
+
+which I think some of you might find
+
+
+really aggravating is that I will just
+
+
+suddenly decide to switch to the fully
+
+
+observed case and write my policies as a
+
+
+given s. uh and when I do that I will
+
+
+try to tell you whether that actually
+
+
+matters or not uh and if I neglect to
+
+
+tell you that then you can ask me a
+
+
+question but if you ever see like pi of
+
+
+a given s that implies that it's in the
+
+
+fully observed case or I messed up on my
+
+
+slides and forgot to write observation
+
+
+all right any questions about the fully
+
+
+observed case
+
+
+>> yes
+
+
+So I guess there
+
+
+still
+
+
+>> right. So the question was is there any
+
+
+kind of guideline for like what makes
+
+
+for a minimal state? Um the answer to
+
+
+this is actually very straightforward
+
+
+and this is why I wanted to show the
+
+
+picture. A valid state is something that
+
+
+fits into this baset. Meaning a valid
+
+
+state is something that satisfies the
+
+
+markoff property which is to say that
+
+
+the next state is conditionally
+
+
+independent of the previous state given
+
+
+the current state and as long as your
+
+
+state satisfies that property then it is
+
+
+a certified honest to goodness state.
+
+
+Now that doesn't mean that it's a good
+
+
+state for your problem. Like if you're
+
+
+trying to um I don't know let's say
+
+
+you're doing um stock trading. I think
+
+
+uh last Wednesday someone asked about
+
+
+stock trading. If you're doing stock
+
+
+trading you can choose your state
+
+
+however you want. You can choose the
+
+
+state um to be uh the price of the of
+
+
+the stock right now. And you can say,
+
+
+well, there's a probability of the price
+
+
+of the stock at the next time step given
+
+
+its price right now. Maybe it's highly
+
+
+random. This is a probability
+
+
+distribution. That's probably not a
+
+
+great state if you want to do a good job
+
+
+of stock trading because that's probably
+
+
+not enough information. So you still
+
+
+have to design the state so that it not
+
+
+only satisfies the markoff property,
+
+
+meaning those probabilities exist, but
+
+
+it's actually a good state for making
+
+
+your decisions. So that's really a
+
+
+modeling problem. In machine learning,
+
+
+we often have to solve modeling problems
+
+
+like meaning figure out how you're going
+
+
+to turn your problem into a machine
+
+
+learning problem and then we apply the
+
+
+algorithm to it. [clears throat] Any
+
+
+other questions?
+
+
+Okay,
+
+
+so let's go back to our uh little
+
+
+driving scenario. And this is a
+
+
+partially observed scenario because
+
+
+we're acting uh on based on images from
+
+
+the forward facing camera. And we're
+
+
+going to try to solve this with data. So
+
+
+we're going to really like uh hammer on
+
+
+this analogy to regular supervised
+
+
+learning. We're going to say like maybe
+
+
+I don't need a reinforcement learning
+
+
+class. Maybe I can just use supervised
+
+
+learning to solve this problem. And of
+
+
+course in supervised learning you need
+
+
+data. So what is your data? Well your
+
+
+data is going to consist of trajectories
+
+
+uh sequences of observations and actions
+
+
+collected by somebody hopefully pretty
+
+
+good driving a car. You would like good
+
+
+data because you're going to be using
+
+
+supervised learning. So uh what that
+
+
+means is you run your camera, you record
+
+
+position of the steering wheel and the
+
+
+throttle of the vehicle and let's say
+
+
+every tenth of a second you save it to
+
+
+disk and then you get a sequence of
+
+
+images, one every 100 milliseconds and a
+
+
+sequence of steering wheel and throttle
+
+
+commands synchronized with them every
+
+
+100 milliseconds and that's your
+
+
+trajectory.
+
+
+And you record many of these
+
+
+and we call them demonstration
+
+
+trajectories because the person driving
+
+
+that car is demonstrating to you how you
+
+
+should drive.
+
+
+And now what we can do is we can copy
+
+
+and paste the equation from earlier in
+
+
+this lecture which is the maximum
+
+
+likelihood estimation equation and train
+
+
+our policy to maximize the log
+
+
+probability of the actions in these
+
+
+demonstration trajectories given the
+
+
+observations at the same time step. And
+
+
+this is called behavioral cloning which
+
+
+is the simplest of imitation learning
+
+
+algorithms. Um just a little notational
+
+
+point I use the superscript i to denote
+
+
+the i example which in this case is the
+
+
+i trajectory and the subscript t to
+
+
+denote the time step within that
+
+
+trajectory.
+
+
+So in principle uh this slide kind of
+
+
+tells you the basics of what you need to
+
+
+know for homework one. This is the
+
+
+definition of behavioral cloning. And
+
+
+for the rest of the lecture, I'll
+
+
+actually talk about what all this means,
+
+
+when it works, and why it works, and all
+
+
+sorts of other little uh factoids about
+
+
+it. So, it's a good idea to pause and
+
+
+look at this slide and make sure that
+
+
+you understand what this is saying. And
+
+
+if something here is unclear, please ask
+
+
+because you'll need this for homework
+
+
+one.
+
+
+Okay, great. So, let's talk about the
+
+
+behavioral cloning algorithm.
+
+
+One of the first uh bits of trivia about
+
+
+behavioral cloning is that it is very
+
+
+old.
+
+
+This is a a video from 1989.
+
+
+This is an what we today would call an
+
+
+endto-end deep learning system for
+
+
+autonomous driving. Back then the term
+
+
+deep learning didn't exist. Uh in fact
+
+
+the network really tiny. It has five
+
+
+hidden units. Uh this can probably run
+
+
+on your phone, on your watch, on your
+
+
+refrigerator or your microwave. So, it's
+
+
+a teeny teeny tiny uh neural network,
+
+
+but even with five measly hidden units,
+
+
+it was occasionally enough to drive a
+
+
+vehicle on a road based on black and
+
+
+white camera observations.
+
+
+So, that example wasn't just uh for show
+
+
+that really does work and it even works
+
+
+with five hidden units on a good day
+
+
+when it's not too rainy or foggy. Uh and
+
+
+in some ways, current endto-end driving
+
+
+systems like, you know, if you have a
+
+
+Tesla and you use the Tesla thingy, uh
+
+
+they inherit a lot from systems like
+
+
+this. That was a question. Yes.
+
+
+>> No, that that input image is a cartoon
+
+
+that somebody drew by hand in the paper
+
+
+because uh for some reason I guess they
+
+
+couldn't put an actual photograph in. I
+
+
+mean it was the 1980s.
+
+
+Any other questions?
+
+
+Okay.
+
+
+So,
+
+
+how does the algorithm work? collect
+
+
+data by asking a person to make
+
+
+demonstrations.
+
+
+Number two, run supervised learning aka
+
+
+maximum likelihood estimation on this
+
+
+data with your favorite neural network.
+
+
+And you know, collecting demonstrations
+
+
+is something we won't spend too much
+
+
+time on. Uh it's you know, fairly
+
+
+straightforward. There is a lot of
+
+
+practical nuance in how to collect good
+
+
+demonstrations in your particular
+
+
+domain. Uh and uh you know, I'm I'm
+
+
+happy to discuss that in office hours if
+
+
+anyone has questions, but for now, we'll
+
+
+just assume that demonstrations are
+
+
+collected well in large number and
+
+
+they're good enough. and we'll mostly
+
+
+focus on the learning part. So, uh we
+
+
+have our observation. It goes into some
+
+
+kind of model. If our observation is an
+
+
+image, uh then uh our model is going to
+
+
+be some kind of image encoder. So, these
+
+
+days you would probably use a vision
+
+
+transformer or vit. Uh a few years prior
+
+
+you would have used a resonant. A few
+
+
+years before that, you would have used a
+
+
+connet. And in 1989, you would have used
+
+
+a five layer uh sorry, a five unit one
+
+
+layer MLP.
+
+
+So your model has parameters theta which
+
+
+are the weights and then it's going to
+
+
+output technically the parameters of an
+
+
+action distribution and then if you want
+
+
+to actually choose an action at test
+
+
+time you would sample from the
+
+
+distribution according to the parameters
+
+
+outputed by your network and that would
+
+
+give you the action. Now let me
+
+
+elaborate on this. What what does
+
+
+parameters of a distribution mean? Um it
+
+
+depends on what your actions are. So if
+
+
+you have discrete actions, discrete
+
+
+actions could be for example uh key
+
+
+presses for Atari games. Discrete
+
+
+actions also include tokens. If you are
+
+
+learning an LLM, the tokens are discrete
+
+
+actions. If you have discrete actions,
+
+
+then you would typically train your
+
+
+network to output a vector of numbers
+
+
+with one number per action. These are
+
+
+called logits. And then you would form a
+
+
+softmax distribution which is a
+
+
+categorical distribution by using those
+
+
+logits. So uh in a uh in a softmax the
+
+
+probability of uh taking a particular
+
+
+action is the exponential of the logit
+
+
+of that action normalized by the sum of
+
+
+the exponentials of the logits of all
+
+
+the other actions. So this is the
+
+
+softmax basically. Uh so if you
+
+
+implement your network with a softmax
+
+
+and you use a standard cross entropy
+
+
+loss cross entropy loss on softmax is
+
+
+exactly log likelihood and you are doing
+
+
+exactly this uh with discrete actions.
+
+
+So that's very straightforward pretty
+
+
+much any standard uh you know autodiff
+
+
+package like pytorch or jax is going to
+
+
+do this for you.
+
+
+What if we have continuous actions? What
+
+
+kind of uh distribution parameters could
+
+
+we use for continuous actions? Any
+
+
+ideas?
+
+
+Yes.
+
+
+Okay. So, one answer is mean and
+
+
+standard deviation. So, you could say
+
+
+maybe my continuous actions are
+
+
+distributed according to a multivariant
+
+
+normal distribution and my network is
+
+
+going to output the mean and uh either
+
+
+diagonal uh coariance meaning standard
+
+
+deviation or full dense coariance for
+
+
+those actions. Any other ideas for
+
+
+continuous actions?
+
+
+Yes.
+
+
+Right. So, uh, one answer is well, can
+
+
+can your network just directly output a
+
+
+continuous value? Uh, yes, it can. And
+
+
+it turns out that mathematically that's
+
+
+actually the same as a multivariant with
+
+
+a identity coariance with a standard
+
+
+deviation of one. So, we could do that
+
+
+as well. Any other ideas for a
+
+
+distribution we could use? Yes.
+
+
+Good answer. So this is something we'll
+
+
+learn about next week on Wednesday. You
+
+
+could use other kinds of uh more complex
+
+
+representations like diffusion or flow
+
+
+matching which are good ways to
+
+
+represent very complex distributions.
+
+
+You could also use literally any
+
+
+continuous valued uh probability density
+
+
+function that you learn about in
+
+
+statistics class. Like you could use a
+
+
+beta distribution if you want continuous
+
+
+actions on a bounded interval. Um, maybe
+
+
+that'll be like a little annoying to
+
+
+implement, but you know, there's good
+
+
+probability packages and chances are any
+
+
+kind of weird continuous uh probability
+
+
+density function you could use as long
+
+
+as it has well- definfined parameters
+
+
+that your network can output. But for
+
+
+now, if you want to keep it simple,
+
+
+let's go with the multivaried normal. So
+
+
+multivariate normal means that your
+
+
+network outputs the mean and covariance
+
+
+of your continuous actions. Very often
+
+
+you would use a diagonal coariance
+
+
+meaning that you don't output a vector
+
+
+and a matrix. You actually output two
+
+
+vectors where the second vector is just
+
+
+the diagonal of your multivariant normal
+
+
+uh coariance matrix
+
+
+uh which is to say standard deviation
+
+
+per dimension.
+
+
+You could also
+
+
+not get quite so mathematical and just
+
+
+say like hey how about I just output a
+
+
+vector representing the action uh as the
+
+
+as the earlier question was asking and
+
+
+in that case you are also actually
+
+
+representing it as a multivariant normal
+
+
+it just happens to have a coariance of
+
+
+identity uh a coariance of identity
+
+
+meaning uh coar variance one on each
+
+
+dimension might not be an entirely ideal
+
+
+choice for your problem setting but it
+
+
+is really really simple and then you
+
+
+just set this up as mean squed error
+
+
+regression.
+
+
+Okay. Any questions about representing
+
+
+distributions for actions?
+
+
+Yes.
+
+
+Right. So the question is why do people
+
+
+use diagonal coariance instead of full
+
+
+coariance? Um the answer is that if you
+
+
+have a highdimensional action space,
+
+
+maybe you're controlling all of the
+
+
+motors on a humanoid robot and there's
+
+
+like you know 50s something motors, the
+
+
+number of entries in the matrix uh goes
+
+
+as the square of the number of
+
+
+dimensions whereas the number of entries
+
+
+on the diagonal is linear in the number
+
+
+of dimensions. So if you don't want to
+
+
+output big dense matrices, that's a good
+
+
+idea. Uh the other more subtle reason is
+
+
+that it's much easier to avoid numerical
+
+
+instability if you only have to worry
+
+
+about uh diagonal coariances because
+
+
+with uh dense matrices uh then you need
+
+
+to ensure that everything is invertible.
+
+
+You need to ensure that the condition
+
+
+number is not too terrible. All that
+
+
+stuff and it all of that is doable. It's
+
+
+just more work and yeah.
+
+
+Yes.
+
+
+Um yeah so the question was is the
+
+
+action distribution a decoder that
+
+
+decodes the actions from the
+
+
+observations. So typically the
+
+
+terminology we would use is we would
+
+
+call the thing that reads in the image
+
+
+uh an encoder or an image encoder. There
+
+
+you can say that the last linear layer
+
+
+is a decoder but that would be an overly
+
+
+fancy name for it like uh in this case
+
+
+since you're decoding such a simple
+
+
+piece of information you can also just
+
+
+say there's no decoder.
+
+
+Okay let's proceed.
+
+
+uh we'll learn about uh other more
+
+
+advanced ways to represent complex
+
+
+action distributions later including uh
+
+
+flow matching that'll be uh next week.
+
+
+Okay. So at this point uh we've kind of
+
+
+hammered to death on this what is really
+
+
+very very simple algorithm that anybody
+
+
+who has ever implemented supervised
+
+
+learning should really be able to code
+
+
+up very easily. So there isn't really
+
+
+that much mystery into in like what
+
+
+behavioral cloning is. But there is a
+
+
+mystery in the question of whether it
+
+
+works.
+
+
+I guess before I get into the details, I
+
+
+wonder maybe if I should ask you guys uh
+
+
+can anybody uh give me a a strong
+
+
+opinion about whether you think
+
+
+behavioral cloning in general should
+
+
+work or should not work. Yes.
+
+
+Right. Okay. So what one answer which is
+
+
+a very good one is that well your
+
+
+algorith let me try to summarize what
+
+
+you said. your algorithm is uh very
+
+
+dependent on your data and if your data
+
+
+doesn't show you how to go into a
+
+
+particular place uh then you if you end
+
+
+up in that place you won't know what to
+
+
+do. So if you're driving the car in like
+
+
+New York and that's where all your
+
+
+demonstrations are and suddenly you need
+
+
+to control the car in like London well
+
+
+you're probably going to kind of mess
+
+
+up. So you're very dependent on the
+
+
+data.
+
+
+>> Yes.
+
+
+Okay. Yeah. So, this is the uh the
+
+
+machine learning uh uh practitioner
+
+
+answer is like hey like um if you've got
+
+
+the right data uh and you set up a good
+
+
+model maybe that model is like
+
+
+pre-trained so it has a lot of prior
+
+
+knowledge that should work like machine
+
+
+learning is good. That's also a very
+
+
+good answer. Any other answers? Yes.
+
+
+Okay, cool. So that's that's another
+
+
+interesting point that if you see lots
+
+
+of recoveries in your data, then maybe
+
+
+uh your model will be pretty good at
+
+
+like fixing its mistakes if you show it
+
+
+some mistakes and show how to fix those
+
+
+mistakes. Yes.
+
+
+Okay, that's another good point that
+
+
+maybe this algorithm won't work if your
+
+
+data is bad and has lots of failures
+
+
+because then you'll just learn to copy
+
+
+the failures. Okay, um I think you guys
+
+
+are generally on the right track with
+
+
+this. Now, there is one very um kind of
+
+
+fundamental reason why a I guess a
+
+
+theoretician would tell you that
+
+
+behavioral cloning does not work.
+
+
+So here is the the I I'll tell you the
+
+
+intuitive version of the story but we'll
+
+
+actually make this very precise towards
+
+
+the end of the course. So the kind of uh
+
+
+uh intuitive version of the story is
+
+
+let's say that you have this uh example
+
+
+trajectory shown in black. When I when I
+
+
+draw these plots one axis represents
+
+
+time and the other uh axis represents
+
+
+state like you know generally the state
+
+
+is many dimensional but here it's
+
+
+onedimensional. So this is a trajectory
+
+
+and let's say you train your neural
+
+
+network to imitate this trajectory.
+
+
+And let's say you do a really good job
+
+
+so that the mistake that your model
+
+
+makes is small. It has a small error,
+
+
+but it's never going to have zero error.
+
+
+It's very hard to train a model that has
+
+
+zero error. So, uh, the red line is
+
+
+going to illustrate what happens when
+
+
+you roll out your policy, when you run
+
+
+your policy in the environment. So,
+
+
+you'll see it's early on, it's pretty
+
+
+good, and it makes a teeny tiny mistake.
+
+
+You'll always have a teeny tiny mistake,
+
+
+but that's okay because that's that
+
+
+mistake is teenytiny. The trouble is
+
+
+that when you've made that teenytiny
+
+
+mistake, now you're in a state that is a
+
+
+teeny tiny bit different from the state
+
+
+that you were in in your data, which
+
+
+means that you will probably make a
+
+
+slightly bigger mistake. And when you
+
+
+make a slightly bigger mistake, you will
+
+
+find yourself in a state that is
+
+
+slightly different from your data. And
+
+
+you will make a medium mistake and find
+
+
+yourself in a state that is a medium
+
+
+amount away from your data. And then
+
+
+make a large mistake and eventually
+
+
+you'll just end up crashing your car. So
+
+
+a big difference between supervised
+
+
+learning and behavioral cloning is that
+
+
+behavioral cloning exists in this nonID
+
+
+setting. The observations are not
+
+
+independent of one another. The current
+
+
+observation is influenced by what
+
+
+happened next. And because of that your
+
+
+mistakes can kind of build on top of
+
+
+each other. So you can make a small
+
+
+mistake now which changes the next
+
+
+observation and that it usually doesn't
+
+
+change it for the better, it usually
+
+
+changes it for the worse. Um, so this is
+
+
+kind of the the conceptual uh answer and
+
+
+we'll make this more precise later.
+
+
+And now here's the other answer.
+
+
+Um, this is a paper from Nvidia. This is
+
+
+very old at this point. It's about 10
+
+
+years old. And they had a lot of trouble
+
+
+getting their autonomous driving to
+
+
+work. It would like drive on the grass,
+
+
+drive over cones, and they were like,
+
+
+"Oh, well, that's probably because
+
+
+Sergey said it's not supposed to work."
+
+
+Um, but then they did what any good
+
+
+machine learning researcher does, and
+
+
+they just collected like a ton more
+
+
+data. Uh, and and then it was like kind
+
+
+of okay.
+
+
+So, after 3,000 miles, which these days
+
+
+wouldn't be actually that many miles at
+
+
+all, it like kind of does something. And
+
+
+you do have to be pretty brave to
+
+
+actually get in the car, but it's not
+
+
+bad.
+
+
+Of course, if they had read the Alvin
+
+
+paper, they would know that this was
+
+
+possible. Maybe they did. So,
+
+
+something is happening. Like, the thing
+
+
+is kind of working and somehow they even
+
+
+put it on the highway. I wonder what
+
+
+their insurance was. Um, all right. So,
+
+
+when I saw this, I I I of course was
+
+
+like a little surprised because uh I I
+
+
+had been explaining to people that this
+
+
+is not supposed to work. So, I wanted to
+
+
+figure out what it is that they did.
+
+
+Now, this was 10 years ago. Um, they
+
+
+didn't do anything fancy like using flow
+
+
+matching or using diffusion. What they
+
+
+did do is they put three cameras on
+
+
+their car. They had a camera pointing
+
+
+forward and a camera pointing left and a
+
+
+camera pointing right. And what they did
+
+
+is they took the images from the camera
+
+
+pointing right and the label for that
+
+
+image was the action that was taken but
+
+
+a little bit biased to the left so that
+
+
+if the car sees something that is a
+
+
+little to the right it'll turn a little
+
+
+to the left.
+
+
+And in the other in the left facing
+
+
+camera they took the the action label
+
+
+and biased it a little to the right. So
+
+
+now you can stabilize your car. If it's
+
+
+driving down the lane, it veers a little
+
+
+to the left, it's going to see something
+
+
+more similar to what the left facing
+
+
+camera saw. And therefore, your model
+
+
+won't take the action. It's a little
+
+
+biased to the right.
+
+
+This is a hack.
+
+
+Um, but it's a hack that kind of
+
+
+illustrates a particular point, which is
+
+
+that behavioral cloning is not in theory
+
+
+supposed to work very well, but in
+
+
+practice, if you're a little bit careful
+
+
+in how you set things up, you can
+
+
+usually make it work quite well. Now
+
+
+sometimes you need to have a hack like
+
+
+this. Sometimes the hack that you need
+
+
+is a lot less egregious. Uh for example,
+
+
+one of the uh comments uh that was made
+
+
+earlier in our discussion about how
+
+
+maybe you want to illustrate recoveries.
+
+
+Well, this is essentially a way to
+
+
+illustrate recoveries. So instead of
+
+
+putting three cameras on their car, they
+
+
+could have just as well asked their
+
+
+driver to sometimes swerve a little to
+
+
+the left and then correct so that it
+
+
+would it would teach the model how to
+
+
+correct mistakes. So in practice these
+
+
+days, we usually don't put three cameras
+
+
+on our car. We usually are a little bit
+
+
+thoughtful in how we collect our data.
+
+
+Uh what kind of recoveries or mistakes
+
+
+we illustrate and also what kind of data
+
+
+augmentation we do. You can think of
+
+
+this as a kind of a hardware data
+
+
+augmentation. So with the right
+
+
+collection of tricks, you can actually
+
+
+make these things work pretty well. Any
+
+
+questions?
+
+
+>> Yes.
+
+
+>> Right. So the question is like is this
+
+
+an example of something that can fix
+
+
+those compounding mistakes? Um in
+
+
+general no like in general there could
+
+
+be all sorts of other mistakes that
+
+
+might happen besides veering to the left
+
+
+or veering to the right. But it is a
+
+
+hack and it's a good hack because a lot
+
+
+of the mistakes happen in this case
+
+
+because the car goes to the left or to
+
+
+the right. So it fixes those things. And
+
+
+that's kind of the theme that it's very
+
+
+hard to make these methods bulletproof.
+
+
+But it's often not that hard to sort of
+
+
+patch most of the issues so that it's
+
+
+good enough.
+
+
+>> Yeah.
+
+
+Correct. At test time, the car only used
+
+
+the center camera.
+
+
+All right. So,
+
+
+so the moral of the story and some like
+
+
+um imitation learning via behavioral
+
+
+cloning is not in general guaranteed to
+
+
+work. Uh and this is different from
+
+
+supervised learning. So with supervised
+
+
+learning, you know, law of large
+
+
+numbers, get enough data, your error
+
+
+decreases as like one over root n
+
+
+everything is good in the world.
+
+
+behavioral cloning in general will uh
+
+
+have much worse uh worst case errors and
+
+
+the reason is that the iid assumption
+
+
+does not hold.
+
+
+We'll actually formalize why with a bit
+
+
+of theory in the second half of today's
+
+
+lecture. So we'll make this statement
+
+
+about compounding mistakes a lot more
+
+
+precise.
+
+
+Um and but if you want to practically
+
+
+address the problem and get things to
+
+
+work, you have a number of choices. uh
+
+
+and we'll learn about many of these
+
+
+choices today and and on Wednesday. So
+
+
+one choice is to change the algorithm.
+
+
+So there are some algorithms that are
+
+
+not behavioral cloning that make that
+
+
+require some very special kinds of data
+
+
+that can provably address the problem.
+
+
+You can also use very powerful models
+
+
+that make very few mistakes. So remember
+
+
+the compounding mistakes happen because
+
+
+at some point you made a small mistake.
+
+
+If you hardly ever make any mistakes at
+
+
+all, maybe it's okay. uh you can use
+
+
+like multitask learning. There's some
+
+
+fancy ways of doing that and we'll talk
+
+
+about that uh probably next week. You
+
+
+and you can also be very smart about you
+
+
+collect and augment your data. Please
+
+
+don't put three cameras on your car.
+
+
+It's 2026. It would be embarrassing. But
+
+
+there are other things you could do to
+
+
+augment your data to get kind of similar
+
+
+benefits. So we'll learn about many of
+
+
+these things. Uh but first let's talk
+
+
+about the the bad news a little bit more
+
+
+precisely. So let's come back to this
+
+
+compounding uh errors uh problem and try
+
+
+to make this notion of compounding
+
+
+errors a little bit more mathematical.
+
+
+So to make it a little bit more
+
+
+mathematical we have to learn about
+
+
+something called distributional shift.
+
+
+When you uh train a model let's say just
+
+
+with supervised learning uh your model
+
+
+is uh way back you know in the first
+
+
+slide of the lecture p theta y given x.
+
+
+No more imitation learning, just regular
+
+
+supervised learning. The X's that you
+
+
+train on, they come from some
+
+
+distribution. And we can call that
+
+
+distribution P train. So if you um you
+
+
+know took a bunch of images from the
+
+
+internet, had like human labelers
+
+
+labeled them, then P train of X is like
+
+
+the distribution of images on the
+
+
+internet. So there's some distribution,
+
+
+you might not know what it is, but
+
+
+that's the distribution your training
+
+
+data came from.
+
+
+Um, and you test your model if you want
+
+
+to find out how good it is with images
+
+
+from some distribution P test of X. So
+
+
+that's basically where your test set
+
+
+came from.
+
+
+Distributional shift is just a fancy way
+
+
+of saying P train of X is not equal to P
+
+
+test of X.
+
+
+And in general, if that is the case, if
+
+
+P uh train of X is not the same as P
+
+
+test of X, then you are in in a lot of
+
+
+trouble. So if I told you only this and
+
+
+nothing else about your distributions,
+
+
+generally there's more or less nothing
+
+
+that you could say about how well you
+
+
+will do on the test set.
+
+
+So just like how bad could it possibly
+
+
+be? Well, um uh imagine you prepare for
+
+
+a math exam and then your exam is on
+
+
+ancient Greek literature. Like chances
+
+
+are you wouldn't do that well. So that's
+
+
+distributional shift. You train on
+
+
+questions sampled from the distribution
+
+
+of math questions and you're tested on
+
+
+questions sampled from the distribution
+
+
+of ancient Greek literature questions.
+
+
+like you probably wouldn't appreciate if
+
+
+I give you an ancient Greek literature
+
+
+exam for the midterm because of
+
+
+distributional shift. Uh or another
+
+
+example, let's say you train your model
+
+
+to recognize exit signs
+
+
+in the United States and then it's
+
+
+tested on a bunch of random signs in
+
+
+China,
+
+
+right? Like okay, maybe there's a few
+
+
+patterns like if you see like a little
+
+
+dude walking, maybe that's an exit sign,
+
+
+but you you'd be essentially guessing.
+
+
+So distributional shift in general is
+
+
+really really bad.
+
+
+Okay. So where does distributional shift
+
+
+show up in imitation learning?
+
+
+So I have my distribution of actions
+
+
+that that's not where it shows up. That
+
+
+part is fine. Uh and I have my
+
+
+distribution of observations that I
+
+
+train on. Just like I had that
+
+
+distribution of images that I train on
+
+
+for supervised learning. I have a uh P
+
+
+data O or P train O. I'm going to call
+
+
+it P data just to uh uh be consistent
+
+
+here.
+
+
+when you run your policy pi, you're
+
+
+going to encounter a different
+
+
+distribution of observations. So if I
+
+
+average together the distribution of
+
+
+observations at every single time step
+
+
+that I see when I run my policy, I can
+
+
+call that pi theta of O. So it's the
+
+
+distribution of observations that I get
+
+
+when I run my policy. And it's actually
+
+
+these two distributions that are
+
+
+different.
+
+
+So we train our policy to be accurate
+
+
+under a P data of O. But then when we
+
+
+actually run our policy, it ends up
+
+
+being evaluated on the observations that
+
+
+it actually sees. And that's pi theta of
+
+
+O.
+
+
+So we're maximizing the likelihood under
+
+
+P d theta. And then we're testing under
+
+
+P pi theta of O. And these things are
+
+
+not actually the same because P pi theta
+
+
+of O at future time steps ends up
+
+
+deviating from P data because of
+
+
+mistakes we've made in the past. So P
+
+
+data is not the same as PI theta. Now
+
+
+you might say a question. Yes.
+
+
+Yeah. So the the question was well uh
+
+
+what if we just collect enough data so
+
+
+that we like really cover everything. Uh
+
+
+and here this kind of the usual deep
+
+
+learning answer that um the theoretical
+
+
+answer is that it is extremely hard to
+
+
+do this to avoid all distributional
+
+
+shift. Um if you want like a little bit
+
+
+of intuition for this, you can create
+
+
+situations where uh there are like
+
+
+little bottleneck states where you
+
+
+really have to do exactly the right
+
+
+thing to sort of thread the needle and
+
+
+get into a very different region. So
+
+
+there the worst case scenario is
+
+
+basically you end up with things like
+
+
+scaling in some very unfavorable way. In
+
+
+practice, you can definitely do this if
+
+
+you have like a little bit of domain
+
+
+knowledge and you instruct the people
+
+
+collecting the demonstrations carefully
+
+
+to do it just right. So this is kind of
+
+
+the usual um theory practice uh
+
+
+dichotomy that we see in machine
+
+
+learning where in practice you can kind
+
+
+of like make things work with a little
+
+
+bit of effort.
+
+
+>> Yes. Um, you also
+
+
+spoil the ending. So, uh, the answer is
+
+
+yes. Uh, hold that thought. I'll
+
+
+actually talk about that at the end of
+
+
+of lecture.
+
+
+All right, cool. So, uh, now here I
+
+
+think it's still fair game to ask how
+
+
+bad could it really be? Because what I
+
+
+said before is like distributional shift
+
+
+could be as bad as like you study for
+
+
+math and you're tested on Greek. This
+
+
+doesn't seem that bad because like you
+
+
+know the lines are kind of close to each
+
+
+other. Well, here's maybe like a little
+
+
+notional example to hopefully convince
+
+
+you that it can be extremely bad. Um,
+
+
+let's go back to this driving setting.
+
+
+This is a two-lane road. So, um, for
+
+
+those of you that don't drive a car on
+
+
+the in the left lane, the cars will be
+
+
+coming at you. So, you really don't want
+
+
+to drive in that left lane. You want to
+
+
+drive in the right lane. Uh, and let's
+
+
+say that I learn a really good policy.
+
+
+It's it's quite quite smart where if I
+
+
+veer a little bit in this right lane,
+
+
+the policy is smart enough to correct.
+
+
+So, when it makes little mistakes, it
+
+
+actually corrects. It gets out of that
+
+
+and stays in the right lane. Very
+
+
+occasionally, uh, when it maybe, uh, you
+
+
+know, to look at fuse. There's some fog,
+
+
+there's some rain. Maybe it veers a
+
+
+little bit further and it veers a tiny
+
+
+bit to the left lane and it's a very
+
+
+smart policy. So, it corrects and it
+
+
+stays in the left lane.
+
+
+Why would if there's no demonstration
+
+
+date of driving the left lane, it makes
+
+
+a lot of sense that would learn the
+
+
+strategy of whatever lane you're in, if
+
+
+you're veering a little bit, just stay
+
+
+in it. So, if anything gets you out of
+
+
+that lane now, it's going to be doing a
+
+
+great job of staying in exactly the
+
+
+wrong spot.
+
+
+And this is this is inspired by real
+
+
+life events that I won't tell you about,
+
+
+but I will go to intermission and let
+
+
+you take a little break. Uh and we'll
+
+
+come back in 5 minutes at 9:01 and
+
+
+resume with some math.
+
+
+>> I'm a student in architecture which uh
+
+
+where we focus on robotic fabrications.
+
+
+>> This class is highly related to what um
+
+
+I'm researching.
+
+
+>> Okay.
+
+
+>> Um that's why I want to ask if there's
+
+
+any uh possibility to get your
+
+
+permission to be in this class.
+
+
+>> So um are you on the wait list?
+
+
+>> Yeah, I'm I'm on the 29th.
+
+
+>> Okay.
+
+
+Okay, we'll start again in about one
+
+
+minute. So, please find a seat.
+
+
+>> Yeah. Yeah, it's a little bit updated
+
+
+but broadly similar.
+
+
+Um,
+
+
+yes. Let me think about that. I don't I
+
+
+don't think I have like an immediate
+
+
+answer for you, but it's a good
+
+
+question. It's it's something for me to
+
+
+think about by next Wednesday.
+
+
+>> Thank you so much.
+
+
+>> All right, let's resume.
+
+
+So,
+
+
+uh, we'll we'll spend a bit more time
+
+
+talking about this question. Just how
+
+
+bad is it really? uh and you know for
+
+
+inspiration I'll leave this uh vivid
+
+
+picture up on the slide.
+
+
+So if you want to know how bad is it
+
+
+really here are like a few possible
+
+
+things that you might like to know. Uh
+
+
+is it worse than supervised learning?
+
+
+Like supervised learning models can also
+
+
+make mistakes. So is there some sense in
+
+
+which behavioral cloning is worse than
+
+
+supervised learning? Like are the
+
+
+mistakes somehow more bad? Um do the
+
+
+problems vanish with more data? like is
+
+
+it really a case where if you just get
+
+
+enough data everything is all good? Um
+
+
+and does it get worse for some control
+
+
+problems like are there some problems
+
+
+where the challenges with behavioral
+
+
+cloning are more exacerbated relative to
+
+
+others. So these are some questions we
+
+
+might be quite interested in. Um and
+
+
+theory can help us answer some of these
+
+
+questions
+
+
+uh although you have to kind of use it
+
+
+uh in the right way. So what theory
+
+
+often can give us is uh some intuition
+
+
+for trade-offs. So sometimes we think
+
+
+about theory as a very formal thing like
+
+
+a proof that the thing definitely works.
+
+
+But actually the value of theory at
+
+
+least uh in this area is to actually
+
+
+give us some intuition to understand
+
+
+roughly how we should expect errors to
+
+
+trade off depending on certain
+
+
+parameters of our problem and also what
+
+
+the worst case looks like.
+
+
+Uh what it doesn't give us is usually a
+
+
+practical proof that something works or
+
+
+doesn't work. And the reason for that is
+
+
+that machine learning problems are of
+
+
+course situated in the real world and
+
+
+the real world is not at the full level
+
+
+of generality. So uh typically if you
+
+
+have a uh some kind of worst case uh
+
+
+theoretical scenario in the real world
+
+
+you may or may not actually encounter
+
+
+scenarios that look like that. And
+
+
+that's part of why behavioral coding is
+
+
+actually a pretty good algorithm in
+
+
+practice because many of the things that
+
+
+make it theoretically difficult don't
+
+
+occur in some real world settings. Uh
+
+
+and of course theory doesn't generally
+
+
+give us a way to understand typical
+
+
+behavior because typical behavior in
+
+
+machine learning is highly dependent on
+
+
+the particular real world scenario that
+
+
+you find yourself in.
+
+
+Um but it can still be very useful. So
+
+
+let's try to do a little bit of work to
+
+
+quantify how bad uh behavioral cloning
+
+
+can be.
+
+
+So let's assume first that our data is
+
+
+produced by a good policy. Uh and in
+
+
+general it or specifically here we'll
+
+
+assume that this good policy is
+
+
+deterministic meaning that it's not
+
+
+actually a probability distribution or
+
+
+rather the probability distributions is
+
+
+a uh as a delta function. So the policy
+
+
+always chooses the same action if it's
+
+
+shown the same state. It's a
+
+
+deterministic policy.
+
+
+Uh and we'll go with the fully observed
+
+
+case for simplicity. So O equals SAS. So
+
+
+no partial observations.
+
+
+And now in order to quantify how bad
+
+
+behavioral clothing is, we have to first
+
+
+define bad. So we'll define bad by using
+
+
+a cost function. Uh we'll say that every
+
+
+time that your policy takes the same
+
+
+action as this good policy pi star, you
+
+
+don't know the good policy by the way.
+
+
+That's the that's just what the
+
+
+demonstrator uses. You get a cost of
+
+
+zero. So you don't pay any price if you
+
+
+take the correct action. And if you take
+
+
+any other action, then you pay a cost of
+
+
+one. Essentially the cost is mistake
+
+
+like if you make a mistake your cost is
+
+
+one one mistake. If you don't make a
+
+
+mistake your cost is zero zero mistake.
+
+
+So you incur a cost of one if you make a
+
+
+mistake. And then bad means lots of
+
+
+mistakes. So what we want to understand
+
+
+is is behavior cloning bad meaning does
+
+
+behavior cloning make lots of mistakes.
+
+
+So one of the ways that you could
+
+
+express this is you could say well under
+
+
+your distribution that you learn pi
+
+
+theta what is the expected value of the
+
+
+cost which is the expected number of
+
+
+mistakes. So if you're at a particular
+
+
+time step t this is simply the expected
+
+
+value under the action distribution of c
+
+
+of st a t. And uh uh if you stare at
+
+
+this a little bit, it might become
+
+
+apparent that uh this is just uh the
+
+
+probability that you don't take the same
+
+
+action as the good policy.
+
+
+So that's at a single time step.
+
+
+And then if we're if I were to add this
+
+
+up over all the time steps, then I get
+
+
+the expected number the total expected
+
+
+number of mistakes that I'll be making.
+
+
+Okay, any question about this
+
+
+definition? We're going to work with
+
+
+this quite a lot. Yes.
+
+
+Yeah. So, so this is for a single time
+
+
+step. If you want the total number of
+
+
+mistakes, you would sum this over all
+
+
+the time steps and take an expectation
+
+
+over all the states you could be in. And
+
+
+I that'll be on the next slide.
+
+
+Okay.
+
+
+So, this is basically probability of
+
+
+mistake.
+
+
+Okay. So
+
+
+you can imagine that at every time step
+
+
+my policy induces a distribution over
+
+
+state. So this little ellipse represents
+
+
+roughly kind of the the range of states
+
+
+that I might find myself in. So maybe
+
+
+this is like the initial state
+
+
+distribution. This is the distribution
+
+
+of states at time step 10. This time
+
+
+step 25 etc. And you know you'd expect
+
+
+that if my mistakes are compounding then
+
+
+maybe this like this ellipse is getting
+
+
+bigger and bigger. So my policy induces
+
+
+a distribution over states at every time
+
+
+step.
+
+
+Um, and the total number of mistakes is
+
+
+a sum over all the time steps of the
+
+
+expected value under the action sampled
+
+
+from my policy and the state sampled
+
+
+from my state distribution uh of the uh
+
+
+cost. And that works out to be the total
+
+
+number of mistakes I expect to make over
+
+
+a trajectory from my learned policy. And
+
+
+notice of course that the state
+
+
+distribution on a given time step of
+
+
+course it depends on the previous
+
+
+actions.
+
+
+So this sum corresponds to the expected
+
+
+total number of mistakes.
+
+
+So here's a question I could ask. How
+
+
+does the total number of mistakes scale
+
+
+with the length of the trajectory? The
+
+
+length of the trajectory sometimes
+
+
+referred to as the horizon.
+
+
+This is an interesting question to ask
+
+
+because if the horizon is one meaning
+
+
+your trajectories are one single time
+
+
+step in length then clearly you're not
+
+
+getting any compounding errors because
+
+
+if you have only one time step there is
+
+
+no second time step. So your action
+
+
+doesn't actually affect anything. So
+
+
+clearly there's some horizon length for
+
+
+which this is exactly the same as
+
+
+regular supervised learning. And we know
+
+
+that regular supervised learning is like
+
+
+a good idea. So definitely there are
+
+
+very special cases where behavioral
+
+
+cloning is aok okay and maybe what we
+
+
+should ask is as it deviates more from
+
+
+supervised learning meaning the horizon
+
+
+gets longer and longer do things get
+
+
+worse and worse
+
+
+so I can construct a really bad worst
+
+
+case situation
+
+
+um so first let's assume uh that
+
+
+supervised learning works meaning that
+
+
+if I am looking at a state in my data
+
+
+set like literally a state that I
+
+
+trained on. I'm going to assume that the
+
+
+probability that I make a mistake is
+
+
+very small. So the probability that I
+
+
+make a mistake on one of the training
+
+
+states is less than or equal to epsilon.
+
+
+That's like a pretty reasonable
+
+
+assumption because that's just saying
+
+
+like my algorithm is not buggy like I
+
+
+actually coded up supervised learning
+
+
+correctly.
+
+
+Of course the problem is that I'm not
+
+
+just going to land on states in my
+
+
+training set but if I did my probability
+
+
+of mistake is very bounded. And now I'm
+
+
+going to go through like a little small
+
+
+exercise of constructing a really bad
+
+
+worst case scenario. And the really bad
+
+
+worst case scenario is this guy. It's a
+
+
+tightroppe walker. So the tightroppe
+
+
+walker doesn't get to make very many
+
+
+mistakes. Uh gets to make one.
+
+
+And uh I'm going to uh abstract this
+
+
+away into a very simple grid world. uh
+
+
+basically an environment that consists
+
+
+of a discrete states uh where in each
+
+
+state you can take one of four actions
+
+
+left, right, up or down and you start on
+
+
+the left side and you have to walk along
+
+
+that middle row shown in gray to the
+
+
+right side. So you just have to take
+
+
+always go right right and if you ever go
+
+
+up or down well you know so in this
+
+
+scenario uh your training set consists
+
+
+of just those states in the middle uh
+
+
+the gray states. So the the real problem
+
+
+of going into the red states is not
+
+
+actually that that you fall off the
+
+
+rope. It's that you find yourself in a
+
+
+situation that is not in the training
+
+
+set. And in that situation essentially a
+
+
+mistake is virtually guaranteed because
+
+
+uh you did not uh train on that. So you
+
+
+can't assume that your probability of
+
+
+mistake is less than epsilon. So we'll
+
+
+just say for simplicity that in the red
+
+
+states the probability of mistake is
+
+
+very large and in the gray states it's
+
+
+less than or equal to epsilon. And now
+
+
+let's figure out what the expected total
+
+
+number of mistakes is going to be.
+
+
+Right? So on the first time step you
+
+
+have a probability epsilon that you make
+
+
+a mistake and epsilon might be very very
+
+
+small. It might be like 0.00001
+
+
+but it's not zero.
+
+
+If you make a mistake then and your
+
+
+horizon is h
+
+
+how many mistakes would you expect to
+
+
+make over the duration of the
+
+
+trajectory? So given that you made a
+
+
+mistake on the first time step how many
+
+
+mistakes are you going to make in total?
+
+
+Any ideas? Yes. H. That's right. Because
+
+
+if you make a mistake on the first time
+
+
+step, you fall off the tight rope. And
+
+
+that's not that's bad not because it
+
+
+hurts, but because you end up in a place
+
+
+where you will always be doomed to make
+
+
+mistakes forever.
+
+
+So at the first time, so you have
+
+
+epsilon time h expected mistakes. So
+
+
+epsilon is the probability, h is the
+
+
+outcome. So the expected number of
+
+
+mistakes is epsilon* h plus 1 minus
+
+
+epsilon times all the other stuff.
+
+
+So with probability 1 minus epsilon, you
+
+
+advance to the next time step. You're in
+
+
+the second square. And now you again
+
+
+have a probability epsilon of making a
+
+
+mistake. Now you're going to get h minus
+
+
+one uh mistakes after that or 1 minus
+
+
+epsilon probability to move on to the
+
+
+third state. So you end up with this
+
+
+kind of big sum epsilon * h + 1 -
+
+
+epsilon
+
+
+time epsilon h - 1 + 1 - epsilon then
+
+
+epsilon h - 2 + 1 - epsilon and so on
+
+
+and so on and so on. So you get h terms
+
+
+and each one is of the order of epsilon
+
+
+h.
+
+
+So what is then the uh in bigo notation
+
+
+what is the expected number of total
+
+
+mistakes?
+
+
+Yeah,
+
+
+epsilon H2. Yeah, there's some like
+
+
+divided by two blah blah blah, but in
+
+
+terms of big O, it's epsilon H squ. And
+
+
+this is very bad because this is saying
+
+
+that as your task gets longer, the
+
+
+number of mistakes doesn't increase
+
+
+linearly with the length of the task. It
+
+
+increases quadratically.
+
+
+So this is bad news. This would be a bad
+
+
+result. Well, it's a correct result.
+
+
+It's bad as it's like kind of
+
+
+disappointing for us. Um, and so this is
+
+
+a problem. Now this is a very idealized
+
+
+setting. This is saying like hey uh you
+
+
+really have to like uh you you you
+
+
+really only have a bound on your error
+
+
+when you're literally on the training
+
+
+states. In reality like neural networks
+
+
+generalize and all that good stuff. So
+
+
+in reality we want a more nuanced
+
+
+analysis to really understand this. But
+
+
+you know as far as giving us some
+
+
+intuition this kind of illustrates what
+
+
+the difficult case is. The difficult
+
+
+case is basically a case where as soon
+
+
+as you make a mistake, you fall off the
+
+
+tightroppe and you find yourself in an
+
+
+environment where you are doomed to make
+
+
+mistakes forever.
+
+
+Okay. Um so now let's go through a
+
+
+significantly more complex analysis. And
+
+
+I want to preview a little bit for you
+
+
+guys that you know there's going to be a
+
+
+lot of uh kind of uh notation here. Uh
+
+
+my goal here is not just to
+
+
+teach you about errors for behavioral
+
+
+cloning. In reality, the analysis that
+
+
+we're going to go through in this
+
+
+lecture mirrors a lot of concepts that
+
+
+we'll see later on in the course.
+
+
+Basically, this is going to be about
+
+
+behavioral cloning, but really these
+
+
+concepts are useful for understanding uh
+
+
+distributions and dynamical systems more
+
+
+generally. And we'll see those ideas
+
+
+recur again and again when we talk about
+
+
+policy gradients and all sorts of other
+
+
+algorithms. So uh bear with me even if
+
+
+you're not so interested in behavioral
+
+
+cloning these things will recur. Okay.
+
+
+So let's have a more nuanced assumption.
+
+
+The more nuanced assumption is that the
+
+
+expected value uh of uh your um uh
+
+
+mistake over the training distribution
+
+
+is bounded by epsilon. So no longer are
+
+
+we just saying your probability of
+
+
+mistake is bounded by epsilon literally
+
+
+on the training data points. So now
+
+
+we're saying it's bounded in expectation
+
+
+over the training distribution. And this
+
+
+is much closer to what you would
+
+
+typically assume for a uh machine
+
+
+learning problem. So if we sample a
+
+
+state from the training distribution, we
+
+
+are unlikely to make a mistake. That's
+
+
+essentially what this is saying. So it
+
+
+doesn't have to be literally a state you
+
+
+trained on. It just has to be from the
+
+
+same distribution. This is a much more
+
+
+realistic assumption.
+
+
+And we're going to basically repeat this
+
+
+kind of tightroppe walker exercise, but
+
+
+now with this more nuanced assumption.
+
+
+And that's going to be quite a bit more
+
+
+complex, but it will teach us some uh
+
+
+useful uh lessons. So, first let's start
+
+
+with uh a seemingly trivial property
+
+
+that we're going to get be getting a lot
+
+
+of mileage out of. Here's the property.
+
+
+Take the distribution of states under
+
+
+your policy at a particular time step t.
+
+
+So, uh pi theta st.
+
+
+We can decompose this into a sum of two
+
+
+parts. Uh basically the first part is if
+
+
+you didn't make any mistakes at all up
+
+
+until that time step. So since your
+
+
+probability of making a mistake is
+
+
+epsilon, the probability you didn't make
+
+
+any mistakes up until time step t is 1
+
+
+minus epsilon to the power t. So you can
+
+
+say that uh this distribution could be
+
+
+expressed as 1 minus epsilon to the
+
+
+power t times the training distribution
+
+
+because if you didn't make any mistakes,
+
+
+you're you're still in the training
+
+
+distribution plus one minus that times
+
+
+some other distribution.
+
+
+Now, this other distribution, uh, P
+
+
+mistake, it doesn't have to be bad
+
+
+because it could be that you did
+
+
+something different, but it was
+
+
+harmless. Like maybe you did something
+
+
+different, but then came back and you're
+
+
+still in P train. But, uh, in general,
+
+
+you're basically guaranteed that there's
+
+
+a one minus epsilon to the T slice that
+
+
+is exactly identical to P train and then
+
+
+a one minus that slice, which could be
+
+
+anything.
+
+
+So this is kind of we're trying to like
+
+
+bound the worst case it that that P
+
+
+mistake it could have some good stuff in
+
+
+it but in general we're we don't we're
+
+
+not sure. So we're just going to call it
+
+
+P mistake.
+
+
+Okay. And now let's introduce a concept
+
+
+um called total variation divergence.
+
+
+This is a really fancy way of expressing
+
+
+something blindingly simple which is the
+
+
+difference in probabilities between two
+
+
+distributions. So total variation
+
+
+divergence is a way to quantify how
+
+
+different two probability distributions
+
+
+are. And all you do is you just sum over
+
+
+all the values of your random variable
+
+
+and take the difference of the
+
+
+probabilities. Take their absolute value
+
+
+and then you multiply by 1/2 because
+
+
+that that's just how it's defined. Uh so
+
+
+basically it's like a difference between
+
+
+probability distributions.
+
+
+One interesting thing about total
+
+
+variation divergence is that because
+
+
+probability distributions sum up to one,
+
+
+uh the total variation divergence is
+
+
+always limited by one. That's why you
+
+
+have the 1/2 in there because if you
+
+
+just had the absolute values, it would
+
+
+actually be bounded by two because you
+
+
+could have like one distribution that
+
+
+has a probability of one and one for one
+
+
+value, another one has probability one
+
+
+of another value. So you do like one min
+
+
+- 0 here, one - 0 there, it adds up to
+
+
+two, but then you divide it by two. And
+
+
+the worst total variation divergence you
+
+
+can have is one. The best you can have
+
+
+is zero.
+
+
+And now let's look at the total
+
+
+variation divergence between p train and
+
+
+pi theta. Right? Because uh why am I
+
+
+looking at this quantity? Well, what I'm
+
+
+concerned with is distributional shift.
+
+
+I'm concerned with how different the
+
+
+states that I visit with my policy are
+
+
+from the states that I trained on. So
+
+
+let's try to quantify that difference in
+
+
+terms of total variation divergence.
+
+
+And that's what it that's what it is.
+
+
+This is just the expression from above.
+
+
+Um and now remember that uh pi theta
+
+
+from the last slide can be expressed in
+
+
+this way. Pi theta can be expressed as a
+
+
+slice representing like the case where
+
+
+nothing bad happened 1 - epsilon to the
+
+
+t * p train and then 1 minus that times
+
+
+everything else.
+
+
+So I'm going to plug that in for pi
+
+
+theta. I'm going to basically substitute
+
+
+and that's what I get. Big long
+
+
+expression, but all I did is I just copy
+
+
+and pasted that expression from the
+
+
+previous slide in place of pi theta. And
+
+
+now I'm going to have things simplify
+
+
+quite a bit. Like just looking at that
+
+
+equation, it seems like it really should
+
+
+simplify because you have like p train
+
+
+minus 1 - epsilon to the t * p train
+
+
+minus some other stuff.
+
+
+So in particular p train of course is 1
+
+
+- epsilon to the t * p train plus 1
+
+
+minus that time p train. So the 1 minus
+
+
+epsilon the t terms cancel out and all
+
+
+I'm left with is 1 minus 1 - epsilon to
+
+
+the t times p train minus p mistake.
+
+
+Okay, so that's quite an elegant
+
+
+simplification. Uh now I would like to
+
+
+really get rid of p mistake
+
+
+because I don't know what it is. Uh,
+
+
+it's kind of hard to get rid of. Any
+
+
+ideas about how I can get rid of P
+
+
+mistake in this equation? Notice this is
+
+
+a bound. So I don't I don't I don't need
+
+
+equality. I just want a bound. How do I
+
+
+get rid of P mistake?
+
+
+>> Yeah.
+
+
+>> Right. So the answer is you can use the
+
+
+bound up at the top to make it less than
+
+
+or equal to one. It's a quite a
+
+
+pessimistic bound because it's like
+
+
+literally the worst possible value that
+
+
+divergence can take on. But if I don't
+
+
+know anything about P mistake, like P
+
+
+mistake might mean I drive into the
+
+
+oncoming lane and crash into another
+
+
+car. So in general it could be really
+
+
+really bad. So let's use the worst
+
+
+possible bound which is one. And so I
+
+
+can bound my total variation divergence
+
+
+with this. Now this is still this is
+
+
+actually like a a valid result. I can
+
+
+actually work with this. But I want to
+
+
+simplify it a little bit more. So
+
+
+there's kind of this useful identity 1
+
+
+minus epsilon to the t uh if epsilon is
+
+
+between 0 and 1 is always greater than
+
+
+or equal to 1 minus epsilon* t. Um you
+
+
+can just draw it on a piece of graph
+
+
+paper and see that it's true. Not a
+
+
+particularly clever thing. But then I
+
+
+can simplify this to epsilon* t. And
+
+
+that's just so I get rid of this like
+
+
+fancy exponent. I can uh look at uh look
+
+
+at it as a polinomial thing. That last
+
+
+step is not really all that necessary,
+
+
+but it makes it more elegant to write.
+
+
+But now I've got something really
+
+
+simple. I've just expressed the total
+
+
+variation divergence meaning the
+
+
+difference in probabilities between uh p
+
+
+train and pi theta at a given time step.
+
+
+And I've shown that that's bounded by
+
+
+epsilon* t.
+
+
+I think that's pretty cool. Do you guys
+
+
+have any questions about this?
+
+
+>> Yeah.
+
+
+>> Yeah. So the question is, is this total
+
+
+variation divergence a useful divergence
+
+
+for probability measures? Um, it's
+
+
+useful because it's really simple
+
+
+because you can write it down on one
+
+
+line and not have to worry about all the
+
+
+Shannon information stuff. You can also
+
+
+relate it to kale divergence and we'll
+
+
+do that later in the course.
+
+
+Yes.
+
+
+I mean the interpretation is that um how
+
+
+far apart the distributions get uh
+
+
+increases as you get later in the uh in
+
+
+the trajectory. I think that's kind of
+
+
+about as about as simple as I can as I
+
+
+can put it.
+
+
+Yeah. So the question is is it still
+
+
+sensible if like t is like 10 gajillion
+
+
+or something. Um I mean epsilon is your
+
+
+essentially it's your indistribution
+
+
+generalization error. So it's pretty
+
+
+reasonable to say that if you have a
+
+
+great machine learning algorithm like
+
+
+you're training a giant neural net
+
+
+epsilon might be very small. Um but you
+
+
+know you're right that there's like a
+
+
+little bit of coarseness here and the
+
+
+coarseness is really introduced by that
+
+
+last step going from the uh exponent to
+
+
+the linear thing. Uh and it's as I said
+
+
+like this kind of analysis is really
+
+
+more to like give us a rough sense kind
+
+
+of a rough t-shirt size for how bad the
+
+
+error is.
+
+
+Okay.
+
+
+So let's uh now bring this back to the
+
+
+expected number of mistakes. We're
+
+
+actually nearly done with all this
+
+
+because the hard part was that uh total
+
+
+variation divergence. But what we
+
+
+actually want to do is express uh some
+
+
+kind of u uh bound on the total number
+
+
+of mistakes.
+
+
+So if I write out the expectation over
+
+
+states in terms of probabilities. So the
+
+
+total number of mistakes is sum over all
+
+
+the time steps of the expected value
+
+
+over the actions and the states. And
+
+
+I'll just write out the expected value
+
+
+over the states by explicitly summing
+
+
+over the states of the probability of
+
+
+that state times the expected value over
+
+
+the actions. And remember the expected
+
+
+value of the actions is just the
+
+
+probability that you make a mistake. So
+
+
+that that last expectation is just the
+
+
+probability that pi theta assigns to
+
+
+everything else besides the correct
+
+
+action.
+
+
+And now what I'm going to do is I'm
+
+
+going to do some something a little
+
+
+silly. I'll basically take that
+
+
+probability pi theta s I will add p
+
+
+train to it and I will subtract p train
+
+
+from it and you can always do that
+
+
+because p train minus p train is zero so
+
+
+you can always add zero uh and that's a
+
+
+very particular value of zero uh and I'm
+
+
+going to like shuffle the terms around
+
+
+so I can write it as p train plus pi
+
+
+theta minus p train and now you know
+
+
+that if you put uh an absolute value uh
+
+
+around any difference the number can
+
+
+only increase right because if you have
+
+
+a positive number the absolute value is
+
+
+the same number if you have a negative
+
+
+number then it's absoluteely value is
+
+
+larger. So I can put an absolute value
+
+
+around pi theta minus p train and that
+
+
+gives me a bound. So this is all good.
+
+
+And now I can distribute the number of
+
+
+mistakes inside that sum. So I'm going
+
+
+to have
+
+
+oops
+
+
+I'm going to have p train times mistake
+
+
+plus the absolute value times mistake.
+
+
+So all I did is I just distributed that
+
+
+uh expect the value over actions inside
+
+
+P train plus absolute value. So now I
+
+
+have these two terms and I'm going to
+
+
+look at these two terms separately.
+
+
+Now just looking at that last line uh
+
+
+some of you probably recognize something
+
+
+really uh uh nice that could be done
+
+
+with the first term. Any ideas about
+
+
+what happens to the first term on the
+
+
+last line?
+
+
+Yes.
+
+
+Yeah. So the first term is there's no
+
+
+distributional shift. The first term is
+
+
+literally my error under p train. So my
+
+
+my assumption at the very beginning was
+
+
+that that's the thing that's less than
+
+
+or equal to epsilon. So the first term
+
+
+is like the good stuff. The second term
+
+
+is the bad stuff. So this part is
+
+
+literally just like my assumption that
+
+
+supervised learning works. This is the
+
+
+the part where there is no
+
+
+distributional shift. And this part is
+
+
+really rough. So um in general I don't
+
+
+really know much about the the cost that
+
+
+I get here. So I'm just going to use the
+
+
+the my knowledge that the cost is not
+
+
+higher than one. Like you could at a
+
+
+given time step you're never going to
+
+
+make more than one mistake. So I'll just
+
+
+bound that that part by one.
+
+
+And this part then is just the total
+
+
+variation divergence from before without
+
+
+the 1/2. So it's two times the total
+
+
+variation divergence.
+
+
+So that I'll just substitute from
+
+
+before.
+
+
+And that's the thing that I showed
+
+
+before was epsilon t. And since it's two
+
+
+times that, it's 2 * epsilon t. Uh, and
+
+
+now I've got everything that I need. So
+
+
+that just works out to epsilon for that
+
+
+first part, the in distribution error,
+
+
+and 2 * epsilon* t for the second part,
+
+
+which is just the pessimistic bound
+
+
+total variation divergence times worst
+
+
+case cost, which is one.
+
+
+And this is of course uh on the order of
+
+
+epsilon h squ because I've got an
+
+
+epsilon a two times epsilon t term every
+
+
+single time step. So the little t's are
+
+
+on the order of h and there's order of h
+
+
+of them. So that's epsilon h squ.
+
+
+So this is of course bad because the
+
+
+error is still increasing quadratically
+
+
+with the horizon even under this more
+
+
+nuanced assumption that my model
+
+
+actually generalizes in distribution.
+
+
+All right, any uh questions about this?
+
+
+Okay.
+
+
+Um, so that's the the result. Now, let's
+
+
+do a little bit of uh interpretation.
+
+
+So, first, why is all of this rather
+
+
+pessimistic? Um maybe I I'll first turn
+
+
+this around to you guys.
+
+
+What we just showed is that there exists
+
+
+a case where these things could be
+
+
+quadratic. Uh and you can show that it's
+
+
+a bound that it's quadratic. But in
+
+
+general in in real uh problems that we
+
+
+might encounter,
+
+
+are there some sit some
+
+
+explanations for why some real world
+
+
+settings might not be this bad? I wonder
+
+
+if you guys have any ideas about that.
+
+
+>> Yeah.
+
+
+is small enough.
+
+
+>> Yeah. Yeah. So, so one answer is that
+
+
+okay it's it's quadratic but it's like
+
+
+epsilon time h2. So maybe h is not that
+
+
+big if you have a problem with only a
+
+
+few times or maybe epsilon is just so
+
+
+small that even with a quadratic h it's
+
+
+still okay. That's definitely the case.
+
+
+Yeah.
+
+
+Okay. Yeah. So another possibility is
+
+
+that all this analysis is predicated on
+
+
+the notion that as soon as you are
+
+
+getting inputs from a different
+
+
+distribution, it's arbitrarily bad. But
+
+
+in reality, you might have a very good
+
+
+model. It may be that it actually does
+
+
+generalize a little bit uh beyond the
+
+
+distribution that it's trained on. So
+
+
+maybe there's some structure in the
+
+
+world and it can handle that. Yeah.
+
+
+Go ahead.
+
+
+Right. This is a really big one. So far,
+
+
+all of the analysis assumed that you
+
+
+never recover from mistakes. Like the
+
+
+tightroppe walker is really bad because
+
+
+once you fall off the tightroppe, you
+
+
+can't get back on. But in reality,
+
+
+sometimes you can recover and then you
+
+
+would expect some of that P mistake to
+
+
+kind of flow back into P train and you
+
+
+might still be okay. All right. So
+
+
+that's basically the explanation that
+
+
+this tightroppe walker is that is a real
+
+
+example, but in reality you can often
+
+
+recover from mistakes and it's not quite
+
+
+so bad and maybe you generalize a little
+
+
+further than you than you uh um than
+
+
+theory would predict and maybe you're
+
+
+very careful in collecting your data so
+
+
+that you illustrate the recoveries. So
+
+
+there's kind of a lot you can do to get
+
+
+out of this kind of worst case scenario.
+
+
+Um
+
+
+now of course there are a lot of caveats
+
+
+here like for example it's not a given
+
+
+that imitation learning will actually
+
+
+teach you to recover from mistakes like
+
+
+even if you cover those states maybe uh
+
+
+you don't have the right kind of label
+
+
+there. Uh but there's kind of a lot you
+
+
+can do. You can put multiple cameras on
+
+
+your car. You can also collect data a
+
+
+little bit differently. Like instead of
+
+
+having just like these narrow
+
+
+trajectories maybe you have lots of
+
+
+trajectories that make mistakes and
+
+
+recover from those mistakes and so on.
+
+
+There's some slightly paradoxical
+
+
+conclusions you could draw from this.
+
+
+Like for example, perhaps with imitation
+
+
+learning, it might work better if your
+
+
+data is a little bit worse in the sense
+
+
+that if someone demonstrates like
+
+
+exactly the perfect behavior every time,
+
+
+you don't see those mistakes in
+
+
+recoveries. But if someone demonstrates
+
+
+the behavior with a few intentional
+
+
+mistakes just to show you how to get out
+
+
+of them, maybe you'll actually do
+
+
+better. So in reality, what this means
+
+
+is that when we want to use behavioral
+
+
+cloning and we want it to work well, we
+
+
+want to take care of all these factors.
+
+
+We want to get epsilon to be really
+
+
+small because you know maybe if it's
+
+
+small enough then even if it's
+
+
+multiplied by a quadratic quantity it's
+
+
+still okay. We want our data set to uh
+
+
+be somewhat carefully designed maybe so
+
+
+that we illustrate recoveries or maybe
+
+
+so that we get a model that generalizes
+
+
+really well and these are all things
+
+
+that are sort of hard to pin down with
+
+
+very precise statements like it's very
+
+
+hard to say like hey if you if you run
+
+
+this method then you will always recover
+
+
+from mistakes. It's a little bit domain
+
+
+dependent and it takes some amount of uh
+
+
+domain expertise.
+
+
+Um actually any questions about all
+
+
+this?
+
+
+Yes.
+
+
+>> Yeah.
+
+
+So the question is is there any uh more
+
+
+rigorous way to show how you can
+
+
+recover? The reason this is a little
+
+
+challenging is that so far I've made no
+
+
+assumptions about the dynamical system.
+
+
+So the kind of worst case dynamical
+
+
+system is like the tight rope walker. In
+
+
+order to say anything precise about
+
+
+recoveries, you need to make some sort
+
+
+of assumption about how your system
+
+
+works because the worst case system
+
+
+might be it might be like tree
+
+
+structure. There might be no way to come
+
+
+back from a mistake. Um these
+
+
+assumptions tend to be domain dependent.
+
+
+For example, if you're doing continuous
+
+
+control, oftentimes people will make
+
+
+assumptions of what's called stability,
+
+
+which is basically your ability to to
+
+
+recover, to come back from a particular
+
+
+deviation. Uh if you're doing uh uh
+
+
+discrete decision-m, you might make some
+
+
+assumption about cycles in the graph
+
+
+representing your environment. So you
+
+
+need some kind of structural assumption
+
+
+and typically that assumption will be
+
+
+rather domain dependent.
+
+
+Okay.
+
+
+So can we do better than behavioral
+
+
+clinging? Is there a different algorithm
+
+
+that we can construct? I I said at the
+
+
+beginning that behavioral cloning is
+
+
+actually like the simplest of imitation
+
+
+learning algorithms. So maybe we would
+
+
+like a less simple algorithm.
+
+
+So the problem as we discussed before is
+
+
+distributional shift. And distributional
+
+
+shift is basically the problem that pi
+
+
+theta is not the same as p data. Well,
+
+
+can we change that? Can we actually make
+
+
+p d theta be the same as pi theta? So
+
+
+one way to do this is to uh get your
+
+
+policy to be really good so that your
+
+
+policy's observation distribution
+
+
+matches the data. Uh but that's hard
+
+
+because you need a perfect policy. So
+
+
+what if we actually change P data
+
+
+instead? What if we change P data to
+
+
+address this problem of distributional
+
+
+shift?
+
+
+So instead of being clever about our
+
+
+policy, let's be clever about the
+
+
+training data. And this is the principle
+
+
+behind a method called data set
+
+
+aggregation. uh it was introduced in a
+
+
+2011 paper by uh Stefan Ross
+
+
+and the goal here is to collect
+
+
+additional data from your policies
+
+
+observation distribution and add it to
+
+
+your data set.
+
+
+So how do we do that? Well, we just run
+
+
+our policy. So if you're training your
+
+
+policy to drive the car first, you get
+
+
+some demonstrations from people driving
+
+
+the car. Train an initial policy which
+
+
+might not be very good. might have that
+
+
+quadratic uh uh quadratically increasing
+
+
+error, but then you run it anyway,
+
+
+hopefully with like a safety driver who
+
+
+can step on the brakes if something bad
+
+
+happens. Uh but you run it anyway and
+
+
+you collect data from your policy.
+
+
+Now, the problem is that once you do
+
+
+that, you of course need to label that
+
+
+data because imitation learning has to
+
+
+learn from examples. So you don't want
+
+
+to just imitate the actions that your
+
+
+policy took because then you'll just get
+
+
+the same thing right back again. So you
+
+
+have to collect observations from your
+
+
+policy, but you have to then label those
+
+
+observations with optimal actions
+
+
+produced by your demonstrator.
+
+
+So here's how the method works. First,
+
+
+you train your policy on data that came
+
+
+from demonstrations. Then you run your
+
+
+policy and you get more data. Let's call
+
+
+it the DPI. And you throw out whatever a
+
+
+the actions there were and you just keep
+
+
+the observations. And then you have this
+
+
+like really weird setup where like a
+
+
+person sits in front of a television and
+
+
+you show them those images and you ask
+
+
+them what action would they have taken
+
+
+if they were back in that situation. So
+
+
+it's like a weird like kind of
+
+
+counterfactual thing.
+
+
+And then you add these labeled
+
+
+observations. So you add the human
+
+
+actions and the observations from the
+
+
+policy to your data set. Hence data set
+
+
+aggregation. You just keep aggregating
+
+
+everything and then you train on it
+
+
+again.
+
+
+So that's the algorithm.
+
+
+uh and
+
+
+uh you can actually show that this
+
+
+addresses the distributional shift
+
+
+problem. Um I won't go through like a
+
+
+full a full proof of this but if you
+
+
+want the intuition for it essentially as
+
+
+you keep adding more and more data from
+
+
+your policy eventually the overwhelming
+
+
+chunk of your data set consists of data
+
+
+from your policy and the distributional
+
+
+shift becomes arbitrarily small. So even
+
+
+though those initial demos still came
+
+
+from a different distribution eventually
+
+
+that difference vanishes.
+
+
+>> Yes.
+
+
+Yeah. So the question is how many times
+
+
+do you have to do this? Um it's a bit
+
+
+problem dependent but in many many
+
+
+problems even doing this just once
+
+
+already leads to huge improvements.
+
+
+Okay. Um so here is a a video of a drone
+
+
+flying through a forest that was uh uh
+
+
+trained with dagger. So, uh, watching
+
+
+this kind of gives you a little bit of a
+
+
+sense for maybe some of the challenges
+
+
+with this algorithm. So, that little bar
+
+
+at the bottom, that's the action. The
+
+
+action is just left or right. The drone
+
+
+is flying at a constant velocity. And
+
+
+maybe this gives you a little bit of a
+
+
+sense for how like, you know, imagine
+
+
+that you're sitting in front of a screen
+
+
+and you have to see individual snapshot
+
+
+images of this and you have to label
+
+
+them with whether you should go left or
+
+
+right. like it's not entirely trivial
+
+
+and the labeling procedure for this um
+
+
+takes a little bit of care and you have
+
+
+to have like a person who's a little bit
+
+
+more expert at this to produce those
+
+
+labels. Why? Well, because you're not
+
+
+getting feedback from your actions. So,
+
+
+you're sort of taking the actions
+
+
+passively while observing a video and
+
+
+the video corresponds to a different
+
+
+action.
+
+
+So, typically the challenge with Dagger
+
+
+is really this step is asking the human
+
+
+to label the actions. uh it it's very
+
+
+problem dependent because in some
+
+
+domains like let's say that uh your
+
+
+policy is playing chess like good chess
+
+
+players can look at a chess board and
+
+
+pick the right move even if they didn't
+
+
+play the game up until that move. So
+
+
+like for a chess game maybe this is okay
+
+
+but then you could imagine something
+
+
+like extremely agile like maybe a
+
+
+humanoid robot doing like a backflip. I
+
+
+think you would have a really hard time
+
+
+getting a human demonstrator to figure
+
+
+out given an arbitrary state of a
+
+
+humanoid robot how the joints should
+
+
+move to do the backflip. Yes.
+
+
+>> Yeah. So the question was uh when the
+
+
+replayed observation doesn't match what
+
+
+the human demonstrator uh would have
+
+
+chosen uh how does how do people recover
+
+
+from that? So
+
+
+there's two parts here, right? There's
+
+
+can we actually get a person to produce
+
+
+these labels and then if a person can
+
+
+produce those labels does that fix the
+
+
+problem. So for the second thing the
+
+
+answer is unequivocally yes. So if a
+
+
+human uh demonstrator can produce
+
+
+perfect actions given arbitrary
+
+
+observations that definitely fixes the
+
+
+problem and the reason it fixes the
+
+
+problem is that if you remember that
+
+
+that proof we had like the P mistake and
+
+
+the P train we couldn't make any
+
+
+assumption on P mistake but now we can.
+
+
+So basically this lets us turn both
+
+
+those terms into epsilon. Whether a
+
+
+human can produce those labels or not
+
+
+that's a completely separate problem.
+
+
+And in many cases the answer is no
+
+
+because humans don't make these kind of
+
+
+marovian decisions. They make decisions
+
+
+based on uh sort of the you know
+
+
+reactions and feedback and so on. Uh and
+
+
+it is entirely possible to get into a
+
+
+situation where just due to human
+
+
+factors it is impossible to do this.
+
+
+>> Any other questions?
+
+
+Yeah. Yeah. So, this is a good question
+
+
+uh for for those of you that that didn't
+
+
+hear um you know, imagine you have like
+
+
+a navigation scenario. Let's say the
+
+
+robot is like navigating around a tree,
+
+
+right? and the robot uh went right when
+
+
+it should have gone left. So a person
+
+
+will look at that uh at that image and
+
+
+label it as left. But the data set
+
+
+doesn't contain the next image. So now
+
+
+the next image is actually the robot is
+
+
+going right and it's labeled with like
+
+
+oh reverse back up something like that.
+
+
+But you never see the thing that would
+
+
+have happened if you had done the right
+
+
+thing. So if you're in that scenario,
+
+
+what's going to happen with Dagger is
+
+
+you will take that data, you will train
+
+
+on it, you get into that situation and
+
+
+you go left. And then you screw up
+
+
+because now you're in a situation where
+
+
+you've never been before. But then you
+
+
+do all of this again. You screw up, you
+
+
+enter some weird image. Then you ask a
+
+
+human to label it and they'll label it.
+
+
+And then you when you end up in that
+
+
+second state, now you know what to do.
+
+
+And then you end up in a third state
+
+
+where you screw up and so on and so on
+
+
+and so on. So this is kind of a worst
+
+
+case scenario for Dagger because you
+
+
+might need a lot of iterations. But it's
+
+
+still true that if you take enough
+
+
+iterations eventually it fixes it.
+
+
+Yes.
+
+
+The question is the optimal policy is
+
+
+not unique. So this is a very important
+
+
+point. Um
+
+
+it is not unique. All of this still
+
+
+works. Um the um the optimal policy has
+
+
+to exist. Uh and uh all of this actually
+
+
+turns out to still work for any mixture
+
+
+of optimal policy.
+
+
+Have like one determinist policy, a
+
+
+different one. You can mix them in a
+
+
+stocastic way. As long as everything as
+
+
+long as like the markoff property holds,
+
+
+all of that is still okay.
+
+
+Yeah. So, uh a little bit of elaboration
+
+
+here is in order. When I define my cost,
+
+
+I define my cost with respect to a
+
+
+single deterministic optimal policy. It
+
+
+is actually possible to define the cost
+
+
+with respect to any stochastic policy.
+
+
+The way that you would define that that
+
+
+that cost would be with some kind of
+
+
+divergence measure. Everything still
+
+
+works out. It's just much more
+
+
+complicated to write out. So the
+
+
+definitions literally them really only
+
+
+make sense for a unique optimal policy
+
+
+because that's that's where your cost
+
+
+comes from. But you can generalize it.
+
+
+>> Yes.
+
+
+Yeah.
+
+
+>> So the the question was uh is it true
+
+
+that as your horizon increases you would
+
+
+expect DIY to take more iterations? Um I
+
+
+actually don't know the answer to this.
+
+
+If I were to guess, I would guess that
+
+
+probably the worst case uh would be
+
+
+something like that. Generally, just
+
+
+empirically, Dagger tends to require
+
+
+very few iterations. Uh but I don't
+
+
+actually know what the worst case bound
+
+
+for that is.
+
+
+>> Yes.
+
+
+Yeah. So the question for those of you
+
+
+that didn't hear is uh isn't it kind of
+
+
+bad that we're increasing the size of
+
+
+the data set every single iteration and
+
+
+could it be a problem that the data set
+
+
+explodes in size? Um generally that's
+
+
+not at the top of our concerns. Uh so in
+
+
+principle yes but in practice usually
+
+
+what people do is they collect a very
+
+
+large number of demonstrations and then
+
+
+they use dagger to essentially like
+
+
+patch the holes in their policy. So even
+
+
+though the on policy data set keeps
+
+
+increasing usually it still even at the
+
+
+end ends up being only a small fraction
+
+
+of the initial demonstrations.
+
+
+>> Yes.
+
+
+Yeah. So in simulation
+
+
+there are very special cases where you
+
+
+can get oracle labels like that. Uh one
+
+
+thing that people sometimes do for
+
+
+example is if you're in a scenario where
+
+
+you have a simulation with privileged
+
+
+information. So maybe in the simulator
+
+
+you know exactly where like all the
+
+
+objects are and you have like CAD models
+
+
+of everything but then you want to train
+
+
+a a policy that will run in the real
+
+
+world where that information is not
+
+
+available. What you can do is you can
+
+
+exploit privileged information during
+
+
+training to construct a computational
+
+
+oracle and and that's definitely
+
+
+something you can do. Uh it's just you
+
+
+need a special combination of factors.
+
+
+You basically need something you need
+
+
+some privilege knowledge in training
+
+
+that makes it possible to construct that
+
+
+oracle but makes it impossible to
+
+
+construct it at test time.
+
+
+Uh yeah. So uh in fact there was
+
+
+actually some work on doing this for uh
+
+
+board games and Atari games in the
+
+
+mid2010s using Monte Carlo research to
+
+
+construct uh oracle actions during
+
+
+training and then distill them into a
+
+
+model uh with Dagger. That's definitely
+
+
+something people have done.
+
+
+>> Yes.
+
+
+Yeah.
+
+
+>> And and you mean not when you when do
+
+
+you do you mean when you stop taking
+
+
+more iterations or when do you stop stop
+
+
+like a given trajectory?
+
+
+>> Oh, I see. Uh so in terms of choosing
+
+
+the number of iterations for Dagger um
+
+
+that's often actually pretty
+
+
+straightforward because every iteration
+
+
+of Dagger you collect data from your
+
+
+policy. So that also lets you measure
+
+
+how good your policy is. So you're
+
+
+already gathering the information needed
+
+
+to decide if it's good enough and if
+
+
+it's good enough then you stop and if
+
+
+it's not good enough then you label that
+
+
+and do it again.
+
+
+>> Yes.
+
+
+>> You patch the policy. So is it more
+
+
+about I just include the policy that is
+
+
+not I still
+
+
+mention that you label all
+
+
+>> you take those with a different label
+
+
+policy.
+
+
+>> Oh, I I see. Um
+
+
+>> generally you would want to add
+
+
+everything because even if the policy
+
+
+didn't make a mistake uh you still want
+
+
+to like keep that in the data set so
+
+
+that because if you exclude it then all
+
+
+the other data might cause it to start
+
+
+making a mistake. So you actually want
+
+
+to add everything where you have a
+
+
+label.
+
+
+There's a question here.
+
+
+Uh yeah, this is this is a little bit
+
+
+complicated. So the question for
+
+
+everybody uh that didn't hear is uh does
+
+
+it become exponentially harder to
+
+
+recover from mistakes as the
+
+
+dimensionality of the state space
+
+
+changes? Um I didn't actually show
+
+
+anything about recovering from mistakes
+
+
+but generally we'll actually talk about
+
+
+this more when we talk about
+
+
+reinforcement learning theory uh towards
+
+
+the second half of the course. Typically
+
+
+if you want to show any kind of
+
+
+optimality result uh for kind of general
+
+
+RL problems you'll almost always have a
+
+
+term showing up in your bounds that
+
+
+depends on the number of states. Now in
+
+
+discrete environments it's literally
+
+
+like the number of nodes in your graph.
+
+
+In a continuous environment, if you
+
+
+imagine naively discretizing it, it's
+
+
+going it is going to scale exponentially
+
+
+with the dimensionality and it's very
+
+
+hard in the worst case to get away from
+
+
+some factor that depends on the total
+
+
+number of states in your system.
+
+
+>> Yes.
+
+
+>> Yeah. Yeah. So this is one of those like
+
+
+machine learning details. So in step one
+
+
+at each iteration of Dagger do you throw
+
+
+out your entire policy and train it from
+
+
+scratch that's sometimes called cold
+
+
+starting or do you take your previous
+
+
+policy and just train it some more which
+
+
+is called warm starting. Um as far as
+
+
+the
+
+
+original formulation of the dagger
+
+
+algorithm it doesn't care as long as you
+
+
+can promise me that you're going to get
+
+
+less than epsilon generalization error
+
+
+on indistribution inputs. Uh as far as
+
+
+like actual machine learning it kind of
+
+
+depends. Uh so um what people will
+
+
+actually sometimes do if you have like a
+
+
+a real like industry grade imitation
+
+
+learning problem is you'll have some
+
+
+kind of pre-trained model that you're
+
+
+starting with and then
+
+
+you know it might be like a pre-trained
+
+
+uh image encoder or something and then
+
+
+in step one you would actually fine-tune
+
+
+that model from your data set and what
+
+
+people will often do is they will not
+
+
+cold start it all the way to like
+
+
+totally random weights but they'll
+
+
+revert it to the the pre-trained weights
+
+
+and then fine-tune again. You can do it
+
+
+incrementally, but um and that sometimes
+
+
+works, but if you're expecting to learn
+
+
+something new from those additional
+
+
+aggregated actions, sometimes actually
+
+
+reverting what you learned in step one
+
+
+and doing it again is actually a good
+
+
+idea. Yes.
+
+
+Hold that thought. That's actually what
+
+
+I have on the next slide. Uh so for now,
+
+
+for the basic version of Dagger as it
+
+
+was formulated by Stefon Ross, um the
+
+
+choice of what to label or what the
+
+
+human uh looks at is uh not up to the
+
+
+human. Literally, we we ask the human to
+
+
+label everything that the policy did.
+
+
+But we don't have to do it. And that's
+
+
+what I'll talk about on the next slide.
+
+
+Uh before I get to that, any more
+
+
+questions about this?
+
+
+Okay, so uh let's uh let's proceed. I
+
+
+think we already talked about how we how
+
+
+hard it is to label all this stuff, but
+
+
+let's uh discuss a little variant of
+
+
+Dagger that in practice often ends up
+
+
+being a lot more practical. So the
+
+
+problem with Dagger is this kind of like
+
+
+watching the drone fly on TV and
+
+
+relabeling it post talk with actions is
+
+
+just not like a very convenient thing
+
+
+for most humans to do. It's hard to like
+
+
+watch a car driving, turn the steering
+
+
+wheel to label what's going on, but not
+
+
+actually get feedback from that steering
+
+
+wheel. So, there's a different way of
+
+
+doing Dagger. And the different way of
+
+
+doing it looks like this. Uh, step one
+
+
+is just the same. Train your policy.
+
+
+Then you run your policy. And then you
+
+
+have a person watching like a safety
+
+
+driver and you tell them if you don't
+
+
+like what the policy is doing, take over
+
+
+and start driving yourself.
+
+
+So, you get to choose when to take over.
+
+
+Once you've taken over, the rest of the
+
+
+trajectory is up to you and you're
+
+
+actually controlling the vehicle
+
+
+yourself. Like you take actions and the
+
+
+vehicle actually carries out that action
+
+
+and then you store apologies there's a
+
+
+type that should be O and A and then you
+
+
+store all the observation action tupils
+
+
+uh after the human intervention. So you
+
+
+don't store the things that that the
+
+
+policy did. You only store the the
+
+
+things where where you took over and
+
+
+started giving it actions.
+
+
+Okay.
+
+
+Uh, I can show you some videos of this.
+
+
+Here is a a robot putting a timing belt
+
+
+on some gears. When it turns red, that's
+
+
+when a a person takes over. So red here,
+
+
+there's a person taking over. Or blue is
+
+
+the policy is driving. And they actually
+
+
+go back and forth in this case, even
+
+
+though they're not supposed to. But, you
+
+
+know, Charles didn't listen to my advice
+
+
+and decided to switch both ways. Uh, but
+
+
+uh, yeah. So, that's kind of an
+
+
+illustration of that in action.
+
+
+So you can see that the human and robot
+
+
+collaborating there managed to succeed
+
+
+at the task and that produced lots of uh
+
+
+delightful training data for the robot
+
+
+to then use to improve itself. And it
+
+
+like it looks kind of intuitive, right?
+
+
+Like the robot is trying to do this
+
+
+thing and you're like coaching it a
+
+
+little bit by taking over and showing it
+
+
+how it should correct. And that produces
+
+
+some more data for the robot to use.
+
+
+This is actually not a pure imitation
+
+
+learning algorithm. This actually uses
+
+
+some RL as well but uh roughly the same
+
+
+recipe. Yes.
+
+
+Wait, his version is a lot better.
+
+
+[laughter]
+
+
+There's maybe a moral to that story. Um,
+
+
+yes.
+
+
+Yeah. Okay. So, so this is uh and these
+
+
+two questions, by the way, are related.
+
+
+It's like how do we choose when a person
+
+
+should take over? Um,
+
+
+conventionally when people implement
+
+
+this, what they do is they let a person
+
+
+decide when to intervene. And
+
+
+there is like a a a very non-technical
+
+
+reason for this, which is that people
+
+
+are really smart. And while it might be
+
+
+possible to devise some like
+
+
+statistically really elegant scheme to
+
+
+take over at the ideal time, if a
+
+
+person's already sitting there watching
+
+
+the thing, they're probably going to be
+
+
+better at guessing like based on their
+
+
+knowledge of the robot and the algorithm
+
+
+and the system that this is like a good
+
+
+time to add add more data. So almost
+
+
+always when people do this, they
+
+
+actually have the person decide when to
+
+
+intervene. There's also a practical
+
+
+reason for this in uh safety critical
+
+
+systems. So if you're like driving a
+
+
+car, you really want the safety driver
+
+
+to decide when to take over and not the
+
+
+car itself. So people are often a lot
+
+
+more comfortable with that.
+
+
+Yes.
+
+
+>> Yeah. So, um, the question for those of
+
+
+you that didn't hear is, uh, is this
+
+
+like more about recoveries versus just
+
+
+producing optimal demonstrations because
+
+
+presumably a person is only going to
+
+
+intervene like once something bad has
+
+
+already happened. So, they're really
+
+
+showing how to fix the mistake rather
+
+
+than how to not take it in the first
+
+
+place. Um, and that's true. And I think
+
+
+this is a place where also there's like
+
+
+a again a little bit of a discrepancy
+
+
+between the theory and the practice. Uh,
+
+
+we'll come back to the theory part of
+
+
+this, but yeah, in practice what you
+
+
+said is completely correct.
+
+
+>> Yes,
+
+
+>> it seems like
+
+
+Yeah. So the question is is this like a
+
+
+worse version of Dagger? Is it like some
+
+
+kind of compromise? It's very hard to
+
+
+answer that question because it's very
+
+
+domain dependent. So uh you can you can
+
+
+construct cases where this is a very bad
+
+
+thing especially if you make some uh bad
+
+
+assumptions about when the person
+
+
+chooses to intervene. You could also
+
+
+construct settings where it doesn't
+
+
+matter. Actually maybe a question that
+
+
+would that I would ask all of you here
+
+
+uh to think about is is there some way
+
+
+that I can set up this algorithm uh so
+
+
+that it is guaranteed to address the
+
+
+distributional shift uh issue. So this
+
+
+is something that I'd like all of you to
+
+
+take a moment to think about. Obviously,
+
+
+there's a version of it that does not
+
+
+work. Like if the human decides when to
+
+
+intervene and they decide never to
+
+
+intervene, then clearly this will not
+
+
+work. But there might be some conditions
+
+
+under which this would do more or less
+
+
+the same thing as regular dagger. And I
+
+
+wonder if any of you guys want to raise
+
+
+your hand and tell me uh how we can sort
+
+
+of reduce this method to regular dagger
+
+
+such that the distribution of
+
+
+observations and actions we get is
+
+
+basically the same as what we would have
+
+
+gotten with the original algorithm. Yes.
+
+
+>> Of of what in particular? What do we
+
+
+uniformly randomly sample?
+
+
+>> Right. So the the answer was well what
+
+
+if you just choose little t to be
+
+
+uniformly at random? So if you choose
+
+
+little t to be uniformly at random um
+
+
+here's a way here's like a a rough
+
+
+sketch of how you can think about this
+
+
+being equivalent. If t is chosen at
+
+
+random, you're essentially labeling a a
+
+
+single random observation in the robot's
+
+
+trajectory, you're then adding a whole
+
+
+bunch of other labels so that the human
+
+
+does. But the important thing is that at
+
+
+least well, not at least like exactly
+
+
+one time step in the robot's trajectory
+
+
+gets a ground truth label. So if you
+
+
+just generate enough trajectories,
+
+
+eventually everything gets labeled.
+
+
+The worst case of this you could imagine
+
+
+might be like incredibly inefficient
+
+
+because you're producing like capital H
+
+
+time steps and only one of them gets
+
+
+labeled but it's still statistically the
+
+
+same. So as long as the human is not too
+
+
+pathological in which time step they
+
+
+choose to label, you will essentially
+
+
+get the same thing because you'll you'll
+
+
+label the same data. Now in reality
+
+
+people are a little pathological because
+
+
+they're probably never going to take
+
+
+over and label a step where the robot
+
+
+does something reasonable. So as to the
+
+
+earlier question, they might very
+
+
+heavily bias towards taking over after a
+
+
+mistake has already happened. But uh if
+
+
+they're as long as they're not like
+
+
+completely pathological, everything
+
+
+eventually gets late.
+
+
+>> Yes.
+
+
+Yeah. So there's all sorts of stuff like
+
+
+that that that you could do. Uh this is
+
+
+um
+
+
+there there has been some work on this.
+
+
+Uh and there's all sorts of like clever
+
+
+designs like you know you could imagine
+
+
+that maybe like the optimal time to
+
+
+intervene is if you have an estimate of
+
+
+how well the robot will do and you
+
+
+intervene exactly when that estimate
+
+
+tells you that it might do something
+
+
+bad. So there's all sorts of like
+
+
+adaptive rules you can design and people
+
+
+have worked on this. Part of why it
+
+
+hasn't really caught on in practice is
+
+
+that again when you have a person
+
+
+sitting there and actually doing it
+
+
+themselves, the person is probably
+
+
+smarter than your algorithm. So just
+
+
+letting them decide often works better.
+
+
+>> Yeah.
+
+
+>> Yeah. So uh the question was does it
+
+
+matter like who who's providing the
+
+
+labels? Do you want to like mix multiple
+
+
+human experts or keep it really
+
+
+consistent? That answer is very domain
+
+
+dependent. So like the answer will be
+
+
+very different if you're doing like
+
+
+training of language models with like
+
+
+humans taking over and writing
+
+
+completions versus if you're controlling
+
+
+a robot. Um typically what I would say
+
+
+is that uh if uh if you're doing this
+
+
+kind of like very precise continuous
+
+
+control you would probably really value
+
+
+consistency. If you want very very broad
+
+
+generalization then you would value
+
+
+diversity.
+
+
+Um here's another video. This is a robot
+
+
+uh folding a box and when the screen
+
+
+turns red that there's a person that
+
+
+intervenes. So here a person is
+
+
+intervening and helping it fix a mistake
+
+
+with folding the box and then when it
+
+
+turns uh green it'll be back to
+
+
+autonomous.
+
+
+So here basically the the person decided
+
+
+through their intuition that they should
+
+
+take over and separate out. There's
+
+
+actually two boxes stuck together.
+
+
+Separate out the second one. Then they
+
+
+actually took over again. Takes them a
+
+
+little while to get through this.
+
+
+And here, you know, watching this kind
+
+
+of video might kind of give you an
+
+
+appreciation for how messy this actually
+
+
+is in practice because probably this
+
+
+intervention is very far from optimal
+
+
+and it's just kind of like getting it
+
+
+out of trouble. So there it figured out,
+
+
+okay, there's two bucks and now the
+
+
+policy is running autonomously and from
+
+
+here the person is smart enough to know
+
+
+that maybe it can kind of sort of get
+
+
+out on its own.
+
+
+and also like
+
+
+just certain.
+
+
+>> Yeah. So the question was like well
+
+
+should the person take over and then
+
+
+control the rest of the trajectory or is
+
+
+it okay to switch back? The reason that
+
+
+it's kind of hard to say what happens
+
+
+when you switch back is that you get a
+
+
+state distribution as like a mixture of
+
+
+these two policies and it's uh it's very
+
+
+hard to articulate like what happens at
+
+
+that point. Uh I think with like a
+
+
+little bit of time we could analyze it
+
+
+and figure it out but it makes things
+
+
+kind of messy. In practice it's a pretty
+
+
+common choice to do that but I don't
+
+
+know what to say about like what
+
+
+happens.
+
+
+Um, all right. So, just to recap and
+
+
+wrap up for today, uh, we talked about
+
+
+how behavioral cloning is essentially
+
+
+supervised learning applied to the
+
+
+problem of control. In practice, there's
+
+
+all sorts of tricks that make it work
+
+
+well. We can also use a different
+
+
+algorithm like Dagger to have some
+
+
+guarantee that it will work well. And we
+
+
+can have all sorts of heruristic tricks
+
+
+like putting three cameras on your car
+
+
+or more likely uh, getting the right
+
+
+data set. But in theory, uh, behavioral
+
+
+cloning is, uh, has these unfavorable
+
+
+scaling properties. Next week on
+
+
+Wednesday, we'll talk about how we can
+
+
+design models for behavioral cloning to
+
+
+make it work well and learn about a few
+
+
+other variants. Uh, thank you and see
+
+
+you next week.

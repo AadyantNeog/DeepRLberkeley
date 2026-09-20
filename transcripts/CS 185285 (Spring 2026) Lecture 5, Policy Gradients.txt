@@ -1,0 +1,4843 @@
+Turns out the key is to unplug it and
+
+
+plug it back in three times.
+
+
+Not two times, three times.
+
+
+Yeah, exactly.
+
+
+It's It's not Markovian.
+
+
+This is This is what We We need to apply
+
+
+what we learned.
+
+
+You are the technician?
+
+
+Well, I got it to work through the the
+
+
+VGA.
+
+
+>> [clears throat]
+
+
+>> All right, folks. Let's get started. Uh
+
+
+please find a seat and um we will begin
+
+
+shortly.
+
+
+So, before we start the main programming
+
+
+of the day, uh very important
+
+
+announcement. Uh hopefully all of you
+
+
+saw this on Ed, but if you didn't, um
+
+
+exam date, Tuesday, April 14th, 7:00
+
+
+p.m. Uh you should mark it in your
+
+
+calendars and make sure that you are in
+
+
+Berkeley and able to go to the exam.
+
+
+Uh
+
+
+that's the room. Uh I mean, the room is
+
+
+less important than the time, but make
+
+
+sure that you are available at this time
+
+
+and will be present for the exam.
+
+
+All right.
+
+
+Now, on to the main material of the day.
+
+
+Uh today we're going to learn about
+
+
+policy gradients. This is the first RL
+
+
+algorithm we'll learn about.
+
+
+When I um started teaching this course
+
+
+about 10 years ago,
+
+
+most RL classes at the times didn't
+
+
+start with policy gradients. They
+
+
+started with other topics, and it was
+
+
+actually like a little bit esoteric to
+
+
+start with policy gradients because back
+
+
+then, that's not the method that most
+
+
+people would have used. Uh but these
+
+
+days, actually, policy gradients are
+
+
+probably one of the most widely used
+
+
+classes of methods. Um
+
+
+in fact, there's a very high chance that
+
+
+you will have interacted with a system
+
+
+that was trained with RL using policy
+
+
+gradient in your recent past. Um
+
+
+actually, maybe this is like a fun
+
+
+little exercise to do with everybody. Um
+
+
+the hint I have for you guys is that
+
+
+there are two types of RL systems that I
+
+
+suspect all or most of you interact with
+
+
+on a regular basis. Two two different
+
+
+types. One of them is trained with
+
+
+policy gradients.
+
+
+Um the other one not necessarily. Does
+
+
+anyone have a guess as to what
+
+
+the two RL trained systems
+
+
+that you guys are most likely to
+
+
+interact with might be?
+
+
+Okay, so one answer here is language
+
+
+models. That's the one that's probably
+
+
+trained with policy gradients. So,
+
+
+that's one. Now, there is another one.
+
+
+There's another system that you're
+
+
+likely to have interacted with
+
+
+maybe even more often than language
+
+
+models that is trained with
+
+
+reinforcement learning.
+
+
+Does anyone have a guess? Yeah?
+
+
+>> Recommendation
+
+
+>> Recommendation systems. That's right.
+
+
+So, if you see an ad on the internet, if
+
+
+you get a recommendation on like Netflix
+
+
+or YouTube, that is a system trained
+
+
+with RL.
+
+
+It is trained
+
+
+with RL probably based on some profile
+
+
+that it has of you as an individual to
+
+
+suggest really good ads or videos or or
+
+
+whatever.
+
+
+Uh so, that's the other RL system you're
+
+
+likely to interact with on on a daily
+
+
+basis.
+
+
+Uh that one typically is not trained
+
+
+with uh policy gradients, but the
+
+
+language models are.
+
+
+All right. So, let's start.
+
+
+Last time when we talked about the
+
+
+objective of reinforcement learning,
+
+
+uh we uh wrote down the subjective, the
+
+
+total reward that your agent accumulates
+
+
+over the course of a trajectory.
+
+
+Uh and we talked about how the
+
+
+distribution that this expectation is
+
+
+taken under is the trajectory
+
+
+distribution. So, it's a probability
+
+
+distribution over sequence of states and
+
+
+actions, and it is determined by your
+
+
+MDP and by your policy. So, I'm going to
+
+
+write it as P subscript theta just to
+
+
+make it clear that depends on theta, and
+
+
+theta represents the parameters of your
+
+
+policy, which in deep RL would be like a
+
+
+big neural network.
+
+
+So, by the chain rule of probability and
+
+
+based on the conditional independencies
+
+
+in the MDP, you can write out the
+
+
+trajectory distribution as a product of
+
+
+uh the initial state probability, the
+
+
+policy, and the transition
+
+
+probabilities.
+
+
+We also talked about how
+
+
+all our algorithms that we learn about
+
+
+have three basic parts. They have the
+
+
+the orange part, the green part, and the
+
+
+blue part. The part where they generate
+
+
+samples, the part where they do
+
+
+something to analyze those samples, some
+
+
+kind of modeling step, and the part
+
+
+where they use the result of that
+
+
+modeling to improve the policy.
+
+
+And policy gradient methods which we'll
+
+
+learn about today, they have a very
+
+
+simple modeling step. They basically
+
+
+just
+
+
+compute the reward of each
+
+
+generated trajectory. So, the modeling
+
+
+step is just a summation sign. Sum up
+
+
+the rewards of the trajectories you've
+
+
+seen over all of your samples.
+
+
+And that gives you an estimate of the
+
+
+average reward of your policy.
+
+
+And then the improvement step is to
+
+
+compute a gradient of this quantity
+
+
+and take a gradient ascent step. Because
+
+
+if you're trying to maximize that
+
+
+objective, you want gradient ascent. So,
+
+
+if you can calculate the gradient of the
+
+
+expected return and then take a small
+
+
+step in that direction, then you should
+
+
+get a parameter vector corresponding to
+
+
+a better policy.
+
+
+So,
+
+
+we're going to use J of theta as a
+
+
+shorthand to represent this objective.
+
+
+And if we want to evaluate the
+
+
+objective, meaning you just want to find
+
+
+out how good your policy is,
+
+
+then what you're going to do is you're
+
+
+going to generate samples from that
+
+
+policy, like literally run it out in the
+
+
+world, get a bunch of these samples, and
+
+
+for each sample, you will add up the
+
+
+reward along that trajectory, average
+
+
+those together, and that gets you an
+
+
+unbiased estimator of the expected
+
+
+reward. So, I'm going to sum up the
+
+
+rewards of these things. Maybe the green
+
+
+check mark, that's a good one. The red X
+
+
+is a bad one, and the orange one is
+
+
+somewhere in between. And then I'm going
+
+
+going over those samples, and that gets
+
+
+me my expected
+
+
+return, my expected reward.
+
+
+So, if I want the gradient of this
+
+
+thing, uh maybe my first idea is um
+
+
+well, we learned about PyTorch in
+
+
+section last week, so why don't I just
+
+
+like
+
+
+code that up in PyTorch, and then use
+
+
+PyTorch to compute the gradient of that
+
+
+thing.
+
+
+So, if I were to do that, so here's my
+
+
+hypothetical computer program, run the
+
+
+policy in my simulator,
+
+
+get a bunch of these trajectories,
+
+
+sequences of states and actions, for
+
+
+each one
+
+
+evaluate the reward of all the states
+
+
+and actions in the sequence, sum up the
+
+
+rewards,
+
+
+implement that in PyTorch, and ask
+
+
+PyTorch to compute its gradient.
+
+
+Is that going to work?
+
+
+Okay, so a lot of people are are
+
+
+vigorously uh
+
+
+uh disagreeing with this statement. Does
+
+
+anyone want to give me an explanation
+
+
+for why it won't work?
+
+
+Yes.
+
+
+Okay, so one answer is that it's
+
+
+intractable to compute over all
+
+
+trajectories. That is true, but I'm not
+
+
+going to compute it over all
+
+
+trajectories. I'm going to generate 20
+
+
+samples, and literally implement that
+
+
+formula.
+
+
+Yes, back there.
+
+
+>> Um your reward function
+
+
+uh might not be differentiable.
+
+
+>> Okay, so one possibility is my reward
+
+
+function might not be differentiable.
+
+
+That's okay, I'm going to let let let's
+
+
+say I'm going to use a simple quadratic
+
+
+reward. So, my reward function is
+
+
+differentiable with respect to states
+
+
+and actions. Yes, over there.
+
+
+>> If you were to take the average
+
+
+um average action that we take in the
+
+
+past
+
+
+>> Uh
+
+
+not quite. Any other ideas?
+
+
+So, just to make it very explicit what
+
+
+my computer program is doing. Number
+
+
+one, take my policy and run it through
+
+
+the simulator. So, there's a a a little
+
+
+loop over H time steps. Every time step,
+
+
+I ask the simulator for a state, I ask
+
+
+my policy for an action, I ask the
+
+
+simulator to get me the next state.
+
+
+Step two, take the resulting
+
+
+state-action sequences,
+
+
+evaluate the reward of each one, sum
+
+
+them together. Step three, ask PyTorch
+
+
+to give me a gradient with respect to
+
+
+theta.
+
+
+Yes.
+
+
+>> Part of this
+
+
+of this whole pipeline is like the real
+
+
+world dynamic. How is PyTorch going to
+
+
+agree and
+
+
+>> Exactly. Yeah, so the answer for those
+
+
+of you that didn't hear is that well,
+
+
+the problem was there in step one. In
+
+
+step one, the way that I got my sequence
+
+
+of states and actions is I took the
+
+
+action from my policy and I gave it to
+
+
+some kind of dynamical system. Maybe
+
+
+it's a simulator, maybe it's actually
+
+
+running something in the real world.
+
+
+PyTorch has no idea what that thing is
+
+
+doing. So, as far as PyTorch is
+
+
+concerned, that's a non-differentiable
+
+
+black box.
+
+
+So, PyTorch will happily compute
+
+
+gradients of R with respect to S and A,
+
+
+except that I want the gradient with
+
+
+respect to theta.
+
+
+So, if I ask PyTorch to compute the
+
+
+gradient with respect to theta, it'll
+
+
+tell me the gradient is zero because as
+
+
+far as PyTorch is concerned, that step
+
+
+that produced the next state given the
+
+
+previous state and action is not
+
+
+something that it has any awareness of.
+
+
+So, we need to do something else. Uh
+
+
+yes.
+
+
+>> Um is it only because it's from the real
+
+
+world or is are there any problems from
+
+
+uh sampling it from like a stochastic
+
+
+>> Right. So, there's a little bit of
+
+
+nuance there, which is if you are
+
+
+extremely clever, you can actually
+
+
+implement a simulator that is itself
+
+
+differentiable. Like you could write
+
+
+your entire simulator in PyTorch. People
+
+
+have actually done this. Um there's all
+
+
+sorts of other problems that will happen
+
+
+if you do that, uh but it's not
+
+
+technically incorrect. The problem you
+
+
+get is that you will often have uh
+
+
+numerically very ill-behaved gradients.
+
+
+That we'll learn about much later in the
+
+
+course when we talk about model-based
+
+
+RL. But yes, it is technically possible.
+
+
+But the simulator that you guys are
+
+
+using for homework one and homework two
+
+
+definitely does not support that.
+
+
+And
+
+
+no real world system supports that, of
+
+
+course.
+
+
+Okay. So, let's talk about the actual
+
+
+correct way to differentiate this
+
+
+objective with respect to your samples.
+
+
+Basically, there's a little This is
+
+
+where a lot of kind of math comes to our
+
+
+rescue.
+
+
+There are two different ways to compute
+
+
+derivatives uh through
+
+
+um stochastic processes.
+
+
+There is the standard way, which is
+
+
+sometimes called uh
+
+
+uh pathwise derivatives, and that's what
+
+
+PyTorch does for you. It's basically
+
+
+backpropagation. And then there's a
+
+
+different way of doing it, sometimes
+
+
+called likelihood ratio, that works
+
+
+really well for
+
+
+differentiating expectations like this.
+
+
+And here's how it works.
+
+
+So, I'm going to use a little bit of
+
+
+shorthand uh just to make the notation
+
+
+cleaner. Whenever I write R of tau,
+
+
+that's really just a substitute for the
+
+
+sum over all the time steps in
+
+
+trajectory tau of the reward at every
+
+
+step. So, if you see R of tau, just it's
+
+
+just that sum. And that's just so that
+
+
+the notation is cleaner.
+
+
+And when I write P of tau, remember
+
+
+that's that
+
+
+that that big distribution that I uh
+
+
+wrote out by the chain rule of
+
+
+probability.
+
+
+Okay. So,
+
+
+now, assuming everything is continuous,
+
+
+for discrete this would be a sum, but
+
+
+for continuous stuff it'll be an
+
+
+integral. The expected value is just an
+
+
+integral over all the taus of the
+
+
+probability of that tau times the reward
+
+
+of that tau. Okay?
+
+
+And now I want the derivative of this
+
+
+with respect to theta.
+
+
+And it's the P theta tau that depends on
+
+
+theta. So, that's where the derivative
+
+
+is going to flow through.
+
+
+So,
+
+
+um since uh expectation is a linear
+
+
+operator, I can push the derivative
+
+
+inside the integral.
+
+
+So, that's that's that.
+
+
+Uh and now I'm going to introduce a
+
+
+really clever and convenient identity.
+
+
+Let's take this expression, P of tau
+
+
+times grad log P of tau.
+
+
+You will find out later why there's a
+
+
+log in there. Uh if we open up our
+
+
+calculus textbook, and we look up how to
+
+
+how to write down a derivative of a
+
+
+logarithm,
+
+
+we'll just substitute that formula in
+
+
+there. So, grad log p of tau is just
+
+
+grad p of tau divided by p of tau.
+
+
+That's just the formula for the
+
+
+derivative of logarithm.
+
+
+And now you'll notice that there's a
+
+
+obvious cancellation going on because
+
+
+I started with p of tau times grad log p
+
+
+of tau. If I substitute in the formula,
+
+
+then I get p of tau and then I get a one
+
+
+over p of tau, so those cancel out. So,
+
+
+this is equal to grad p of tau.
+
+
+Now Now, hopefully it's obvious why I
+
+
+want to use this identity because I have
+
+
+a grad p of tau over there and this
+
+
+identity gave me an expression for it.
+
+
+So, now I can substitute that in.
+
+
+So, this is the blue thing. This is the
+
+
+yellow thing. Substitute it in. And now
+
+
+this is equal to p of tau times grad log
+
+
+p of tau times r of tau.
+
+
+And I'm very happy about this
+
+
+expression.
+
+
+Does anyone have any idea why I'm so
+
+
+happy about this? Yes.
+
+
+>> related to maximum likelihood
+
+
+>> Exactly. So, notice that this is now an
+
+
+integral of p of tau times something and
+
+
+that means that it's an expected value.
+
+
+So, this is the expected value with with
+
+
+respect to p of tau of grad log p of tau
+
+
+times r of tau. And that is very very
+
+
+good because I already saw how I can I I
+
+
+can estimate expected values under p of
+
+
+tau. I can do it just by sampling
+
+
+trajectories and then summing up the
+
+
+stuff inside the expectation over those
+
+
+trajectories.
+
+
+So, this is this is a little bit of
+
+
+mathematics, but I want everybody to
+
+
+pause for a second and um
+
+
+just look at this and appreciate its
+
+
+elegance, so to speak, because I went
+
+
+from a problem where I was struggling to
+
+
+compute my derivatives with auto diff to
+
+
+a problem where I can now express my
+
+
+derivative as an expected value under p
+
+
+of tau and I know that I can estimate
+
+
+those expectations just by sampling
+
+
+trajectories.
+
+
+Yes.
+
+
+>> In the place where you talked about the
+
+
+integral of grad p of do we need like
+
+
+any like regularity or like boundedness?
+
+
+Is this
+
+
+>> No, so expectation is is linear and the
+
+
+derivative differentiation is also
+
+
+linear, so you can always swap them.
+
+
+Yes.
+
+
+>> How do you calculate those like
+
+
+gradients locally?
+
+
+>> Yeah, good question. So, the question
+
+
+was how do you calculate grad log p of
+
+
+tau? That is the one remaining secret
+
+
+because remember p of tau has like all
+
+
+that stuff in there. It's like the
+
+
+initial state probability times the
+
+
+transition probability times the policy
+
+
+probabilities. So, we're not done yet.
+
+
+We're we're not fully out of the woods,
+
+
+but we're almost there.
+
+
+Any more questions? This is By the way,
+
+
+in today's lecture, this is the single
+
+
+most important slide.
+
+
+If there's nothing else you remember,
+
+
+like just remember this slide.
+
+
+>> [clears throat]
+
+
+>> And that's like a hint. That's code for
+
+
+it'll be on the exam.
+
+
+This is probably the single most
+
+
+important formula in reinforcement
+
+
+learning, by the way.
+
+
+Sometimes called the policy gradients
+
+
+theorem.
+
+
+Okay, good. So, I'm going to assume that
+
+
+everybody understands exactly what this
+
+
+is saying and that if I ask you an exam
+
+
+question, then you will get the A+ on
+
+
+this.
+
+
+Now Now let's get let's do that last
+
+
+final step.
+
+
+So, this is how far we got.
+
+
+And uh
+
+
+of course, there's one remaining
+
+
+challenge, which is log p of tau
+
+
+is still a little bit complicated. So,
+
+
+this is my expression for p of tau. If I
+
+
+take the logarithm of that,
+
+
+when you take the logarithm of a
+
+
+product, you get a sum of logarithms.
+
+
+So, log p of tau, you just replace all
+
+
+the multiplications by summations. It's
+
+
+the log probability of the initial state
+
+
+plus a sum over all the time steps of
+
+
+the log probability of the policy plus
+
+
+the log probability of the transitions.
+
+
+And now I want the gradient of that with
+
+
+respect to theta.
+
+
+Okay, so this is another kind of little
+
+
+calculus test. Uh, imagine I'm going to
+
+
+take the gradient of this whole thing
+
+
+with respect to theta.
+
+
+So, there it is and there's a gradient.
+
+
+So, now let's go through this. What is
+
+
+the gradient with respect to theta of
+
+
+log P of S1?
+
+
+>> [clears throat]
+
+
+>> Anybody want to tell me?
+
+
+>> Zero.
+
+
+>> Zero, okay. Uh so, why is it zero? Well,
+
+
+because
+
+
+the probability of your initial state
+
+
+doesn't depend on your policy. So, that
+
+
+term goes to zero.
+
+
+Um the probability of the transitions,
+
+
+log P of St + 1 given St At, also goes
+
+
+to zero because your probability of a
+
+
+transition doesn't depend on which
+
+
+policy you're using.
+
+
+So, the only term that's left is
+
+
+actually the policy probability and
+
+
+that's awfully convenient because that's
+
+
+the only thing we know.
+
+
+So, now you can just substitute that in
+
+
+and uh now I'm going to expand R of tau
+
+
+as well just to make this explicit. The
+
+
+gradient of J of theta
+
+
+is an expectation under your trajectory
+
+
+distribution of the sum over all your
+
+
+time steps of grad log pi times the sum
+
+
+over all your time steps of R.
+
+
+So, that is really, really nice because
+
+
+now inside of that expectation all those
+
+
+things I know. I have them in my
+
+
+computer and the expectation is under P
+
+
+of tau and I know how to estimate such
+
+
+expectations because I can do it just by
+
+
+running my policy and generating
+
+
+samples.
+
+
+Any questions about this?
+
+
+Okay, so this is the second most
+
+
+important slide.
+
+
+Yes.
+
+
+>> Where where did the R sum over the
+
+
+rewards come from?
+
+
+>> Oh, R of tau is literally defined as
+
+
+that sum.
+
+
+So, R of tau, you can think of it as
+
+
+just a shorthand for sum over all the
+
+
+time steps of the reward of
+
+
+St At.
+
+
+Okay, any other questions?
+
+
+If you believe that if if I now do a
+
+
+closed book quiz and ask you to write
+
+
+this out, then you will not be able to
+
+
+do so, then you should ask a question
+
+
+right now.
+
+
+Because you're probably not the only one
+
+
+with such a question.
+
+
+Yes.
+
+
+>> Why did we log both sides again?
+
+
+>> Why do we take the log of both sides?
+
+
+Because what we want is log p theta of
+
+
+tau, that that thing underlined in
+
+
+green. So, what I did there is I wrote
+
+
+out p
+
+
+p of tau and then I took the log of it.
+
+
+Okay.
+
+
+So, now we we basically already know
+
+
+what's coming. Uh, remember if you want
+
+
+to evaluate the objective, you take a
+
+
+bunch of samples. So, if you want to
+
+
+evaluate the gradient, same exact thing.
+
+
+Take a bunch of samples and then average
+
+
+together the stuff inside the
+
+
+expectation over those samples. And this
+
+
+is an operation that you can do in a
+
+
+computer. So, this is an an actual
+
+
+well-defined algorithm. And once you've
+
+
+done that, you have an unbiased estimate
+
+
+of the gradient of J theta. So, then if
+
+
+you want to improve your policy, just
+
+
+take a small step in the direction of
+
+
+grad J theta and you will get a better
+
+
+policy.
+
+
+So, now if we go back to our anatomy
+
+
+picture, orange
+
+
+square take samples, green square
+
+
+compute the those sums,
+
+
+uh, blue square
+
+
+take a step in the gradient direction.
+
+
+This is an algorithm called reinforce.
+
+
+Uh, believe it or not, reinforce is
+
+
+actually a really tortured acronym. Uh,
+
+
+don't ask me what it stands for, I don't
+
+
+remember, but uh, this is a a very
+
+
+well-known RL algorithm.
+
+
+And
+
+
+very very simple.
+
+
+Sample from your policy, step one, step
+
+
+two, use that estimator to compute a
+
+
+gradient, and then step three, take a
+
+
+step in the direction of the gradient.
+
+
+So, this is the
+
+
+uh, the first RL algorithm that we've
+
+
+officially learned about. And at this
+
+
+point, this is the bare minimum that you
+
+
+need to go and code this up.
+
+
+Yes.
+
+
+>> Where does the probability go when we do
+
+
+that
+
+
+like
+
+
+when we are calculating like expectation
+
+
+at that third line?
+
+
+>> Um
+
+
+So, you mean uh going from the second
+
+
+line to the third line?
+
+
+>> Yeah, yeah.
+
+
+>> Okay. So, going from the second line to
+
+
+the third line, what we're doing is
+
+
+we're estimating the expected value of
+
+
+some quantity by generating samples from
+
+
+the distribution under which we're
+
+
+taking the expectation and then
+
+
+averaging together that quantity for
+
+
+those samples. So, like if if I want to
+
+
+figure out the expected value of the age
+
+
+of people in this room, uh what I can do
+
+
+is I can randomly sample uh a subset of
+
+
+you guys, ask you your age, and average
+
+
+that together, and that is an unbiased
+
+
+estimate of the average age.
+
+
+Yes.
+
+
+>> If different trajectories have like
+
+
+different probabilities of occurring,
+
+
+>> Mhm.
+
+
+>> why don't we just average them all out
+
+
+to be like one over n?
+
+
+n is the number of all of
+
+
+>> So, if you could enumerate all possible
+
+
+trajectories, then what you could do is
+
+
+you could sum over all possible
+
+
+trajectories
+
+
+and put in their probability in there.
+
+
+We actually don't want to do that
+
+
+because we typically don't know the
+
+
+probability of a trajectory. So, what we
+
+
+assume is we have access to to the real
+
+
+world. So, we can run stuff in the real
+
+
+world and we can get samples. But, we
+
+
+actually don't know how likely those
+
+
+samples are. We can just generate them.
+
+
+So, we would actually rather have a
+
+
+sampling-based method than an explicit
+
+
+enumeration method. Back there?
+
+
+>> Like, if you give the transition
+
+
+like the math magic that we've removed
+
+
+the dependence on that real world
+
+
+transition from the states, and now we
+
+
+can compute grad J
+
+
+just dependent on our policy that we
+
+
+know and the reward function that we
+
+
+made up from that.
+
+
+>> That's exactly right. And the dependence
+
+
+on the real world is still there. It's
+
+
+just coming through the samples.
+
+
+Because the samples come from
+
+
+interactions with the real world. And
+
+
+it's also crucially dependent on those
+
+
+samples being produced by a particular
+
+
+policy.
+
+
+So, the reason that this is the gradient
+
+
+uh of with respect to theta and not some
+
+
+other policy is that we generate the
+
+
+samples using that policy.
+
+
+There's another question?
+
+
+>> Yeah,
+
+
+so
+
+
+does if our reward function is like
+
+
+jumps around a lot more to really large
+
+
+values and really small values,
+
+
+uh is this a less stable algorithm?
+
+
+>> Yes, it is and I will talk about that
+
+
+later. Very good observation. So, the
+
+
+the dark side of this algorithm as a
+
+
+preview is that it is quite hard to
+
+
+stabilize and the technical reason for
+
+
+it is high variance. Uh
+
+
+don't worry about that yet, we'll talk
+
+
+about that shortly.
+
+
+Yes.
+
+
+>> So, how do you calculate that term right
+
+
+now given
+
+
+>> [clears throat]
+
+
+>> you probably have like all your
+
+
+probability, right? I mean
+
+
+like the policy.
+
+
+>> The sum over the grad log pies.
+
+
+>> Yeah, yeah, like we can the reason why
+
+
+you can actually calculate the
+
+
+gradient for the P of tau is because of
+
+
+the probability transition.
+
+
+>> Yeah.
+
+
+>> But that thing doesn't matter to the
+
+
+theta itself, right?
+
+
+>> That's right. So, these grad log pies,
+
+
+these this is literally just the
+
+
+probability produced by your neural
+
+
+network. So, this would be like the
+
+
+gradient of the cross entropy loss.
+
+
+>> Oh, okay.
+
+
+>> And we'll come back to that in a second.
+
+
+Yes.
+
+
+>> Yeah, that's a clarification. Why are
+
+
+you taking the average
+
+
+>> Say that again?
+
+
+>> Why you don't take one over N over the
+
+
+gradient?
+
+
+>> Oh, that's a typo. But one over N
+
+
+fortunately is a constant so the
+
+
+gradient still points in the right
+
+
+direction.
+
+
+Yeah, it's a ty- it's a typo.
+
+
+Okay. Uh let's talk about understanding
+
+
+the policy gradient a little bit. So,
+
+
+we've actually already learned the main
+
+
+technical thing and now basically the
+
+
+rest of the lecture is about
+
+
+understanding what to do with this
+
+
+thing.
+
+
+So,
+
+
+um
+
+
+this is the the gradient expression uh
+
+
+for as a reminder, pi theta is a neural
+
+
+network that's going to map your states
+
+
+to your actions. So, if you're doing
+
+
+driving, maybe it takes in the images
+
+
+and produces actions. And what I want to
+
+
+talk about next is this log pi thingy.
+
+
+Like, what is log pi, Uh
+
+
+how do we implement it, all that kind of
+
+
+stuff.
+
+
+So, one thing that's really convenient
+
+
+to write side by side is we've got our
+
+
+policy gradient expression. Let's write
+
+
+it next to the gradient of the maximum
+
+
+likelihood objective, the standard
+
+
+supervised learning objective.
+
+
+So, if I if I'm doing supervised
+
+
+learning like the imitation learning
+
+
+stuff we learned about before, I can
+
+
+also write the gradient of that and it
+
+
+looks very similar. So, the gradient of
+
+
+the log probabilities of all the actions
+
+
+in a data set is just the sum over all
+
+
+of my trajectories, the sum over all the
+
+
+time steps of grad log pi. The policy
+
+
+gradient is just like that, except that
+
+
+for every trajectory I'm multiplying by
+
+
+the total reward of that trajectory.
+
+
+And maybe this gives us like a little
+
+
+bit of intuition about what's going on
+
+
+because with maximum likelihood, you're
+
+
+trying to make all of the actions in
+
+
+your data set more probable.
+
+
+With this thing, you're making some of
+
+
+them more probable and some of them less
+
+
+probable depending on what the reward of
+
+
+that trajectory is. So, if I have a
+
+
+trajectory with a really negative
+
+
+reward, I'm going to make it less
+
+
+probable. If I have a trajectory with a
+
+
+very positive reward, I'm going to make
+
+
+it more probable. And that kind of makes
+
+
+sense. Like I want to make the good
+
+
+stuff more likely and the bad stuff less
+
+
+likely.
+
+
+Now,
+
+
+what is this log pi? Well,
+
+
+that's basically the same as as our
+
+
+discussion in
+
+
+as in imitation learning. So, if you
+
+
+have a continuous task like this running
+
+
+humanoid, then maybe pi is a Gaussian
+
+
+distribution, a multivariate normal
+
+
+distribution where your neural network
+
+
+produces the mean of that distribution.
+
+
+So, in that case,
+
+
+log pi is -1/2 * the squared difference
+
+
+between these things under the
+
+
+inverse covariance matrix. And if you
+
+
+take the derivative of that, then you
+
+
+get -1/2 * the inverse covariance * f of
+
+
+s - a of s
+
+
+Sorry, f of s t - a t * the derivative
+
+
+of your neural network. And back
+
+
+propagation will calculate this for you.
+
+
+So you basically back propagate that uh
+
+
+that error and then multiply by the
+
+
+total reward. Yes?
+
+
+>> Going back to the previous slide, is it
+
+
+like necessary to have a reward function
+
+
+that's always negative value?
+
+
+>> Hold that question. I'm actually going
+
+
+to come back to it. Uh so but you're
+
+
+making a very good observation which is
+
+
+that well, I one way I could rephrase it
+
+
+you could take your reward function and
+
+
+just add like a million to everything.
+
+
+That doesn't change the task but now all
+
+
+the multipliers are positive. So I'll
+
+
+come back to that. That that is a real
+
+
+problem.
+
+
+Okay. So
+
+
+So that's if you have continuous
+
+
+actions, if you have discrete actions,
+
+
+then as I talked about before, your
+
+
+neural network is outputting logits
+
+
+which you plug into a soft max
+
+
+that translates to cross entropy loss
+
+
+and same exact thing. Use auto diff to
+
+
+compute the gradient of your cross
+
+
+entropy loss but just multiply
+
+
+everything by those total rewards.
+
+
+So so that's the method. Um
+
+
+Any questions about what log pi means?
+
+
+Yes.
+
+
+>> I have a little bit of context to do
+
+
+with the
+
+
+gradient.
+
+
+>> What's that?
+
+
+>> The the hat over there. Like a constant.
+
+
+It doesn't matter that much but
+
+
+>> Oh, yes. Yeah, yeah. There's a constant.
+
+
+Okay. So now let's try to interpret what
+
+
+we just did.
+
+
+Um so uh again to use to use that
+
+
+shorthand just to make things a little
+
+
+easier to write, I'm going to write it
+
+
+as grad log pi of tau times r of tau but
+
+
+just remember that inside each of those
+
+
+things there's actually there's actually
+
+
+a sum.
+
+
+So when I write grad log pi of tau, what
+
+
+I really mean is a sum over all the time
+
+
+steps of grad log pi a t given s t.
+
+
+Um and
+
+
+maximum likelihood is just
+
+
+trying to increase the probability of
+
+
+everything. Policy gradient's trying to
+
+
+increase or decrease it based on what
+
+
+reward I'm multiplying it by. So
+
+
+intuitively what I what I kind of
+
+
+imagine this might do is I generate a
+
+
+bunch of samples. Some of them are good
+
+
+and some of them are bad and then the
+
+
+good ones become more likely and the bad
+
+
+ones become less likely.
+
+
+And this is actually correct if the
+
+
+reward is positive for the good stuff
+
+
+and negative for the bad stuff.
+
+
+Um it's not exactly correct if the bad
+
+
+stuff still has a positive reward, but
+
+
+we'll come back to that.
+
+
+But intuitively what this method does is
+
+
+makes the good stuff more likely and the
+
+
+bad stuff less likely. So essentially
+
+
+what policy gradient does is it
+
+
+formalizes a notion of trial and error
+
+
+learning.
+
+
+You take your trials by generating those
+
+
+rollouts. You figure out whether they
+
+
+were good or bad by by summing up their
+
+
+rewards, and then you make the good ones
+
+
+more likely and the bad ones less
+
+
+likely.
+
+
+And that like that makes sense. That's
+
+
+kind of what we would expect a a
+
+
+reinforcement learning algorithm to do.
+
+
+Yes.
+
+
+>> What if like one of the trajectories is
+
+
+like half good, half good, half bad?
+
+
+>> Yeah, that's a really good question. So
+
+
+for those who didn't hear, well what if
+
+
+in one of the trajectories half of it
+
+
+was good and half of it was bad?
+
+
+Then you will increase or decrease its
+
+
+probability based on whether it was more
+
+
+good or more bad.
+
+
+Which is not ideal. Like you would
+
+
+rather increase the probability of the
+
+
+good stuff and decrease the bad stuff
+
+
+even if it's within one trajectory, but
+
+
+this algorithm will not do that.
+
+
+Yes.
+
+
+>> In this case like this algorithm will
+
+
+only like increase the probability based
+
+
+on trajectories of like the
+
+
+corresponding like
+
+
+>> That's right. So the hard case here
+
+
+would be let's say you're playing chess
+
+
+and you made a really good move and then
+
+
+you messed up afterwards. Well this will
+
+
+actually decrease the probability of
+
+
+that good move.
+
+
+All right. Let's talk about partial
+
+
+observability.
+
+
+So
+
+
+um in the previous lectures we talked
+
+
+about how sometimes your observations
+
+
+might not be states.
+
+
+So then you want a policy that's pi of A
+
+
+given O.
+
+
+Uh
+
+
+now a question I have for you guys,
+
+
+how does how do you think the policy
+
+
+gradient algorithm needs to change if I
+
+
+have partial observability?
+
+
+If my what I'm observing is not states
+
+
+but observations where the observations
+
+
+don't necessarily obey the Markov
+
+
+property.
+
+
+Any ideas?
+
+
+Anyone want to
+
+
+Any Anybody new want to raise their hand
+
+
+and
+
+
+and suggest an answer?
+
+
+Uh yeah, back there.
+
+
+>> Um
+
+
+if the
+
+
+if if the observations do not obey the
+
+
+Markov property and there's some
+
+
+differentiable process from how you're
+
+
+tracking the observations from how
+
+
+you're doing it, you say you could use
+
+
+unrolled that and differentiate across
+
+
+that if if it's like some neural network
+
+
+or something um or you could just ignore
+
+
+that and just do the exact same thing.
+
+
+>> Okay, yeah. So,
+
+
+basically, we can do more or less the
+
+
+same thing, right? Before we rolled out
+
+
+the the the the the samples through the
+
+
+dynamics, now we can roll out the
+
+
+samples and get the observations. The
+
+
+thing is, we didn't actually use the
+
+
+Markov property anywhere so far.
+
+
+Right, so we had that expression for the
+
+
+transition probability, and the
+
+
+transition probability was Markovian,
+
+
+but we didn't use that because it just
+
+
+goes to zero anyway because it doesn't
+
+
+depend on the policy. So, nothing in the
+
+
+derivation so far actually assumes that
+
+
+the that the thing going to the policy
+
+
+obeys the Markov property at all.
+
+
+Which means that you can do this just as
+
+
+well for observations, and you get
+
+
+exactly the same expression. You need to
+
+
+evaluate your rewards somehow, so if
+
+
+your rewards depend on state, I guess
+
+
+you need to get rewards somewhere, uh
+
+
+but as long as you can get rewards,
+
+
+everything else is exactly the same. The
+
+
+Markov property was not actually used in
+
+
+in this derivation. Yes.
+
+
+>> But if the probability of the the
+
+
+trajectory and the probability of the
+
+
+next state given from the the previous
+
+
+state
+
+
+>> That's right. But it But if it depended
+
+
+on all the prior states, the same exact
+
+
+derivation would have held. Because all
+
+
+we did with those probabilities is we
+
+
+said they don't depend on theta,
+
+
+therefore they are zero. So, as long as
+
+
+they don't depend on theta, they're
+
+
+zero.
+
+
+Um so, that's actually really
+
+
+convenient. You can use policy gradients
+
+
+with partial observation, and you do not
+
+
+have to change anything.
+
+
+So, the Markov property is not used, and
+
+
+you you just do go go for it.
+
+
+All right. but now let's come to the big
+
+
+problem and I think some of the
+
+
+questions that you guys have asked
+
+
+already kind of allude to this problem.
+
+
+The problem is that Okay.
+
+
+This algorithm is correct. There's
+
+
+nothing fundamentally wrong with it, but
+
+
+it has a pretty nasty numerical
+
+
+property. So, I'm going to build up a
+
+
+little bit of intuition for it and then
+
+
+I'll explain the more the more technical
+
+
+explanation.
+
+
+Um here's an example problem. Um this is
+
+
+called preset position chess. So, in
+
+
+regular chess you always start out with
+
+
+a piece in the same place on the board
+
+
+and then you play your game. In preset
+
+
+position chess, you have a number of
+
+
+like uh pre-designed positions that are
+
+
+meant to like represent difficult chess
+
+
+scenarios and you would get a random
+
+
+preset position. You have to play from
+
+
+that position.
+
+
+So, that means that now now we're
+
+
+introducing some randomness into chess.
+
+
+Okay, and now let's say that we want to
+
+
+learn to play this preset position chess
+
+
+using policy gradients.
+
+
+So, your reward is plus one if you win
+
+
+and minus one if you lose. Very simple.
+
+
+So,
+
+
+what you would like your algorithm to do
+
+
+is you would like it to put positive
+
+
+multipliers on good moves and negative
+
+
+multipliers on bad moves.
+
+
+So, when you expect when you write out
+
+
+that formula, you know, so some some of
+
+
+the moves will be good, some of them
+
+
+will be bad, and you'd like the good
+
+
+ones to have a positive multiplier and
+
+
+bad ones to have a negative multiplier.
+
+
+But, there are all sorts of reasons why
+
+
+you wouldn't actually quite get that.
+
+
+So, what you get in practice is well,
+
+
+maybe you get a positive multiplier on
+
+
+all the moves in a place where you had a
+
+
+lucky start.
+
+
+So, it just so happened that because the
+
+
+you start in all sorts of different
+
+
+positions, maybe one game you played you
+
+
+got a very unlucky start and you lost
+
+
+the game even though you did everything
+
+
+right. And in another game you got a
+
+
+really lucky start and you kind of
+
+
+played mediocre, but you still won
+
+
+because the start was so good.
+
+
+Now, that's probably not what you want.
+
+
+You actually want the good moves in the
+
+
+hard game to still have a positive
+
+
+multiplier, but this will
+
+
+often not give you that.
+
+
+Uh you'll get a negative multiplier on
+
+
+good moves when you make a mistake
+
+
+later.
+
+
+Maybe I had like the perfect opening and
+
+
+then I messed up. So, now I'm going to
+
+
+say that whole opening actually has a
+
+
+negative multiplier.
+
+
+You also get a positive multiplier on
+
+
+bad moves when your opponent randomly
+
+
+made a mistake later. So, maybe I had
+
+
+like a really terrible opening and I
+
+
+lost my queen or something, but then my
+
+
+opponent had like a brain fart and
+
+
+messed up and I won the game. So, now
+
+
+I'm going to say that whatever I did in
+
+
+the beginning, even though it was a
+
+
+horrible mistake, is actually a positive
+
+
+thing that I should increase the
+
+
+probability of.
+
+
+Now,
+
+
+interestingly enough, these issues do
+
+
+average out. So, if you have enough
+
+
+samples, if you generate infinitely many
+
+
+samples of these things,
+
+
+everything actually works out.
+
+
+Eventually things average out and those
+
+
+good moves in bad trajectories, they
+
+
+will also be good moves in good
+
+
+trajectories and they will occur just a
+
+
+little bit more often in the good
+
+
+trajectories than they do in the bad
+
+
+ones. So, overall, they will actually
+
+
+end up being reinforced positively
+
+
+rather than negatively.
+
+
+If you have enough samples,
+
+
+all these issues eventually go away.
+
+
+But, you might need quite a few samples
+
+
+to get there. Yes.
+
+
+>> I got a question regarding like how you
+
+
+set up the preset position chess. So,
+
+
+it's like every game you just start with
+
+
+a different preset position.
+
+
+>> Yeah. Chosen randomly from initial state
+
+
+distribution.
+
+
+>> Is it Is there any reason why we did it
+
+
+instead of like just starting from the
+
+
+>> Because I wanted to set up the problem
+
+
+that way. To to make a to make a point.
+
+
+It's a purely a didactic exercise. Yes.
+
+
+>> Clarify on this slide. So, we update the
+
+
+policy gradients
+
+
+on this slide this we're saying that
+
+
+um, based on like the actions in the
+
+
+bottom of the particular trajectory that
+
+
+we sampled,
+
+
+all those actions get updated or is it
+
+
+like a global update of the all those
+
+
+actions in the policy?
+
+
+>> So,
+
+
+the way that the algorithm works is
+
+
+all of the actions and all of the
+
+
+trajectories that you sampled
+
+
+participate in that formula. The
+
+
+multiplier on grad log pi depends on the
+
+
+total reward of the trajectory in which
+
+
+that action occurs.
+
+
+In this version of the algorithm, there
+
+
+the multiplier doesn't it's the same
+
+
+multiplier for every time step in the
+
+
+trajectory. So, you have if you have a
+
+
+good move in the beginning and then you
+
+
+lose the game later, you still have a
+
+
+negative multiplier on that good move.
+
+
+Okay.
+
+
+So,
+
+
+technically this is an instance of high
+
+
+variance. Basically,
+
+
+variance refers to
+
+
+when you estimate that expectation with
+
+
+a finite number of samples, how much
+
+
+does that finite sample estimate differ
+
+
+from the actual expectation?
+
+
+The actual expect expected value is
+
+
+correct. The actual expected value is
+
+
+the true honest-to-goodness gradient of
+
+
+the policies total reward. But a finite
+
+
+sample estimate will have random
+
+
+deviations from that true expectation.
+
+
+And when you say that your estimator has
+
+
+high variance, what that means is that
+
+
+for a finite number of samples, on
+
+
+average that deviation will be quite
+
+
+large.
+
+
+As you increase the number of samples,
+
+
+in the limit of infinite samples,
+
+
+the deviation always goes to zero.
+
+
+Because when you have infinitely many
+
+
+samples, you are computing the true
+
+
+expectation and it is equal to the true
+
+
+expectation. But for a finite number of
+
+
+samples,
+
+
+the deviation is large.
+
+
+And all of these little specific
+
+
+examples, they're really instances of a
+
+
+more general problem, which is the high
+
+
+variance of this estimator.
+
+
+Yes, back there.
+
+
+>> You just say you're able to
+
+
+calculate like the strength
+
+
+You can say
+
+
+good or bad like with like a chess man
+
+
+and then
+
+
+>> Mhm.
+
+
+>> Is that the value function based on
+
+
+>> That's a really good question. Um, not
+
+
+exactly, but we will come back to what a
+
+
+value function is in uh a lecture
+
+
+probably next week.
+
+
+>> But but if you use that for the reward
+
+
+>> If you do that, what what you would
+
+
+probably actually do is you would change
+
+
+the reward function and then you would
+
+
+have a more detailed reward.
+
+
+And that would actually change the
+
+
+picture here a little bit.
+
+
+Yes.
+
+
+>> Really off of that question, would the
+
+
+value function be another valid way to
+
+
+solve that issue up here?
+
+
+>> That's right. So,
+
+
+we'll talk about this next week, but
+
+
+value functions are one of the ways to
+
+
+lower the variance of the policy
+
+
+gradient estimator.
+
+
+Yes.
+
+
+>> Is that the reason you
+
+
+consider the entire trajectory instead
+
+
+of a small like
+
+
+instead of really because you only get
+
+
+the reward at
+
+
+>> The reason that I'm considering the
+
+
+whole trajectory is because that's what
+
+
+the formula tells me to do. So, the the
+
+
+formula that we derived in the previous
+
+
+slide tells us that we should take grad
+
+
+log pi at every step and multiply by the
+
+
+total reward of the trajectory.
+
+
+And basically the point that I want all
+
+
+of you to take away from this the
+
+
+formula is correct in a in a literal
+
+
+sense that if you get that expected
+
+
+value, it is the true derivative. But,
+
+
+it is in some sense a bad formula
+
+
+because for a small number of samples,
+
+
+you will get high variance. You'll get a
+
+
+high deviation from the true
+
+
+expectation. So, we can improve the
+
+
+formula, and that's what we'll do in the
+
+
+next few slides. Yes.
+
+
+>> Why don't you just shorten the length of
+
+
+the trajectory?
+
+
+>> Yeah, so if if we shorten the length of
+
+
+the trajectory, then we will get a lower
+
+
+variance estimator. The trouble is that
+
+
+in this game you only get the reward at
+
+
+the end of the trajectory. So, if you
+
+
+shorten it so much that you don't see
+
+
+the end, then you're not getting the
+
+
+signal.
+
+
+Okay. So,
+
+
+in the next part of the lecture, we'll
+
+
+talk about variance reduction.
+
+
+Basically, if you have a policy gradient
+
+
+algorithm and you're trying to improve
+
+
+it to be better, and improving typically
+
+
+means you want to be
+
+
+more numerically stable so that you can
+
+
+use a small number of samples and still
+
+
+get a good gradient, almost certainly
+
+
+what you're going to be doing is
+
+
+variance reduction. You're going to be
+
+
+trying to reduce the variance of your
+
+
+policy gradient.
+
+
+So,
+
+
+let's talk about this first problem.
+
+
+Because we have random initial states,
+
+
+you might have positive multipliers on
+
+
+all the actions in a trajectory, not
+
+
+because you did anything right, but
+
+
+because you got lucky. And you might
+
+
+have negative multipliers if you got
+
+
+unlucky even though you did everything
+
+
+right.
+
+
+So,
+
+
+what we would like to see is we would
+
+
+like to see the good stuff getting
+
+
+better or getting more likely and the
+
+
+bad stuff getting less likely.
+
+
+But, the issue is that the reward that
+
+
+we're getting in that formula doesn't
+
+
+just depend on what we did, it also
+
+
+depends on our circumstances.
+
+
+So,
+
+
+intuitively what I might like to see is
+
+
+I might like to see a different formula
+
+
+where I make where I have a positive
+
+
+multipliers on all the things that are
+
+
+better than average and negative
+
+
+multipliers on all the things that are
+
+
+worse than average.
+
+
+Which is not actually what this is doing
+
+
+because nothing in the in that R of tau
+
+
+multiplier takes into account the
+
+
+average reward you'd expect to see.
+
+
+So, maybe what I would like is a formula
+
+
+like this. I change the multiplier to be
+
+
+R of tau minus B where B is the average
+
+
+reward in my trajectories. So, that it's
+
+
+literally anything that's better than
+
+
+average gets more likely anything that's
+
+
+worse than average gets less likely.
+
+
+This is a different formula.
+
+
+So, kind of natural to ask like, okay,
+
+
+we derived a formula the formula was
+
+
+correct and then I'm just changing it.
+
+
+Are we like allowed to do that?
+
+
+Is this is this legal?
+
+
+The answer perhaps surprisingly is yes,
+
+
+it is.
+
+
+And to convince us that this is that
+
+
+you're allowed to do this, what we're
+
+
+going to do
+
+
+is we're going to consider the
+
+
+contribution of that second term, the
+
+
+minus B, to the overall expectation. So,
+
+
+we have two terms R of tau and then
+
+
+minus B. So, we can distribute the grad
+
+
+log P inside of that and that that
+
+
+formula is going to be grad log P times
+
+
+R of tau, we already know that's right,
+
+
+minus grad log P times B.
+
+
+So, let's analyze that
+
+
+that second term, the one that we just
+
+
+added. What's the expected value of grad
+
+
+log pi grad log P times B? We're going
+
+
+to use our our identity from before,
+
+
+right? So, we expand expand the
+
+
+expectation, that's the integral of P of
+
+
+tau times grad log P, and we'll apply
+
+
+the identity in the other way.
+
+
+Right? So, P times grad log P, that's
+
+
+equal to grad P.
+
+
+Okay?
+
+
+And now we can do a fun trick. Remember
+
+
+that the integral uh symbol and the
+
+
+gradient symbol, they commute because
+
+
+they're both linear. So, we can take the
+
+
+gradient and the B out of the integral.
+
+
+So, now this is all equal to B times the
+
+
+gradient of the integral of P of tau d
+
+
+tau.
+
+
+Now, does anybody have an idea of how we
+
+
+can further simplify this formula?
+
+
+>> It would be one but that's one.
+
+
+>> One. Okay. Uh
+
+
+Can someone like actually raise their
+
+
+hand and explain this?
+
+
+Yes.
+
+
+>> The integral of all the the probability
+
+
+to be one.
+
+
+>> Right. So, the integral of a probability
+
+
+distribution is one because we know that
+
+
+probability distributions
+
+
+uh sum to one.
+
+
+And the derivative of one with respect
+
+
+to theta is zero because one does not
+
+
+depend on theta.
+
+
+So, this is B times the derivative of
+
+
+one.
+
+
+And that is just zero.
+
+
+So, the expected value of that second
+
+
+term is zero.
+
+
+That does not mean that for a finite
+
+
+number of samples, it'll average to
+
+
+zero.
+
+
+So, essentially
+
+
+subtracting B from R doesn't change the
+
+
+expected value given infinite samples,
+
+
+but it does change its variance.
+
+
+It is a variance reduction technique.
+
+
+This is called a baseline.
+
+
+Subtracting a baseline is unbiased in
+
+
+expectation for any value of B.
+
+
+But for some values of B, it'll reduce
+
+
+your variance.
+
+
+And in particular, if you set B to be
+
+
+the average of the rewards, that will
+
+
+reduce your your variance.
+
+
+Now, average reward is actually not the
+
+
+best baseline. We'll learn about other
+
+
+even better baselines later, but it's
+
+
+pretty good.
+
+
+It also kind of intuitively makes sense
+
+
+because now we're increasing the
+
+
+probability of things that are actually
+
+
+better than average and decreasing the
+
+
+probability of things that are worse
+
+
+than average. Yes.
+
+
+>> How is this different from just having a
+
+
+reward function that you arbitrarily
+
+
+choose to be zero mean?
+
+
+>> Yeah. So, the question is it better than
+
+
+just like subtracting a constant from
+
+
+your reward function to make your reward
+
+
+function zero mean? It is different
+
+
+because this B is recomputed every
+
+
+single iteration. So, B is the average
+
+
+reward of your current policy.
+
+
+Uh one way you can think about it is
+
+
+let's say that uh we're um
+
+
+optimizing a policy for like stock
+
+
+trading. Every single iteration your
+
+
+policy becomes more profitable. So, the
+
+
+average reward keeps going up, but you
+
+
+still hold yourself to a higher
+
+
+standard. You're not saying, are my uh
+
+
+rewards bigger than like some baseline
+
+
+bad stock trader? You're asking, are
+
+
+they better than what I typically get
+
+
+with my current policy? Yeah.
+
+
+>> So, on the previous slide you had like
+
+
+four different issues. Is this only like
+
+
+I remember you like highlighted like
+
+
+>> Yeah.
+
+
+>> Okay.
+
+
+>> Um so, this is a general variance
+
+
+reduction technique. Uh
+
+
+it In so, so all the issues I listed
+
+
+before, they're all really one issue.
+
+
+The issue is variance. It's just a
+
+
+little bit more obvious to kind of map
+
+
+this onto the the lucky versus unlucky
+
+
+states, but it's not really specific to
+
+
+that. This is just for reducing variance
+
+
+overall.
+
+
+Yes.
+
+
+>> Can you quantify like how much variance
+
+
+goes down by doing this?
+
+
+>> Yes. So, you can actually I I actually
+
+
+used to have this in the slide deck, but
+
+
+I removed it because this lecture is
+
+
+only 50 minutes long, but you can
+
+
+actually calculate variance. In fact,
+
+
+one of one of the tricks you can do is
+
+
+you can calculate the variance of this
+
+
+estimator
+
+
+and find the optimal baseline that will
+
+
+minimize the variance.
+
+
+It turns out that it is not this.
+
+
+But, we almost never use the optimal
+
+
+baseline from doing this because it's
+
+
+really really complicated.
+
+
+Yes.
+
+
+>> Um technically if B is some function of
+
+
+tau or like some function of your
+
+
+trajectory for the equation you have for
+
+
+B, would you be able to move B
+
+
+outside of your integral?
+
+
+>> We will talk about that on Friday.
+
+
+So, that's a very good question, but
+
+
+let's hold that.
+
+
+Uh all right, there are a few more
+
+
+tricks that I I want to teach you and I
+
+
+kind of want to get through the tricks
+
+
+that will like give you a minimal
+
+
+actually viable algorithm that like
+
+
+works decently well. So, one more trick
+
+
+is uh to leverage a fact that
+
+
+tends to hold quite often in our
+
+
+universe, which is causality. Causality
+
+
+means that
+
+
+a decision I make now is not going to
+
+
+change what happened yesterday.
+
+
+Uh hopefully you all agree with me that
+
+
+that's true. Uh if you've ever had the
+
+
+contrary experience, then
+
+
+congratulations. But typically the
+
+
+policy at time T prime cannot affect the
+
+
+rewards at time T if T is less than T
+
+
+prime.
+
+
+And
+
+
+if you if you look at this formula, I
+
+
+just kind of uh
+
+
+you know, without worrying about where
+
+
+it came from and just look at it at a
+
+
+glance, what we're saying is uh
+
+
+you know, if we if we take those grad
+
+
+log pies and we distribute them inside
+
+
+the other sum, we're essentially
+
+
+multiplying every grad pi at every time
+
+
+step by the rewards that happen both
+
+
+after it and before that.
+
+
+But we know that that action at that
+
+
+time step T is not going to affect any
+
+
+rewards before it.
+
+
+So, what we can do is we can multiply
+
+
+every grad log pi by the sum of rewards
+
+
+from that time step until the end.
+
+
+And basically remove all the rewards
+
+
+before that.
+
+
+And we now need a different baseline at
+
+
+every time step. So, the baseline at
+
+
+each time step is actually the average
+
+
+reward from that time step until the
+
+
+end.
+
+
+So, uh the main change we're going to
+
+
+make is we're going to change this
+
+
+summation to be not from one to capital
+
+
+H, but from T to capital H.
+
+
+Okay?
+
+
+And
+
+
+uh and this is now referred to as a
+
+
+reward to go. So, it is the remaining
+
+
+reward from that time step until the
+
+
+end. Now, you can actually prove that
+
+
+this is correct and the proof
+
+
+you know, morally is going to be similar
+
+
+to the one that we saw before. We're
+
+
+going You you can basically prove that
+
+
+the expected value of grad log pi times
+
+
+past rewards goes to zero. I won't go
+
+
+through that proof. It's a bit more
+
+
+involved. Uh but you know, I think this
+
+
+is fairly natural in some ways. Um it is
+
+
+also actually somewhat obvious that this
+
+
+should reduce variance.
+
+
+The reason that this should reduce
+
+
+variance is because
+
+
+you're multiplying grad log pi by a
+
+
+smaller number.
+
+
+So,
+
+
+variance is is going to be the deviation
+
+
+of this quantity from from the true
+
+
+expectation. If you have a smaller
+
+
+number, you have a smaller variance.
+
+
+It's kind of a fairly fairly trivial
+
+
+fact. So,
+
+
+um
+
+
+it reduces variance because you're
+
+
+multiplying grad log pi by smaller
+
+
+numbers and it's allowed because past
+
+
+rewards aren't affected by future
+
+
+actions. So, basically you should always
+
+
+do this. There's absolutely no reason
+
+
+not to do it this way.
+
+
+Okay. And we'll sometimes use the symbol
+
+
+Q hat to represent reward to go.
+
+
+Uh yeah.
+
+
+>> [clears throat]
+
+
+>> What's the difference between B and B
+
+
+and B T?
+
+
+B T is like the which is all the way
+
+
+from time one to time T.
+
+
+>> Yeah, no. Here they're the same. It's
+
+
+just on the previous slide I had B, I
+
+
+had one single B, which was the average
+
+
+reward over the whole trajectory. Here B
+
+
+with a subscript T is the average reward
+
+
+counting only the time steps from T
+
+
+until the end.
+
+
+>> Oh.
+
+
+>> All right. Uh before we wrap up today, I
+
+
+just want to go through like a little
+
+
+bit of practical implementation for this
+
+
+stuff.
+
+
+So,
+
+
+uh let's go with this uh kind of
+
+
+causality style estimator that only uses
+
+
+the time steps from T until the end. Um
+
+
+we it's pretty inefficient to actually
+
+
+calculate this formula exactly. Like you
+
+
+could ask auto diff to actually give you
+
+
+grad log pi's and actually take those
+
+
+gradients and multiply them by the
+
+
+rewards and all that stuff. But there is
+
+
+a much more convenient way to implement
+
+
+this with automatic differentiation.
+
+
+And the way to do it is just recognize
+
+
+that this is the derivative of a
+
+
+weighted supervised learning loss.
+
+
+Now, that's not kind of a mathematical
+
+
+fact because it sort of ignores the fact
+
+
+that there's uh
+
+
+you know, a dependence on theta in the
+
+
+probabilities from which this is
+
+
+sampled, but when it comes to
+
+
+implementing an autograd, that's
+
+
+perfectly fine.
+
+
+So, essentially, to implement this in
+
+
+your Py- in PyTorch or JAX or whatever,
+
+
+you have to kind of like fool your
+
+
+autograd package or uh PyTorch to
+
+
+compute the derivative you want. So, you
+
+
+have to construct a graph such that the
+
+
+gradient of that graph is the policy
+
+
+gradient.
+
+
+So, the maximum likelihood gradient is
+
+
+what PyTorch will give you if you put in
+
+
+the likeli- the log likelihood. If you
+
+
+put in the log pies, call dot gradient,
+
+
+you get this thing.
+
+
+So, it's the derivative of this.
+
+
+So, what you do if you want to compute
+
+
+the policy gradient is you implement a
+
+
+kind of pseudo loss as a weighted max
+
+
+likelihood such that it'll trick PyTorch
+
+
+into giving you the policy gradient.
+
+
+Now, the pseudo loss is not it's not a
+
+
+like a real object. It doesn't really
+
+
+mean much. It's just the thing that's
+
+
+there so that PyTorch gives you the
+
+
+right derivative.
+
+
+So,
+
+
+the pseudo loss is basically just like
+
+
+the maximum likelihood loss, only all
+
+
+your log probabilities are multiplied by
+
+
+this Q hat.
+
+
+And, you know, log pies cross entropy
+
+
+for discrete or squared error for
+
+
+Gaussian.
+
+
+So, uh here is this is actually a
+
+
+TensorFlow pseudo code, but it's it's
+
+
+you know, it's basically going to be the
+
+
+same in any package.
+
+
+You're going to start off with
+
+
+in maximum likelihood, if you're doing
+
+
+imitation learning, you're going to
+
+
+start off with actions and states. And
+
+
+uh you would get your uh logits by
+
+
+running your policy on the states. You
+
+
+would compute your likelihoods by using
+
+
+a cross entropy loss,
+
+
+average it over all of your samples, and
+
+
+compute its gradients. So, that's
+
+
+supervised learning.
+
+
+So, now, to go from this to policy
+
+
+gradient is actually very simple. You
+
+
+have one more tensor, which is these
+
+
+reward to go quantities, the Q hats, and
+
+
+that's going to be n times t by 1.
+
+
+Uh and you would compute those as
+
+
+cumulative sums. And then, all you do,
+
+
+the only changes are highlighted in red,
+
+
+you take your original loss, whatever it
+
+
+might be, cross entropy, squared error,
+
+
+whatever, and you multiply it by the Q
+
+
+values.
+
+
+And then you plug that into the into
+
+
+gradients. That's the only change. So,
+
+
+it's only the stuff highlighted in red
+
+
+that has to change going from supervised
+
+
+learning to policy gradient. And then
+
+
+your auto diff package will give the
+
+
+gradients to you
+
+
+uh just as you wanted. So, all you're
+
+
+doing is implementing the pseudo loss
+
+
+where this thing is the Q underscore
+
+
+values.
+
+
+So, this is essentially what what you
+
+
+would be doing in homework two, and then
+
+
+there's some extensions on this. And if
+
+
+you have a baseline, you fold that
+
+
+baseline into Q underscore values.
+
+
+Any questions about this?
+
+
+Yes.
+
+
+>> That Q underscore values basically is
+
+
+the reward
+
+
+>> Yeah, so Q underscore values is the sum
+
+
+of rewards from the current time step
+
+
+until the end minus whatever baseline
+
+
+you want to subtract.
+
+
+Yes.
+
+
+>> Should we discount
+
+
+>> Should you discount rewards? Uh we'll
+
+
+talk about that next week.
+
+
+Yes.
+
+
+>> Is this
+
+
+like this Q like a value function?
+
+
+>> So, um
+
+
+it
+
+
+The answer to that question is that when
+
+
+we have value functions later, we will
+
+
+use them to improve the estimate of this
+
+
+thing.
+
+
+But for now, it's just a sum of rewards.
+
+
+Okay. So, um this gives us a basic thing
+
+
+that we can implement. There are a bunch
+
+
+of tricks that you would want in
+
+
+practice. Um so, remember that the
+
+
+policy gradient has high variance. It's
+
+
+not the same as supervised learning. Uh
+
+
+gradients will be more noisy, which
+
+
+means that in practice, you might want
+
+
+larger batches, larger mini batches, and
+
+
+maybe smaller learning rates. So, it
+
+
+typically takes more care to tune hyper
+
+
+parameters for this algorithm. So, maybe
+
+
+larger batches, maybe tune your learning
+
+
+rates more carefully. Adaptive step
+
+
+sizes like Adam can be pretty helpful.
+
+
+Um and we'll learn about some gradient
+
+
+uh some policy gradient specific ways to
+
+
+adjust learning rates and things like
+
+
+that later in the course.
+
+
+So, thank you all, and I'll see you on
+
+
+Friday for more policy gradients.
+
+
+>> Mhm.

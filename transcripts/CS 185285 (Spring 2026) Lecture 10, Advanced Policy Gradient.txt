@@ -1,0 +1,7825 @@
+[clears throat]
+
+
+Um well I just find that like under
+
+
+ordinary circumstances it'd be like okay
+
+
+my first commitment of the day's
+
+
+so I tried that on
+
+
+No, I just like I mean I also
+
+
+not
+
+
+>> I think the only way over
+
+
+Oh, that's
+
+
+>> breakfast.
+
+
+This mortal still down.
+
+
+at the same time.
+
+
+>> Exactly.
+
+
+I would not go that far.
+
+
+Honestly, your grade comes from
+
+
+homework.
+
+
+Watch out.
+
+
+Well,
+
+
+>> all right. Uh, let's get started. Uh
+
+
+welcome everyone and thank you for
+
+
+coming out bright and early and those of
+
+
+you watching on video uh you know please
+
+
+vicariously enjoy the early morning
+
+
+experience. Those of you here in person
+
+
+please uh enjoy it in person. Um all
+
+
+right so today we're going to continue
+
+
+uh from our discussion on Wednesday
+
+
+where we uh worked our way through to
+
+
+the PO algorithm with uh which is
+
+
+basically policy gradient with
+
+
+importance weight and clipping. And on
+
+
+Wednesday, we kind of barreled through
+
+
+this sort of funny derivation where
+
+
+there were a bunch of like little hacks
+
+
+essentially that were put in where we
+
+
+ignore this term and we ignore that term
+
+
+and eventually we end up with an
+
+
+important sample policy gradient
+
+
+objective that we can actually code up
+
+
+and that kind of seems to make sense but
+
+
+mathematically the journey to get there
+
+
+wasn't exactly principled. So the
+
+
+algorithm that we got to at the end of
+
+
+lecture on Wednesday these uh important
+
+
+sampling with clipping uh PO method that
+
+
+is a real algorithm and you can code it
+
+
+up and you can use it and will work just
+
+
+fine. But what we will focus on today is
+
+
+essentially the theory behind why this
+
+
+algorithm is actually not as much of a
+
+
+hack as it might seem. And based on that
+
+
+theory, we'll actually derive another
+
+
+version of PO and another algorithm
+
+
+called TRPO uh that operate on similar
+
+
+principles but maybe are a bit less uh
+
+
+huristic mathematically. And just the
+
+
+thing that I want to emphasize before I
+
+
+dive into this is that the algorithm
+
+
+from Wednesday is an algorithm that you
+
+
+can and should use if you want a good
+
+
+policy gradient method. And it's not
+
+
+necessarily the case that the stuff
+
+
+we'll cover today is a better method.
+
+
+It's just a better way of understanding
+
+
+these methods and what it is that they
+
+
+do and why they are in fact pretty
+
+
+reasonable things to use.
+
+
+Okay, so let's uh rewind a little bit to
+
+
+uh last time on Wednesday. We talked
+
+
+about how we can use important sampling
+
+
+to derive a modified version of the
+
+
+policy gradient that allows us to take
+
+
+multiple gradient steps on the same
+
+
+samples. And that's very very good
+
+
+because with a big neural network policy
+
+
+we might need to take hundreds of
+
+
+thousands or millions of gradient steps
+
+
+on it and would be really nice if we
+
+
+didn't need hundreds of thousands or
+
+
+millions of batches of examples of of
+
+
+samples for it. So with this kind of
+
+
+scheme you could take maybe like 50 to
+
+
+100 gradient steps on the same samples
+
+
+and have a much more practical method.
+
+
+Now this equation is written out in
+
+
+terms of importance weights at the
+
+
+trajectory level. And one of the things
+
+
+we derived is that if we expand them out
+
+
+over the individual time steps over the
+
+
+individual states and actions, the
+
+
+initial state probabilities and dynamics
+
+
+terms cancel out and you are left with a
+
+
+ratio of the probabilities of the
+
+
+actions multiplied over all of the time
+
+
+steps. So this is before we started
+
+
+introducing any of the hacks. This is
+
+
+just writing out the correct important
+
+
+sampled uh uh policy gradient and it's a
+
+
+product of three big terms. The product
+
+
+of all of the action probabilities, the
+
+
+uh sum over all of the grad log pi terms
+
+
+and the sum of the rewards. So, so far
+
+
+everything is perfectly correct.
+
+
+And then we talked about how well we can
+
+
+uh split this out a little bit. we can
+
+
+take that product and uh distribute part
+
+
+of it inside the sum of rewards and
+
+
+distribute part of it uh on the outside.
+
+
+And that kind of has like a fairly
+
+
+natural interpretation where the first
+
+
+product is basically your probability of
+
+
+getting to time step t and then taking
+
+
+action a t. And the second product
+
+
+inside that reward term is basically a
+
+
+weight on the reward to go which is
+
+
+accounting for the fact that that reward
+
+
+to go came from the policy pi theta
+
+
+instead of the policy pi theta prime
+
+
+which is the one for which you're
+
+
+currently computing the gradient.
+
+
+And then uh we did a few uh things like
+
+
+one of the things we did is we
+
+
+recognized that well you could also
+
+
+sample from the state action marginal in
+
+
+which case that first uh importance
+
+
+weight can also be interpreted as a a
+
+
+weight on the probability of the state
+
+
+comma the action and that factorized
+
+
+into the probability of the state times
+
+
+the probability of the action given the
+
+
+state. So it's a it's a importance
+
+
+weight on states times an important
+
+
+state uh weight on actions. We also saw
+
+
+how uh we could as a little hack ignore
+
+
+the weight on the reward term and we'll
+
+
+actually justify why this actually makes
+
+
+sense today. So last time we didn't
+
+
+justify this. We just said like oh let's
+
+
+ignore it because maybe it's okay. But
+
+
+now we'll actually see that this
+
+
+corresponds to a slightly different
+
+
+objective that is still very reasonable.
+
+
+And then the even less justified hack
+
+
+was to ignore the ratio of state
+
+
+probabilities
+
+
+leaving just the probab the ratio of
+
+
+probabilities of the current action at.
+
+
+And this is what we did on Wednesday.
+
+
+And from this we got the uh that that PO
+
+
+with the clipped importance weights. So
+
+
+there are two hacks here. This one
+
+
+corresponds to using the advantage of pi
+
+
+theta instead of the policy pi theta
+
+
+prime for which we're taking the
+
+
+gradient. And this one corresponds to
+
+
+using the state probability of pi theta
+
+
+instead of the state probability of pi
+
+
+theta prime. Basically ignoring the
+
+
+mismatch in the state probabilities.
+
+
+So the question that we're concerned
+
+
+with today is why is this kind of okay
+
+
+to do
+
+
+both of these things are incorrect in
+
+
+the sense that if we uh literally want
+
+
+the gradient with respect to theta prime
+
+
+of j theta prime ignoring these two
+
+
+terms basically forcing them to be one
+
+
+does not get us the correct gradient. It
+
+
+is not a correct thing to do, but it
+
+
+does get us something else which is kind
+
+
+of reasonable and can still lead to
+
+
+policy improvement.
+
+
+Okay. So before I start like explaining
+
+
+why this is kind of okay, does anyone
+
+
+have any questions about what's going on
+
+
+here?
+
+
+>> Sorry.
+
+
+>> Yes.
+
+
+>> Question. Would you mind explaining
+
+
+again like why that product will be that
+
+
+term? I tried to read the notes last
+
+
+time but I think
+
+
+>> which product? Oh, the first one.
+
+
+>> First one. Yeah.
+
+
+>> Yeah. So
+
+
+uh
+
+
+one of the ways that you could think
+
+
+about the policy gradient is an
+
+
+expectation under the trajectory
+
+
+distribution. Another way
+
+
+so under the trajectory distribution you
+
+
+have uh a sum over time steps of um the
+
+
+rewards. So this is your j theta. Okay.
+
+
+And this is under pi theta. This is the
+
+
+reward
+
+
+ST comma A. Okay. And then you
+
+
+differentiate this and you get the
+
+
+policy gradient. Now another way you can
+
+
+think about this. This is not actually
+
+
+an erasable marker down. Um
+
+
+okay. Uh another way you could think
+
+
+about is you could take the sum outside
+
+
+of the expectation
+
+
+in which case Oh, thank you.
+
+
+Whoever has to clean the whiteboard will
+
+
+be very grateful to you. um is uh you
+
+
+can take the sum outside of the
+
+
+expectation in which case this
+
+
+expectation is under the state action
+
+
+marginal.
+
+
+The state action marginal is just
+
+
+obtained by marginalizing the trajectory
+
+
+distribution. So there's nothing
+
+
+mysterious about this. And in here you
+
+
+have the reward
+
+
+and you can go with either formulation.
+
+
+They they end up in the same place if
+
+
+you take the conventional policy
+
+
+gradient. So now if you were to do
+
+
+importance uh waiting on this and you
+
+
+actually want J of theta prime then the
+
+
+importance weight in here will be pi
+
+
+theta prime s t comma a t / pi theta
+
+
+s t comma a t of r
+
+
+and this thing factorizes into pi theta
+
+
+prime of a t given s time pi theta of
+
+
+So the these are the same expression.
+
+
+It's just you can either take the sum
+
+
+out of the expectation and then do
+
+
+importance waiting or you can do
+
+
+importance waiting for this for the
+
+
+whole trajectory distribution.
+
+
+>> Yes.
+
+
+>> Out of curiosity, were these hacks like
+
+
+invoked before they were theoretically
+
+
+justified? So, were they just like, "Ah,
+
+
+I'm just gonna try this." And then it
+
+
+worked and then they were like, "Oddly
+
+
+enough, this is one of the very, very
+
+
+few cases where the theory justifying
+
+
+this came before the hacks." Almost
+
+
+always in machine learning, it's the
+
+
+other way around. But, weirdly enough,
+
+
+weirdly enough, it was first there was
+
+
+the justification, then there was the
+
+
+method. Yes.
+
+
+>> So, what's the point of this?
+
+
+>> What's the point of uh ignoring these
+
+
+terms?
+
+
+important.
+
+
+>> The point of important sampling is to
+
+
+allow us to take multiple gradient steps
+
+
+on the same samples because with neural
+
+
+networks, you want to take small
+
+
+gradient steps because neural networks
+
+
+are very nonlinear. Uh, and if you're
+
+
+training a model, a big model to
+
+
+convergence, you might take hundreds of
+
+
+thousands or millions of steps. But if
+
+
+you need to resample your data hundreds
+
+
+of thousands or millions of times, then
+
+
+you'll be generating an impractically
+
+
+large number of samples. Yes, there's a
+
+
+question. Okay. All right. So today
+
+
+we're going to talk about why it's okay
+
+
+to use the wrong advantage. So when I
+
+
+say wrong advantage, what I mean is
+
+
+ignoring the the those weights on the
+
+
+right, the weights that are multiplying
+
+
+the rewards. Uh I'm going to discuss why
+
+
+it's okay to use the wrong state
+
+
+distribution. So state distribution is
+
+
+ignoring that uh term on the left.
+
+
+And uh I'm going to discuss what kind of
+
+
+algorithm this motivates and uh how the
+
+
+algorithms we actually use in practice
+
+
+relate to this. And we'll also actually
+
+
+derive some new algorithms that are uh
+
+
+kind of inspired by these principles.
+
+
+They're not necessarily better. They're
+
+
+just different. Uh so it's kind of a
+
+
+lateral move, but that's good to know
+
+
+about. Um and it also tells us something
+
+
+about how we should think about policy
+
+
+gradients and what policy gradients are
+
+
+in fact doing. Okay. So interestingly
+
+
+enough, policy gradient can actually be
+
+
+viewed as a kind of policy iteration.
+
+
+Okay. What do I mean by this? This this
+
+
+is our policy gradient and you can kind
+
+
+of write the policy gradient method in
+
+
+two steps as first estimate the
+
+
+advantages a hat for your current policy
+
+
+and then use a hat to improve the policy
+
+
+specifically by taking a step in the
+
+
+gradient direction.
+
+
+And
+
+
+this is uh this should look kind of
+
+
+familiar to you because when we talked
+
+
+about valuebased methods, we started off
+
+
+discussing a method called policy
+
+
+iteration that structurally is actually
+
+
+pretty similar. So in policy iteration,
+
+
+we evaluate our current policy. Maybe we
+
+
+evaluate it value function or its Q
+
+
+function or whatever. Uh and from that
+
+
+we can always derive an advantage and
+
+
+then we find a new policy that is better
+
+
+by using the result of that evaluation.
+
+
+And in classic policy iteration that we
+
+
+learned about um uh last week, this was
+
+
+done by taking the arg max. But in fact,
+
+
+you can sort of generalize and say that
+
+
+anything that uses that advantage to
+
+
+find a policy that is better is a valid
+
+
+policy iteration algorithm. So maybe
+
+
+instead of taking an arg max, it just
+
+
+finds a new policy pi prime with
+
+
+slightly higher advantages than the
+
+
+previous one. So as long as you're
+
+
+getting higher advantages under the
+
+
+advantage function of pi, that is a
+
+
+policy iteration method. And notice that
+
+
+for policy iteration, we are finding a
+
+
+policy
+
+
+pi prime that improves on the advantage
+
+
+of pi, not on the advantage of pi prime.
+
+
+So, so it's really a two-stage method.
+
+
+Find the advantage of pi and then find a
+
+
+new policy that is better with respect
+
+
+to the advantage of pi. So, that's
+
+
+policy iteration. Whereas in policy
+
+
+gradient, classically, we would always
+
+
+multiply by the advantage of the current
+
+
+policy.
+
+
+Okay. So it turns out that you can
+
+
+interpret policy gradient as a kind of
+
+
+policy iteration. And the key to doing
+
+
+this is to start with a slightly
+
+
+different objective which still makes a
+
+
+lot of sense. Instead of looking at the
+
+
+value of the new policy theta prime,
+
+
+we're going to look at the difference
+
+
+j theta prime minus j theta. How much
+
+
+are you improving your policy? And
+
+
+that's the objective we'll be concerned
+
+
+with. Now it kind of makes sense because
+
+
+if you improve your policy a lot, you
+
+
+get a good policy. So uh j theta doesn't
+
+
+depend on theta prime. So using this as
+
+
+the objective doesn't actually hurt us
+
+
+in any way.
+
+
+Okay. So I I'll work through
+
+
+a derivation that will show us that j
+
+
+theta prime minus j theta in fact is a
+
+
+very familiar and appealing quantity.
+
+
+And to do this we first need to define j
+
+
+theta. So uh this is just the the
+
+
+standard definition that we started with
+
+
+way back in the beginning of the course.
+
+
+So j theta is just the expected value
+
+
+under the trajectory distribution for
+
+
+theta of the total reward. And I'm going
+
+
+to use a discounted uh reward
+
+
+formulation here. If you set gamma to
+
+
+one then you get the undiscounted
+
+
+version. So don't worry about that. Uh
+
+
+but in this is the the classic
+
+
+discounted expected reward.
+
+
+And the claim I'm going to make is that
+
+
+j theta prime minus j theta is the
+
+
+expectation under the trajectory
+
+
+distribution of theta prime. So under
+
+
+the trajectory distribution of the new
+
+
+policy of the sum of discounted
+
+
+advantages under pi theta under the old
+
+
+policy.
+
+
+Okay. So let's think about what that
+
+
+statement means. The difference between
+
+
+the value of the new policy and the old
+
+
+one is equal and that's my claim to the
+
+
+expected value over all the steps in the
+
+
+trajectory sampled from the new policy
+
+
+of the advantage of the old policy.
+
+
+Okay,
+
+
+so it's a it's not a trivial statement
+
+
+and that's what we're going to try to
+
+
+prove.
+
+
+Um, really quick before I go through the
+
+
+proof, why do I want to prove this
+
+
+claim? Why do I care about this claim?
+
+
+>> Yes.
+
+
+>> Calculating the advantage for the old
+
+
+policy is easy.
+
+
+>> Yeah. So the reason I care about this
+
+
+claim is because calculating the
+
+
+advantage of the old policy is easy
+
+
+because I got samples from the old
+
+
+policy. So I could use any of my
+
+
+favorite estimators like the GA
+
+
+estimator to get a pi theta. I cannot
+
+
+use that g estimator to easily get a pi
+
+
+theta prime because I haven't generated
+
+
+samples from theta prime yet. So I would
+
+
+really like this to be true because if
+
+
+this is true then it's much easier for
+
+
+me uh to estimate the subjective.
+
+
+Okay.
+
+
+So let's uh first uh rewrite j theta
+
+
+prime minus j theta by taking that
+
+
+second term j theta and and expanding it
+
+
+out. So I know that the expected sum of
+
+
+rewards for that policy is just the
+
+
+expected value under the initial state
+
+
+distribution PS0 of the value function
+
+
+at the initial state. Right? Because the
+
+
+value function is basically defined as
+
+
+the expected value of future rewards. So
+
+
+this is a perfectly valid way uh to
+
+
+write j theta.
+
+
+And now I'm going to do something a
+
+
+little funny. I'm going to replace the
+
+
+distribution for that expectation with P
+
+
+theta prime of toao. And this is kind of
+
+
+a weird thing to do because this is the
+
+
+value of
+
+
+pi theta not pi theta prime. But notice
+
+
+that the thing inside the expectation
+
+
+only depends on the initial state and
+
+
+the initial state distribution for the
+
+
+two policies is exactly the same. So the
+
+
+expectation of any function of the
+
+
+initial state is exactly the same under
+
+
+the trajectory distribution of the old
+
+
+policy as it is under the new one. So I
+
+
+can take that expectation under any
+
+
+policies trajectory distribution and I
+
+
+will choose to take it under P theta
+
+
+prime.
+
+
+Uh and now I'll do something also a
+
+
+little strange. I'm going to replace the
+
+
+value of S0 with a difference of two
+
+
+terms. And this in this difference
+
+
+almost everything cancels out. So the
+
+
+first term is summing up discounted
+
+
+values from time step zero to infinity.
+
+
+The second term is summing up discounted
+
+
+values from time step one uh to
+
+
+infinity.
+
+
+So if you if you were to flip this
+
+
+around, if you take negative of this and
+
+
+you subtract it out, then then you're
+
+
+only left with the um value at the first
+
+
+time step because at time step zero
+
+
+because at time step one the two sums
+
+
+cancel at time step two they cancel at
+
+
+time step three they cancel. The only
+
+
+difference between those two terms that
+
+
+one sums from zero to infinity, the
+
+
+other one from one to infinity. So it's
+
+
+only the the time step zero that remains
+
+
+if I subtract these two things. So it's
+
+
+equal to the second line.
+
+
+Okay, that was a little confusing. Let
+
+
+me state this again. In those two big
+
+
+sums that I have there, they are exactly
+
+
+identical. Just one goes from 0 to
+
+
+infinity and the other one goes from one
+
+
+to infinity. So if I subtract all the
+
+
+terms from one to infinity, I'm only
+
+
+left with a term at time step zero which
+
+
+is exactly vi theta s0.
+
+
+So that's why the third line is equal to
+
+
+the second line.
+
+
+Okay. Now I'm going to change the sign
+
+
+in front of this whole expectation. So
+
+
+notice that that minus after J theta
+
+
+prime became a plus. So I'm flipping the
+
+
+order. So now it's it's the sum from 1
+
+
+to infinity minus the sum from 0 to
+
+
+infinity. And then I can group the terms
+
+
+together. So I can basically distribute
+
+
+the summation outside. And it becomes
+
+
+the sum from 0 to infinity of gamma to
+
+
+the t time gamma of v pi theta s t + 1
+
+
+minus v pi theta s t. Okay, so I I just
+
+
+put the two sums together.
+
+
+And now you can see where this is going,
+
+
+right? Because the term inside that
+
+
+expectation now is a difference of
+
+
+values at two successive time steps,
+
+
+which is starting to look an awful lot
+
+
+like an advantage function. It's not
+
+
+exactly an advantage function yet
+
+
+because the advantage would also have
+
+
+the current reward, right? So the
+
+
+advantage is the reward at at step t
+
+
+plus gamma times the value at t plus one
+
+
+minus the value at t. And the reward is
+
+
+missing right now. But I I've almost
+
+
+made my way to an advantage function in
+
+
+there. Okay. So to get my rewards, where
+
+
+am I going to get them? Well, I'm going
+
+
+to get them from that first term from
+
+
+the J theta prime because J theta prime
+
+
+just by the definition in the upper
+
+
+right hand corner of the slide is the
+
+
+expected value under P theta prime of
+
+
+the total reward. Okay, so now I have
+
+
+two expectations under the same
+
+
+distribution. They both have a sum from
+
+
+0 to infinity inside of them. So I can
+
+
+combine the expectations and the sums
+
+
+and distribute those rewards inside and
+
+
+I get a sum from 0 to infinity of gamma
+
+
+t times the reward plus the next value
+
+
+minus the current value. And that is
+
+
+exactly the advantage of uh pi theta.
+
+
+Okay. So this is actually like a fairly
+
+
+straightforward uh result. uh and you
+
+
+know there are a few kind of non-obvious
+
+
+steps but the steps all are you know
+
+
+logically consistent.
+
+
+Any questions about this derivation?
+
+
+Yes.
+
+
+>> Why does the second have no
+
+
+>> in the fourth line? Okay. So in the
+
+
+fourth line what I did is let me see if
+
+
+I can
+
+
+do this.
+
+
+Okay,
+
+
+so I have I start out
+
+
+with a sum from t equals z of gamma t v
+
+
+st. I'll just write vt just for
+
+
+shorthand.
+
+
+And then I subtract
+
+
+t = 1
+
+
+gamma t vt. Now I'm going to flip the
+
+
+sign on this. So they change the order
+
+
+because I I'm I'm changing the minus in
+
+
+front of the expectation to a plus. So
+
+
+now it's like this. Okay.
+
+
+So now you could say that well this is
+
+
+actually a sum from t equals 1 where
+
+
+this one is a
+
+
+is little t minus one. Okay. And this
+
+
+one is little t minus one. Okay. Then I
+
+
+can say that this one is also gamma
+
+
+little t minus one * gamma * v of t. All
+
+
+right. So now I can group these two
+
+
+together because they're al they're both
+
+
+sums from one to infinity with a gamma t
+
+
+minus one in front. So grouping them
+
+
+together I just get this minus vt minus
+
+
+one. And then I change this if I want to
+
+
+go from zero to infinity then I'll
+
+
+change all these minus1's to t and this
+
+
+to plus one. And that's how I get the
+
+
+result. Thank you for that question. Any
+
+
+other questions? Yes.
+
+
+for the first time we just
+
+
+um the reason that we did that is
+
+
+because every policy every every policy
+
+
+trajectory distribution has the same
+
+
+initial state distribution but we want
+
+
+to eventually get to an expectation
+
+
+under P theta prime of toao because
+
+
+that's that's what our claim is so I
+
+
+kind of I need to kind of sneak p theta
+
+
+tow p theta prime of tow in there
+
+
+somehow Yes,
+
+
+>> we have the very first step
+
+
+>> and then
+
+
+the expectation of state is the
+
+
+expectation of reward.
+
+
+>> Yeah. So the the property that we're
+
+
+using on the very first line is
+
+
+basically that v pi theta of s0 by the
+
+
+definition of the value function is the
+
+
+expected reward that you will get if you
+
+
+start in the state s0. So it's just like
+
+
+that thing in the top right just
+
+
+condition on S0.
+
+
+>> I'm just also turn the prime into sum
+
+
+over reward.
+
+
+>> That's right. Yeah. So so we're we're
+
+
+we're using two two different uh kind of
+
+
+identities there. It's just v0
+
+
+by the definition of the value function
+
+
+is actually almost exactly that the same
+
+
+thing that I have there in the top right
+
+
+just condition on s0.
+
+
+So if you if you take the distribution
+
+
+over trajectories given s0 uh then
+
+
+that's exactly the value function. So of
+
+
+course if you then take the expected
+
+
+value of that under s0 then you get the
+
+
+uh uh then you get j theta prime or j
+
+
+theta.
+
+
+Okay. So now let's uh interpret what has
+
+
+happened here. We have the expected
+
+
+value of the advantages under pi theta
+
+
+under the old policy in expectation
+
+
+under the distribution of trajectories
+
+
+under theta uh prime under the new
+
+
+policy. So this is basically a a policy
+
+
+iteration objective. It's saying let's
+
+
+first figure out the advantage of pi
+
+
+theta of our old policy and then let's
+
+
+maximize the expected value of that
+
+
+under our new policy pi theta prime.
+
+
+So
+
+
+um if we were to uh expand it out a
+
+
+little bit, I could write it as I could
+
+
+take the sum outside of the expectation
+
+
+and then it would be the expected value
+
+
+over all of the state marginalss over ST
+
+
+in expectation under P theta prime of ST
+
+
+of the expected value over the actions
+
+
+again under pi theta prime of gamma to
+
+
+the t times the advantage. Okay, so
+
+
+that's a perfectly valid way to write
+
+
+out that objective. And then if I use
+
+
+the same kind of important sampling
+
+
+stuff from before, then I end up with uh
+
+
+I can replace the policy the the pi
+
+
+theta prime with pi theta and I just
+
+
+have to stick in an importance weight.
+
+
+So I'm I'm getting there. I'm getting to
+
+
+the the nice objective that we want, but
+
+
+I'm not completely there yet. So uh this
+
+
+is basically is telling me why it's okay
+
+
+not to have the advantage of pi theta
+
+
+prime and instead to use the advantage
+
+
+of pi theta. But I still have a problem
+
+
+here. This is still not an objective
+
+
+that I can evaluate using only samples
+
+
+from pi theta. Why?
+
+
+Yeah,
+
+
+>> your state is drawn from the theta plot.
+
+
+>> Exactly. So I still have the state
+
+
+distribution from pi from from the new
+
+
+policy. So I'm not completely there yet.
+
+
+And of course I would like to get my
+
+
+states from the old policy. So I would
+
+
+like to replace that P theta prime ST
+
+
+with P theta ST.
+
+
+So we justified one of the two hacks,
+
+
+but we still have one left to go. The
+
+
+second one is harder. Now unfortunately
+
+
+with the second hack, the story is not
+
+
+so nice. It's not that like if I just
+
+
+ignore the discrepancy in the state
+
+
+distribution, I do not get exact
+
+
+equality some nice objective. I get an
+
+
+approximation.
+
+
+Okay. So um when is it uh okay to ignore
+
+
+the state distribution mismatch? Yes.
+
+
+>> Yeah.
+
+
+>> Can you not do the same trick the
+
+
+important sampling trick again?
+
+
+>> Yes. So you can use important sampling
+
+
+over states. The problem is that then
+
+
+you're going to get a term that looks
+
+
+like pi theta prime of st / pi theta s
+
+
+and you don't know the state marginalss
+
+
+in general because estimating the state
+
+
+marginalss requires knowing the
+
+
+transition probabilities of the mdp.
+
+
+Okay. So why why is it when is it okay
+
+
+to ignore the state distribution? The
+
+
+answer is it is not always okay. There
+
+
+are times when it is very bad to ignore
+
+
+the mismatch in state distributions. So
+
+
+if one of your policies goes to a
+
+
+totally different place than the other
+
+
+one, then no matter how much you improve
+
+
+it in in the wrong place, it's not going
+
+
+to give you a good solution. So state
+
+
+distributions in general should not be
+
+
+ignored. But in particular cases, maybe
+
+
+it's kind of almost okay to ignore them.
+
+
+So the question that we're concerned
+
+
+with is is [clears throat] there some
+
+
+sense in which the thing we derived on
+
+
+the previous slide here on the left is
+
+
+almost equal to the thing we really want
+
+
+where we switch out the state
+
+
+distribution.
+
+
+And I I really really wish I could put
+
+
+an equality sign between these two
+
+
+things, but I cannot. So I can only put
+
+
+approximately equal, which is really
+
+
+kind of an excuse for saying they're not
+
+
+really the same, but we will pretend
+
+
+that they're the same. Uh the reason
+
+
+that I want them to be the same of
+
+
+course is that once I can turn that p
+
+
+theta prime into p theta the only place
+
+
+in this entire objective where theta
+
+
+prime shows up is right there
+
+
+and that makes it really really
+
+
+convenient to differentiate.
+
+
+So I would really like to do that
+
+
+because I really want to have only theta
+
+
+prime in that numerator because then I
+
+
+can have my nice policy gradient from
+
+
+Wednesday. So it's really that thing in
+
+
+the red circle that is bothering me. So
+
+
+are these things kind of approximately
+
+
+equal under any reasonable circumstance?
+
+
+That's the question that I'm worried
+
+
+about.
+
+
+All right. So why do I want this to be
+
+
+true? Well, because then I could use
+
+
+this nice objective. I'm going to call
+
+
+it a bar. Uh in future derivations, I
+
+
+can say that j theta prime minus j theta
+
+
+is approximately a bar. And then I can
+
+
+just find the arg max of a bar, which is
+
+
+very easy without having to generate any
+
+
+new samples.
+
+
+So that's that's going to be my policy
+
+
+improvement step. I'm going to use uh
+
+
+these advantages from a pi theta to get
+
+
+an improved policy pi theta prime by
+
+
+maximizing a bar and I really just need
+
+
+an excuse. I need permission to be able
+
+
+to do this and sleep soundly at night.
+
+
+Okay, so is this true and when is it
+
+
+true? So my claim is going to be that p
+
+
+theta is clo p theta st is close to p
+
+
+theta prime of s when pi theta is close
+
+
+to pi theta prime. And that's like kind
+
+
+of a reasonable statement like if pi
+
+
+theta is equal to pi theta prime then
+
+
+certainly their state marginalss are the
+
+
+same. So you might kind of hope that if
+
+
+I change my policies only a little bit
+
+
+their state distribution should al also
+
+
+change only a little bit.
+
+
+And if that is the case then I really
+
+
+shouldn't maximize a bar to convergence
+
+
+but maybe I can maximize it at least a
+
+
+little bit and still make progress on my
+
+
+overall objective.
+
+
+Okay. Well, it turns out that way back
+
+
+in the beginning of the course, we
+
+
+actually covered some very convenient
+
+
+derivations that are very very similar
+
+
+to this.
+
+
+So that's our claim. Pi theta s is close
+
+
+to pi theta prime of s when pi theta is
+
+
+close to pi theta prime. Uh and let's uh
+
+
+do a little warm-up where we assume that
+
+
+our policy is deterministic.
+
+
+in general they're not going to be
+
+
+deterministic but uh if uh if pi theta
+
+
+is deterministic then we can uh kind of
+
+
+write this out more easily.
+
+
+So we'll define close as the probability
+
+
+that pi theta prime takes a different
+
+
+action than pi theta. So we'll say that
+
+
+the probability that pi theta prime
+
+
+takes an action that is not the same as
+
+
+the action from pi theta is bounded by
+
+
+epsilon.
+
+
+That's our definition of close. So this
+
+
+is an assumption. We're saying pi theta
+
+
+prime is close to pi theta if the
+
+
+probability that pi theta prime takes a
+
+
+different action is less than or equal
+
+
+to epsilon.
+
+
+And now we're going to try to show based
+
+
+on this that the state distributions of
+
+
+these two policies are also close.
+
+
+Does anyone remember where we've seen
+
+
+stuff like this before?
+
+
+>> Huh?
+
+
+>> Behavioral. Yeah, we saw this way back
+
+
+in the beginning. Back then, this was
+
+
+bad news. Back then in the behavioral
+
+
+cloning land, we actually used this to
+
+
+show that yeah, they're close, but they
+
+
+they're close with some nasty horizon
+
+
+dependent factor. But still better than
+
+
+nothing. So, what we're going to do is
+
+
+we're going to basically go back to um
+
+
+lecture uh two, I believe, uh and copy
+
+
+and paste uh some of the equations
+
+
+there. So, first we're going to copy and
+
+
+paste this equation. We're going to
+
+
+write out uh p theta prime uh and split
+
+
+it into two parts. 1 minus epsilon to
+
+
+the t which is basically the probability
+
+
+that we took all the same actions as pi
+
+
+theta up until time step t times the
+
+
+state distribution of uh uh p theta.
+
+
+That kind of makes sense like if you to
+
+
+if you took all the same actions as the
+
+
+other policy then you'll end up in the
+
+
+same state distribution. And the
+
+
+probability that you took all the same
+
+
+actions is at least uh one minus epsilon
+
+
+to the t. And then you have one minus
+
+
+one one minus epsilon to the t.
+
+
+everything else times some other
+
+
+distribution that you do not know which
+
+
+we're going to call P mistake. Okay, so
+
+
+there's at least at least a one minus
+
+
+epsilon to the T slice of that
+
+
+distribution that's going to end up
+
+
+being exactly the same.
+
+
+Okay,
+
+
+so hopefully this looks familiar to
+
+
+everybody and the rest of this
+
+
+derivation is exactly identical just
+
+
+literally I copy and pasted it from the
+
+
+from the old slides and replace some of
+
+
+the subscripts.
+
+
+So uh we're going to take the total
+
+
+variation divergence between the state
+
+
+distributions at time step t of the two
+
+
+policies and we're going to plug in that
+
+
+equation for p theta prime up above and
+
+
+the the p theta terms will cancel out h
+
+
+and we'll just be left with the total
+
+
+variation divergence between p mistake
+
+
+and p theta which we do not know p
+
+
+mistake could be anything so there the
+
+
+only bound we have is the trivial bound
+
+
+which is the total variation divergence
+
+
+is less than or equal to one
+
+
+So we get this and then again we go back
+
+
+to the behavior cloning lectures and we
+
+
+say okay there's this useful identity 1
+
+
+minus epsilon to the t uh where epsilon
+
+
+is between 0 and 1 is greater than equal
+
+
+to 1 minus epsilon t. You basically you
+
+
+can bound an exponential by a linear
+
+
+function in the 0 to1 interval and we
+
+
+get this. Okay. Uh I went through that
+
+
+really fast but it's literally exactly
+
+
+the same as the behavior cloning
+
+
+lecture. So if you want a slower version
+
+
+of this, rewind back to uh lecture two
+
+
+and it will go through this uh in
+
+
+detail.
+
+
+So it's not a great bound. The reason
+
+
+it's not a great bound is because it
+
+
+depends on our horizon. So little t uh
+
+
+will get uh bigger and bigger as your
+
+
+horizon gets longer. But if epsilon is
+
+
+small enough, this is a valid bound. So
+
+
+this will in fact tell you that as the
+
+
+policies get close together then their
+
+
+state margins also get close together in
+
+
+general uh linearly in epsilon and
+
+
+linearly in t.
+
+
+>> Yeah this summation s just mean all the
+
+
+possible state right instead of
+
+
+>> the sum over st is the sum over all
+
+
+states. Yes.
+
+
+>> Yeah. But why sum over all states and
+
+
+then like the difference will be smaller
+
+
+than one for term shouldn't.
+
+
+>> Yeah. So, so the reason that the total
+
+
+variation divergence is bounded by uh
+
+
+one is that your probabilities sum to
+
+
+one. So, if if you sum over all of the
+
+
+possible values of the random variable
+
+
+and you take a difference of two
+
+
+probability distributions, basically the
+
+
+worst possible cases where one
+
+
+distribution is completely disjoint from
+
+
+the other. So then you get two and
+
+
+there's a 1/2 there. So two * 1/2 is
+
+
+one.
+
+
+>> Yes.
+
+
+>> Wasn't this under the assumption that
+
+
+the probability that we made no mistakes
+
+
+was like the expert, right?
+
+
+Is that still the case?
+
+
+>> Yeah. So, so here there's something a
+
+
+little peculiar on this slide, which is
+
+
+that I'm assuming that pi theta is
+
+
+deterministic. So, pi theta is the
+
+
+expert and you're saying that your
+
+
+probability of deviating from pi theta
+
+
+is bounded by epsilon. I'm not 100% done
+
+
+yet because of course pi theta might not
+
+
+be deterministic and that's what that's
+
+
+the one difference that we're going to
+
+
+do on the next slide. But yeah, you can
+
+
+basically think of it as behavior
+
+
+cloning where the old policy is the
+
+
+expert and the new policy pi theta prime
+
+
+is your policy.
+
+
+Okay, so there's just a little quirk
+
+
+left with this derivation which is that
+
+
+in general both policies are stochcastic
+
+
+and that complicates things a little
+
+
+bit.
+
+
+Um,
+
+
+morally this derivation is exactly the
+
+
+same, but there's a little bit of kind
+
+
+of gratuitous math that's needed to make
+
+
+sense of having a stcastic um, expert, a
+
+
+stochastic pi theta. And roughly
+
+
+speaking, what we're going to try to do
+
+
+is we're going to try to also bound the
+
+
+probability take a different action than
+
+
+your old policy except that now both
+
+
+policies are stocastic. So
+
+
+the way to think about what's going to
+
+
+what's about to happen is that we we
+
+
+want to think of a stochcastic policy as
+
+
+some deterministic function that takes
+
+
+in a random seed and outputs an action.
+
+
+Okay? Like if you want to sample from a
+
+
+a Bernoli random variable with a uh
+
+
+probability P then you would generate a
+
+
+random number between zero and one and
+
+
+if the number is less than P then you
+
+
+output false. If it's greater than P
+
+
+then you output true. Right? So if you
+
+
+have a random seed uh you can plug it
+
+
+into the deterministic function and get
+
+
+a sample from your distribution. So now
+
+
+what we want to do is we want to write
+
+
+the deterministic functions the the
+
+
+computer program for both the old and
+
+
+the new policy so that they're maximally
+
+
+aligned right they're not the same
+
+
+distribution but we would like it so
+
+
+that if they get similar random seeds
+
+
+they should output the same action.
+
+
+The thing is that there's two different
+
+
+way. There's many different ways to
+
+
+transform a random seed into a
+
+
+distribution. And out of all those
+
+
+different ways to transform a random
+
+
+seed into a distribution, we'll pick the
+
+
+way that makes the policies look the
+
+
+most similar.
+
+
+Okay. So the way in which the policies
+
+
+are going to be close now is going to be
+
+
+in terms of total variation divergence.
+
+
+Basically that that like makes sense.
+
+
+It's just the difference of their
+
+
+probabilities. So we're going to assume
+
+
+that the difference of their
+
+
+probabilities is less than or equal to
+
+
+epsilon.
+
+
+And there's this useful lema which is
+
+
+basically formalizing this notion of
+
+
+transforming random seeds into
+
+
+probability distributions. And the lema
+
+
+is a little bit confusing. So if the
+
+
+statement of this lema doesn't make
+
+
+sense to you, just remember that
+
+
+intuition that this is about turning a
+
+
+random seed into a sample from your
+
+
+policy and you can do that in many
+
+
+different ways. So you will choose to do
+
+
+it in the way that makes the policies
+
+
+look the most similar. Meaning that for
+
+
+similar random seeds, they should upper
+
+
+similar actions.
+
+
+Okay. So here's the statement. If you
+
+
+have two distributions px and py over
+
+
+some random variable x and the total
+
+
+variation divergence between them is
+
+
+less than or equal to epsilon then it is
+
+
+possible to construct a joint
+
+
+distribution px comma y and that joint
+
+
+distribution is basically trying to
+
+
+align these things as much as possible
+
+
+so that the marginalss px and py are the
+
+
+two distributions you started with. So
+
+
+the marginal over the first variable is
+
+
+PX of X and the marginal over the second
+
+
+variable is P Y of X
+
+
+and the probability from this joint that
+
+
+you get the same value that the
+
+
+probability that X is equal to Y is 1
+
+
+minus epsilon.
+
+
+Okay, so this is a kind of a confusing
+
+
+statement, but what it's really saying
+
+
+is that if you have these two
+
+
+distributions and their total evation
+
+
+divergence is less than or equal to
+
+
+epsilon, then you construct a joint
+
+
+distribution whose marginalss are the
+
+
+two things you started with and where
+
+
+the probability of the outputs being
+
+
+equal is one minus epsilon,
+
+
+right? So that means that like the
+
+
+probability of making a mistake, the
+
+
+probability that the values are
+
+
+different is bounded by epsilon.
+
+
+Okay, so basically P of X PX agrees with
+
+
+PY with probability um uh one minus
+
+
+epsilon. Yes, sorry that's a typo. They
+
+
+agree with probability 1 - epsilon. They
+
+
+disagree with probability uh no more
+
+
+than epsilon.
+
+
+Okay, so for our policies that means
+
+
+that pi theta prime of a takes a
+
+
+different action than pi theta with
+
+
+probability at most epsilon. So they
+
+
+disagree with at most probability
+
+
+epsilon. Yes.
+
+
+>> How do we calculate epsilon? So this is
+
+
+an assumption. We're we're assuming that
+
+
+the two policies are close and we're
+
+
+defining close to mean that their total
+
+
+various divergence is less than or equal
+
+
+to epsilon. In practice, we're not
+
+
+actually going to be calculating this.
+
+
+We're going to be enforcing it. So when
+
+
+we optimize pi theta prime, we're going
+
+
+to constrain it so that its divergence
+
+
+from pi theta is less than or equal to
+
+
+epsilon. So it's a choice that we're
+
+
+going to make.
+
+
+Okay. So the statement of this uh uh
+
+
+lema is a little bit confusing but
+
+
+hopefully the idea that we're trying to
+
+
+do here is a little bit more natural.
+
+
+Does anyone have any questions about
+
+
+this?
+
+
+Okay. So uh yes
+
+
+>> just like intuitively we said that we
+
+
+could in the previous slide somewhere we
+
+
+said like the state distribution we
+
+
+could ignore and just replace with
+
+
+the data
+
+
+>> but is that not
+
+
+>> so what we're doing here is we're we're
+
+
+actually trying to show that it's okay
+
+
+to ignore it. So um basically the the
+
+
+logical progression for where we're at
+
+
+right now in the lecture is that before
+
+
+we said that hey it would be really nice
+
+
+if we could replace a state distribution
+
+
+under theta prime with a state
+
+
+distribution under theta. So now what
+
+
+I'm trying to do is I'm trying to show
+
+
+that the difference between those state
+
+
+distributions is small because if the
+
+
+difference between those state
+
+
+distributions is small then I can
+
+
+justify ignoring it by saying that the
+
+
+error from using the wrong one is going
+
+
+to be bounded. So here I'm not ignoring
+
+
+I'm actually trying to explain what the
+
+
+what the difference is.
+
+
+>> Yes.
+
+
+>> Just to clarify. So we're saying like
+
+
+px we're just saying the marginal of our
+
+
+joint distribution should follow the
+
+
+distribution
+
+
+>> exactly. So I have these two different
+
+
+distributions and I'd like to construct
+
+
+a joint over two variables whose
+
+
+marginalss over the two variables are
+
+
+the two distributions I started with. So
+
+
+basically you can think of it as trying
+
+
+to align these two distributions in some
+
+
+way. Put the points under the two
+
+
+distributions in correspondence.
+
+
+Okay. So if I have this property that pi
+
+
+theta prime agrees with pi theta with
+
+
+probabil uh or uh pi theta prime
+
+
+disagrees with pi theta with probability
+
+
+at most epsilon then I could do exactly
+
+
+the same thing as before right because
+
+
+if I know that they uh disagree with at
+
+
+most probability of epsilon then I can
+
+
+write this whole p mistake thingy just
+
+
+like before no difference whatsoever. uh
+
+
+and then I can show this uh that the
+
+
+state marginal differences are bounded
+
+
+by epsilon t. So the whole point of
+
+
+introducing this lema is just so I can
+
+
+plug in uh the this assumption that dtv
+
+
+is less than or equal to epsilon into
+
+
+the derivation from the previous slide
+
+
+because all that the previous slide
+
+
+required is that the probability of
+
+
+disagreement uh the probability that we
+
+
+made no mistake is 1 minus epsilon to
+
+
+the t. So as long as I have that
+
+
+property, I can have this decomposition
+
+
+and this lemon just gives me an excuse
+
+
+to do that under the assumption that the
+
+
+total variation divergence between the
+
+
+two policies is bounded.
+
+
+>> Yes.
+
+
+>> So that one say for all the t this thing
+
+
+is at most absolute right. Then why do
+
+
+you need a power of t?
+
+
+>> I understand like
+
+
+>> because I have t steps the t time steps.
+
+
+Oh okay.
+
+
+>> Because to get to time step t I need to
+
+
+have uh taken uh t actions and each of
+
+
+those actions could be wrong.
+
+
+>> You need to have a multiplication of
+
+
+those t
+
+
+>> exactly. So the probability of having
+
+
+two actions right in a row is one minus
+
+
+the the probability of getting it wrong
+
+
+times one min. Yeah.
+
+
+>> Okay. So this is where I've gotten to at
+
+
+this point. I've gotten to the point
+
+
+where if I define close to be that the
+
+
+total variation divergence is bounded,
+
+
+then the total variation divergence
+
+
+between the state marginalss is also
+
+
+bounded.
+
+
+The bound is not a great bound because
+
+
+it's epsilon* t. So if my horizon is
+
+
+like 10 million, then t could be up to
+
+
+10 million. But as long as epsilon is
+
+
+small enough, it's still a finite
+
+
+number. Hopefully a number less than
+
+
+one. Yes.
+
+
+>> Isn't this an optimistic like one?
+
+
+We kind of need a good
+
+
+>> um
+
+
+you you mean because of the the useful
+
+
+lema here?
+
+
+>> Yeah.
+
+
+>> Well, so it's it's enough for it to
+
+
+exist because what you're doing is
+
+
+you're just generating samples from
+
+
+these two policies. So you can sort of
+
+
+think about it as like okay I'm going to
+
+
+generate samples here I'm going to
+
+
+generate samples here and then I need to
+
+
+find an alignment of these two
+
+
+distributions but you can choose any
+
+
+alignment you want like it's just a it's
+
+
+just a mathematical analysis trick it's
+
+
+not a property of how the samples are
+
+
+being generated.
+
+
+>> Yeah.
+
+
+>> Tree
+
+
+uh little t
+
+
+>> little t is an integer. It it's the um
+
+
+it's the integer indicating which time
+
+
+step you're at.
+
+
+Okay. So now that we have this property
+
+
+uh let's uh use this to bound the error
+
+
+of using the wrong state distribution.
+
+
+This is in some ways kind of the obvious
+
+
+part right. So basically
+
+
+where I am now in my derivation is I've
+
+
+said okay if pi theta prime and pi theta
+
+
+are close then their state distributions
+
+
+are close. And what I wanted to do
+
+
+initially is I wanted to use the
+
+
+expected value of my objective under the
+
+
+wrong state distribution. So the last
+
+
+step of all this is to relate the
+
+
+expected value of a function under the
+
+
+distribution I want which is p theta
+
+
+prime of st to the distribution I have
+
+
+which is p theta of st. Okay, so I'm
+
+
+concerned with basically what happens if
+
+
+I have uh an expectation of some
+
+
+function. We'll talk about which
+
+
+function it is in a second, but it's the
+
+
+one from the beginning. I have the
+
+
+expected value of some function f of ST
+
+
+under P theta prime of ST
+
+
+and I can write that out as just a sum
+
+
+over all the states. So that's just the
+
+
+definition of expectation.
+
+
+And uh that's going to be greater than
+
+
+or equal to uh the using the the the
+
+
+state uh total variation bound the sum
+
+
+over the other state distribution uh p
+
+
+theta of ST minus the error term. Right?
+
+
+So the way how did I get this? This is
+
+
+exactly the same as in the behavioral
+
+
+cloning derivation. Right? So you take
+
+
+uh P theta prime
+
+
+minus P theta plus P theta prime. Right?
+
+
+So you're adding one or you're adding
+
+
+zero. So that's okay. And then you put
+
+
+absolute value around P theta minus P
+
+
+theta prime. So if for those of you that
+
+
+didn't catch that, let me just write it
+
+
+on the board because I realize that you
+
+
+might not all remember the lecture from
+
+
+3 weeks ago.
+
+
+Okay. So
+
+
+P theta prime
+
+
+of ST
+
+
+and then what I'm going to do is I'm
+
+
+going to
+
+
+subtract
+
+
+P theta
+
+
+of SD
+
+
+minus P theta prime of SD D.
+
+
+Why is this okay? Or sorry, other way
+
+
+around. Theta prime
+
+
+theta minus theta prime. Okay, like
+
+
+this.
+
+
+Okay, why is this okay? Well, because if
+
+
+I distribute the negative sign inside, I
+
+
+have a plus theta prime and then I have
+
+
+p theta minus p theta. So p theta minus
+
+
+p theta is just zero. So adding zero to
+
+
+anything is totally fine. And then this
+
+
+is multiplied by f of sd. Okay. So now I
+
+
+can turn the these brackets into
+
+
+absolute value because absolute value is
+
+
+always going to be larger than the thing
+
+
+or larger or equal to the thing inside
+
+
+the absolute value. Taking the absolute
+
+
+value doesn't make a function smaller
+
+
+because negative numbers become positive
+
+
+and positive numbers stay the same. So I
+
+
+can turn this into absolute value and
+
+
+maintain the greater than or equal and
+
+
+then I can distribute f inside of this.
+
+
+So I can put an f here.
+
+
+and then minus like this. Okay, and
+
+
+that's what I have up there.
+
+
+Now, I would really like to get rid of
+
+
+the summation symbol around that second
+
+
+term. So, what I can do is I can just
+
+
+replace f with f of st with the largest
+
+
+possible value of f and that maintains
+
+
+the uh inequality. So that's why in
+
+
+there I have a max over st of f of st
+
+
+because taking the max of it is never
+
+
+going to make it smaller. So the
+
+
+negative of that is is going to maintain
+
+
+the bound.
+
+
+Okay. So that's how we get that equation
+
+
+there. Notice the greater than or equal
+
+
+to sign there.
+
+
+Take a take a second to process this and
+
+
+let me know if yes.
+
+
+>> It's just some function. We we'll see
+
+
+which well the function is going to be
+
+
+that uh the thing inside the expectation
+
+
+that we had before but since it's really
+
+
+long it's just a function for now.
+
+
+Okay. So uh now the absolute the the the
+
+
+sum over st of that absolute value
+
+
+that's just the total variation
+
+
+divergence times two. So I can plug in
+
+
+my bound which is epsilon t and it's
+
+
+times two because I don't have the 1/2
+
+
+anymore. So this whole thing is is
+
+
+bounded by the expectation under P theta
+
+
+of F minus my error term which is 2 *
+
+
+epsilon * T times the maximum possible
+
+
+value of F of S.
+
+
+Okay, so just to clarify this this to
+
+
+this that's what I wrote out on the
+
+
+board and this to this is just replacing
+
+
+that sum over ST of the absolute value
+
+
+of P theta minus P theta prime with my
+
+
+bound on the total variation divergence
+
+
+up above.
+
+
+If this uh step is unclear to anybody
+
+
+please ask me and I can work it out in
+
+
+more detail.
+
+
+Okay. So, uh what is f? Well, f is the
+
+
+thing that went inside the expectation
+
+
+before. So, this is what we had before.
+
+
+Uh this is a sum over all the time steps
+
+
+of an expected value under p theta prime
+
+
+of s of a bunch of stuff. And this is
+
+
+why I used f of s instead of writing out
+
+
+all that stuff every time because
+
+
+otherwise this wouldn't fit on the
+
+
+slide. But f is just the thing inside
+
+
+the brackets here. So if I were to use
+
+
+that identity right above on our
+
+
+objective then our objective is lower
+
+
+bounded by
+
+
+the sum over expected values under p
+
+
+theta. The only difference between these
+
+
+two lines is that the state distribution
+
+
+is p theta now instead of p theta prime
+
+
+minus the error and the error is a sum
+
+
+over all of my time steps of 2 * epsilon
+
+
+* t times some constant.
+
+
+What is the constant?
+
+
+What is C?
+
+
+>> This is this is a a test that requires
+
+
+you all to look at the slide carefully.
+
+
+>> Yes. Back there.
+
+
+>> Yeah. And and and f is the thing inside
+
+
+the brackets there. So you take that big
+
+
+ugly thing and you maximize it overall
+
+
+states. Yes. the expected value based on
+
+
+the best action you have. You're maxing
+
+
+on the action.
+
+
+>> Yeah. So it it's it's it's the max over
+
+
+all states of the expected value under
+
+
+the actions of that whole important
+
+
+sampling mess. Okay. So this part
+
+
+requires a little bit of creativity
+
+
+because um we we would like to construct
+
+
+some relatively concise way to state
+
+
+that. So I could literally write that I
+
+
+I could write like max over ST of
+
+
+everything inside those brackets. But
+
+
+that's not a very helpful statement
+
+
+because the thing inside that brackets
+
+
+is is kind of a mess. So I would like to
+
+
+come up with some way to uh bound that
+
+
+quantity. I want to bound it above. I
+
+
+want to say that it's less than or equal
+
+
+to something.
+
+
+Um
+
+
+so how can I do that? Any any ideas?
+
+
+>> Yeah.
+
+
+reward.
+
+
+>> Yeah. Bounded by maximum reward. Why did
+
+
+you say that?
+
+
+>> So you have an advantage in the middle
+
+
+and the advantage is basically the next
+
+
+value. Uh it's the reward plus the next
+
+
+value minus the current value. So uh let
+
+
+me write this on the board just to make
+
+
+it a little bit uh clearer.
+
+
+And I want to dwell on this a little bit
+
+
+because this kind of idea comes up again
+
+
+in RL. So inside of that expectation,
+
+
+basically there's a bunch of
+
+
+probabilities and the probabilities, you
+
+
+know, they tend to be between zero and
+
+
+one. So we don't worry about that too
+
+
+much. Uh and um in fact, it's it's even
+
+
+easier if I if I notice that okay, it's
+
+
+important sampling. So that means that I
+
+
+can just as well write it as an
+
+
+expectation under pi theta prime. I
+
+
+don't want uh yeah I would rather not do
+
+
+that of course because in practice the
+
+
+samples come from pi theta but for
+
+
+analysis I can write under pi theta
+
+
+prime that's what the important sampling
+
+
+is doing and inside the brackets is some
+
+
+advantage I don't even care what it's an
+
+
+advantage of it's some advantage okay so
+
+
+I I've undone the important sampling and
+
+
+these advantages
+
+
+they are
+
+
+given by
+
+
+the reward at sdat t plus gamma v of s t
+
+
++ 1 minus v of s t.
+
+
+So we might say that the difference of
+
+
+these values is pretty small, right?
+
+
+Because the they're both values and it's
+
+
+you know adding one subtracting another.
+
+
+So really most of the magnitude comes
+
+
+from this
+
+
+and then I'm summing them over overall
+
+
+time. So if I say that my rewards are
+
+
+limited by some maximum R max like my
+
+
+rewards are always less than 10,000
+
+
+then I can pessimistically bound those
+
+
+advantages by
+
+
+10,000 summed over all time. So how much
+
+
+time is there? Well there's h is my
+
+
+horizon. So the
+
+
+kind of trivial bound on that quantity
+
+
+is rm max the maximum reward you can
+
+
+ever get times the total number of time
+
+
+steps you can ever get which is h.
+
+
+If you have discounting
+
+
+you can do a little bit better because
+
+
+with discounting
+
+
+I have a geometric series. So you know
+
+
+if you have a sum over t of gamma to the
+
+
+t sum from 0 to infinity the geometric
+
+
+series sums to 1 minus gamma.
+
+
+Okay. So if you have discounting then
+
+
+you can do a little bit better. You can
+
+
+say that it's
+
+
+r max / 1 - gamma because the geometric
+
+
+series sums to one one over one minus
+
+
+gamma. And that's why we sometimes in RL
+
+
+refer to one over one minus gamma as a
+
+
+horizon because in a discounted setting
+
+
+it it sort of takes the place of the
+
+
+horizon because you multiply R max by
+
+
+that and that's kind of the maximum
+
+
+total total discounted reward you could
+
+
+ever get.
+
+
+So this is a fairly pessimistic way to
+
+
+bound this but it's fair enough to say
+
+
+that you're never going to get more
+
+
+reward than the maximum possible reward
+
+
+times your horizon. Yes.
+
+
+>> Does that not cause issues?
+
+
+>> It does cause issues. Yes. But you know
+
+
+uh this is math and in math we would
+
+
+like a bound to exist and we'd like the
+
+
+error to be like uh kind of finite and
+
+
+vanish as the epsilon gets smaller and
+
+
+smaller. So this is not a great bound by
+
+
+any means, but it does kind of check the
+
+
+box for us in convincing us that as the
+
+
+two policies come closer and closer
+
+
+together, meaning that epsilon gets
+
+
+smaller and smaller, eventually that
+
+
+error will become small. And the reason
+
+
+we care about this, and this is true for
+
+
+any situation where you're optimizing a
+
+
+bound, is we'd like to convince
+
+
+ourselves that we can make that
+
+
+approximate objective larger, and for
+
+
+some improvement to that approximate
+
+
+objective, it'll actually improve on the
+
+
+real objective. And the key here is as
+
+
+we make that approximate objective
+
+
+larger, of course, the objective value
+
+
+increases, but epsilon also increases.
+
+
+So as long as we increase it just enough
+
+
+that the corresponding increase in
+
+
+epsilon doesn't completely uh mess us up
+
+
+then we will in fact increase the
+
+
+objective we care about
+
+
+>> if it is finite isn't the term being
+
+
+order of h to the cube
+
+
+>> to the what
+
+
+>> summation of t over there right you also
+
+
+have an h over there right
+
+
+>> that's right yeah so you're you're
+
+
+summing h terms that are each of the
+
+
+order h so it is an h squ uh term giving
+
+
+you t to sum
+
+
+Oh. Oh, the whole term is okay. Okay.
+
+
+Yeah.
+
+
+>> So, it's it's not it's not great, but it
+
+
+is a it is a finite number. Yes.
+
+
+>> Are we ever using these bounds in our
+
+
+actual algorithm?
+
+
+>> Yeah, good question. Are we ever using
+
+
+these bounds in our algorithm? Um, you
+
+
+could. I would recommend not to. So, the
+
+
+correct way to use a bound like this is
+
+
+as a sort of fig leaf to kind of justify
+
+
+doing what we all really want to do,
+
+
+which is to use the approximate
+
+
+objective. uh a slightly less advisable
+
+
+way to use it is to actually derive your
+
+
+step size, basically how far you want to
+
+
+go based on this error. And you can do
+
+
+that, but that will give you an
+
+
+extremely conservative algorithm. So
+
+
+this is kind of the the dirty secret
+
+
+about this is you can use this to figure
+
+
+out how far you're allowed to change
+
+
+your policy. But if you literally do
+
+
+that, you will get an extremely
+
+
+conservative step size. Probably so
+
+
+conservative as to uh not be very
+
+
+useful. So I think the right way and
+
+
+this is kind of maybe a general
+
+
+statement about theory is that the right
+
+
+way to use this kind of derivation is to
+
+
+uh get like a little bit of an
+
+
+understanding for is there even some
+
+
+circumstance in practice where this
+
+
+makes any sense. But in reality
+
+
+generally the worst case bounds that we
+
+
+get through stuff like this are a little
+
+
+too conservative.
+
+
+And it kind of makes sense because like
+
+
+you know the way that we're relating
+
+
+policy distributions to state
+
+
+distributions here is by saying well if
+
+
+your policy does anything even a little
+
+
+bit different from the old policy it
+
+
+sort of ends up in a totally different
+
+
+place and the difference uh in the
+
+
+states is arbitrarily large. Of course
+
+
+in reality that's not the case. In
+
+
+reality most of the time if it does
+
+
+something pretty close to the old policy
+
+
+even if it's not exactly the same it
+
+
+won't be arbitrarily far away. So this
+
+
+is a fairly pessimistic bound.
+
+
+>> Yes.
+
+
+the best.
+
+
+>> Um so the way that you would derive the
+
+
+uh the best step size epsilon is you
+
+
+would essentially try to find the
+
+
+balance between these two things. So you
+
+
+would say okay as epsilon increases as
+
+
+as I optimize that objective uh my
+
+
+objective value gets larger but my error
+
+
+also gets larger. So eventually there's
+
+
+a crossover and the error exceeds the
+
+
+improvement in the objective and that's
+
+
+when you should stop.
+
+
+>> Yes.
+
+
+It could. Yeah. So, it depends on your
+
+
+on your advantages.
+
+
+There there's there's a lot there's kind
+
+
+of a much longer version of this that
+
+
+shows it actually does in fact exist.
+
+
+But that's quite quite hard to do.
+
+
+>> Isn't the whole term just explode if you
+
+
+have t go to infinity?
+
+
+>> Well, if you have t equals to infinity,
+
+
+you would use the discounted version.
+
+
+Yeah, but like that order would be for
+
+
+all two epsilon t.
+
+
+>> Oh. Oh, I I see. Yeah. Yeah. So,
+
+
+apologies. I I I I removed the the the
+
+
+discount factor in here for simplicity.
+
+
+So, if if you had a discount factor,
+
+
+there would be a gamma to the t in front
+
+
+of all those terms.
+
+
+>> Okay.
+
+
+>> So, with the gamma to the t then it
+
+
+would it would be a finite sum.
+
+
+>> That makes sense.
+
+
+>> Yeah. Yeah.
+
+
+>> Okay. So, um let's uh conclude this
+
+
+part. So, where are we so far? We've got
+
+
+our objective under the wrong state
+
+
+distribution. And if we keep the total
+
+
+variation divergence between the new
+
+
+policy pi theta prime and pi theta to be
+
+
+less than or equal to epsilon, then uh
+
+
+we've shown that the error on the
+
+
+subjective relative to the objective we
+
+
+care about is bounded. It's bounded by
+
+
+that uh uh sum over t of 2 epsilon tc.
+
+
+So what this basically tells us is that
+
+
+for a small enough epsilon, this will
+
+
+improve the objective with all the
+
+
+caveats of like this being like actually
+
+
+a fairly conservative way to construct a
+
+
+bound. So what this basically means is
+
+
+that it's okay to ignore uh the state
+
+
+distribution mismatch if you don't
+
+
+change the policy too much. And the
+
+
+reason it's okay is because then you are
+
+
+optimizing a you're maximizing a bound
+
+
+on the value that you really care about
+
+
+using an approximation which has bounded
+
+
+error. So that's where we've arrived
+
+
+with all these uh steps and then after
+
+
+the intermission we'll talk about how to
+
+
+turn these things into practical
+
+
+algorithms. So let's take a break for uh
+
+
+let's say four minutes and we'll come
+
+
+back at 9:13.
+
+
+I'll just take a question to ask you. I
+
+
+know.
+
+
+All right, let's get uh back to it. Is
+
+
+there a question?
+
+
+>> Yeah.
+
+
+Why did we want J?
+
+
+>> Okay. Yeah. So, uh let's uh let's talk
+
+
+about uh this because I think it's it's
+
+
+good to check in about where we're at.
+
+
+So, we got on this whole journey because
+
+
+we had these two hacks in the importance
+
+
+sample policy gradient. First hack is to
+
+
+ignore the importance weights on the
+
+
+rewards and we saw that that is
+
+
+equivalent to using the advantage of the
+
+
+old policy rather than the new one and
+
+
+that was okay. And then the second hack
+
+
+was to ignore the importance weights on
+
+
+the state distribution which amounted to
+
+
+using the old policy state distribution
+
+
+instead of the new one. So we we would
+
+
+like to get a deeper understanding for
+
+
+why that's okay to do. And what we've
+
+
+found out so far is that it is okay to
+
+
+use the wrong state distribution if the
+
+
+policies are sufficiently close
+
+
+together. So what this would imply is
+
+
+that perhaps you can optimize that
+
+
+objective uh that we would really want
+
+
+the one from Wednesday basically but
+
+
+only if we keep the policies close
+
+
+together. And kind of the the spoiler
+
+
+here uh which is maybe uh uh clear to
+
+
+some of you already is that one of the
+
+
+ways to keep the policies close together
+
+
+is to clip your importance weights.
+
+
+Because if you clip your importance
+
+
+weights, you're sort of removing the
+
+
+incentive for the policies to become too
+
+
+far apart. Because uh the reason that
+
+
+the policies might want to drift far
+
+
+apart is because well, you can take all
+
+
+the good samples and drive pi theta
+
+
+prime on the good samples to be really
+
+
+really high. So then you want to go
+
+
+really far from the old policy just so
+
+
+you can put a giant weight on those
+
+
+positive advantages. But if you're
+
+
+clipping the the ratios, then if you go
+
+
+further than a certain amount, you don't
+
+
+get any more kind of bonus for doing
+
+
+that. So then the policy will not drift
+
+
+as far away. So that's why the clipping
+
+
+was there. The clipping is basically a
+
+
+poor man's way of limiting how far the
+
+
+policies change. But now that we know
+
+
+that what we need to do is limit how far
+
+
+the policies change, we can think of
+
+
+other ways of doing that. And that's
+
+
+what we'll talk about next.
+
+
+So um before we do that, we first need
+
+
+to turn that bound into a slightly more
+
+
+convenient form. It's it's a very simple
+
+
+change in this case. So before we had
+
+
+the statement that the policies are
+
+
+close if their total variation
+
+
+divergence is close. That was our
+
+
+assumption going into the proof and
+
+
+based on that assumption we showed that
+
+
+the state distributions are also close
+
+
+in in terms of this. But uh total
+
+
+variation divergence is kind of a pain
+
+
+to work with. Uh when we um
+
+
+train uh models in machine learning, we
+
+
+really like to use log probabilities
+
+
+because log probabilities often have
+
+
+convenient expressions and well- behaved
+
+
+gradients. And total variation
+
+
+divergence is expressed in terms of an
+
+
+absolute value difference between
+
+
+probabilities. Uh so turning that into
+
+
+log probabilities is actually quite
+
+
+hard. So here's a
+
+
+a property that you can look up on
+
+
+Wikipedia. Basically it's called
+
+
+Pinkster's inequality which basically
+
+
+says that total variation divergence is
+
+
+bounded by KL divergence. This is a
+
+
+textbook fact. This is not something
+
+
+that is particularly profound. uh pretty
+
+
+pretty much any good information theory
+
+
+textbook or stats textbook will have
+
+
+this somewhere. Uh and KL divergence, I
+
+
+didn't tell you what it is yet, but it's
+
+
+a much more convenient form of
+
+
+divergence. So if you think of
+
+
+toleration divergence as a measure of
+
+
+how different two probability
+
+
+distributions are, KL divergence is
+
+
+another way to measure how different two
+
+
+probability distributions are that is a
+
+
+little bit more closely related to
+
+
+information theory and leads to terms
+
+
+that are more convenient to plug into
+
+
+machine learning algorithms. So that's
+
+
+how I would characterize that. Um so
+
+
+uh based on that uh textbook fact we
+
+
+know that if kale divergence bounds the
+
+
+total variation divergence and total
+
+
+variation divergence bounds the
+
+
+difference of state marginalss then kale
+
+
+divergence bounds the difference of
+
+
+state marginalss and the definition of
+
+
+kale divergence between two
+
+
+distributions P1 and P2 is the
+
+
+expectation under one distribution of
+
+
+the log of the ratio of the
+
+
+probabilities okay that's just textbook
+
+
+definition kale Kale divergence has some
+
+
+very convenient properties that make it
+
+
+much easier to optimize with machine
+
+
+learning algorithms. Some of those might
+
+
+even be apparent just from looking at
+
+
+the form of kale divergence because the
+
+
+log of a ratio is just log of p1 minus
+
+
+log of p2. So now you have terms that
+
+
+look a lot like log likelihoods and we
+
+
+like log likelihoods because we can plug
+
+
+log likelihoods into pietorch and
+
+
+pietorch will happily crank out
+
+
+gradients for for us for those log
+
+
+likelihoods. So we really like to see
+
+
+log of pi uh because we know that if you
+
+
+have discrete actions that's just your
+
+
+favorite cross entropy loss and if you
+
+
+have continuous normally distributed
+
+
+actions that's just squared error. Okay
+
+
+so let's dig a little bit more into kale
+
+
+divergence.
+
+
+So this is the equation for kale
+
+
+divergence. And if I have samples from
+
+
+P1, then I can estimate this expectation
+
+
+with my samples from the distribution P1
+
+
+as just the log probability under P1
+
+
+minus the log probability under P2
+
+
+with samples from P1.
+
+
+So here's a fun uh statement uh that
+
+
+we're going to actually use. If you have
+
+
+kale divergence between pi theta and pi
+
+
+theta prime. So p1 is pi theta p2 is pi
+
+
+theta prime. Then I can approximate that
+
+
+with samples from pi theta. And that's
+
+
+what I've got. I've got samples from pi
+
+
+theta. So this is exactly right. And
+
+
+if I want to minimize my kale
+
+
+divergence, if I want to actually uh put
+
+
+this into an optimization algorithm,
+
+
+I might want to minimize it because I
+
+
+want the policies to be close. Of
+
+
+course, I'm minimizing with respect to
+
+
+theta prime because that's a thing that
+
+
+I'm learning. So if I were to take the
+
+
+gradient of this,
+
+
+this term doesn't matter because it
+
+
+doesn't depend on theta prime. And the
+
+
+second term
+
+
+is exactly log likelihood.
+
+
+So minimizing kale divergence with
+
+
+respect to the second argument is
+
+
+literally just supervised learning. Like
+
+
+zero difference. It is literally maximum
+
+
+likelihood supervised learning. So
+
+
+that's why we like kale diversion so
+
+
+much.
+
+
+So minimizing it with respect to the
+
+
+second argument simply means maximizing
+
+
+the likelihood of samples from the first
+
+
+distribution.
+
+
+And we're going to want to do that
+
+
+because that's how we keep our policies
+
+
+close together.
+
+
+Of course, we don't want to do just that
+
+
+because we don't want to keep them
+
+
+perfectly close together. So we'll want
+
+
+to do this plus the other stuff which is
+
+
+to drive the rewards up. So this is a
+
+
+little bit of a preview of where we're
+
+
+going, right? We're going to maximize
+
+
+the expected advantage and minimize the
+
+
+kale divergence and that will give us a
+
+
+higher reward policy that is close to
+
+
+the old policy.
+
+
+Any questions so far?
+
+
+Okay, so uh let's recap where we're at.
+
+
+We've got our objective where all of the
+
+
+expectations are under theta. The only
+
+
+place where theta prime shows up is in
+
+
+the numerator of our importance weight.
+
+
+That's what we would like because that
+
+
+makes it really easy to differentiate
+
+
+and to optimize. And we have a
+
+
+constraint which is that the kale
+
+
+divergence between pi theta and pi theta
+
+
+prime should be small.
+
+
+So for small enough epsilon this will
+
+
+improve J theta prime minus J theta. So
+
+
+now let's actually try to turn this into
+
+
+an actual algorithm. Um now uh
+
+
+constraint optimization with neural nets
+
+
+is pretty difficult. Um constraint
+
+
+optimization with like linear functions
+
+
+you can do like um you can do linear
+
+
+programming or something but with neural
+
+
+nets it's trivial. It's difficult. So to
+
+
+make it easy we want to somehow turn
+
+
+this constraint optimization into an
+
+
+unconstrained optimization. And one of
+
+
+the ways we do that is by writing out
+
+
+the lranchian. So with the lrangeian you
+
+
+take your constraint uh turn it into uh
+
+
+something something is less than or
+
+
+equal to zero. So subtract epsilon from
+
+
+both sides and then multiplied by lrange
+
+
+multiplier beta. Okay. So this is one
+
+
+way to write the lrangeian for this. And
+
+
+if I magically have the right choice of
+
+
+beta then uh this would solve the
+
+
+constraint optimization problem. I still
+
+
+need to find beta somehow. But if I were
+
+
+to find beta, then uh optimizing this
+
+
+would be sufficient. The reason it's a
+
+
+negative sign is because I'm maximizing
+
+
+it rather than minimizing. So those of
+
+
+you that are familiar with convex
+
+
+optimization, don't be uh don't be upset
+
+
+by the negative sign. It's just because
+
+
+it's maximization, which is a little bit
+
+
+less typical.
+
+
+Okay.
+
+
+So the procedure then if I want to solve
+
+
+this is first I maximize this lron for
+
+
+some value of beta with respect to theta
+
+
+prime. And that's easy to do because the
+
+
+first term there theta prime only
+
+
+appears in the numerator. So that's just
+
+
+my regular important sample gradient.
+
+
+And the second term as I discussed
+
+
+before is just supervised learning. It's
+
+
+just max likelihood. Okay. So maximizing
+
+
+this with respect to theta prime is
+
+
+easy. You can plug this into pietorch
+
+
+and it will happily give you gradients.
+
+
+And then for beta what I'm going to do
+
+
+is I'm going to adjust it as I go. And
+
+
+the adjustment basically says if my kale
+
+
+divergence is larger than epsilon then I
+
+
+will increase beta and if it's smaller
+
+
+than epsilon then I'll decrease beta.
+
+
+Okay. Uh this is actually an instance of
+
+
+something called dual gradient descent
+
+
+which uh I'll talk about more later in
+
+
+the course. But without even kind of
+
+
+justifying this procedure just from
+
+
+looking at it it's like a pretty
+
+
+reasonable thing right? If you're not
+
+
+enforcing your constraint hard enough
+
+
+then increase the multiplier on the
+
+
+constraint. And if you're enforcing your
+
+
+constraint too hard, then decrease the
+
+
+multiplier on the constraint until
+
+
+you've got it just right.
+
+
+So the intuition is you raise beta if
+
+
+the constraint uh is violated too much
+
+
+and you lower it if it's uh being over
+
+
+constrained.
+
+
+>> Yes.
+
+
+>> Does the choice of optimizer for beta
+
+
+have any sort of like practical or like
+
+
+significant effects on the results here?
+
+
+>> Yeah. So, uh, this this is an instance
+
+
+of what's called dual gradient descent,
+
+
+which is basically a first order
+
+
+gradient, uh, descent optimizer for
+
+
+beta. Um,
+
+
+probably there's a way to do this with
+
+
+other optimizers, but I don't know that
+
+
+off the top of my head.
+
+
+All right, any other questions?
+
+
+>> Yeah,
+
+
+>> you said that maximization was easy.
+
+
+So the maximization here is easy in the
+
+
+sense that everything here can be
+
+
+expressed as u quantities in terms of
+
+
+theta prime in expectation under samples
+
+
+from pi theta. So there's no in in this
+
+
+objective nowhere do you ever see an
+
+
+expected value under pi theta prime. All
+
+
+the expected values under are under pi
+
+
+theta which means that you can generate
+
+
+a bunch of samples from pi theta store
+
+
+those samples and then take as many
+
+
+gradient steps on this subjective as you
+
+
+want.
+
+
+Uh so all the gradients can just be
+
+
+computed by PyTorch basically. Does that
+
+
+make sense?
+
+
+>> Okay. Any other questions?
+
+
+Okay.
+
+
+So um
+
+
+uh there's in practice when we actually
+
+
+do this by the way you don't have to
+
+
+maximize the lrangee into convergence.
+
+
+Um I think you know classically if you
+
+
+look up dual gradient descent will tell
+
+
+you maximize the lrangee into
+
+
+convergence but it's okay if you don't.
+
+
+So in practice if you actually implement
+
+
+this uh in step one you would take some
+
+
+number of gradient steps and in step two
+
+
+you you do an adjustment and the number
+
+
+of gradient steps would be like you know
+
+
+like 20 50 that sort of thing not like
+
+
+10 million.
+
+
+Okay so we've got our method and what
+
+
+that method will do is uh it'll maximize
+
+
+the advantage of the old policy and
+
+
+because of that second term because of
+
+
+the kale divergence term it will uh keep
+
+
+your um your policy close to the old
+
+
+one. If I were to write this out with
+
+
+samples, uh just to make it very very
+
+
+clear, this is the version with samples.
+
+
+So you generate samples from uh pi theta
+
+
+and then over all of the time steps you
+
+
+have your importance weight times the
+
+
+advantage plus beta time the log
+
+
+probability. So that so the first part
+
+
+comes from the uh the policy gradient
+
+
+derivation. The second part comes from
+
+
+the fact that kale divergence expands
+
+
+into this uh max likelihood kind of
+
+
+thing. And at this point you can take
+
+
+the derivative of this and you will get
+
+
+an objective that you can actually
+
+
+optimize. If you take the derivative you
+
+
+get a grad log uh pi theta prime in the
+
+
+first term and you get a and the second
+
+
+term just turns into grad log pi theta
+
+
+prime.
+
+
+Okay. And sometimes this is called the
+
+
+important sample surrogate objective and
+
+
+this is just a penalty that uh will
+
+
+punish you for moving away from the
+
+
+samples under your old policy. So these
+
+
+two parts actually have like a fairly uh
+
+
+reasonable uh meaning.
+
+
+So because of that second term, you'll
+
+
+get closer to your old policy.
+
+
+>> Yes.
+
+
+>> Can you elaborate what the circles are?
+
+
+>> Um, think of these circles as um uh the
+
+
+um
+
+
+region where the policy assigns the same
+
+
+probability to everything. So maybe like
+
+
+the one standard deviation ellipsoid for
+
+
+a Gaussian policy. So basically
+
+
+everything inside of that has high
+
+
+probability. Everything outside of that
+
+
+has low probability.
+
+
+All right. So if I were to actually put
+
+
+these things together and uh write out
+
+
+the a version of PO with the scale
+
+
+divergence thingy, here's what it would
+
+
+look like. First you generate samples by
+
+
+running the policy pi theta. Then you
+
+
+evaluate target values and fit your
+
+
+value function. Then you evaluate your
+
+
+advantage estimates and these are the
+
+
+this is the advantage of pi theta using
+
+
+for example ge.
+
+
+And then you would uh initialize your
+
+
+theta prime to be theta just like just
+
+
+like on Wednesday and then you would
+
+
+compute the gradient using this kl
+
+
+divergence penalty objective which we
+
+
+had on the previous slide. Okay. And
+
+
+then you would take a gradient step on
+
+
+this and repeat some number of times.
+
+
+You would also then adjust beta. Some
+
+
+implementations actually skip this. So
+
+
+sometimes you can just pick beta in
+
+
+advance. So you just pick a constant
+
+
+that you like. But uh if you would like
+
+
+to actually be enforcing a constraint,
+
+
+then you should probably adjust beta.
+
+
+But this is optional. So sometimes you
+
+
+can just smartly pick beta. And that's
+
+
+okay too. And then you would store this
+
+
+new theta prime that you found and
+
+
+repeat the whole process.
+
+
+So this method looks uh structurally
+
+
+very very similar to the uh important
+
+
+samp to the clipped version that we saw
+
+
+on Wednesday. Uh but instead of clipping
+
+
+it uses that uh max likelihood term to
+
+
+keep the policies close together and the
+
+
+max likelihood term actually serves a
+
+
+very very similar function to the
+
+
+clipping term.
+
+
+>> Yes.
+
+
+>> In this algorithm do we still clip it or
+
+
+we just never clip it? Um so you can
+
+
+also clip it if you want to.
+
+
+Conventionally people would use one or
+
+
+the other. They would they would either
+
+
+clip or use the max likelihood term.
+
+
+>> Yes.
+
+
+>> How does KL divergence work if we
+
+
+progressively get farther away from the
+
+
+original policy?
+
+
+>> So if you get farther away from the
+
+
+original policy then that second term uh
+
+
+will be uh low. So
+
+
+>> yeah,
+
+
+>> we're using the KL divergence of 24.
+
+
+>> Um so the KL divergence is between the
+
+
+policy that you generate your samples
+
+
+from and the policy you have now.
+
+
+>> Okay. So if you're taking 25 gradient
+
+
+steps, you're still evaluating the
+
+
+difference between the policy at step 25
+
+
+versus the policy you start out with at
+
+
+the very beginning.
+
+
+>> Okay. So we take whatever however many
+
+
+gradient steps, but we're still
+
+
+>> with
+
+
+Yeah. And from looking at the form of
+
+
+the subjective, the the reason that
+
+
+that's the case is that that's just the
+
+
+likelihood of the samples and the
+
+
+samples were generated from pi theta. So
+
+
+the samples stay the same the whole
+
+
+time.
+
+
+>> Yes.
+
+
+Is it slower than the clipping?
+
+
+>> Is it slower than clipping? Um, good
+
+
+question.
+
+
+I don't know. Um, in fact, uh, there
+
+
+isn't really like a a very clear pattern
+
+
+that I've seen in terms of when one is
+
+
+better than the other. Um, this thing is
+
+
+in some ways simpler because all you're
+
+
+doing is you're adding the likelihood of
+
+
+the samples to your objective. In other
+
+
+ways it's a little more complicated
+
+
+because you know clipping is just a you
+
+
+know fairly straightforward operation.
+
+
+Um as far as which works better I think
+
+
+people have uh very heruristic opinions
+
+
+about this and I don't think there's
+
+
+like a very clear guidance on it.
+
+
+Okay.
+
+
+Um in the rest of the lecture I'll move
+
+
+on to somewhat more advanced material.
+
+
+So if anyone has any questions about
+
+
+this version of the algorithm, which is
+
+
+something that you might actually use in
+
+
+practice, this is the time to ask that
+
+
+before I I move on.
+
+
+Okay. So in the last part of the
+
+
+lecture, I want to tell you about
+
+
+something called natural policy
+
+
+gradient. This is these days in 2026.
+
+
+This is probably not a method that you
+
+
+are very likely to use, but it helps to
+
+
+understand it because it uh sheds a
+
+
+little bit more light on what these kind
+
+
+of constrained uh policy optimization
+
+
+objectives are doing and why they exist
+
+
+and so on and it also relates nicely to
+
+
+some concepts in optimization. So um for
+
+
+the purpose of this class what I would
+
+
+say is that everything that comes after
+
+
+this is uh kind of like good material to
+
+
+know for
+
+
+more advanced kind of reinforcement
+
+
+learning topics for research on
+
+
+reinforcement learning and if you're
+
+
+particularly interested in some of the
+
+
+optimization aspects of RL but probably
+
+
+not things that you are very likely to
+
+
+use in practice. Uh but it's it's good
+
+
+it's good to know and you know if
+
+
+someone asks you at a at a cocktail
+
+
+party about national policy gradients
+
+
+you'll have an answer for them.
+
+
+All right.
+
+
+>> Yes, but maybe maybe I go to the most
+
+
+fun cocktail parties. Um, all right. So,
+
+
+um, let's, uh, let's think about other
+
+
+ways that we can solve this, uh, kind of
+
+
+constraint optimization problem. For
+
+
+notational shorthand, I'll use the
+
+
+symbol a bar of theta prime to denote
+
+
+the subjective just so that I have a
+
+
+letter to use, uh, so I'm not writing
+
+
+giant equations all the time. Um, okay.
+
+
+If we want to optimize some really
+
+
+complicated function, uh what we would
+
+
+do in kind of optimization 101 is we
+
+
+would compute the gradient of that
+
+
+function and take a step in the
+
+
+direction of the gradient. One of the
+
+
+ways that we could interpret this is is
+
+
+saying, well, when we compute the
+
+
+gradient, what we're really doing is
+
+
+we're approximating our function with a
+
+
+much much simpler function that is very
+
+
+easy to optimize. Specifically, we're
+
+
+we're approximating with a line or a
+
+
+plane in general, hyper plane. Now you
+
+
+can't just blindly optimize a line
+
+
+because it goes to infinity. So you have
+
+
+to you can only optimize it within some
+
+
+region. And that makes sense because
+
+
+your function is not a line. So uh a
+
+
+linear approximation only approximates
+
+
+it well within some small region. So one
+
+
+way to think about what policy gradient
+
+
+is doing is policy gradient not gradient
+
+
+descent. What gradient descent is doing
+
+
+is it's just approximating a complicated
+
+
+function with a line but then optimizing
+
+
+it under a constraint that says let's
+
+
+stay close to the point at which we
+
+
+computed our derivative. So gradient
+
+
+descent is a kind of constrained
+
+
+optimization
+
+
+and the way you enforce the constraint
+
+
+is by taking a finite step size and the
+
+
+way that you find your approximate
+
+
+linear objective is by taking a
+
+
+derivative. Okay, so gradient descent
+
+
+equals constraint optimization.
+
+
+And we're going to use that same idea
+
+
+for the policy gradient up there. Now
+
+
+the one problem for us is that our
+
+
+constraint is a scale divergence thing.
+
+
+So it's it's a somewhat more complex
+
+
+constraint than what we have in regular
+
+
+gradient descent, but we can work with
+
+
+it. So we're going to use the same idea.
+
+
+We're going to linearize our objective.
+
+
+We're going to basically compute the
+
+
+gradient of a bar. So we'll replace the
+
+
+objective by basically the first order
+
+
+tailor approximation. So gradient of a
+
+
+bar transpose theta prime minus theta.
+
+
+That's the linear approximation that we
+
+
+obtain from the gradient. And then we
+
+
+have that constraint.
+
+
+So uh let's let's go with that. So we've
+
+
+gone from our big complicated objective
+
+
+at the top to the the gradient. And the
+
+
+gradient is just the policy gradient.
+
+
+That's exactly what we've worked out
+
+
+already. So we already know that. Um and
+
+
+that's just from the policy gradient
+
+
+derivation.
+
+
+Um and
+
+
+if we are evaluating this at theta,
+
+
+notice that the first order tailor
+
+
+expansion is a bar at theta transpose
+
+
+theta prime minus theta. We're
+
+
+optimizing that with respect to theta
+
+
+prime. Then the importance is just one
+
+
+because it's theta pi theta over pi
+
+
+theta. So it's actually not even the
+
+
+importance the important sampled policy
+
+
+gradient just the original policy
+
+
+gradient. Very nice. Um so that
+
+
+simplifies.
+
+
+So now if we want to do this uh kind of
+
+
+uh first order approximation all we
+
+
+really do is we plug in the policy
+
+
+gradient transpose theta prime minus
+
+
+theta subject to that constraint and
+
+
+it's really only the constraint that's
+
+
+the complicated part now. So exactly uh
+
+
+the normal policy gradient.
+
+
+Okay.
+
+
+All right. So so far so good. We've got
+
+
+our policy gradient transpose theta
+
+
+prime minus theta subject to a kale
+
+
+divergence constraint. Now what we would
+
+
+like to do is just like go and do
+
+
+gradient descent on it. So could I just
+
+
+set theta to be theta plus alpha * grad
+
+
+theta
+
+
+maybe. Um so this is a little bit of a
+
+
+problem because theta represents the
+
+
+parameters that go into a neural network
+
+
+which then produce the action
+
+
+probabilities. So taking a a a step of
+
+
+fixed size on theta won't necessarily
+
+
+allow me to enforce a constraint on the
+
+
+probabilities. Like some of the
+
+
+parameters of the neural net might be
+
+
+such that you need to change them a lot
+
+
+to change the probabilities even a
+
+
+little bit and some parameters might be
+
+
+such that if you change the parameters
+
+
+even a tiny bit the probabilities will
+
+
+change a lot. Right? So taking equalized
+
+
+steps on theta won't necessarily result
+
+
+in uh an update that maintains any well-
+
+
+definfined constraint on the
+
+
+probabilities. So some parameters change
+
+
+the probabilities a lot more than
+
+
+others.
+
+
+So in fact what gradient descent does is
+
+
+it enforces a different constraint. It
+
+
+enforces um uh uh a ball in the
+
+
+parameter space.
+
+
+And you can actually work this out. I'll
+
+
+I'll leave this as a homework exercise
+
+
+for you or if you've taken an
+
+
+optimization class, this might actually
+
+
+be something you've already covered. But
+
+
+basically if you choose your step size
+
+
+to be epsilon divided by the norm of
+
+
+your uh the squared norm of your
+
+
+gradient then you will actually enforce
+
+
+a fixed size ball a ball of size epsilon
+
+
+in parameter space.
+
+
+We're not terribly interested in this of
+
+
+course because we don't want a fixed
+
+
+size ball in parameter space. We want to
+
+
+stay close to the old probability
+
+
+distribution.
+
+
+So we somehow need to transform this
+
+
+from parameter space into probability
+
+
+distribution space if we want a
+
+
+constraint like the one that we've uh
+
+
+derived so far. But it's kind of good to
+
+
+know that gradient ascent is enforcing a
+
+
+constraint. It's just the wrong
+
+
+constraint.
+
+
+Okay. So these things are not the same
+
+
+and we need to somehow change uh the
+
+
+gradient ascent procedure so that we're
+
+
+enforcing the right constraint. And
+
+
+here's how we're going to do that. We're
+
+
+going to actually use a second order
+
+
+tailor approximation of the kale
+
+
+divergence. Um, this one is not
+
+
+something I'm going to work out for you
+
+
+here. It's a little bit elaborate, but
+
+
+I'll just tell you the answer that if
+
+
+you take a second derivative of the kale
+
+
+divergence, you can show that it's a
+
+
+quadratic form under a particular
+
+
+matrix, which is called the Fisher
+
+
+information matrix. And the Fisher
+
+
+information matrix is actually like a
+
+
+fairly straightforward thing. It's just
+
+
+the outer product of your uh grad log
+
+
+pies in expectation under the
+
+
+distribution that is the first argument
+
+
+which is pi theta. Uh and that's
+
+
+actually pretty nice because you have
+
+
+samples from pi theta. So you can
+
+
+actually compute this thing, right? It
+
+
+doesn't depend on any information that
+
+
+you don't already have.
+
+
+So now we have a linear objective and
+
+
+under this tailor approximation a
+
+
+quadratic constraint
+
+
+and that's actually something you can
+
+
+solve, right? That's a that's a a
+
+
+quadratic program.
+
+
+So you can estimate your Fisher
+
+
+information matrix with samples and now
+
+
+the way to think about this is that
+
+
+instead of having a ball in parameter
+
+
+space, you have some ellipse in
+
+
+parameter space where the shape of that
+
+
+ellipse depends on the sensitivity of
+
+
+the different of of the probabilities to
+
+
+the different parameters. So if a
+
+
+parameter is extremely sensitive meaning
+
+
+small changes to that parameter will
+
+
+lead to big changes in probabilities
+
+
+then the ellipse will be very thin in
+
+
+that subspace. If the parameter is
+
+
+insensitive meaning that you need to
+
+
+change that parameter a lot to change
+
+
+the probabilities then the ellipse will
+
+
+be very fat along that subspace.
+
+
+And if you have a linear objective and a
+
+
+quadratic constraint then you can
+
+
+actually uh solve that. You can work it
+
+
+out. You can work out the the linear
+
+
+algebra for it just by taking a gradient
+
+
+step but changing the gradient direction
+
+
+by f inverse. It's basically it's just
+
+
+like the quadratic formula but for but
+
+
+in u for multiple variables. So this is
+
+
+uh this is something you can work out at
+
+
+home but it's a fairly straightforward
+
+
+bit of linear algebra. So what we've
+
+
+arrived at is that if we want to
+
+
+approximately enforce this constraint
+
+
+and we linearize our objective and take
+
+
+a second order tailor expansion of the
+
+
+constraint that is the same as doing
+
+
+gradient ascent except that now you have
+
+
+to transform your gradient by f inverse
+
+
+where f is the official information
+
+
+matrix.
+
+
+In fact you can even work out the the
+
+
+step size that would be necessary to
+
+
+enforce the constraint less than or
+
+
+equal to epsilon. And again, that's just
+
+
+a bit of algebra, not terribly
+
+
+glamorous, and I can just give you the
+
+
+answer. Uh, it's two 2 epsilon divided
+
+
+by the um, uh, inner product under f of
+
+
+the gradient, and then you take the
+
+
+square root of that. Not a particularly
+
+
+clever formula. Again, just a bunch of
+
+
+algebra to work this out. The point is
+
+
+that if I take this kind of modified
+
+
+gradient step, then I am approximately
+
+
+enforcing the constraint. Question.
+
+
+>> Yeah. So the question was well don't you
+
+
+have to take the inverse of f at every
+
+
+gradient step? Uh and that's quite bad
+
+
+because what's the dimensionality of f?
+
+
+Well it's the number of parameters by
+
+
+the number of parameters. And if you
+
+
+have your
+
+
+let's say 7 billion parameter llm 7
+
+
+billion * 7 billion is quite a large
+
+
+number and I would not want to be the
+
+
+person who has to invert that matrix. So
+
+
+uh I'll I'll get to that in a second. uh
+
+
+this is called a natural gradient and uh
+
+
+I I'll I'll come back to how to do this
+
+
+efficiently later but I first I want to
+
+
+build a little bit more intuition for
+
+
+why the natural gradient is a good idea
+
+
+let's say a better idea than using the
+
+
+regular gradient sometimes called the
+
+
+vanilla gradient [snorts]
+
+
+okay so let's look at kind of a little
+
+
+toy RL problem uh we exist on a
+
+
+onedimensional number line uh the star
+
+
+represents the ideal place we would like
+
+
+to be at let's say x equals 0 and we're
+
+
+currently located over here and we can
+
+
+move left and right. Um our reward is uh
+
+
+u negative quadratic for uh how much
+
+
+we're deviating from the center uh minus
+
+
+a quadratic penalty on our actions. So
+
+
+it's a very simple quadratic reward.
+
+
+You'd like to be at the middle and you'd
+
+
+like to take small actions to get there.
+
+
+And our policy is just going to be
+
+
+normal distribution. So a Gaussian and
+
+
+it has two parameters. The parameter is
+
+
+K which is a linear feedback on state
+
+
+and sigma which is the standard
+
+
+deviation. So it's a it's not a deep RL
+
+
+problem. It's like a toy RL problem with
+
+
+two parameters uh and a onedimensional
+
+
+state and a one-dimensional action.
+
+
+So you can you can move left and right
+
+
+like this. And if you have a large sigma
+
+
+then you'll be exploring randomly left
+
+
+and right. And if you have a small sigma
+
+
+then you'll mostly be following the uh
+
+
+that linear feedback.
+
+
+Now you can take this problem and you
+
+
+can actually draw the policy gradient
+
+
+vector field, right? Because you have
+
+
+only two policy parameters, which means
+
+
+that for every pair of policy
+
+
+parameters, you can actually calculate
+
+
+the policy gradient using like a
+
+
+gajillion samples and plot the uh the
+
+
+exact vector field for for the policy
+
+
+gradient. And intuitively, what we would
+
+
+like to see is we would like to see
+
+
+those policy gradients point towards the
+
+
+optimal parameters.
+
+
+What is the optimal sigma to have? What
+
+
+is the optimal standard deviation for a
+
+
+policy like this?
+
+
+>> Zero.
+
+
+>> Zero. That's right. Why? Well, it's a
+
+
+fully observed MDP. There always exists
+
+
+a uh a deterministic policy that is
+
+
+optimal. And the only way to make this
+
+
+deterministic is to drive sigma to zero.
+
+
+So, we know that the optimal policy is
+
+
+going to have sigma equals 0.
+
+
+So, if I draw the vector field, this is
+
+
+what it looks like. Uh the horizontal
+
+
+axis is K. That's the linear feedback.
+
+
+and the vertical axis is sigma. Okay, so
+
+
+one thing we like about this vector
+
+
+field is that all the little blue arrows
+
+
+point down. So the policy gradient knows
+
+
+that it needs to reduce sigma. What we
+
+
+don't like about this vector field is
+
+
+that at the bottom the arrows all still
+
+
+point down.
+
+
+And that's kind of a problem because it
+
+
+means that as sigma gets lower and lower
+
+
+we actually lose signal in terms of uh
+
+
+change in k.
+
+
+It's it's actually kind of reasonable
+
+
+that this would happen because as you
+
+
+reduce sigma, you're reducing
+
+
+exploration. So you kind of like the
+
+
+noise washes out K. But it's a problem
+
+
+in practice
+
+
+because in practice uh if you actually
+
+
+use the standard policy gradient for
+
+
+this, you will rapidly reduce sigma and
+
+
+you'll get stuck because all those
+
+
+arrows uh at the bottom all point down
+
+
+instead of pointing towards zero uh left
+
+
+and right. It's actually kind of the
+
+
+same problem as optimizing a very
+
+
+illonditioned function. So if you
+
+
+imagine optimizing a quadratic function
+
+
+with a very poor condition number, then
+
+
+naive gradient descent is going to have
+
+
+this kind of zigzag pattern and take a
+
+
+really long time to converge. But if you
+
+
+use like Newton's method or some kind of
+
+
+nice preconditioner, then you can get a
+
+
+much better improvement direction where
+
+
+you won't have this kind of zigzag
+
+
+issue. So basically the problem is not
+
+
+that different than what we see in uh
+
+
+kind of standard optimization uh where
+
+
+poorly conditioned functions require
+
+
+many small step size steps to optimize
+
+
+if you use naive first order uh gradient
+
+
+descent. So it's not a particularly like
+
+
+radical problem. And uh if I plot the
+
+
+natural gradient, which is what I get
+
+
+when I do f inverse times the policy
+
+
+gradient, that's the thing shown in red.
+
+
+And that very nicely points towards the
+
+
+middle because it's trying to take s
+
+
+steps where the probabilities change by
+
+
+a fixed amount instead of steps where
+
+
+the parameters change by a fixed amount.
+
+
+So that actually all works out. And the
+
+
+natural gradient for this toy problem,
+
+
+even though it's a really really simple
+
+
+problem, is much much better. It
+
+
+actually will get you the correct K, the
+
+
+correct linear state feedback instead of
+
+
+just blindly reducing the variance.
+
+
+>> Yes.
+
+
+>> Why K=
+
+
+intuition for that?
+
+
+>> Uh it's because I chose the reward that
+
+
+way. But the intuition for it is that
+
+
+you want to get to uh state zero.
+
+
+>> So if you go too much in the positive
+
+
+direction, you need to go left and if
+
+
+you go too much to the left, you need to
+
+
+go right. So the feedback should be
+
+
+negative. Oh, so you're if a state is
+
+
+positive, you want to be negative.
+
+
+>> Yeah. Yeah. But I I chose the problem
+
+
+well actually Yan Peters chose the
+
+
+problem very cleverly so that the
+
+
+solution would be kind of trivial like
+
+
+that.
+
+
+But the main point I want you to take
+
+
+away from this is that even in a very
+
+
+very simple toy problem, it's very easy
+
+
+to get into a situation where the
+
+
+regular policy gradient is extremely ill
+
+
+behaved. It's not incorrect. It's just
+
+
+it's the same problem as what we see
+
+
+with first order gradient descent on
+
+
+illitioned functions. But the problem
+
+
+can be quite bad and the natural
+
+
+gradient does actually address the
+
+
+problem.
+
+
+Okay. So one example of an algorithm
+
+
+that you can actually use with neural
+
+
+nets. It's less popular these days but
+
+
+it's it's a it's a reasonably effective
+
+
+algorithm is TRPO trust region policy
+
+
+optimization. And trust region policy
+
+
+optimization is basically a natural
+
+
+policy gradient method. And the way it
+
+
+works is you generate samples by running
+
+
+your policy, compute your target values,
+
+
+update your value function just like
+
+
+before, evaluate your GA estimator, and
+
+
+then you take a step on the policy
+
+
+gradient, but all you do is you multiply
+
+
+your policy gradient by f inverse to get
+
+
+that natural gradient direction. So it's
+
+
+it's just like regular policy gradient
+
+
+only with f inverse. That's it.
+
+
+uh you can use that that step size rule
+
+
+that uh that I showed before. F is given
+
+
+by an estimate of the Fisher information
+
+
+matrix and
+
+
+the um uh grad j is just given by the
+
+
+regular policy gradient.
+
+
+Now as to the question earlier if you of
+
+
+course try to construct f in memory and
+
+
+you have a large neural network f might
+
+
+not actually fit in memory which is a
+
+
+bit of a problem. Also inverting a dense
+
+
+f that is like millions of parameters on
+
+
+each side is going to be quite costly.
+
+
+So in practice if you actually want to
+
+
+use an algorithm like this the way that
+
+
+this is done is by using conjugate
+
+
+gradient to solve the linear system in O
+
+
+of N time uh which you can do by
+
+
+basically uh exploiting the fact that
+
+
+the matrix is uh a sum of outer
+
+
+products. So there's a standard way of
+
+
+doing this called conjugate gradient
+
+
+which avoids the need to ever construct
+
+
+uh the entire matrix. And the way that
+
+
+conjugate gradient works, it basically
+
+
+uses the fact that you ever want you
+
+
+only ever want to compute matrix times
+
+
+vector instead of just having the matrix
+
+
+uh uh sitting in memory. And matrix
+
+
+times vector can be computed without
+
+
+building the matrix explicitly.
+
+
+So I won't go into the detail about how
+
+
+to do that. It's just kind of a standard
+
+
+uh off-the-shelf uh method that you can
+
+
+use. So this is an actual algorithm and
+
+
+and this will actually optimize neural
+
+
+nets. less popular these days because of
+
+
+the need to uh do all this fish
+
+
+information matrix stuff and because the
+
+
+regular PO procedure with either the
+
+
+kale divergence or the clipping is just
+
+
+simpler to implement with uh current
+
+
+optimization libraries.
+
+
+Okay, any questions about this? Yeah.
+
+
+>> Objective. Would you get the same
+
+
+behavior?
+
+
+>> Yeah, that's a that's a good question.
+
+
+I don't know. I think I would have to
+
+
+look through the details a little bit
+
+
+more. I I suspect you might, but I'm not
+
+
+sure.
+
+
+Okay. Um, all right. So, that's
+
+
+basically all of the fancy stuff. Now, I
+
+
+I have like uh a little bit of recap and
+
+
+some uh uh practical guidelines before
+
+
+we wrap up for the day. So, what did we
+
+
+learn through our adventure? Uh we
+
+
+learned that policy gradient can be more
+
+
+productively interpreted as a kind of
+
+
+policy iteration. So, in the very
+
+
+beginning, we thought of policy gra as
+
+
+like, hey, let's just take the RL
+
+
+objective and take its derivative. But
+
+
+actually maybe it's more useful to think
+
+
+of it as a kind of policy iteration
+
+
+procedure a kind of incomplete policy
+
+
+iteration where we get the advantages
+
+
+that's the green box the advantages of
+
+
+our uh old policy and then maximize
+
+
+those advantages with our new policy
+
+
+that's the blue box and that's maybe
+
+
+like a better way to look at it. Um, so
+
+
+this gives us a better explanation for
+
+
+why it's okay to optimize the policy a
+
+
+lot using the same set of samples
+
+
+because for policy iteration that's kind
+
+
+of what you would typically do. PO with
+
+
+clipping is kind of a a huristic
+
+
+approximation to PO sorry typo to PO
+
+
+with kale divergence. So PO with kale
+
+
+divergence is kind of the the thing that
+
+
+you get from the theoretical derivation
+
+
+and clipping kind of heruristically
+
+
+keeps the policies close together.
+
+
+Um there are other ways to enforce the
+
+
+constraint. Uh you can use natural
+
+
+gradient for example. Um
+
+
+whe whether you should use TRPO or PO
+
+
+that's uh sort of a nuance question.
+
+
+These days you would typically use PO
+
+
+because it's easier uh to implement but
+
+
+it kind of comes down to whether you
+
+
+want like one big step or lots of little
+
+
+steps. And you know it's philosophical
+
+
+question. As optimizers change maybe uh
+
+
+it'll be a different answer. So to
+
+
+summarize this is the the constraint
+
+
+optimization problem that we derived. uh
+
+
+we showed that for a small enough
+
+
+epsilon for a small enough difference in
+
+
+the policies uh this is actually
+
+
+guaranteed to improve j theta prime
+
+
+minus j theta with the caveat that the
+
+
+guarantee is like you know potentially a
+
+
+little bit vacuous because if you
+
+
+actually work out the epsilon that
+
+
+maintains the bound it might be a really
+
+
+small epsilon in practice because it's a
+
+
+very pessimistic derivation and we
+
+
+worked out uh a couple of algorithms
+
+
+that actually use this idea po with a
+
+
+kale divergence penalty and uh tpo which
+
+
+is basically natural gradient. Uh so at
+
+
+this point we've learned about a lot of
+
+
+the practical RL algorithms at least the
+
+
+model free algorithms that we would use
+
+
+uh actor methods uh policy grading
+
+
+methods like bo uh deep Q-learning. So
+
+
+at this point in the course you guys
+
+
+actually know quite a bit about the core
+
+
+RL algorithms that uh one might use.
+
+
+We'll learn about more advanced topics
+
+
+model based RL inverse RL and all sorts
+
+
+of other fancy stuff in the second half
+
+
+of the course. But now you have
+
+
+everything you need to uh kind of
+
+
+implement basic RL methods. So I'll see
+
+
+you all next week.
+
+
+[applause]

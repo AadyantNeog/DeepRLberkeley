@@ -1,0 +1,7555 @@
+All right, folks. Uh, sorry about the
+
+
+late start. Hopefully everybody had a
+
+
+refreshing outdoor experience this
+
+
+morning. Uh, I'll contact facilities and
+
+
+try to figure out how to avert this
+
+
+better in the future. So, last week we
+
+
+talked or last Wednesday rather, we
+
+
+talked about the introductory kind of
+
+
+Q-learning material and today we're
+
+
+going to get into the details of how we
+
+
+can make this stuff actually work uh in
+
+
+practice.
+
+
+So um the basic outline of the
+
+
+Q-learning algorithm that we discussed
+
+
+on Wednesday is what we're going to work
+
+
+with in today's lecture. But there are a
+
+
+number of tricks that we'll discuss that
+
+
+make this stuff uh actually work quite
+
+
+well in practice. And you kind of need
+
+
+many of these tricks to get deep
+
+
+Q-learning to work properly.
+
+
+Okay. So let's summarize from last time
+
+
+where we were at. uh in regular
+
+
+Q-learning uh you collect a transition
+
+
+by taking a step using your policy and
+
+
+uh we discussed at the end of the
+
+
+lecture that the policy you might use is
+
+
+actually not just the argmax of your Q
+
+
+function but you might add a little bit
+
+
+of randomness into it to make sure that
+
+
+it explores a bit. So a really simple
+
+
+way to add randomness is to use what's
+
+
+called epsilon greedy where with
+
+
+probability one minus epsilon you uh
+
+
+take the argmax. So epsilon might be
+
+
+like 0.1 or something like that and with
+
+
+probability epsilon uh divided by the
+
+
+number of remaining actions you take one
+
+
+of the other actions at random. So uh
+
+
+you run some kind of policy derived from
+
+
+your Q function but with a little bit of
+
+
+randomness added in uh and then uh if
+
+
+you're doing online Q-learning then you
+
+
+would evaluate your uh target value on
+
+
+that transition. So basically you would
+
+
+set your target uh Y to be the reward
+
+
+that you just saw plus gamma times the
+
+
+max over the actions at the next state
+
+
+and then you would update your Q
+
+
+function uh using the gradient of the
+
+
+error between the Q value and this
+
+
+target value and typically you do this
+
+
+for one update. So this is kind of
+
+
+classic online uh Q-learning.
+
+
+Um, if you uh
+
+
+do this with each transition and you
+
+
+don't store it in your replay buffer,
+
+
+then you have an online on policy
+
+
+algorithm. This is kind of classic
+
+
+Watkins Q-learning. But these days, what
+
+
+people typically do is they would
+
+
+actually store that transition in a
+
+
+replay buffer. And then when they make
+
+
+this update, they wouldn't do it on the
+
+
+transition they just collected. They
+
+
+actually load a little mini bash of
+
+
+transitions from the replay buffer. So
+
+
+if you don't have this, this is kind of
+
+
+classic online Q-learning. If you add
+
+
+this in, then this is the more modern
+
+
+version of Q-learning with a replay
+
+
+buffer.
+
+
+Uh, now so far we're doing pretty well.
+
+
+We have something that looks like a
+
+
+viable algorithm. In practice, if you
+
+
+try to implement this, and you could try
+
+
+it like exactly as described on this
+
+
+slide when you start working on homework
+
+
+3, you'll probably find that it actually
+
+
+doesn't work all that well. Uh, and
+
+
+there are a number of reasons for it.
+
+
+Like on the surface, it might seem like
+
+
+uh this is a perfectly reasonable
+
+
+algorithm. You have some like error that
+
+
+you're minimizing. It looks like a
+
+
+regression problem. So why wouldn't it
+
+
+uh work? The trouble is that even though
+
+
+Q-learning looks like it's uh taking
+
+
+steps on a gradient with something that
+
+
+resembles uh uh mini batch uh stoastic
+
+
+gradient descent, Q-learning is actually
+
+
+not gradient descent in the conventional
+
+
+sense.
+
+
+I'm going to pause here and see if
+
+
+anyone can can tell me why it's not
+
+
+gradient descent.
+
+
+Yeah, back there.
+
+
+>> Right. So the answer is that the the
+
+
+objective here, these yis, they actually
+
+
+change every single gradient step. So
+
+
+when you take a gradient step, the next
+
+
+time around, you recomputee the yis and
+
+
+they depend on the thing that you're
+
+
+learning. So the way I wrote it here
+
+
+kind of makes it look like a nice simple
+
+
+regression problem, except in a
+
+
+regression problem, the y's have to be
+
+
+constants. they're labels. But here the
+
+
+y's are not constants. So if I
+
+
+substituted in the definition for y from
+
+
+line two into line three, I can write
+
+
+out the gradient update. Uh I apologize
+
+
+the type of should be theta is theta
+
+
+minus alpha, not fi. There's no fi
+
+
+anymore. Uh so if I were to write out
+
+
+the gradient update, it looks actually
+
+
+kind of funky. So the the y's depend on
+
+
+theta. And there is a derivative with
+
+
+respect to theta out here. But when we
+
+
+actually go to calculate this
+
+
+conventionally the way you you implement
+
+
+in homework three you don't pass the
+
+
+gradient through the second Q in the max
+
+
+over there.
+
+
+In fact it's not even differentiable
+
+
+because the max is not a differentiable
+
+
+function of the model parameters. You
+
+
+could like pretend it's differentiable
+
+
+and pass the gradient through it anyway.
+
+
+You will get a really really bad outcome
+
+
+if you do that. Uh so when you actually
+
+
+go to implement this uh you pretend as
+
+
+though those targets are constants even
+
+
+though they aren't. By the way, very
+
+
+important in homework three when you go
+
+
+to code it up, don't forget to put a
+
+
+stop gradient to make sure the gradients
+
+
+don't flow through that target value.
+
+
+So no gradient through the target value.
+
+
+And that means that this is not actually
+
+
+gradient descent on any well- definfined
+
+
+objective.
+
+
+So that's kind of a problem like we know
+
+
+that gradient descent converges, but we
+
+
+don't necessarily know that this this
+
+
+thing converges.
+
+
+Okay.
+
+
+So
+
+
+if we think back to uh last Wednesday,
+
+
+we talked about how this kind of
+
+
+Q-learning procedure is a special case
+
+
+of a more general process called fit a Q
+
+
+iteration where we can select a bunch of
+
+
+parameters. Uh so the classic full fit q
+
+
+iteration uh would actually run that uh
+
+
+minimization to convergence but in reg
+
+
+in the kind of Q-learning that we use
+
+
+with deep nets we typically do one
+
+
+gradient step. So we have one gradient
+
+
+step on a moving target in classic fit
+
+
+accuration. You have a perfectly well-
+
+
+definfined stable regression problem
+
+
+here, but you're going to have other
+
+
+problems with the the full fit
+
+
+accuration algorithm. Yes.
+
+
+So the question is why wasn't this an
+
+
+issue in actor critic? Um it actually
+
+
+was and many of the things that I'm
+
+
+going to discuss here, they're going to
+
+
+apply to actor critic as well. And we'll
+
+
+we'll touch back on actor critic at the
+
+
+end of the lecture.
+
+
+So uh for those of you that that didn't
+
+
+notice in actritic you also had target
+
+
+values and the target values there are
+
+
+also dependent on Q. It's it's the same
+
+
+problem.
+
+
+Okay. So
+
+
+one of the things that we might notice
+
+
+though about the full fit accuration
+
+
+algorithm is we can also substitute it
+
+
+in the definition for Y. And one of the
+
+
+ways we can write it is we can say well
+
+
+in the full fit of Quration algorithm
+
+
+when we do that regression because the
+
+
+the targets y are staying constant. It's
+
+
+as though we uh made a copy of our q
+
+
+function froze its parameters and that
+
+
+we're using that to compute the y's and
+
+
+then we optimize a second network with
+
+
+the the the weights that are unfrozen.
+
+
+So one way to think about it is we
+
+
+compute all the y's store them to disk
+
+
+and then just do regression. Another way
+
+
+to do it is we don't premp compute the
+
+
+y's. We actually compute them on the fly
+
+
+each time we load a batch. what we store
+
+
+is the copy of the network that computed
+
+
+those Y's.
+
+
+And that perspective can actually be
+
+
+pretty helpful. So, um if we make a
+
+
+second copy of our network and don't
+
+
+change it while we're taking gradient
+
+
+steps, then we can keep those target
+
+
+values a little bit more um static. We
+
+
+don't want them to be entirely static.
+
+
+We do because we do want to change
+
+
+occasionally. And I'll talk about why in
+
+
+a second. So the way that we can do this
+
+
+is we can slightly modify our algorithm
+
+
+where we take a take a a step with a
+
+
+policy, store it to the buffer, then
+
+
+load a mini batch, compute targets, but
+
+
+now we compute the targets using a
+
+
+second copy of the Q function that I'm
+
+
+going to call Q theta bar. Notice the
+
+
+little bar over the theta that indicates
+
+
+that it's a separate parameter vector.
+
+
+And then I'm going to update my theta,
+
+
+not theta bar, the theta, uh, with one
+
+
+step of gradient descent on those target
+
+
+values.
+
+
+And then every once in a while, maybe
+
+
+every 10,000 steps of this process, I'll
+
+
+set theta bar to be theta. So I'll
+
+
+update theta bar. So now it's as though
+
+
+I'm taking 10,000 steps of updates on
+
+
+the these uh uh now static objective
+
+
+where the y's are not affected by theta,
+
+
+but then every 10,000 steps like it's
+
+
+copied over and now they're affected
+
+
+again. So it's as though every 10,000
+
+
+steps I switch to a different regression
+
+
+problem. Now of course every one of
+
+
+those steps I'm loading a different mini
+
+
+batch. So the gradient updates are of
+
+
+course different every single time. But
+
+
+at least the overall objective who's
+
+
+whose expected value I'm estimating with
+
+
+that mini batch is staying fixed.
+
+
+Okay. So this is a bit better than
+
+
+actually just taking 10,000 steps in one
+
+
+go because I'm still collecting
+
+
+additional data in between those steps.
+
+
+So this network uh Q theta bar is called
+
+
+a target network because it is used to
+
+
+compute the targets.
+
+
+Okay. So the target only changes every
+
+
+10,000 steps. So why is this good? Well,
+
+
+it's good because now uh I don't have as
+
+
+much of a moving target anymore. Yes,
+
+
+>> it's it's a neural network with
+
+
+parameters theta bar. Uh it doesn't have
+
+
+to be a neural network. It could be
+
+
+something else. It could be, you know, a
+
+
+linear function approximator.
+
+
+Okay. Now, here's another question. So,
+
+
+we talked about why this is good. Why is
+
+
+it bad? Like, what if I take this 10,000
+
+
+and I make it like a million? What would
+
+
+I eventually expect to be the bad thing
+
+
+that happens?
+
+
+Yes.
+
+
+Yeah. So, the answer is that theta bar
+
+
+is behind theta. So, it hasn't learned
+
+
+as much. uh in the extreme case if let's
+
+
+say I initialize theta to be just like
+
+
+random weights and I set theta bar to be
+
+
+theta in the beginning and then I just
+
+
+keep theta bar fixed I only update it
+
+
+every like 10 billion steps or something
+
+
+now I'm essentially just regressing onto
+
+
+random values for my entire training
+
+
+process
+
+
+we'll come back to this point uh later
+
+
+to discuss in more detail how you want
+
+
+to trade off the frequency of those
+
+
+targeted function updates
+
+
+but based on what we've learned so far
+
+
+we are actually about ready to write
+
+
+down the kind of classic DQN algorithm.
+
+
+So in 2013 there was a a paper by Vladin
+
+
+and colleagues that uh proposed this
+
+
+algorithm. Uh it was based on a lot of
+
+
+ideas that had existed up until that
+
+
+time but uh Vlad and his colleagues put
+
+
+this together into like a coherent
+
+
+method called DQN which could uh
+
+
+successfully train convolutional neural
+
+
+networks to play Atari games from
+
+
+images. So here's how it worked. Um
+
+
+first you uh you have this outer step
+
+
+where you save the target network
+
+
+parameters and I put it as step one
+
+
+because you need to somehow define theta
+
+
+bar at the beginning of your algorithm.
+
+
+So initialize theta to be like random
+
+
+weights. Set theta bar to be theta. Then
+
+
+uh you uh collect data using your policy
+
+
+and add it to the buffer.
+
+
+Sample a batch from your buffer.
+
+
+take
+
+
+a gradient step uh on all the samples in
+
+
+that batch where the targets notice the
+
+
+right hand side there use q theta bar
+
+
+and you repeat the these updates some
+
+
+number of times let's say k times k
+
+
+might be one and then you have an outer
+
+
+loop n times and then every n steps you
+
+
+update the target network.
+
+
+So the uh actual classic version of this
+
+
+that uh was described in the original
+
+
+DQN paper sets K to be one and sets N to
+
+
+be some fairly large value like 10,000.
+
+
+So that results in this algorithm. Take
+
+
+an action observe a transition sample a
+
+
+mini batch compute the target using Q
+
+
+theta bar update with one gradient step
+
+
+and then update theta bar by copying
+
+
+theta into it every n steps where n is
+
+
+about 10,000. But notice these are the
+
+
+same algorithm. It's just uh for the
+
+
+bottom one, I just chose k to be one and
+
+
+chose n to be 10,000.
+
+
+And the reason that I keep bringing up
+
+
+this kind of more generalized algorithm
+
+
+is because we can tune those uh values
+
+
+in slightly different ways and get
+
+
+slightly different behavior.
+
+
+Okay, so this uh the classic thing is
+
+
+what you'll implement in homework three.
+
+
+Any questions about this?
+
+
+Yes.
+
+
+the ones they're on top of. So, uh, if
+
+
+you set K to one, that means that you
+
+
+take one gradient step. If you set N to
+
+
+10,000, uh, that means that every 10,000
+
+
+steps, you perform step one.
+
+
+Yes.
+
+
+So, you you collect data and update n
+
+
+times and then after end times you go
+
+
+back to step one.
+
+
+Yes.
+
+
+Yeah. So, um, we'll talk about this in a
+
+
+future slide. Let me Why don't you hold
+
+
+that question? A few slides from now.
+
+
+I'll discuss it. And if by that point I
+
+
+don't answer your question, please ask
+
+
+me again. But it's a very important
+
+
+question actually.
+
+
+Any other things here?
+
+
+Okay. Um,
+
+
+now there are a few alternatives to
+
+
+using a target network. So, one of the
+
+
+things that's a little bit inelegant
+
+
+about the target network is that it's
+
+
+like a very discreet update. Like it
+
+
+kind of feels like your training process
+
+
+proceeds in these in these 10,000 step
+
+
+chunks. And maybe we want something a
+
+
+little bit more continuous. So, um
+
+
+the intuition is something like this
+
+
+that uh let's say that uh you collect
+
+
+some data, update uh your uh theta with
+
+
+a gradient step, collect some data,
+
+
+repeat, repeat and go like this. And
+
+
+then eventually uh let's say you're
+
+
+updating the theta bar every three
+
+
+steps. Then at this middle step you're
+
+
+getting your target from back here. Uh
+
+
+over here you're getting it from here.
+
+
+But at the very next step where when you
+
+
+update it now suddenly your target is
+
+
+very fresh. So you get this kind of
+
+
+bursty thing where sometimes the target
+
+
+is very static from a long time ago and
+
+
+sometimes it's literally your previous
+
+
+parameter vector. So you'd expect the
+
+
+dynamics to kind of change whether your
+
+
+target network was just updated in which
+
+
+case it looks more like a moving target
+
+
+or if it was updated a long time ago in
+
+
+which case it looks very static.
+
+
+So this is not actually that much of a
+
+
+problem in practice but see some people
+
+
+find it like aesthetically very
+
+
+displeasing that your algorithm kind of
+
+
+proceeds in these bursts. So uh so
+
+
+basically you have like no lag over here
+
+
+whereas just a few steps before you had
+
+
+the maximal lag in terms of your theta
+
+
+bar parameters being lagged very far
+
+
+from theta.
+
+
+So
+
+
+what uh what people sometimes do if they
+
+
+really don't like this is um a method
+
+
+inspired by uh polyiac averaging. So
+
+
+those of you that are familiar with um
+
+
+stocastic optimization might recognize
+
+
+uh the term polyiac averaging. If you
+
+
+don't recognize it, don't worry about
+
+
+it. All it all it says is like instead
+
+
+of just setting setting hopefully you
+
+
+can all see the equation there. Instead
+
+
+of setting theta bar to be theta every
+
+
+10,000 steps, you know what? I'll I'll
+
+
+write it on the board actually for those
+
+
+of you that can't see.
+
+
+Now I can't see.
+
+
+Okay, it's like this. So it's basically
+
+
+a linear interpolation. So theta bar is
+
+
+toao * theta bar plus 1 minus t to *
+
+
+theta. And toao is like.999.
+
+
+So it's something very close to one. So
+
+
+it basically means that every single
+
+
+step you kind of mix a little bit of
+
+
+theta into theta bar. And you can choose
+
+
+to so that after 10,000 steps basically
+
+
+the old theta bar has been more or less
+
+
+completely replaced. So this is not
+
+
+actually all that different. It's kind
+
+
+of just like a more gradual version of
+
+
+the hard replacement from before. But at
+
+
+least now every single step kind of
+
+
+looks similar. Um, in practice,
+
+
+sometimes one works a little bit better,
+
+
+sometimes the other works a little bit
+
+
+better. I've never seen a case where
+
+
+like one is a complete disaster and the
+
+
+other one is great. They're like usually
+
+
+pretty similar. But if you find it very
+
+
+disconcerning that you you kind of have
+
+
+this hard flip every 10,000 steps, you
+
+
+can use the polyiac averaging trick and
+
+
+it's just fine. And if you want to
+
+
+choose to set it to N99. Yes.
+
+
+Um,
+
+
+sorry. Intuition for what?
+
+
+>> Well, Q theta bar is just a delayed
+
+
+version of Q theta. So, so it's the
+
+
+neural it's it's the it's the Q function
+
+
+that you had some time ago.
+
+
+>> Yes.
+
+
+>> N99.99
+
+
+is not empirically the best solution,
+
+
+but it's like, you know, if you want to
+
+
+kind of get a sense for when you've used
+
+
+up almost all of the of the old value,
+
+
+do one over one minus that. So, one over
+
+
+one minus that is like a thousand. So uh
+
+
+I guess if you want 10,000 steps it
+
+
+should be.999
+
+
+>> that number
+
+
+>> more or less. In practice people set it
+
+
+to be a little bit lower. So one over
+
+
+this is a th00and rather than 10,000 but
+
+
+you know some something in that ballpark
+
+
+is about right. Yeah.
+
+
+Would it make sense to reset the replay
+
+
+buffer when you update theta bar? Yeah,
+
+
+that that's a really interesting
+
+
+question. So the intuition here might be
+
+
+that hey like um your uh your data that
+
+
+you've collected in that buffer you've
+
+
+been updating with theta bar and so if
+
+
+you change the target network maybe now
+
+
+the the data is invalidated but that's
+
+
+not really the case because this is
+
+
+still an off policy algorithm. So you
+
+
+can use in principle any data any target
+
+
+function any exploration policy and mix
+
+
+them all together. So there's really no
+
+
+reason to uh somehow associate the
+
+
+replay buffer flushing with the um with
+
+
+the target network update. So what
+
+
+people do in practice like if you want
+
+
+just like a very rough rule of thumb for
+
+
+the replay buffer capacity of 1 million
+
+
+ring buffer which means that every time
+
+
+something goes in the oldest thing comes
+
+
+out. If you want target network update
+
+
+uh either polyiac averaging with.999 or
+
+
+the hard switch with 10,000.
+
+
+It's not an exact science and if you
+
+
+really want to get like good results on
+
+
+your problem you can start from those
+
+
+values and then tune it from there. But
+
+
+that's kind of a rough rule of thumb
+
+
+that seems to be pretty decent.
+
+
+Okay. Um, any questions about this?
+
+
+>> Yes.
+
+
+>> It's problem dependent. So, we'll
+
+
+actually talk about this in a few slides
+
+
+about how how these parameters affect uh
+
+
+learning. But there isn't unfortunately
+
+
+a good answer. In practice, what you're
+
+
+going to do in homework three is like
+
+
+fiddle with the knobs and see what
+
+
+happens.
+
+
+Yeah.
+
+
+>> Oh, um
+
+
+that's a good question. I don't have a
+
+
+great answer for you. Uh I can guess and
+
+
+my guess is that it really depends
+
+
+because remember as you're uh training
+
+
+this thing even within those 10,000
+
+
+steps you're collecting new data and
+
+
+pulling new mini batches from the
+
+
+buffer. So it's not a given that like
+
+
+the intuition might be that oh like
+
+
+towards the end of those 10,000 steps
+
+
+maybe you're kind of converging but not
+
+
+necessarily because you're also adding
+
+
+more data and on that new data you might
+
+
+still have high error.
+
+
+>> Yeah.
+
+
+>> Uh no. Okay. So thank you for asking
+
+
+that. So the data is added every single
+
+
+step. So every single step you you
+
+
+collect a transition and add it to your
+
+
+replay buffer and then load a new mini
+
+
+batch from your buffer. So the uh new
+
+
+data is always being collected but the
+
+
+network only gets uh the theta bar only
+
+
+gets updated every n steps.
+
+
+Okay. Um
+
+
+any other questions before I move on to
+
+
+all the fancy stuff? Yes.
+
+
+Um, and by step size, do you mean like
+
+
+the learning rate alpha or do you mean
+
+
+something else?
+
+
+update.
+
+
+>> So you mean the the number of um data
+
+
+points collected in step one. Um I think
+
+
+I see what you're getting at that
+
+
+basically like the data collection
+
+
+process is being kind of decoupled from
+
+
+the learning process. Um let me describe
+
+
+what's coming on the next slide and that
+
+
+might clarify it.
+
+
+All right, let's proceed. So let's talk
+
+
+about how to make uh Q-learning a bit
+
+
+more efficient. So, so far we we've
+
+
+written out the Q-learning algorithm as
+
+
+this kind of like linear thing with
+
+
+steps one, two, three, and four. But one
+
+
+of the things, especially in light of
+
+
+that recent question that some of you
+
+
+might be starting to think is that well
+
+
+actually it's almost kind of like a
+
+
+multipprocess thing where there are
+
+
+multiple things happening at the same
+
+
+time all at different rates. And that's
+
+
+kind of a reasonable way to look at it.
+
+
+I mean, in practice, we would probably
+
+
+still implement it in a single thread,
+
+
+but conceptually, you can kind of think
+
+
+of it as
+
+
+um having these these different
+
+
+processes. So you have one process that
+
+
+updates your target network and that's
+
+
+kind of like the outermost loop. You
+
+
+have one process that collects data. Uh
+
+
+that's you know in our loop view that
+
+
+was like the next loop down and then you
+
+
+have a process that samples batches and
+
+
+updates the Q function. And we can write
+
+
+it kind of linearly like this like we
+
+
+did before. Uh but we can also imagine
+
+
+that they're uh multiple parallel
+
+
+processes. So you know in DQN you have n
+
+
+equals 1 k equals 1 and that's basically
+
+
+how you're collecting data. Um, so
+
+
+that's process one, data collection. Uh,
+
+
+you have another process which is
+
+
+evicting old data from your replay
+
+
+buffer because it's a ring buffer. And
+
+
+then you might have another process
+
+
+that's replacing the the target
+
+
+parameters. Uh, and you have another
+
+
+process that is actually training the Q
+
+
+function. So if you want to kind of look
+
+
+at it graphically, uh, you could think
+
+
+about about as having three different
+
+
+things that are all running at their own
+
+
+rates. Process one, pull in data from
+
+
+the world and stuff it into your replay
+
+
+buffer. And it's kind of independent of
+
+
+everything else because everything else
+
+
+all all the other interaction with the
+
+
+world is mediated by that replay buffer.
+
+
+So that process one it communicates with
+
+
+the rest of the algorithm only through
+
+
+the replay buffer. You have process two
+
+
+which somehow updates theta bar either
+
+
+using polyiac averaging or just
+
+
+resetting it every 10,000 steps. And you
+
+
+have process three which actually does
+
+
+the the training. In fact some really
+
+
+fancy RL systems have actually
+
+
+implemented this as literally separate
+
+
+processes in a distributed architecture.
+
+
+Usually you would still implement it as
+
+
+a single sequential program, but
+
+
+conceptually it kind of helps to think
+
+
+about it as these three things that each
+
+
+get to run at their own rates.
+
+
+And in the classic DQN algorithm,
+
+
+process three and process one are sort
+
+
+of coupled so that every time you
+
+
+collect a data point, you also make an
+
+
+update. But since they're all mediated
+
+
+by that replay buffer, there's really
+
+
+kind of no reason to have a hard
+
+
+coupling there.
+
+
+Okay, so online Q-learning, the one
+
+
+where we don't have a replay buffer at
+
+
+all, is a version of this where we evict
+
+
+data immediately. So our replay buffer
+
+
+is of size one and then all the
+
+
+processes run at the same speed. So
+
+
+that's kind of like the classic simplest
+
+
+version of the algorithm, which
+
+
+basically does not work if you want to
+
+
+use uh deep nets DQN, which is the thing
+
+
+that does work. process one and process
+
+
+three run at the same speed which is
+
+
+kind of an arbitrary decision and
+
+
+process two is really slow and your
+
+
+replay buffer is really big about a
+
+
+million uh data points is a good choice
+
+
+and then a fidic iteration is one where
+
+
+process three is kind of in the inner
+
+
+loop of process two which is in in inner
+
+
+loop of process one so
+
+
+all these things you know I gave them
+
+
+slightly different names but the truth
+
+
+is that there's really one recipe and
+
+
+all you're doing is just deciding the
+
+
+rates of these
+
+
+Okay, any questions here?
+
+
+So, those of you that like pictures
+
+
+better than uh numbered lines, maybe
+
+
+this this version of Q-learning makes
+
+
+more sense. And by the way, everything
+
+
+I'm saying here basically applies to Q
+
+
+function actor critic as well.
+
+
+Yes.
+
+
+Yeah, that's a really nice question. So,
+
+
+the question was, if you already have a
+
+
+replay buffer full of data, can you just
+
+
+run process 3? Yes, and we have like uh
+
+
+multiple entire lectures about this
+
+
+later in the course when we talk about
+
+
+offline reinforcement learning. It's my
+
+
+favorite topic, so thank you for asking
+
+
+that. But yeah, we'll cover that later.
+
+
+Okay. All right. So now, uh, of course,
+
+
+some of you might be wondering, hey,
+
+
+like I'm making a big deal out of the
+
+
+fact that you have all these different
+
+
+choices, but like which choice do you
+
+
+make? Which version of this is more
+
+
+efficient? Um, so let's talk about uh
+
+
+some of the the trade-offs. Uh, what
+
+
+happens as we increase K if we take more
+
+
+gradient steps uh in between data
+
+
+collection?
+
+
+So this is sometimes called the update
+
+
+to data ratio. It's called update to
+
+
+data ratio because the uh we're updating
+
+
+the network more times for each time
+
+
+that we collect data. And in in an
+
+
+algorithm like this, collect data really
+
+
+means make one transition, like
+
+
+literally one step of your simulator or
+
+
+one step in the real world. So update to
+
+
+data ratio is how many gradient updates
+
+
+you make for every one data point that
+
+
+you collect.
+
+
+Now, of course, the update to data ratio
+
+
+might be less than one, and that's
+
+
+that's allowed, too. But for now, let's
+
+
+think about what happens as we increase
+
+
+it to be larger than one.
+
+
+So if you increase the update to data
+
+
+ratio, one of the things that happens
+
+
+unsurprisingly is you learn faster. That
+
+
+makes sense. You take more gradient
+
+
+steps, your network is learning faster.
+
+
+It requires more compute. So if this is
+
+
+running in real time, maybe uh you take
+
+
+uh uh one step in the world every like
+
+
+onetenth of a second if you're like
+
+
+driving a car. So presumably if you want
+
+
+an update rat to data ratio of 10, then
+
+
+you need to be able to make 10 gradient
+
+
+steps in that period of time. But other
+
+
+than that, you should learn faster.
+
+
+It's update. It's the ratio of gradient
+
+
+updates to number of data points that
+
+
+are collected. So another way I could
+
+
+call it is update to transitions ratio.
+
+
+>> Oh, that's a typo. Yes, thank you. See,
+
+
+I I remade my slides over winter break
+
+
+and uh uh sometimes it was late in the
+
+
+evening and I messed up a little bit.
+
+
+Yeah, it's updated to data data. D ATA.
+
+
+Um,
+
+
+okay. Um, now this might seem like,
+
+
+okay, we just crank this up and if we
+
+
+have a fast enough chip, maybe uh we'll
+
+
+just learn faster. Why don't we crank
+
+
+this up all the way? Why don't we set
+
+
+the update to data ratio to like 10
+
+
+million or something? Any ideas about
+
+
+what might start going wrong?
+
+
+Yeah.
+
+
+Yeah. So, you'll start overfitting
+
+
+because you're not actually adding more
+
+
+data as you go. So you're uh really uh
+
+
+regressing with with all your might on
+
+
+that particular uh set of examples in
+
+
+your replay buffer and if you do that
+
+
+too much then you will kind of overfit
+
+
+to them. In fact the problem has a
+
+
+little bit more subtlety than that
+
+
+because in the Q-learning update there's
+
+
+also a max. So you overfit in a very
+
+
+particular way where you sort of become
+
+
+overoptimistic on the data that you've
+
+
+collected. uh and we'll talk about the
+
+
+reasons the deeper reasons for this in a
+
+
+later lecture but if you want kind of a
+
+
+a rough mental model for it now
+
+
+essentially you're going to get
+
+
+overfitting and this problem is actually
+
+
+quite severe. So update to data ratios
+
+
+of higher than like 10 or so depending
+
+
+on your problem of course can be very
+
+
+risky. So if you really want more
+
+
+efficient learning, meaning faster
+
+
+learning for the same number of
+
+
+examples, you could increase the update
+
+
+to data ratio, but be very careful when
+
+
+you start increasing it past like five
+
+
+or 10 and make sure to test what happens
+
+
+because eventually you'll see learning
+
+
+actually slow down as it repeatedly
+
+
+overfits to uh at each of those steps.
+
+
+Now, that's not always true, and if
+
+
+you're kind of careful or you have the
+
+
+right problem, even update to data
+
+
+ratios of like a 100 or more might work.
+
+
+Probably not much more than that.
+
+
+Um, what happens as we uh increase uh
+
+
+the um oh I have another typo here. Uh n
+
+
+should be 10,000 not one. Uh what
+
+
+happens as we uh increase the frequency
+
+
+of target network updates? That's what
+
+
+we're going to talk about next. And I
+
+
+have some pictures for this.
+
+
+So
+
+
+let's uh
+
+
+uh let's imagine that we have a little
+
+
+grid world where you start at state S
+
+
+and on the far right you end at a state
+
+
+that has a reward of plus one and the
+
+
+reward is zero everywhere else. So um in
+
+
+this case uh let's say I I initialize my
+
+
+Q function so that it outputs like
+
+
+roughly zero everywhere. Maybe I put
+
+
+like small I initialize my weights to be
+
+
+small so that it outputs values close to
+
+
+zero in most places. Now the thing to
+
+
+note here is that since the reward is
+
+
+plus one only at that state on the far
+
+
+right, uh even if I if even if my replay
+
+
+buffer has trajectories that visit that
+
+
+plus one state, uh the only reason why
+
+
+the Q value should become non non zero
+
+
+anywhere else is because that plus one
+
+
+sort of propagates backwards in time.
+
+
+Okay, so here's the question. How many
+
+
+steps do we need to run uh the algorithm
+
+
+until that state s on the left side uh
+
+
+starts seeing Q values that are greater
+
+
+than zero?
+
+
+Well, maybe the first time I do this,
+
+
+uh, I will regress onto reward plus the
+
+
+next Q, which is close to zero. So, I'm
+
+
+basically regressing on to the reward.
+
+
+So, I would expect the state right next
+
+
+to the plus one to take on nonzero Q
+
+
+values.
+
+
+The second time I go around this loop,
+
+
+well, I have a target network, so
+
+
+actually my targets are exactly the
+
+
+same. So, I would expect the state
+
+
+that's just to the left of the plus one
+
+
+to take on non-zero values. the state
+
+
+that's two to the left is still
+
+
+regressing onto the target network for
+
+
+for the the second one. So that one is
+
+
+still regressing on to zero. So in a
+
+
+setting like this
+
+
+intuitively each time I update my target
+
+
+network I would expect the val the
+
+
+nonzero values to propagate one more
+
+
+step from the end.
+
+
+Okay, that was a slightly confusing
+
+
+explanation. Uh let me repeat it again.
+
+
+in the beginning my target network
+
+
+output zero almost everywhere. So the
+
+
+the target for the uh that that thing
+
+
+that should be underlined in red but is
+
+
+actually crossed out in red uh is uh is
+
+
+going to regress onto non-zero values on
+
+
+the state that's just next to the plus
+
+
+one but not on the state that's like two
+
+
+over. Okay, that one is still regressing
+
+
+to zero. After 10,000 steps, when I set
+
+
+theta bar to be theta, now the values
+
+
+propagate one more step because now they
+
+
+see non-zero targets in the state that's
+
+
+one over and they regress on that for
+
+
+the state that's two over. So in the
+
+
+worst case where everything is tabular
+
+
+like this, if I have uh what is it like
+
+
+eight steps, I would need to flip the
+
+
+target network eight times to start
+
+
+seeing non-zero targets at the beginning
+
+
+at S.
+
+
+So
+
+
+what we can kind of conclude is that how
+
+
+often you update your target network
+
+
+kind of determines the speed at which
+
+
+the values propagate through the MTP.
+
+
+Now this view is a bit pessimistic
+
+
+because in reality neural networks are
+
+
+smart. Neural networks understand that
+
+
+different states that are actually uh
+
+
+somewhat similar to each other should
+
+
+take on similar values. That's not the
+
+
+case if you have a very tabular
+
+
+representation like this. But if you had
+
+
+like images, the network would figure
+
+
+out that two images that look similar
+
+
+should take on similar values. So even
+
+
+if you didn't update your target
+
+
+network, the values would kind of like
+
+
+uh propagate through the a little bit
+
+
+faster because of generalization. But in
+
+
+the worst case where the states are
+
+
+completely distinct from each other and
+
+
+there's nothing that they have in
+
+
+common, then the values only propagate
+
+
+uh each time you update the target
+
+
+network. So because of this, if we
+
+
+update the target network too
+
+
+infrequently, then we will learn slowly
+
+
+uh for the reason that the values aren't
+
+
+propagating as fast.
+
+
+Now, this is not as much of a problem in
+
+
+reality as it might seem, like I said,
+
+
+because of generalization. Uh, so update
+
+
+frequencies of like, you know, 1,000 to
+
+
+10,000 are pretty good. 10,000 is like a
+
+
+good conservative choice to make sure
+
+
+that you have stable learning if you
+
+
+really want something more efficient.
+
+
+1,000 is reasonable. Uh, and when you
+
+
+lower it past that, you very quickly
+
+
+start seeing instability due to this
+
+
+kind of moving targets problem. But keep
+
+
+in mind that in principle, you would
+
+
+actually like to update as frequently as
+
+
+possible. And in practice what starts
+
+
+going wrong is that the whole thing
+
+
+becomes unstable.
+
+
+Yes.
+
+
+Um
+
+
+yeah, I guess what I would say is that
+
+
+this picture is a pretty pessimistic
+
+
+picture. So this would be like the worst
+
+
+case where the states have absolutely
+
+
+nothing in common with each other and
+
+
+really the only way uh for the value to
+
+
+propagate from the plus one to the s is
+
+
+each time for the target network to be
+
+
+updated. But if you imagine like an
+
+
+Atari game where uh you're learning uh
+
+
+the Q function from images, different
+
+
+states of the Atari game have a lot in
+
+
+common like maybe like the enemies are
+
+
+in the same spot but the player's in a
+
+
+different spot. So networks will
+
+
+actually generalize across those and in
+
+
+practice it won't be nearly this slow.
+
+
+So it's not like if you have a task with
+
+
+a horizon of like a thousand then you
+
+
+really need to update the network a
+
+
+thousand times. It'll actually be a lot
+
+
+less than that in practice.
+
+
+>> Yes.
+
+
+>> The reason uh well you can think about
+
+
+it like this. uh the neural network will
+
+
+learn features of the state and
+
+
+different states might have similar
+
+
+features and the value prediction is
+
+
+based on those features. So if you have
+
+
+a state that has like 50% of its
+
+
+features in common with another state
+
+
+then the network will try to assign
+
+
+somewhat similar values to those states
+
+
+and in particular when the value of one
+
+
+of those states increases the value of
+
+
+the other one should go up too because
+
+
+it has a lot of features in common.
+
+
+Yes, back there.
+
+
+>> Yeah, that's an interesting thought. So,
+
+
+the question for those that didn't hear
+
+
+is can you actually dynamically change
+
+
+the the the values of K and N as you go?
+
+
+Uh, in principle you could. There's
+
+
+nothing incorrect about it. Uh, and
+
+
+there's uh I imagine that uh the
+
+
+algorithm will be perfectly happy with
+
+
+that. I haven't seen that done before.
+
+
+uh but could be a good topic for a CS285
+
+
+uh research project.
+
+
+All right. Um let's proceed. Um so
+
+
+here's an idea to address this issue to
+
+
+make this even faster. Uh we learned
+
+
+about these things called endstep
+
+
+returns when we discussed policy
+
+
+gradients. So what if we change the
+
+
+update instead of doing this onestep
+
+
+Q-learning update, what if we use an
+
+
+endstep return update for our target
+
+
+value. So here I have it written out. Um
+
+
+so n step like it looks really
+
+
+complicated but all I'm doing is I'm
+
+
+taking that original update which is r
+
+
+plus gamma max uh at a prime and
+
+
+changing it to be the sum of rs from t
+
+
+to t plus n plus gamma to the n and then
+
+
+I take the max at the step t plus n.
+
+
+Okay, so this is an this is just like
+
+
+those nstep backups that we saw in
+
+
+policy gradient, but now it's an nstep
+
+
+target for qlearning. So you still have
+
+
+the max but the the max is after n
+
+
+steps. Okay. So what I'm trying to
+
+
+address with this is this value
+
+
+propagation challenge where maybe I'd
+
+
+like to update my target network uh you
+
+
+know fairly infrequently but I still but
+
+
+I don't want to wait for the values to
+
+
+propagate uh with with each uh target
+
+
+network update step.
+
+
+So why is this good? Well, that's what I
+
+
+just discussed that in principle your
+
+
+values should propagate more quickly and
+
+
+you should learn more quickly. uh in the
+
+
+most ideal case in that grid world up at
+
+
+the top if you actually have a a
+
+
+trajectory that goes all the way from S
+
+
+to plus one in your buffer and you set N
+
+
+to be like eight then you'll immediately
+
+
+be seeing non-zero targets right in the
+
+
+state S. So if you have the right data
+
+
+in your buffer learning should be very
+
+
+fast.
+
+
+So why is this bad? Why don't we always
+
+
+do this? And why don't we set N to be a
+
+
+really big number? Any ideas?
+
+
+Yeah.
+
+
+Okay. So maybe like uh one way I can
+
+
+interpret that is that you need to
+
+
+actually explore to get the right data
+
+
+so those endstep return backups are
+
+
+propagating through like the right
+
+
+states. I think that's that's true.
+
+
+There's another deeper reason. Yes. Back
+
+
+there.
+
+
+Yeah. Yeah. So, uh, so the answer was
+
+
+that well, we talked about how
+
+
+Q-learning is off policy before. The
+
+
+Q-learning doesn't care what policy your
+
+
+transition SAS prime came from. Uh,
+
+
+because you're you're learning a
+
+
+function up there of QSN and that that's
+
+
+set to RSA plus the max over the the
+
+
+action of the next state. So that max
+
+
+sort of accounts for the fact that now
+
+
+you have a different policy. But here
+
+
+we're not doing that anymore because now
+
+
+we need all n of those transitions to
+
+
+come from our latest policy. Otherwise,
+
+
+we're estimating the Q value of the
+
+
+wrong policy.
+
+
+Um, in general, this kind of estimator
+
+
+will this kind of target value will
+
+
+underestimate the value because
+
+
+presumably you're updating the Q network
+
+
+to make it better. You're getting a
+
+
+better policy than you had before. But
+
+
+your target here is from older data,
+
+
+which was presumably a worse policy. So
+
+
+your targets are lower than they should
+
+
+be. they are a little bit pessimistic.
+
+
+In fact, if you imagine taking n to
+
+
+infinity, the max goes away entirely. So
+
+
+as as n goes to infinity, all you're
+
+
+doing is estimating the q values of the
+
+
+mixture of policies that collected your
+
+
+replay buffer instead of trying to
+
+
+improve uh the q function. So roughly
+
+
+speaking, the larger n is, the less
+
+
+you're actually trying to improve your q
+
+
+function. For small n, you're improving
+
+
+the q function rapidly. For large n,
+
+
+you're improving it slowly because
+
+
+that's being discounted by gamma to the
+
+
+n.
+
+
+So it's biased and it's biased in the
+
+
+downward direction.
+
+
+So in practice when people use this kind
+
+
+of thing they will use n values that are
+
+
+a little lower maybe around like five or
+
+
+so. Yes,
+
+
+that's a really good question. Yes. So
+
+
+there are methods that will try to fix
+
+
+that bias. One classic method is called
+
+
+retrace. Uh roughly speaking, these
+
+
+methods are all based on important
+
+
+sampling and they will weight these
+
+
+transitions based on how much they look
+
+
+on policy. In fact, really smart methods
+
+
+will actually not only rewe them,
+
+
+they'll actually dynamically select n.
+
+
+So they'll basically say like, oh, in
+
+
+this trajectory, I can kind of trust
+
+
+that roughly like three transistors are
+
+
+on policy, so I'll set n to three.
+
+
+Whereas this one looks really fresh, so
+
+
+here I'll set n to like 20. Um, so
+
+
+there's all sorts of smart things you
+
+
+can do to reduce that bias with a
+
+
+combination of importance waiting and
+
+
+dynamic selection of N. I won't go into
+
+
+it in this course, but if you want to
+
+
+learn about it, uh, the keyword to
+
+
+search for is retrace.
+
+
+Okay. Uh, let's talk about another
+
+
+little trick that, uh, is going to make
+
+
+your Q-learning algorithm better, and
+
+
+that's to deal with overestimation.
+
+
+Uh, and then we'll we'll take a little
+
+
+break after that.
+
+
+Okay, so here is like a fairly basic
+
+
+question to ask. Let's say I run DQN and
+
+
+I learn some Q functions and then I want
+
+
+to know are my Q functions accurate,
+
+
+right? The Q function has a very
+
+
+particular definition. It's predicting
+
+
+the cumulative sum of discounted rewards
+
+
+that that you will get when you run your
+
+
+policy. So then you can ask like okay
+
+
+let me run my policy. Let me measure the
+
+
+discounted rewards that it gets and see
+
+
+if that accords with the predictions
+
+
+from my Q function. So um here are some
+
+
+um
+
+
+uh Q values from actual DQ enrons
+
+
+uh as the you know the predicted Q
+
+
+values increase. So what you can see
+
+
+here is uh the text is a little tiny but
+
+
+uh these are average the left two bars
+
+
+are average reward uh sorry the left two
+
+
+graphs and the right two graphs are
+
+
+average uh Q value. So basically what
+
+
+you want is you want one and two to look
+
+
+similar to three and four. So these are
+
+
+two different Atari games. Uh it goes
+
+
+breakout and then sequest and then
+
+
+average Q breakout and then sequest. So
+
+
+you want uh basically graph graph one to
+
+
+look similar to graph uh three. Graph
+
+
+two looks similar to graph four. And you
+
+
+know one good thing about these graphs
+
+
+is that they're all going up right? So
+
+
+as the average Q value increases the
+
+
+actual average reward also increases. So
+
+
+that's good. Um, you can also actually
+
+
+pick out uh events where the uh the
+
+
+value function kind of peaks or drops.
+
+
+So this is breakout uh when it's
+
+
+anticipating that you're about to
+
+
+destroy one of the bricks, the value
+
+
+function goes up. So that's good. It's
+
+
+anticipating reward. You can also look
+
+
+at the Q values of different actions.
+
+
+This is pong. And here when you have the
+
+
+um uh like uh in the second example
+
+
+when the ball is you're controlling the
+
+
+green paddle there when the ball is
+
+
+above the green paddle it's saying oh
+
+
+the Q value is positive for moving up
+
+
+that's the purple bar so that's kind of
+
+
+good like the Q values sort of reflect
+
+
+what we expect to be happening
+
+
+but if you actually compare side by side
+
+
+the um
+
+
+the true value meaning the actual reward
+
+
+that you get when you run the policy and
+
+
+the predicted value. Let's just look at
+
+
+only the red uh curves for now.
+
+
+Typically for a naive DQN algorithm, the
+
+
+predicted values overestimate the true
+
+
+value. So if you look at the um the red
+
+
+line, the horizontal red line, that's
+
+
+the true reward on each of these games.
+
+
+If you look at the red curve, that's the
+
+
+average Q value from the learn Q
+
+
+function.
+
+
+Now the the the um the true return this
+
+
+is just at the end. Uh it does actually
+
+
+go up over time. So they're they're
+
+
+they're trending in the same direction
+
+
+but numerically the Q function is
+
+
+overestimating actually quite a bit. Uh
+
+
+the blue lines uh that's a modified
+
+
+method that we're going to learn about
+
+
+in the next few slides. So the moral of
+
+
+the story is that if you run regular DQN
+
+
+you will actually get trends that make
+
+
+sense and the highest Q value actions
+
+
+will tend to be the best ones. But
+
+
+numerically it would seem like the
+
+
+learned Q values are systematically
+
+
+larger, never smaller, than the true
+
+
+rewards that you're going to be getting.
+
+
+That's a bit of a problem. Um, so let's
+
+
+uh talk a little bit about why that
+
+
+might happen.
+
+
+So
+
+
+the trouble is that when we compute the
+
+
+target values, we're taking a max over
+
+
+actions that we're then plugging into
+
+
+our target network. And if our target
+
+
+network is a little erroneous, that max
+
+
+can sort of pick up on the actions that
+
+
+make the largest positive errors. So
+
+
+it's really this max that's the problem.
+
+
+And if we want to build a little bit of
+
+
+intuition for it, uh let's think about a
+
+
+really toy model of imperfect uh neural
+
+
+networks. Let's pretend that what Q
+
+
+theta bar is doing is approximating the
+
+
+true function with a little bit of added
+
+
+noise.
+
+
+That's a very simplistic model. I mean
+
+
+in reality the noise uh the the error
+
+
+from fitting the true function is not
+
+
+like random noise. It's kind of
+
+
+systematic. But let's just pretend it's
+
+
+random noise. Like it's basically like
+
+
+true function plus a little bit of
+
+
+Gaussian noise up and down. Uh so if you
+
+
+have two random variables X1 and X2 in
+
+
+general the expected value of the
+
+
+maximum of X1 and X2 is going to be
+
+
+larger than the maximum of their
+
+
+expected values. Let me draw a picture
+
+
+uh to kind of illustrate what I mean.
+
+
+Let's say this is the true function and
+
+
+its maximum is over here. And now you
+
+
+have uh a noisy function.
+
+
+The maximum of the noisy function is
+
+
+basically the maximum of the original
+
+
+function plus the maximum of the noise.
+
+
+So it's going to be larger.
+
+
+Adding noise doesn't make the maximum
+
+
+smaller. It only makes it larger because
+
+
+obviously the max will maximize over the
+
+
+noise. So in general if you're
+
+
+maximizing over multiple random
+
+
+variables which in this case is the
+
+
+value for different actions you're going
+
+
+to systematically overestimate the
+
+
+expected value uh the maximum of the
+
+
+expected values.
+
+
+Okay. So because q theta bar is not
+
+
+perfect and it looks noisy then the
+
+
+maximum will overestimate the next
+
+
+value.
+
+
+And um notice that the maximum is just
+
+
+the function evaluated at the arc max.
+
+
+So the way we can think about it is that
+
+
+you're selecting the action to evaluate
+
+
+by taking the arg max of Q and then
+
+
+you're plugging into that same Q and
+
+
+that gets you the maximum noise. Okay.
+
+
+Any questions about the problem before
+
+
+we talk about the solution? Yes.
+
+
+So the problem is that when you maximize
+
+
+over actions, you're maximizing over the
+
+
+value of the actions and the noise the
+
+
+er the approximation error for each of
+
+
+the actions. So when you have
+
+
+approximation error, you will
+
+
+systematically overestimate the value
+
+
+because the maximization maximizes over
+
+
+the noise.
+
+
+Yes.
+
+
+[clears throat]
+
+
+Yeah. So the question was like is this
+
+
+could this just be harmless? Like if all
+
+
+you care about is which actions have
+
+
+higher Q values than than others, maybe
+
+
+this kind of systematic overestimation
+
+
+is not really a problem. It's not a huge
+
+
+problem. Like you will still generally
+
+
+get reasonable solutions. It does slow
+
+
+you down quite a bit. So fixing this
+
+
+problem will lead to faster learning
+
+
+because it's because the overestimation
+
+
+is not actually random. It's a little
+
+
+bit systematic and your function
+
+
+approximator will be like a little bit
+
+
+more erroneous over here and a little
+
+
+bit less erroneous over there. So you
+
+
+end up being more optimistic in the
+
+
+regions where you're more erroneous
+
+
+which is kind of not not what you want.
+
+
+So it's not like a catastrophe but it
+
+
+does make things slower.
+
+
+Okay. Uh let's uh talk about how we can
+
+
+fix this. So
+
+
+one way that we can view the issue is
+
+
+that we've got this noisy function Q
+
+
+theta bar and we're evaluating the
+
+
+function at the action that we determine
+
+
+to be the arg max of the function. So
+
+
+what if we have two functions uh and
+
+
+these functions have different noise.
+
+
+The functions are both imperfect but
+
+
+they are corrupted by different noise.
+
+
+And what if we evaluate the argmax with
+
+
+one and the value with the other one?
+
+
+Basically what if we decorrelate the
+
+
+noise? So
+
+
+uh the idea is let's not use the same
+
+
+network to both choose the action and to
+
+
+evaluate the value. So now uh here I
+
+
+have one noisy function. Let's say I
+
+
+have a second noisy function and I pick
+
+
+the action with the the orange function.
+
+
+That's the orange star. But then to
+
+
+evaluate its value I'll plug it into the
+
+
+yellow function. Yes,
+
+
+it's not really like actor critic
+
+
+because the functions are both Q
+
+
+functions still. Uh it's uh what it what
+
+
+it actually is it's it's a kind it's a
+
+
+little bit like um uh like the
+
+
+statistical bootstrap.
+
+
+So as long as these functions have
+
+
+decorrelated errors, then using one of
+
+
+them to evaluate the act to to choose
+
+
+the action and the other one to evaluate
+
+
+it should in principle avoid this
+
+
+overestimation problem because now uh if
+
+
+I picked out that action just because it
+
+
+has high positive error, it probably
+
+
+will not have high positive error on
+
+
+average under the other function. It
+
+
+might have negative error. So now I'll
+
+
+kind of average out these errors.
+
+
+Okay, so
+
+
+classic double Q-learning, it's called
+
+
+double Q-learning because I'm going to
+
+
+use two functions uh uses two networks
+
+
+uh network A and network B. And
+
+
+classically in the kind of the the
+
+
+original double Q-learning uh paper, it
+
+
+actually trains both networks in
+
+
+parallel with Q-learning where network A
+
+
+uses values from network B but the
+
+
+action from network A. So now instead of
+
+
+taking the max over a single Q function,
+
+
+I can take the argmax over one and then
+
+
+evaluate the value of that action under
+
+
+the other. And it's actually a symmetric
+
+
+method. So both functions are trained
+
+
+together, each using the other one for
+
+
+the target.
+
+
+So as long as these Q functions are
+
+
+quote unquote noisy in different ways,
+
+
+in principle, you should have no
+
+
+problem.
+
+
+Any questions about this?
+
+
+Yes,
+
+
+they they would. Yeah. So, they would
+
+
+use exactly the same data. And by the
+
+
+way, there's a little quirk about this
+
+
+because, you know, the kind of the
+
+
+formulation sort of assumes that they
+
+
+have independent errors. Of course,
+
+
+they're trained on the same data, so
+
+
+they're they're not going to be
+
+
+perfectly decorated.
+
+
+Any other question?
+
+
+>> Yeah,
+
+
+>> that's right. So in this case it would
+
+
+come from their initialization. But hold
+
+
+that thought because I'm going to make
+
+
+things even even more confusing on the
+
+
+next slide.
+
+
+Okay. So we could do this and you could
+
+
+actually code this up in homework 3. Um
+
+
+it's a little bit inconvenient because
+
+
+you now you have these two networks and
+
+
+you need to like you know write twice as
+
+
+much code or have a for loop or
+
+
+something like it's a little bit
+
+
+annoying to actually do this. It's not
+
+
+too annoying but um you know the thing
+
+
+about all these tricks is that the
+
+
+tricks are more likely to be used if
+
+
+they're extremely extremely simple. The
+
+
+best kind of trick is something that uh
+
+
+you can implement on like one line of
+
+
+Python code. So it turns out there's a
+
+
+version of double Q-learning that is not
+
+
+as principled but works almost as well
+
+
+and is really really easy to code up. In
+
+
+fact, it's so easy to code up that some
+
+
+people just do it by accident. Um so
+
+
+double Q-learning in practice uh makes a
+
+
+different choice for how to get the two
+
+
+Q functions. See the trouble is that we
+
+
+already have two Q functions in our
+
+
+original DQN algorithm. What are our two
+
+
+Q functions?
+
+
+Yeah, our target network and our current
+
+
+network. We have the theta and the theta
+
+
+bar.
+
+
+Now, the problem is that theta and theta
+
+
+bar are not independent. They're
+
+
+actually like one is just an older copy
+
+
+of the other one. But they are different
+
+
+and they're just like sitting there
+
+
+already. So, why don't we just use
+
+
+those? Um, we've got our current and the
+
+
+target network. So why don't we just
+
+
+modify the update rule so that instead
+
+
+of plugging in the arg of uh q theta bar
+
+
+into q theta bar we take the argmax of q
+
+
+theta and plug it into theta bar
+
+
+okay so that's the only the l literally
+
+
+the difference is not even is not even
+
+
+an entire symbol it's one uh decorator I
+
+
+just remove the bar from the theta
+
+
+that's the only difference and and
+
+
+that's why I said like sometimes people
+
+
+actually implement it by accident like
+
+
+sometimes people will literally have a
+
+
+bug in their homework 3 code And instead
+
+
+of regular Q-learning, they implement
+
+
+double Q-learning.
+
+
+Okay, this is like um this is not quite
+
+
+following the intuition from the
+
+
+previous slide because of course uh Q
+
+
+theta and Q theta bar are not well
+
+
+decorrelated but they are different
+
+
+and they're just different enough that
+
+
+this actually helps a lot. So in terms
+
+
+of speeding up training, uh this can
+
+
+actually make a big difference. Um and
+
+
+it is just so blindingly easy to
+
+
+implement that there's essentially no
+
+
+reason not to do it. Yes.
+
+
+So on the last slide we had kind of an
+
+
+idealized version of this at the bottom
+
+
+where we have two networks uh Q theta A
+
+
+and Q theta B that are completely
+
+
+separate from each other. So they might
+
+
+be initialized completely at random with
+
+
+two different uh random seeds and um
+
+
+here
+
+
+instead of theta A and theta B we have
+
+
+theta and theta bar where theta bar is
+
+
+that target network. So theta is copied
+
+
+into it every like 10,000 steps. So the
+
+
+idea is exactly the same. It's just that
+
+
+now theta bar is not being uh updated
+
+
+through Q-learning. It's just being
+
+
+updated with that copy and theta is
+
+
+being updated with the double uh Q rule
+
+
+using theta bar as like the other
+
+
+network.
+
+
+I they're not equivalently good, but the
+
+
+difference empirically on most problems
+
+
+is actually pretty small. It's just that
+
+
+this one is a lot less principled. So,
+
+
+it's very hard to like state anything
+
+
+confidently about why this should be
+
+
+good other than the intuition that it
+
+
+kind of looks like the thing on the
+
+
+previous slide, but everybody uses this
+
+
+version because it's so easy.
+
+
+>> Yes.
+
+
+>> Yeah. So, the very important is you you
+
+
+need to make sure you put a stop
+
+
+gradient so that you don't differentiate
+
+
+through the target value.
+
+
+Yes.
+
+
+Um, yeah. So, the question was, well,
+
+
+wouldn't you still see that problem just
+
+
+every 10,000 steps? U conceptually, I
+
+
+think yes. Uh, in practice, 10,000 is a
+
+
+big number. So, uh, maybe people don't
+
+
+worry about it as much. So, you're like
+
+
+mixing in a little bit of badness into a
+
+
+thing that is mostly good.
+
+
+Yes. Back there.
+
+
+Yeah. So the so really all it's denoting
+
+
+is like which one gets updated with
+
+
+gradients from the Q-learning objective
+
+
+and which one just gets copied from the
+
+
+other one.
+
+
+You could also update both of them with
+
+
+Q-learning objectives and then you
+
+
+actually get the original version here.
+
+
+Yes, those questions.
+
+
+a small difference in what?
+
+
+So, um, maybe I I think I see what
+
+
+you're getting at.
+
+
+the problem where you plug in the arg
+
+
+max of a function into itself to get the
+
+
+max. Uh that's a problem when you're
+
+
+literally using the same function
+
+
+because if the function makes an error
+
+
+in the positive direction at a
+
+
+particular action then you will
+
+
+overestimate based on that error.
+
+
+Usually if you change the function a bit
+
+
+that perfect correlation goes away. So
+
+
+that's you know I'm kind of guessing
+
+
+here but my guess is that that's why
+
+
+even this simple decorrelation trick
+
+
+already uh goes a long way towards
+
+
+reducing overestimation but you know
+
+
+that's a guess that the only thing I can
+
+
+say confidently is like in practice I
+
+
+code this up it works pretty well which
+
+
+by the way is a is a statement that
+
+
+would apply to many DRL methods yes back
+
+
+there.
+
+
+So um there is still only one learning
+
+
+rate and there's still only one network
+
+
+being updated with gradient steps. So
+
+
+back here in the original formulation,
+
+
+yes, there's two networks and they're
+
+
+each updated with gradient updates and
+
+
+they each have a learning rate.
+
+
+Typically, you'd use the same one, but
+
+
+you don't have to. But for the practical
+
+
+one that we use in homework 3, there's
+
+
+still only one gradient update and it's
+
+
+only done to theta. Theta bar is still
+
+
+updated by copying theta into it every
+
+
+10,000 steps.
+
+
+Okay, great. Um,
+
+
+now there's one more trick that I want
+
+
+to tell you about that kind of
+
+
+generalizes the double Q-learning idea.
+
+
+So
+
+
+uh this one is more commonly used with
+
+
+actctor critic but uh you can use it for
+
+
+Q-learning as well. So uh you can kind
+
+
+of recognize that the argmax is really
+
+
+the the expected value of Q theta bar
+
+
+under some policy and in Q-learning that
+
+
+policy is just the the greedy uh argmax
+
+
+policy but um it could be anything
+
+
+including an actor. So if you use the
+
+
+off policy actor critic that we talked
+
+
+about last week uh then you can still do
+
+
+double qlearning uh and instead of the
+
+
+arg max uh you would use your uh your
+
+
+policy to select the action and that's
+
+
+perfectly acceptable. Uh in fact one
+
+
+trick that people sometimes use if they
+
+
+implement double Q-learning and they
+
+
+find they're still overestimating and
+
+
+they're still unhappy about it there you
+
+
+can be even more uh pessimistic about
+
+
+it. you can actually implement uh two Q
+
+
+functions and take the minimum over the
+
+
+two in your uh target value update. So
+
+
+this is sometimes called clipped double
+
+
+Q-le learning. uh this is not always a
+
+
+good thing but if you sometimes for
+
+
+actor critic you implement and you find
+
+
+you're still overestimating okay then
+
+
+just have two uh target networks and
+
+
+take the min of the two question
+
+
+>> yeah so so if you if you use uh this
+
+
+kind of clipped double Qarning where you
+
+
+have two Q functions then you would have
+
+
+two target networks and two current
+
+
+networks and you would update the two
+
+
+current networks uh separately. So you
+
+
+would take uh gradient steps on each.
+
+
+So you can think of it as basically an
+
+
+an ensemble of Q functions. And in
+
+
+general you could extend this even
+
+
+further. You could have an ensemble of
+
+
+like 20 Q functions. It gets expensive
+
+
+eventually but uh in principle that's a
+
+
+reasonable thing to do. So there's all
+
+
+sorts of even fancier methods where
+
+
+instead of taking the min of two
+
+
+functions, you have like a a population
+
+
+of like 20 functions, you sample some
+
+
+subset of those and you take the min of
+
+
+that subset. I won't go into that. Uh if
+
+
+you uh want to read about this, there's
+
+
+a method called red q req that does
+
+
+really fancy ensemble things. But if you
+
+
+want kind of like one idea that is
+
+
+widely used to make active critic work,
+
+
+it's this clipped double Q where you
+
+
+have two functions and you take the min
+
+
+of them. Yes.
+
+
+Yeah. So could this cause issues in the
+
+
+opposite direction where you're
+
+
+underestimating? Yes. Uh, and for
+
+
+reasons that I don't fully understand,
+
+
+it kind of seems like for Q-learning
+
+
+without an actor, just the double Q
+
+
+thing is the best choice. And if you use
+
+
+this clipped min thing, then it
+
+
+underestimates. And for actor critic,
+
+
+somehow the min thing works better. That
+
+
+I I can't explain. I don't know why it's
+
+
+true, but that's kind of the the
+
+
+empirical observation that many people
+
+
+make.
+
+
+Yes,
+
+
+that's right. Yeah. Yeah. So this is
+
+
+less common with Q-learning although you
+
+
+could do it but it's very often used
+
+
+with Q function actor critic.
+
+
+Okay. Uh now uh some practical tips for
+
+
+Q-learning just like if you actually
+
+
+want to get it to work in practice. Um
+
+
+Q-learning does take some care to
+
+
+stabilize. So uh if you're coding up
+
+
+Q-learning start by testing it on easy
+
+
+reliable tasks first and make sure your
+
+
+implementation is correct. So, uh, if
+
+
+you're starting off, uh, maybe do like
+
+
+cartpole or something easy where you can
+
+
+run it in a few minutes and see what
+
+
+happens. If you're trying to get it to
+
+
+work with images and you're doing like
+
+
+Atari games, maybe start with Pong
+
+
+because Pong is pretty easy. Uh, and
+
+
+then go to the harder games once you're
+
+
+pretty certain that the method is
+
+
+implemented correctly and has the right
+
+
+hyperparameters. Uh, here are some
+
+
+learning curves for different Atari
+
+
+games. And you can see that some of them
+
+
+are a lot nicer than others. So pong
+
+
+like goes up and then venture goes up
+
+
+and down a lot. So uh you really want to
+
+
+debug your algorithm on the easier tasks
+
+
+to make sure that it's working correctly
+
+
+before throwing it at some of the harder
+
+
+tasks. Um large rep replay buffers are a
+
+
+good idea. 1 million is a good size for
+
+
+a replay buffer. Generally the larger
+
+
+your replay buffer is, the easier it'll
+
+
+be for you to stabilize your algorithm.
+
+
+Um, and the other thing is that it's not
+
+
+uncommon for these kinds of Q-learning
+
+
+methods to take a while to take off.
+
+
+Remember that you're relying on that
+
+
+random exploration rule to discover
+
+
+rewards. So in regular kind of
+
+
+supervised learning, you might be used
+
+
+to seeing losses that have the steepest
+
+
+descent at the very beginning. So if
+
+
+you're if you're doing supervised
+
+
+learning and you plot your loss
+
+
+function, you'll typically see it go
+
+
+rapidly down right at the beginning and
+
+
+then kind of flatten off. Whereas with
+
+
+Q-learning, it's more common to see kind
+
+
+of an S-shaped learning curve where in
+
+
+the beginning it's kind of flat while
+
+
+it's exploring, then it finds some high
+
+
+reward outcomes and then it starts
+
+
+improving and then it plateaus again
+
+
+once it's learned. Yes.
+
+
+Yeah. So the Q value is just the
+
+
+expected value of the rewards and the
+
+
+rewards are just determined by the MTP.
+
+
+So Pong just happens to have some
+
+
+negative and some positive rewards. It's
+
+
+purely problem dependent.
+
+
+Okay. Uh and then the other thing that
+
+
+uh is worth considering is to start with
+
+
+um high exploration. So maybe choose
+
+
+epsilon to be pretty high at the
+
+
+beginning and gradually reduce it over
+
+
+time. So that makes sense because uh if
+
+
+in the beginning you're not learning
+
+
+anything because you haven't even
+
+
+discovered high reward regions then you
+
+
+might as well choose a higher epsilon
+
+
+and cover more stuff and then towards
+
+
+the end once you actually have a
+
+
+meaningful behavior then you want lower
+
+
+epsilon so that it's mostly doing its
+
+
+thing and then occasionally trying out
+
+
+other actions. So it's pretty common to
+
+
+schedule epsilon and to schedule your
+
+
+learning rates and have epsilon decay
+
+
+over time. Yes.
+
+
+>> Yeah. So um
+
+
+in the Q-learning algorithm when you
+
+
+make gradient updates you're loading
+
+
+batches from the replay buffer. If you
+
+
+had a really tiny replay buffer then it
+
+
+would be dominated by the most recent
+
+
+experience and the most recent
+
+
+experience is strongly correlated. So
+
+
+the step right now is similar to the
+
+
+step uh to the previous step which is
+
+
+similar to the step before that. So
+
+
+essentially the larger a replay buffer
+
+
+is the more you're decorrelating your
+
+
+gradient updates and SGD generally
+
+
+assumes that your gradient updates are
+
+
+decorated. Once they become correlated
+
+
+then uh it tends to not behave so well.
+
+
+Okay. Um a few more advanced tips. So um
+
+
+the gradients of that uh the Bellman
+
+
+error that uh uh regression loss can be
+
+
+pretty big. So it's uh fairly common
+
+
+with Q-learning to clip the gradients or
+
+
+equivalently to use something called a
+
+
+huber loss. So instead of a squared
+
+
+error, you use kind of a soft absolute
+
+
+value error. So huber loss is uh uh kind
+
+
+of it looks like absolute error uh far
+
+
+from the from zero and then close to
+
+
+zero it's it it looks quadratic. So
+
+
+that's a common loss function to use if
+
+
+you want uh stable regression instead of
+
+
+mean squared error because with squared
+
+
+error large errors have enormous
+
+
+gradients. The other thing you can do of
+
+
+course is just clip your gradients. Um,
+
+
+double Q-learning helps actually a lot
+
+
+in practice and it's simple and there's
+
+
+kind of no reason not to do it. Endstep
+
+
+returns can also help a lot but they do
+
+
+have some downsides. So with endstep
+
+
+returns just sort of use that with care.
+
+
+Uh, and make sure that you're choosing a
+
+
+reasonable value event for your problem.
+
+
+Uh, and then it's it's a good idea to
+
+
+schedule exploration. So exploration
+
+
+epsilon starts high and goes down. Uh,
+
+
+and then either schedule your learning
+
+
+rate or use an adaptive optimizer like
+
+
+atom. These days typically people just
+
+
+use atom. Um it's also a good idea if
+
+
+you're experimenting with your algorithm
+
+
+and you want to figure out like is my
+
+
+algorithm implemented correctly. Uh it's
+
+
+a good idea to run multiple random seeds
+
+
+because the algorithm has a lot of
+
+
+randomness in it from exploration and
+
+
+network initialization and um if you
+
+
+want to understand is your algorithm
+
+
+good average across multiple runs with
+
+
+different random seats.
+
+
+Okay. Uh any questions about these
+
+
+practical tips?
+
+
+Okay. Uh let's take a short intermission
+
+
+since we're running a little bit behind
+
+
+and we'll come back in three minutes at
+
+
+9:30.
+
+
+[clears throat]
+
+
+>> You mentioned that if you have like such
+
+
+two network say
+
+
+>> then [clears throat] after you update it
+
+
+then there should be the corresponding
+
+
+network to gradient descent or you
+
+
+should just do the gradient on those
+
+
+two.
+
+
+to do like I feel like this one look
+
+
+like you're doing like simmering for
+
+
+example.
+
+
+>> I see. Um so classically if you want to
+
+
+implement as was described in the
+
+
+original double Q paper you would
+
+
+literally just have like two parallel
+
+
+Q-learning processes. Yes. So for each
+
+
+one you would do you would compute the
+
+
+gradient with respect to theta A or
+
+
+theta B with a stop on everything in the
+
+
+target and take gradient updates.
+
+
+>> Yeah. But in reality we'll do something
+
+
+pretty similar to example right or not
+
+
+really.
+
+
+>> I'm a bit confused.
+
+
+>> Yeah. So so I really talked about three
+
+
+methods. this
+
+
+>> this one and then the clipped one and
+
+
+they're they're three different things.
+
+
+>> Yeah, but like regardless of how we
+
+
+implement the Q-learning, we need a Q
+
+
+theta bar to soft deployment for
+
+
+>> Oh, I I see. I see. So, you're saying
+
+
+like how do you get target networks for
+
+
+this?
+
+
+>> Um, so I actually don't know because the
+
+
+original double Q-learning paper
+
+
+predates the target networks. So, it
+
+
+just describes it like this.
+
+
+>> Ah,
+
+
+>> but you know, I'll tell you that
+
+
+whenever someone implements it, they
+
+
+either implement this version or the
+
+
+next version.
+
+
+>> I see. So, no one really implement this
+
+
+one. Well, you people implemented it
+
+
+prior to 2013.
+
+
+>> Sure. If if you consider that to be
+
+
+nobody, I don't know.
+
+
+>> I see. I see. So, in this case, like if
+
+
+you implement if you reimplement the
+
+
+things that you still do.
+
+
+>> Yeah. I think I I think probably if I
+
+
+had to do it this way, I would probably
+
+
+introduce a target network for each of
+
+
+these. Yeah. But I'm not sure. I'm just
+
+
+guessing.
+
+
+>> Okay. Sounds good. Thank you very much.
+
+
+>> How the propagation works. So I know
+
+
+like our like estimated reward starts at
+
+
+zero but then we still have like so that
+
+
+means there's an error of one like for
+
+
+this step but how does it propagate
+
+
+though?
+
+
+>> So basically um at the let me draw a
+
+
+smaller version of this.
+
+
+>> So when you first start u the targets
+
+
+here are going to be zero. So this one
+
+
+will take on zero. The targets here are
+
+
+going to be like whatever is the reward
+
+
+here plus one times gamma. So like
+
+
+roughly one. So this will be this will
+
+
+become like 0.9. But because you have a
+
+
+target network, this 0.9 is stored in
+
+
+theta. Whereas theta bar still thinks
+
+
+this is zero. So for that first 10,000
+
+
+steps, this one is still regressing on
+
+
+to zero. And this one is regressing on
+
+
+to 0.9. So then after 10,000 steps, you
+
+
+set theta bar to be theta. So now this
+
+
+one is regressing onto gamma* 0.9. So it
+
+
+becomes like, you know, 0 like 88 or
+
+
+something.
+
+
+>> Thank you.
+
+
+>> All right. Uh
+
+
+apologies for the short intermission,
+
+
+but we've got a little bit more material
+
+
+to get through. So, uh please find a
+
+
+seat and we will resume with uh the last
+
+
+part of today's lecture. And in the last
+
+
+part, we're going to back to continuous
+
+
+actions. And this is going to be like
+
+
+kind of more or less exactly what you
+
+
+expect. uh with continuous actions,
+
+
+we'll have some actors pop back up and
+
+
+we'll see some interesting relationship
+
+
+between actor critic and Q-learning.
+
+
+Okay, so Q-learning with continuous
+
+
+actions. So far we've talked about
+
+
+discrete action world where taking a max
+
+
+over the actions is very easy. To take a
+
+
+max over your actions, you would
+
+
+evaluate the Q values of all your
+
+
+actions. You get a finite uh size vector
+
+
+and you just take the max over that
+
+
+vector.
+
+
+But with continuous actions, it's a
+
+
+little trickier. Getting the arg max
+
+
+with respect to a is not particularly
+
+
+easy. Uh and getting the max in the
+
+
+backup is not particularly easy. Okay,
+
+
+so these things we have to address in
+
+
+some smarter way if we have continuous
+
+
+actions.
+
+
+And in fact, it's actually the max and
+
+
+the target value that's particularly
+
+
+problematic because that's in the inner
+
+
+loop of training. So you really want to
+
+
+be about evaluating that max really
+
+
+really quickly. Okay. So how do you
+
+
+perform the max? One option is to
+
+
+optimize.
+
+
+Um now typically you wouldn't want to
+
+
+run gradient descent on a to get the max
+
+
+over a right in the inner loop of your
+
+
+uh learning process because that is a
+
+
+sequential process. So you would really
+
+
+like to have an opt an optimizer that
+
+
+can uh be amendable to good
+
+
+parallelization.
+
+
+So stochcastic optimization is actually
+
+
+a really good choice for taking that max
+
+
+if you really want to do it with
+
+
+optimization. So here is the idea. Um
+
+
+instead of
+
+
+evaluating the max exactly what you can
+
+
+do is you can somehow generate a number
+
+
+of candidate actions and then take a
+
+
+discrete max over that discrete set of
+
+
+samples.
+
+
+There are a few ways to do this and um
+
+
+how you do it depends a little bit on
+
+
+the complexity of your problem.
+
+
+Basically the size of your action space.
+
+
+So if you have a low dimensional action
+
+
+space, you could even generate a number
+
+
+of uniformly random sampled actions and
+
+
+evaluate each one. If you have like a
+
+
+one dimensional or two dimensional
+
+
+action, that's actually okay. Um so it
+
+
+was dead simple. It's efficiently
+
+
+paralyzable, but it's not very accurate.
+
+
+Um, but maybe you don't really care
+
+
+because maybe uh you're already
+
+
+concerned about overestimation and you
+
+
+don't need to optimize really hard uh to
+
+
+get uh a little bit of improvement. But
+
+
+if you really want a more accurate
+
+
+solution, there are a variety of
+
+
+stochastic optimizers you could use. One
+
+
+uh pretty popular one is called cross
+
+
+entropy method. Um we'll talk about it
+
+
+in more detail later. uh but it's a
+
+
+simple iterative stocastic optimization
+
+
+where you basically generate a bunch of
+
+
+samples from some distribution and then
+
+
+you actually refine that distribution.
+
+
+So this will be discussed later in the
+
+
+course. Another one is CES uh coariance
+
+
+matrix adaptation evolutionary
+
+
+strategies. Uh again I won't go into
+
+
+detail about how this works. You can
+
+
+find a library for it but again similar
+
+
+idea. It'll generate a bunch of samples,
+
+
+refine a distribution, generate more
+
+
+samples and repeat. And what uh and this
+
+
+kind of works okay for like up to 40
+
+
+dimensions. So these stocastic
+
+
+optimizers at a high level the way that
+
+
+they all work is they'll generate a
+
+
+sample of actions test them somehow
+
+
+generate a new sample test them somehow
+
+
+and repeat and typically you would do
+
+
+very few iterations of this maybe just
+
+
+two or three but m but paralyze it out
+
+
+and that that works really well because
+
+
+of course testing an entire batch of
+
+
+actions uh on GPU is very
+
+
+straightforward.
+
+
+So um this kind of stuff is uh uh pretty
+
+
+popular uh as an improvement to like
+
+
+actor critic methods and offline RL. Uh
+
+
+sometimes these kind of methods are
+
+
+called sample and rank or rejection
+
+
+sampling um because you're generating a
+
+
+bunch of samples and rejecting the ones
+
+
+that are not the ones with the highest
+
+
+value. Yes,
+
+
+you can you can do more advanced
+
+
+methods. uh MCMC is often not a good
+
+
+choice because MCMC uh typically
+
+
+requires a very large number of steps.
+
+
+So basically what you want is you want a
+
+
+wide but short optimizer like uh SGD is
+
+
+a fairly long optimization process. MCMC
+
+
+is a very long optimization process but
+
+
+uh C CES or CM are very wide. They
+
+
+require lots of samples in parallel but
+
+
+take very few iterations and that's
+
+
+generally preferred.
+
+
+Okay. Um now here's another option.
+
+
+instead of running a little optimizer in
+
+
+the inner loop, what if you actually
+
+
+learn a kind of approximate maximizer as
+
+
+a neural net. So the classic example of
+
+
+a method like this is called DDPG. DDPG
+
+
+stands for deep deterministic policy
+
+
+gradient. Um and it's kind of like
+
+
+deterministic actor. So the idea is that
+
+
+the max is of course the Q value the Q
+
+
+function evaluated at the ARM max. And
+
+
+what if we train another network that
+
+
+we're going to call mu? Uh so that mu of
+
+
+s is the argmax. So we're basically
+
+
+going to train a network to produce the
+
+
+argmax.
+
+
+And this looks very much like actor
+
+
+critic because mu is like a
+
+
+deterministic actor.
+
+
+So uh the way to train mu is literally
+
+
+just take gradient updates on q of s
+
+
+comma mu of s. Okay,
+
+
+it's not it's deterministic now. So
+
+
+there's no expectation and this can be
+
+
+done entirely with back propagation. So
+
+
+the derivative uh of uh uh qi with
+
+
+respect to the parameters of uh mu theta
+
+
+is just da d theta* dqda. Okay. And back
+
+
+prop will do that. Yes.
+
+
+>> Yeah. So the this is
+
+
+exactly actor critic with a
+
+
+deterministic actor. Uh so before we
+
+
+always had stochastic actors. If you
+
+
+want a deterministic actor, this is
+
+
+basically actor critic. It's also
+
+
+basically Q-learning. So they're kind of
+
+
+the same thing in this case.
+
+
+Um and the gradient here is also very
+
+
+similar to the reparameterized gradient
+
+
+that we learned about before except that
+
+
+now since it's deterministic, there's no
+
+
+noise.
+
+
+Um and now your target value is just r +
+
+
+gamma q of s comma uh argmax. and the
+
+
+argax is replaced with uh with mu. So
+
+
+it's just r plus gamma q of s comma mu
+
+
+of s.
+
+
+So in some actor critic and q-learning
+
+
+are not that different. They're kind of
+
+
+uh based on pretty similar principles.
+
+
+And one way to view actor critic is
+
+
+policy gradient with a value function to
+
+
+help you get better advantages. Another
+
+
+way to view it is it's Q-learning with
+
+
+an approximate maximizer. And they're
+
+
+kind of the same thing. So just to kind
+
+
+of write out this algorithm so it's
+
+
+pretty clear to everybody. Here's how
+
+
+DDPG works. Uh take some uh action and
+
+
+observe a transition and then add it to
+
+
+your buffer. Then uh sample a mini batch
+
+
+from your buffer. Compute uh target
+
+
+values on the buffer where the target
+
+
+values use the target network for Q q QI
+
+
+bar and the target network for mu mu
+
+
+theta bar. uh then update fi with uh a
+
+
+gradient step on uh the regression
+
+
+objective and then upgrade update theta
+
+
+with a gradient step on the q value of
+
+
+mu theta. So that's to make mu a better
+
+
+maximizer and then update both the
+
+
+target network parameters
+
+
+for example with polyiac averaging. So
+
+
+that's the DDPG algorithm
+
+
+and you'll probably notice that it looks
+
+
+a lot like actritic. uh so uh you know
+
+
+if I were to replace step three with
+
+
+like an expected value over Q and
+
+
+replace step five with the rep
+
+
+parameterized gradient then I get the
+
+
+exactly the off policy after critic that
+
+
+we learned about before. So here is the
+
+
+off policy after critic um very very
+
+
+similar
+
+
+the only difference being in step three
+
+
+and step five. Yes.
+
+
+Well, that is what this is doing, right?
+
+
+So, uh it's doing gradient descent on uh
+
+
+on the Bellman error for for fi and
+
+
+doing gradient ascent on the q value for
+
+
+theta.
+
+
+>> Yeah.
+
+
+>> Yeah. Yeah, so you can do either piac
+
+
+averaging or the hard network update.
+
+
+And both of these can also be improved
+
+
+with like clip double qlearning and all
+
+
+that kind of stuff. So all the tricks
+
+
+from the earlier parts of the lecture,
+
+
+you can even do endstep returns with
+
+
+this if you want. All those tricks apply
+
+
+to this method just as well.
+
+
+So now we can see that the off policy
+
+
+actor critic sort of also fits into this
+
+
+family of methods where all it does just
+
+
+take the Q-learning recipe and add an
+
+
+actor to it.
+
+
+Okay. Uh so there are other improvements
+
+
+we talked about. Uh you can do nstep
+
+
+returns with this. You can do all the
+
+
+other stuff and get a better method.
+
+
+All right. So in the last part of
+
+
+today's lecture uh I want to go through
+
+
+a little bit of uh theory about
+
+
+Q-learning to try to understand how it
+
+
+uh differs from gradient descent and why
+
+
+that might be a problem.
+
+
+And for that we're going to go back to
+
+
+actually what we discussed on Wednesday
+
+
+which was the value iteration algorithm.
+
+
+So if you remember we learned about this
+
+
+kind of a dynamic programming procedure
+
+
+which we don't use in DRL but we do use
+
+
+it if we want like uh if we know all the
+
+
+transition probabilities and all that
+
+
+stuff and it's called value iteration
+
+
+where we basically um set the Q values
+
+
+to be the R plus the expected V and then
+
+
+we set the V to be the max of Q and we
+
+
+can kind of short circuit it uh into one
+
+
+line where we basically substitute line
+
+
+one into line two and we get the regular
+
+
+value it duration equation.
+
+
+And a question that uh people can kind
+
+
+of ask about this procedure is well if
+
+
+you repeat this update does it converge
+
+
+and what does it converge to and then
+
+
+after that we'll ask well if we use a
+
+
+neural network and we do have and we
+
+
+have this regression step and we turn it
+
+
+into Q-learning does that converge and
+
+
+if so what does it converge to but we'll
+
+
+start with value iteration because there
+
+
+uh things are pretty simple
+
+
+so
+
+
+we're going to write it out with a bit
+
+
+of linear algebra where we'll define an
+
+
+operator B so that BV is equal to where
+
+
+V is the vector of values is the max
+
+
+over all the actions of the reward plus
+
+
+gamma times the transition operator for
+
+
+those actions. So TA is a matrix where
+
+
+you select uh the probability fraction A
+
+
+for each row times the uh value
+
+
+function. So R is a stacked vector of
+
+
+all the rewards at all the states for
+
+
+action A. And then you're taking a max
+
+
+over each row to select the highest uh
+
+
+value action. and t is a matrix of
+
+
+transitions for action a. So basically t
+
+
+aig is the probability of going into
+
+
+state i given that you were in state j
+
+
+and took action a. Okay. And this is
+
+
+applied to every row. So this is a way
+
+
+to write out value iteration basically
+
+
+in two symbols. Value iteration is just
+
+
+repeated application of this operator B
+
+
+to a vector of the values at all of your
+
+
+states.
+
+
+And then v star the optimal value
+
+
+function is a fixed point of b. And uh I
+
+
+I won't go through the proof of this but
+
+
+you can actually show that for this uh
+
+
+operator if you plug in the optimal
+
+
+value function you will get back the
+
+
+optimal value function.
+
+
+So uh vstar is equal to this max. Uh so
+
+
+vstar is b * v star.
+
+
+Uh and in fact you can show that uh
+
+
+vstar always exists. It's always unique
+
+
+and it always corresponds to the optimal
+
+
+policy. So the value iteration algorithm
+
+
+that we learned about on Wednesday
+
+
+basically is just repeatedly applying
+
+
+this operator B to some vector V until
+
+
+it gets to V star at which point it
+
+
+stops changing because V star is the
+
+
+fixed point of this thing.
+
+
+The way that people uh show that they
+
+
+will actually reach V star is uh by
+
+
+proving that B is a contraction. And I I
+
+
+won't prove this result. I'll just state
+
+
+it for you. Uh but uh we we'll we'll
+
+
+talk about it in more detail in a later
+
+
+lecture in the course. So
+
+
+uh the way this typically works is that
+
+
+we prove that the value iteration
+
+
+reaches v star because b is a
+
+
+contraction and what contraction means
+
+
+is that if you apply to two vectors v
+
+
+and v bar they will become closer
+
+
+together and in fact they will become
+
+
+closer together by a non-negligible
+
+
+amount. So if you uh apply b to v and v
+
+
+bar they will uh the the distance
+
+
+between them in the infinity norm will
+
+
+be less than or equal to the gamma of
+
+
+their old distance. So, so it contracts
+
+
+by gamma and remember gamma is less than
+
+
+one. So that means that the distance
+
+
+between these vectors always decreases
+
+
+by a non-negligible amount when you
+
+
+apply uh b.
+
+
+So the gap always gets smaller.
+
+
+Uh now an important detail here is that
+
+
+this is with respect to the infinity
+
+
+norm. So the infinity norm is uh picking
+
+
+out the dimension with the largest
+
+
+distance. So that means that uh the
+
+
+state with the largest error that error
+
+
+will decrease. And of course if you're
+
+
+always decreasing the error in the state
+
+
+with the largest error eventually you'll
+
+
+decrease the error everywhere and then
+
+
+you'll get to the point where uh you
+
+
+have a fixed point. So if you choose v
+
+
+star as vb bar that means that applying
+
+
+b to any uh value function brings it
+
+
+closer to v star. So that's good. That
+
+
+means that every time you apply this
+
+
+operator in this kind of tabular uh mdp
+
+
+you're always getting closer and closer
+
+
+to the optimal solution. Okay. So vv
+
+
+minus v star is less than or equal to v
+
+
+minus v star. So applying B to V brings
+
+
+it closer to V star. Okay. So this is
+
+
+kind of the the typical way that that
+
+
+that people uh prove that uh go about
+
+
+analyzing uh value iteration that the
+
+
+the standard tabular algorithm without
+
+
+any neural nets without any fanciness
+
+
+and basically there everything is all
+
+
+good and each time you apply the this
+
+
+value iteration update you get closer
+
+
+and closer to the optimal solution.
+
+
+Okay. And in fact the nice thing with
+
+
+introducing this operator V is I can
+
+
+write the algorithm in one line with
+
+
+like three symbols. So that's the value
+
+
+duration algorithm. But now let's talk
+
+
+about what happens when we add in neural
+
+
+networks uh or any other kind of
+
+
+function approximator. Then things
+
+
+actually get pretty complicated.
+
+
+So the fitted value iteration algorithm
+
+
+from Wednesday
+
+
+computed target values as this max over
+
+
+R plus the next value. But then of
+
+
+course because it's not a table of
+
+
+values, it's actually a neural network.
+
+
+You have to then train that neural
+
+
+network to regress onto those values.
+
+
+And you could say that okay my neural
+
+
+network is really powerful. It's really
+
+
+big. So when I solve this regression
+
+
+problem I'm going to get error very
+
+
+close to zero
+
+
+but it's not like exactly zero. So you
+
+
+still need to somehow model the fact
+
+
+that this regression problem is not
+
+
+going to perfectly match the target
+
+
+values.
+
+
+And one of the ways that you can do it
+
+
+is you could say that regression is
+
+
+really a projection. So you have the
+
+
+space of all the functions that your
+
+
+neural nets can represent and it's
+
+
+smaller than the space of all possible
+
+
+functions. Like it's very hard for
+
+
+example for a neural network to
+
+
+represent a function that is plus one on
+
+
+rational numbers and minus one on
+
+
+irrational numbers. Like you'll probably
+
+
+agree with me that that neural nets
+
+
+generally can't represent that. So
+
+
+clearly there are some functions that
+
+
+neural nets represent and some functions
+
+
+they do not represent. So you can think
+
+
+of the set of functions that neural nets
+
+
+can represent and regression can be
+
+
+modeled roughly as a projection onto
+
+
+that set
+
+
+and projection in what norm? Projection
+
+
+in the L2 norm, right? Because we're
+
+
+doing mean squared error.
+
+
+So it's finding the function uh v prime
+
+
+in the set omega with the smallest error
+
+
+to the backtop function BV
+
+
+where omega is a set of all functions
+
+
+that can be represented by neural nets.
+
+
+So what this means is that let's say
+
+
+that V is my value function. That line
+
+
+is the set omega like the set of all
+
+
+neural nets. When I compute my target
+
+
+values, I'm applying the operator B to V
+
+
+and that gets me an updated value
+
+
+function uh implicitly, but it's not
+
+
+sitting on the line anymore. So then
+
+
+when I solve the regression problem, I'm
+
+
+projecting it back on that line. And I
+
+
+intentionally exaggerated this. I mean
+
+
+in reality of course BV might not be
+
+
+that far from the set of possible neural
+
+
+nets but you can think of this kind of
+
+
+exaggerated picture as what's going on
+
+
+in the fitted value it deration
+
+
+algorithm. So line one which computes
+
+
+the target values is applying the
+
+
+operator B to your value function and
+
+
+line two which solves the regression
+
+
+projects it back onto the set of neural
+
+
+nets.
+
+
+So that's kind of a schematic uh
+
+
+theoretical picture of what fitted value
+
+
+iteration is doing. This is a little bit
+
+
+abstract. So if anyone has questions
+
+
+please ask right now.
+
+
+Yes,
+
+
+if omega is very large, isn't this
+
+
+intractable? Well, supervised learning
+
+
+is basically solving that projection
+
+
+problem. So, if you sort of assume that
+
+
+you run supervised learning all the way
+
+
+to convergence, it should find you uh
+
+
+and if you assume the set of neural nets
+
+
+is convex, which of course it isn't,
+
+
+then you should actually find that uh uh
+
+
+that projection.
+
+
+Yes,
+
+
+V prime is the solution to step two. So
+
+
+the so what this picture is showing is
+
+
+one step of fitted value iteration.
+
+
+First compute your targets that's
+
+
+applying B and then solve the regression
+
+
+that's finding V prime. So in reality
+
+
+you would keep doing this.
+
+
+Yes. Back there.
+
+
+Yeah, that's a good point. So there uh
+
+
+basically for everyone else uh uh in the
+
+
+class there there are other sources of
+
+
+error that we're not modeling in this
+
+
+kind of idealized picture. For example,
+
+
+we're not modeling the fact that we have
+
+
+a finite set of samples and maybe the
+
+
+projection is imperfect. We're not ma uh
+
+
+we're not modeling the fact that we're
+
+
+estimating that expected value with
+
+
+samples as well. So even our target
+
+
+values are imperfect. So there's all
+
+
+sorts of like additional error sources.
+
+
+And this is already a very idealized
+
+
+picture. Uh but even in this idealized
+
+
+picture, what we're going to see next is
+
+
+that some really bad stuff starts to
+
+
+happen. Okay, so uh just to complete the
+
+
+picture on the math, the way that we can
+
+
+do the the way we can formalize this is
+
+
+we can define a new operator, we'll call
+
+
+it capital pi for projection, which
+
+
+basically solves this projection
+
+
+problem. So capital pi takes an
+
+
+arbitrary function and projects it onto
+
+
+the set of neural nets in terms of
+
+
+squared error. So it's an L2 projection.
+
+
+Uh so
+
+
+uh it projects onto omega. So then you
+
+
+can write fitted value iteration as one
+
+
+line by basically repeatedly applying B
+
+
+to V and then pi to BV. So it just sets
+
+
+V to be pi B V. That's it. Uh it's kind
+
+
+of cool to write a complicated algorithm
+
+
+in like three symbols. But what's
+
+
+lurking underneath that that math is
+
+
+basically first take your value function
+
+
+V back it up which means compute the
+
+
+target values and that's BV and then
+
+
+project onto the set of neural nets
+
+
+which is the operator pi. So pi bv means
+
+
+take your value function perform a
+
+
+backup and then perform a projection. So
+
+
+this is kind of like the idealized way
+
+
+of writing down fitted value iteration.
+
+
+Um okay but now we have some interesting
+
+
+properties. B is a contraction in the
+
+
+infinity norm. So in terms of the
+
+
+infinity norm applying B uh to V will
+
+
+bring it closer to V star.
+
+
+Pi is a contraction in the L2 norm. So
+
+
+if you take two two points and you
+
+
+project them onto the same set, they can
+
+
+only get closer to each other. They
+
+
+cannot get further away. But that's in
+
+
+terms of the L2 norm in terms of the
+
+
+squared uh norm in terms of in terms of
+
+
+the the squared norm between the two uh
+
+
+points. So that's that.
+
+
+So this is projection. You take two
+
+
+points and you project them on a line.
+
+
+They can't get further away. They can
+
+
+only get closer in terms of distance, in
+
+
+terms of uding distance. Basically, the
+
+
+trouble is that when you compose an
+
+
+operator that does a projection on the
+
+
+L2 norm with an operator that's a
+
+
+projection in the infinity norm, weirdly
+
+
+enough, it's not a contraction in any
+
+
+norm whatsoever. In fact, if you
+
+
+move the two points so they're closer in
+
+
+the infinity norm and then move them
+
+
+again so they're closer in the L2 norm,
+
+
+they might actually become further apart
+
+
+uh in the infinity norm. So, uh if if
+
+
+you if you want kind of a graphical uh
+
+
+illustration of this, this is what you
+
+
+would like to have. You'd like to just
+
+
+get closer and this is what you get. So,
+
+
+V is the original vector. The star is V
+
+
+star. This is my backup. It brings me
+
+
+closer to the star in terms of the
+
+
+infinity norm. And then I project it
+
+
+back on the line and it's further.
+
+
+And you can see visually that it's a
+
+
+projection because it's a right angle
+
+
+there. So in general, if you apply a
+
+
+contraction in the infinity norm
+
+
+followed by a contraction in the L2
+
+
+norm, you can actually move further away
+
+
+from the optimal. It it's not like 100%
+
+
+obvious uh but it is true. And in
+
+
+practice, what that means is that
+
+
+repeatedly applying the these two
+
+
+operators can move you further from the
+
+
+optimum. You can also enter an orbit
+
+
+around the optimum where you keep going
+
+
+in a circle. So you can do all sorts of
+
+
+things and not actually get to the
+
+
+correct solution. So the conclusion is
+
+
+that value iteration, regular value
+
+
+iteration in the tabular case does
+
+
+converge, but fitted value iteration in
+
+
+general does not converge.
+
+
+And certainly if the set of functions
+
+
+you can model if that line is uh pretty
+
+
+small and the projection actually moves
+
+
+you quite a bit far away from BV then
+
+
+it's quite possible that you will not
+
+
+converge.
+
+
+This is a somewhat counterintuitive
+
+
+concept. So if anybody has questions
+
+
+please ask.
+
+
+Yeah. [clears throat]
+
+
+Right. Yeah. So the question was well
+
+
+what does being at the optimum value
+
+
+function even mean when that line
+
+
+doesn't pass through the star. So the
+
+
+best you can hope for is that you will
+
+
+find the closest point on the line to
+
+
+the star which is basically the
+
+
+projection of the star on the line.
+
+
+That's the best you can hope for. Yeah.
+
+
+>> Is there any way?
+
+
+>> Yeah. So this uh there's a subtle
+
+
+question here is like well okay the
+
+
+problem seems to stem from the fact that
+
+
+your projection is an L2 projection. Can
+
+
+you somehow change the laws so that it's
+
+
+not an L2 projection anymore? So if you
+
+
+could somehow have an L infinity
+
+
+projection then everything is fine
+
+
+because then you have two uh operators
+
+
+of contractions in L infinity.
+
+
+But what does it mean for a learning
+
+
+procedure to minimize the L infinity
+
+
+norm? It means that you're finding the
+
+
+sample that has the largest error
+
+
+to the true function which might not
+
+
+even be in your set of samples and then
+
+
+lowering its error. So that's basically
+
+
+impossible to do in conventional machine
+
+
+learning when we're always operating on
+
+
+samples that we just generated by
+
+
+running something in the world.
+
+
+L infinity norm is actually like a very
+
+
+subtle object. L infinity is the error
+
+
+for the worst possible point and the
+
+
+worst possible point is in general not
+
+
+part of your training set. Yeah.
+
+
+Yeah. So if you have if you have the
+
+
+tabular case where every single
+
+
+transition in existence is uh is in your
+
+
+table then you can do it. Yeah.
+
+
+>> Yeah. Yeah. So the question for those
+
+
+that didn't hear is like okay well the
+
+
+problem seems to stem from the set
+
+
+omega. Well what if you just have like a
+
+
+really big set of omega so that
+
+
+everything is in it so the projection
+
+
+doesn't really change it. Yes. uh and if
+
+
+every single function in existence is in
+
+
+the set omega, you're all good. And this
+
+
+is actually why deep RL kind of works
+
+
+because the set of functions that neural
+
+
+nets can represent is a very big set and
+
+
+really big networks can represent an
+
+
+even bigger set of functions. So if you
+
+
+train really hard and you have a really
+
+
+big neural net, this problem becomes
+
+
+less severe. And that's why in the olden
+
+
+days when people use like linear
+
+
+function approximators, this was really
+
+
+really bad. And then as DRL picks up and
+
+
+it gets deeper and deeper, then this
+
+
+gets less bad.
+
+
+Okay. Um, okay. So, uh, but yeah, in
+
+
+general, bad stuff happens and in
+
+
+practice often bad stuff happens. The
+
+
+same exact thing holds for fidic Q
+
+
+iteration. Um, I won't go through this
+
+
+in a lot of detail, but basically all
+
+
+the same logic can apply. So, if I if I
+
+
+want Q functions instead of value
+
+
+functions, I can also define an operator
+
+
+that backs up Q functions. It's a
+
+
+slightly different operator, but it's
+
+
+the same principle. Uh, and I can also
+
+
+define a projection operator on Q
+
+
+functions. And I can define fitted Q
+
+
+iteration as pi BV Q and I get exactly
+
+
+the same thing. Okay, so it also applies
+
+
+to online Q-learning. Um it also applies
+
+
+to actor critic. So actor critics have
+
+
+the same issue. They also back up the
+
+
+value function but using the actor and
+
+
+then they project the value function
+
+
+using a mean squared error. So same
+
+
+exact thing. The backup is an L infinity
+
+
+contraction. The regression is an L2
+
+
+contraction. So fitted bootstrap policy
+
+
+evaluation doesn't converge. Actor
+
+
+critic doesn't converge. Uh all of these
+
+
+things have the same exact problem.
+
+
+So what does this mean?
+
+
+Um fitted value based methods. So
+
+
+Q-learning, Q function, actor critic,
+
+
+etc. Basically anything that relies on a
+
+
+bootstrap update, a TD update, something
+
+
+that looks like R plus gamma something.
+
+
+Um they tend to be a bit unstable
+
+
+in practice. uh it means that the value
+
+
+functions might not converge to the true
+
+
+value function and it kind of explains
+
+
+why more hyperparameter tuning is often
+
+
+needed and why we need all these tricks
+
+
+like target networks and all this other
+
+
+stuff. Uh so target networks really
+
+
+help, replay buffers really help etc.
+
+
+And in general there's more room for
+
+
+development of more stable algorithms
+
+
+and better understanding of existing
+
+
+ones. So the the complete final uh kind
+
+
+of uh chapter on this has not yet been
+
+
+written. uh there are some reasons for
+
+
+optimism like for that earlier question
+
+
+neural nets can represent lots of
+
+
+different functions. So if the problem
+
+
+really stems from that projection well
+
+
+we're projecting on a really big set. So
+
+
+maybe there are some conditions under
+
+
+which the right function is in our set
+
+
+and maybe if we uh have some like
+
+
+special properties of our problem the
+
+
+issue goes away. Maybe if we modify the
+
+
+algorithm a little bit maybe there's
+
+
+some way to make the issue go away. So
+
+
+so far there's no single kind of uh
+
+
+silver bullet solution that completely
+
+
+addresses this problem across the board.
+
+
+And in practice, if you want to get a
+
+
+value based method to work well, what
+
+
+you do is you adjust your
+
+
+hyperparameters and use some of these
+
+
+tricks like target networks and replay
+
+
+buffers. And it's kind of important to
+
+
+understand that deep down the reason why
+
+
+we have so many tricks, unlike kind of
+
+
+the much easier picture that we have in
+
+
+supervised learning, is that in theory
+
+
+the bare bones versions of these methods
+
+
+don't equate to standard stable gradient
+
+
+descent and they don't in the most
+
+
+general and pessimistic case converge
+
+
+the optimal solution. But we can kind of
+
+
+make them work if we're a little bit
+
+
+careful with the parameters. And that's
+
+
+what you'll all do in homework 3. All
+
+
+right. Thank you very much and I'll see
+
+
+you on Wednesday.
+
+
+>> I got some question regarding the
+
+
+location. I think I understand like your

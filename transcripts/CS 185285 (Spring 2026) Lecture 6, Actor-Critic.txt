@@ -1,0 +1,9547 @@
+Mhm.
+
+
+>> All right. So, please find a seat and
+
+
+we're about to get started.
+
+
+All right. Today, we're going to talk
+
+
+about actor-critic algorithms.
+
+
+And actor-critic algorithms are kind of
+
+
+an extension of policy gradient methods
+
+
+that add some really interesting new
+
+
+ideas. Um
+
+
+we'll see value functions and Q function
+
+
+crop crop up again that we saw at the
+
+
+beginning of the course.
+
+
+So, let's uh do a little recap first and
+
+
+summarize what we learned on Wednesday
+
+
+and then take it from there.
+
+
+So,
+
+
+on Wednesday, we learned about our first
+
+
+policy gradient algorithm.
+
+
+This is the simplest policy gradient
+
+
+algorithm. It's called reinforce. Uh and
+
+
+in some ways it is in fact the simplest
+
+
+reinforcement learning algorithm you can
+
+
+think of. It's directly differentiating
+
+
+the reinforcement learning objective and
+
+
+then doing gradient ascent to maximize
+
+
+the expected total reward.
+
+
+So, the algorithm proceeds as follows.
+
+
+At every iteration, you sample a batch
+
+
+of trajectories from your policy,
+
+
+and this is done by running that policy
+
+
+either in the real world or in your
+
+
+simulator. And we know, because of the
+
+
+definition of the trajectory
+
+
+distribution, that running our policy
+
+
+will give us samples from the trajectory
+
+
+distribution p theta tau.
+
+
+Then for every trajectory, we sum up the
+
+
+rewards along those trajectories, and
+
+
+then we use the policy gradient formula.
+
+
+And we saw a few ways that we could
+
+
+improve the policy gradient formula to
+
+
+give us a lower variance gradient,
+
+
+like for example, using a baseline,
+
+
+or
+
+
+exploiting causality and multiplying
+
+
+grad log pi at every step only by the
+
+
+sum of the rewards from that step until
+
+
+the end, rather than
+
+
+for the entire trajectory. And
+
+
+these tricks give us the same gradient
+
+
+in expectation. They do not change the
+
+
+expected value, but they do lower the
+
+
+variance of a finite sample estimator of
+
+
+the gradient. So, in general, you can
+
+
+think of it as giving us a less noisy
+
+
+estimate of the gradient. So, these are
+
+
+good things to do.
+
+
+And once you've computed your estimate
+
+
+of the policy gradient, then you can do
+
+
+gradient ascent with that estimate.
+
+
+So, essentially, this algorithm is
+
+
+stochastic gradient ascent for RL.
+
+
+Now, the quantity that we're going to be
+
+
+interested in in today's lecture is this
+
+
+sum of rewards.
+
+
+And I had mentioned on Wednesday that
+
+
+sometimes this is referred to as the
+
+
+reward to go. That kind of makes sense.
+
+
+Like you're at time step 15, you've got
+
+
+24 more steps to go, and you're going to
+
+
+sum the rewards over those steps to go
+
+
+to get the reward to go.
+
+
+And we sometimes use the symbol Q hat to
+
+
+represent this. So, the reward to go at
+
+
+time step T for trajectory sample I
+
+
+would be denoted as Q hat TI.
+
+
+So, we've got our three parts of the RL
+
+
+algorithm. The orange part is where we
+
+
+generate the samples. The green part is
+
+
+where we estimate the reward to go. And
+
+
+on Wednesday, our reward to go estimator
+
+
+was a summation. It's something that you
+
+
+could hopefully implement in one line.
+
+
+There's a cumulative sum function that
+
+
+most numerics packages will have. That's
+
+
+a good function to use for this.
+
+
+And then, our improvement step is just
+
+
+gradient ascent.
+
+
+So,
+
+
+that's the idea. This is the the
+
+
+gradient, and this is the reward to go.
+
+
+And what we're going to talk about today
+
+
+is how to get a better estimate of the
+
+
+reward to go.
+
+
+To get us thinking about this,
+
+
+I'm going to make a little comment. The
+
+
+reward to go
+
+
+is a
+
+
+random variable.
+
+
+It is not a deterministic quantity. It's
+
+
+a random variable.
+
+
+And that means that it has an expected
+
+
+value, and it has variance.
+
+
+Why is the reward to go a random
+
+
+variable?
+
+
+Can someone give me an explanation?
+
+
+Yes.
+
+
+Right. So, your policy has randomness,
+
+
+your MDP has randomness, and the reward
+
+
+to go is literally defined as the sum of
+
+
+the rewards for the rest of the
+
+
+trajectory from time step T.
+
+
+So, the rest of the trajectory from time
+
+
+step T is a random variable. Therefore,
+
+
+the sum of rewards along that is also a
+
+
+random variable.
+
+
+And if you could somehow teleport to
+
+
+that state multiple times and complete
+
+
+that trajectory multiple times, you will
+
+
+get multiple different answers.
+
+
+So, the fact that Q hat is this random
+
+
+variable
+
+
+induces variance.
+
+
+And the way that we can reduce variance
+
+
+even further and get an even less noisy
+
+
+gradient is by finding a way to have a
+
+
+better Q hat.
+
+
+Question?
+
+
+Yeah, so the question was do we assume
+
+
+that if you're in the same state and you
+
+
+take the same action, then you will get
+
+
+the same next state? No, we do not. So,
+
+
+in general, if you're in the same state
+
+
+and you take the same action, you might
+
+
+get something different.
+
+
+Okay.
+
+
+So, let's improve the policy gradient.
+
+
+So, this Q hat is an estimate of the
+
+
+expected reward if you take action AT in
+
+
+state ST.
+
+
+Can you get a better estimate?
+
+
+So, this is state ST.
+
+
+You're going to sum over all the rewards
+
+
+in this in the tail of this trajectory.
+
+
+And that's the way that we've been
+
+
+computing Q hat so far, the reward to
+
+
+go. And if you could somehow teleport
+
+
+back to that green circle and generate
+
+
+multiple trajectories from there, they
+
+
+will all be a little different.
+
+
+So, perhaps I can get a better estimate
+
+
+of Q hat if I sum over many of these
+
+
+completions. If I in general compute the
+
+
+expected value of the reward to go
+
+
+given a particular state and action.
+
+
+And the expected value is taken with
+
+
+respect to which distributions?
+
+
+Anybody want to raise their hand and
+
+
+tell me which distributions this
+
+
+expected value is under?
+
+
+Yes. So, policy is one. Is there another
+
+
+one?
+
+
+Yes.
+
+
+So, the policy probabilities and the
+
+
+environment transition probabilities. Pi
+
+
+theta AT given ST and P ST + 1 given ST
+
+
+AT. These are the two distributions. You
+
+
+multiply them all together, and that's
+
+
+the probability distribution under which
+
+
+you're taking that expectation.
+
+
+Now, the trouble is that it's quite
+
+
+difficult to do this in the real world.
+
+
+Uh there's a
+
+
+classic movie called Groundhog Day that
+
+
+describes what happens when you try to
+
+
+do this. You can teleport back to the
+
+
+same state and replay the previous day
+
+
+over and over again, but in the real
+
+
+world, we unfortunately cannot do that.
+
+
+So, generally we cannot teleport back
+
+
+back in time to the same state and try
+
+
+living out our day over and over again
+
+
+until we get a low variance estimate.
+
+
+So, uh we have to do something else.
+
+
+But,
+
+
+ideally if we could, then this expected
+
+
+value would be the best
+
+
+estimator we could use. This is the true
+
+
+expected reward to go. If we could
+
+
+compute this thing and plug it into our
+
+
+policy gradient, then we will have a
+
+
+better policy gradient. Why? Because
+
+
+this thing has a variance of zero.
+
+
+Whereas the Q hat that we were using
+
+
+before has very much a non-zero
+
+
+variance.
+
+
+So, ideally, the ideal policy gradient
+
+
+we would like to see would be something
+
+
+like this.
+
+
+And that Q hat where we summed up the
+
+
+rewards over just the remainder of the
+
+
+trajectory that we had sampled is a
+
+
+highly imperfect, yet unbiased estimator
+
+
+of this quantity.
+
+
+Okay. Any questions about this? Because
+
+
+this is basically motivating everything
+
+
+we'll talk about for the next 2 hours.
+
+
+So, if you are unconvinced that this is
+
+
+a good thing to strive for, then none of
+
+
+the rest of this lecture will be very
+
+
+convincing to you. So, if this doesn't
+
+
+make sense, please ask me a question.
+
+
+Yes.
+
+
+Yeah, so the question is what makes the
+
+
+estimator unbiased? Uh unbiased means
+
+
+that uh as you increase the number of
+
+
+samples, it it approaches the true
+
+
+value. The true value is this.
+
+
+Uh so, that makes sense. Like, you know,
+
+
+if you have a single sample estimator,
+
+
+uh
+
+
+that's not not in general going to give
+
+
+you the correct value, but as you add
+
+
+more and more samples, eventually it
+
+
+approaches this.
+
+
+There's a little nuance there where the
+
+
+other
+
+
+the what I just said is asymptotically
+
+
+unbiased. There's another property that
+
+
+an unbiased estimator has, which is that
+
+
+if you run the estimator many times and
+
+
+you average together the estimates from
+
+
+the estimator, that also approaches
+
+
+this.
+
+
+Yes.
+
+
+Yeah. So, the question was, well, if you
+
+
+can compute this Q hat, why not just
+
+
+take the argmax over Q hat? You could do
+
+
+that. Yes. So, in fact, we will see that
+
+
+next week. So, if you can actually get
+
+
+this quantity, sometimes you can even
+
+
+skip the policy gradient entirely. If
+
+
+you have a high-dimensional continuous
+
+
+action space, that argmax is pretty
+
+
+hard. And in practice, when you want to
+
+
+compute the argmax, you just train
+
+
+another neural network to do it, which
+
+
+looks an awful lot like a policy
+
+
+gradient.
+
+
+Any other questions about this?
+
+
+If you're a skeptical about the notion
+
+
+that substituting in this expected value
+
+
+will will give you a better policy
+
+
+gradient, then you should ask about
+
+
+that.
+
+
+All right.
+
+
+Good. Okay, now there's a little bit of
+
+
+a detail that I want to mention before
+
+
+we dive into all the fun stuff, which is
+
+
+what about the baseline? So, we talked
+
+
+about how before you could
+
+
+subtract this little B thingy, and as
+
+
+long as B doesn't depend on the action,
+
+
+then you can subtract any B, and your
+
+
+estimator still has the same expected
+
+
+value, which means that it's still
+
+
+unbiased, but it might have lower
+
+
+variance. So,
+
+
+before we talked about how we would set
+
+
+B to be the average reward. And if it's
+
+
+like BT, then it's the average reward
+
+
+from time step T until the end.
+
+
+Is there something more ideal that we
+
+
+could use here? Because there B was also
+
+
+a sample-based estimate.
+
+
+Well, what if we average over
+
+
+these Qs?
+
+
+So, we can compute a quantity that is
+
+
+called V. We discussed V before, the
+
+
+value function. And the value function
+
+
+is just the expected value of the Q
+
+
+function with an expectation token taken
+
+
+over the actions.
+
+
+So, V of S is essentially the average Q
+
+
+in state S for your current policy.
+
+
+Which is to say, the average reward to
+
+
+go. So, if Q when you're in state S T
+
+
+and take action A T, then V of S T is
+
+
+the average reward to go
+
+
+in state S T.
+
+
+So,
+
+
+you can
+
+
+replace that B with V of S T. This is
+
+
+not the same. This is actually better.
+
+
+This will still um be unbiased. So, you
+
+
+can follow the same proof that I showed
+
+
+before with baselines. And essentially,
+
+
+the reason it's still unbiased is that
+
+
+the distribution here is over A, not
+
+
+over S.
+
+
+So, all that same trick where you get
+
+
+like the gradient of one and it goes to
+
+
+zero still applies here.
+
+
+It's just you have to derive it for
+
+
+every step of the trajectory. And at
+
+
+every step of the trajectory, you're
+
+
+doing grad log pi of A given S. So, you
+
+
+can subtract any quantity that does not
+
+
+depend on A.
+
+
+It can depend on S, and that's actually
+
+
+okay.
+
+
+So, this will also give you lower
+
+
+variance. This is a better baseline than
+
+
+the average reward over all
+
+
+trajectories. It's the average reward
+
+
+from that state.
+
+
+In fact, this quantity Q minus V is so
+
+
+important that we have a name for it.
+
+
+We call it A for advantage.
+
+
+So, we call it the advantage because it
+
+
+is representing how advantageous the
+
+
+action A T is. Advantageous in the sense
+
+
+of better than average.
+
+
+Literally, V is the average Q. So, Q
+
+
+minus the average Q represents how much
+
+
+better than average the action AT is.
+
+
+And that makes total sense now. You're
+
+
+multiplying grad log pi by a number that
+
+
+is positive for actions that are better
+
+
+than average
+
+
+than compared to other actions in that
+
+
+state, and negative for actions that are
+
+
+worse than average compared to other
+
+
+actions in that state.
+
+
+That's really nice. When we talked about
+
+
+that position chess example from before,
+
+
+what we wanted it's to improve the is to
+
+
+increase the probability of moves that
+
+
+were better than average in that
+
+
+situation. And that is literally what
+
+
+we're doing now.
+
+
+Admittedly using this oracle knowledge
+
+
+of Q and V, which I didn't tell you how
+
+
+to get.
+
+
+But if you had Q and V, this is really
+
+
+good. This is literally telling you is
+
+
+this action better than the average
+
+
+action you would take in that specific
+
+
+situation.
+
+
+Yes.
+
+
+Yeah, how's it different from what we
+
+
+did last time?
+
+
+Here I am assuming that Q and V are the
+
+
+true honest-to-goodness expected values
+
+
+of these rewards to go. Whereas last
+
+
+time, we would take a single trajectory
+
+
+and sum up the rewards to get that
+
+
+number.
+
+
+So, the things that we did last time
+
+
+were unbiased estimators for the reward
+
+
+to go, but they still had error. They
+
+
+still had variance. Whereas here, I'm
+
+
+assuming these are the true expected
+
+
+values.
+
+
+Now, of course, you don't know the true
+
+
+expected values. So, what we'll be
+
+
+concerned about for the rest of the
+
+
+lecture is how to get better estimates
+
+
+of these expected values.
+
+
+Yes.
+
+
+Yeah, so the question is why do we still
+
+
+need to subtract the baseline? If you
+
+
+want a little bit of intuition for this,
+
+
+uh imagine that uh
+
+
+we take that that chess game and we add
+
+
+a reward of 100 for every outcome. So,
+
+
+whether you win or lose the game, you
+
+
+get 100. And if you win, you get 101.
+
+
+And if you lose, you get 99.
+
+
+So, now all the rewards will look
+
+
+positive, and all the Q values will look
+
+
+positive. So, the multipliers on grad
+
+
+log pi will always be positive, which
+
+
+means you'll be increasing the
+
+
+probability of everything. It's just
+
+
+some things get increased more than
+
+
+others.
+
+
+In the limit of infinite samples, this
+
+
+still averages out and you still get the
+
+
+right answer. But, with finite samples,
+
+
+it's going to be darn distracting to
+
+
+your model for everything to be going
+
+
+up.
+
+
+So, by subtracting V, then you end up
+
+
+with this positive negative thing, and
+
+
+then you can get a better grading with
+
+
+fewer samples.
+
+
+Yes.
+
+
+Oh, that's a typo. Yes, it's T H.
+
+
+Apologies.
+
+
+Yeah, so the question was that that
+
+
+capital T at the top, we've never seen a
+
+
+capital T before. That's actually H.
+
+
+It's I just wrote the H in a very
+
+
+strange way, tilted sideways, and all
+
+
+that stuff.
+
+
+Okay, great.
+
+
+So, let's recap a little bit about state
+
+
+and state action value functions.
+
+
+So, V is a state value function,
+
+
+sometimes just called a value function.
+
+
+Q is a state action value function,
+
+
+sometimes called a Q function.
+
+
+So, this is how the Q function is
+
+
+defined. It's the sum of rewards from
+
+
+time step T to H,
+
+
+given a particular starting state ST and
+
+
+a starting action AT. So, it's saying,
+
+
+if I start in state ST, take action AT,
+
+
+and then follow my policy in my MDP,
+
+
+what is the average reward I will get
+
+
+until the end?
+
+
+And we sometimes
+
+
+make it very explicit that Q depends on
+
+
+a policy by adding a superscript pi. So,
+
+
+we write Q pi to mean that this is the Q
+
+
+function for that pi and not for
+
+
+something else. In general, different
+
+
+policies have different Q functions, so
+
+
+it helps to add that decorator.
+
+
+And if you see somebody write Q star,
+
+
+that's sort of shorthand for saying the
+
+
+Q function of the best possible policy.
+
+
+And similarly, we can define the value
+
+
+function. The value function is the
+
+
+expected total reward that you will get
+
+
+if you start in state ST and then follow
+
+
+the policy, which is also the expected
+
+
+value of the Q function at uh state T.
+
+
+So, you can just like substitute the
+
+
+definition of Q into that expectation
+
+
+and then you get the total reward.
+
+
+The advantage is defined as the
+
+
+difference between these two. So,
+
+
+how much better is A uh than the average
+
+
+action?
+
+
+And this is this idealized gradient that
+
+
+I wanted. So, the better the estimate of
+
+
+my of this A, the lower your variance
+
+
+will be. So, you would like to approach
+
+
+this exact ideal A as close as you can.
+
+
+And the estimator that we had before,
+
+
+this thing, is, you know, uh a
+
+
+relatively poor estimate. It is unbiased
+
+
+in the sense that if you have enough
+
+
+samples, eventually this will be
+
+
+correct. Uh but it's a high-variance
+
+
+single-sample estimate. It would be like
+
+
+if I were to guess the average age of
+
+
+the people in this room and ask one
+
+
+person what their age is and just say
+
+
+like that's my guess of the average age.
+
+
+It is unbiased, but it is probably going
+
+
+to be pretty high error.
+
+
+So,
+
+
+with actor-critic algorithms, the blue
+
+
+box is going to stay the same. The blue
+
+
+box is going to be a policy gradient
+
+
+gradient update, but the green box is
+
+
+going to change because in the green box
+
+
+now, we're going to fit some kind of
+
+
+neural network
+
+
+some kind of model to get a better
+
+
+advantage estimate.
+
+
+And we have a few choices, and there are
+
+
+actually different ways to design
+
+
+actor-critic algorithms by fitting
+
+
+different quantities. But what they what
+
+
+actor-critic will all have in common is
+
+
+that they will have now two models, a
+
+
+policy and some kind of estimator that
+
+
+will be used to compute A, typically
+
+
+either a Q function or a value function.
+
+
+All right.
+
+
+So,
+
+
+let's talk about policy evaluation.
+
+
+Policy evaluation refers to the process
+
+
+of taking a policy pi and estimating
+
+
+either V pi or Q pi.
+
+
+Why do we call this policy evaluation?
+
+
+Any guesses? Anybody want to tell me?
+
+
+Yes.
+
+
+Yeah.
+
+
+That's right. So, uh to repeat the
+
+
+answer, the value function is literally
+
+
+telling you how well your policy will do
+
+
+when it starts in state ST, and the
+
+
+value function at the initial state is
+
+
+how well your policy will do overall.
+
+
+So, the process of estimating the value
+
+
+function can be called policy evaluation
+
+
+because it is literally evaluating how
+
+
+good your policy is.
+
+
+Okay. So,
+
+
+to
+
+
+to do this policy evaluation, we need to
+
+
+fit something that will let us estimate
+
+
+the advantage function. So, the obvious
+
+
+question to ask is like what are we
+
+
+going to fit and what are we going to
+
+
+fit it to? Meaning like which quantity
+
+
+are we estimating and how do we get the
+
+
+labels for estimating it?
+
+
+So, we The three things that we've
+
+
+learned about are Q, V, and A. So, good
+
+
+chance the answer is one of those
+
+
+things.
+
+
+And the Q function has a kind of a a
+
+
+nice uh recursive
+
+
+uh property
+
+
+because this sum of expected rewards you
+
+
+can actually write it out as the reward
+
+
+right now plus the expectation in the
+
+
+future because the reward right now, R
+
+
+of ST, AT, is actually not random.
+
+
+You're conditioning everything on ST,
+
+
+AT.
+
+
+The expectation is only taken over the
+
+
+future.
+
+
+So, you can write out the Q function
+
+
+like this.
+
+
+And this leads to a very nice recursive
+
+
+expression because this future part is
+
+
+exactly the expected value of V pi ST +
+
+
+1.
+
+
+So, the Q function is the reward right
+
+
+now plus the expected value over the
+
+
+over the next state of V pi of ST + 1.
+
+
+And that's just
+
+
+simple algebra, so nothing really
+
+
+changed here. We're just substituting
+
+
+some quantities.
+
+
+And now
+
+
+what you can do is you can say, "Well,
+
+
+maybe I am okay with a little bit of
+
+
+variance. Maybe what I'm going to do is
+
+
+I'm going to estimate that expected
+
+
+value over the next state with one
+
+
+sample
+
+
+and write it out like this. So, if I
+
+
+have a trajectory ST AT ST + 1, then
+
+
+maybe I can just put in V pi of ST + 1
+
+
+in there. Now, this is not exactly
+
+
+correct, right? Because remember, I had
+
+
+an expected value and now I'm replacing
+
+
+with one sample. So, I'm introducing a
+
+
+little bit of variance, but not very
+
+
+much because it's only over one step.
+
+
+And then the advantage, if I substitute
+
+
+this formula into the advantage, expands
+
+
+out very nicely. The advantage is just R
+
+
+of ST AT plus the value function at the
+
+
+next state minus the value function at
+
+
+the current state.
+
+
+That kind of makes sense, right? It's
+
+
+essentially like how did my value
+
+
+function change over that transition?
+
+
+And again, this is not an exact
+
+
+estimate. There's a little bit of
+
+
+variance from the fact that we are
+
+
+sampling ST + 1. So, we're incurring a
+
+
+little bit of error, but only a little
+
+
+bit.
+
+
+And this is actually pretty convenient
+
+
+because now the advantage depends only
+
+
+on V.
+
+
+And V depends only on the state, not on
+
+
+the action, so maybe it's convenient to
+
+
+learn a function that only depends on S
+
+
+and doesn't depend on A, smaller
+
+
+function, simpler function.
+
+
+So, let's just fit V pi of S.
+
+
+This is not the only answer. I could
+
+
+have told you a story that led to a very
+
+
+different conclusion of like, "Oh, let's
+
+
+just fit Q." Uh and I'll tell you that
+
+
+story later, too. But for now, we'll
+
+
+stick to this story. This is actually
+
+
+the earlier story.
+
+
+This is how actor-critic methods worked
+
+
+in the
+
+
+olden days.
+
+
+So, you're going to have a neural
+
+
+network that takes in the state S.
+
+
+S might be pretty complicated. Maybe
+
+
+it's like images from a camera, and it
+
+
+outputs a number.
+
+
+And that number is going to be our
+
+
+estimate of V pi. So, we're going to
+
+
+call it V hat pi just to make it clear
+
+
+this is not the real V, this is our
+
+
+estimate of the V.
+
+
+And it has some parameters and I'm going
+
+
+to call those parameters
+
+
+um phi just so that we don't get
+
+
+confused between policy parameters and
+
+
+value function parameters. So, now we
+
+
+have two models, a policy with
+
+
+parameters theta and a value function
+
+
+with parameters phi.
+
+
+Any questions about this slide?
+
+
+Yes.
+
+
+Yeah. So, when we replace the expected
+
+
+value of ST + 1 with that one sample,
+
+
+this is still unbiased because we assume
+
+
+that ST + 1 came from a trajectory and
+
+
+in trajectory the next state is sampled
+
+
+from the true dynamics.
+
+
+So, we're introducing a little bit of
+
+
+variance, but it's still an unbiased
+
+
+estimate.
+
+
+Okay.
+
+
+So,
+
+
+let's try to figure out how we can
+
+
+actually do this.
+
+
+Um
+
+
+And as a reminder, the uh
+
+
+pol- the the RL objective J theta is
+
+
+literally just the expected value of V,
+
+
+so fitting V is quite nice. It makes a
+
+
+lot of sense why we call policy
+
+
+evaluation. So, how do we perform policy
+
+
+evaluation?
+
+
+Well,
+
+
+uh one option is to do Monte Carlo
+
+
+policy evaluation. Monte Carlo policy
+
+
+evaluation just refers to generating
+
+
+samples and averaging them together.
+
+
+Monte Carlo is a fancy technical term
+
+
+for exactly that.
+
+
+So, we've already seen that. That's kind
+
+
+of what policy gradient does.
+
+
+Um
+
+
+and
+
+
+uh in general, the more samples you take
+
+
+the better. So, if you have one sample,
+
+
+that's one way to estimate the value. If
+
+
+you have many samples, that's a better
+
+
+way to estimate the value.
+
+
+Uh now, if you want to do this kind of
+
+
+thing, you can compute target values for
+
+
+regressing your value function. It's
+
+
+just that then you have to be able to
+
+
+teleport back to a single to a
+
+
+particular state and that requires you
+
+
+to reset the simulator. If you are in a
+
+
+situation where you can do this, this is
+
+
+actually a perfectly valid way to
+
+
+compute labels for your value function
+
+
+and regress onto those labels. But, in
+
+
+general, we would not assume that that's
+
+
+possible because you can't always
+
+
+teleport back to a state that you've
+
+
+seen before.
+
+
+So, you can still use that single sample
+
+
+estimator,
+
+
+the one where you don't teleport back
+
+
+and just use a single trajectory, and
+
+
+now there's something kind of a little
+
+
+recursive happening because we spent a
+
+
+lot of time talking about how single
+
+
+sample estimators are not good,
+
+
+therefore we're going to learn this
+
+
+value function, but now we're saying
+
+
+we're going to supervise our value
+
+
+function with that same single sample
+
+
+estimator. So, what's up with that?
+
+
+Let's talk about this a little bit.
+
+
+So, we're training our value function.
+
+
+It takes in the state. It outputs a
+
+
+scalar value. It has parameters phi. And
+
+
+the way we're going to supervise it is
+
+
+we're going to take our trajectories,
+
+
+and for every state in that trajectory,
+
+
+we will sum up the rewards from that
+
+
+state until the end and use those as
+
+
+labels for training our value function.
+
+
+Now,
+
+
+in general, neural networks generalize.
+
+
+So, if we have many different
+
+
+trajectories, we might actually see
+
+
+similar states in different
+
+
+trajectories. And those similar states
+
+
+will have different
+
+
+empirical rewards to go, different Monte
+
+
+Carlo estimates.
+
+
+So,
+
+
+a good neural network function should
+
+
+actually average together some of these
+
+
+estimates. It should realize that these
+
+
+two states are similar states, and even
+
+
+though they have slightly different
+
+
+labels, the true value, the true
+
+
+expected value at those states should be
+
+
+a bit more similar to each other.
+
+
+So, even though we're using the same
+
+
+Monte Carlo reward to go estimates, when
+
+
+we train a model with those estimates,
+
+
+that model will actually do better.
+
+
+It'll
+
+
+give us a better estimate of the true
+
+
+expected value than the estimates
+
+
+themselves because the model will
+
+
+average things out a little bit.
+
+
+So, it's not as good as teleporting back
+
+
+and generating multiple samples, but
+
+
+it's still pretty good.
+
+
+So, just to make it a very clear what
+
+
+we're doing here, we're essentially
+
+
+going to create a training set using all
+
+
+of the states that we've seen in all of
+
+
+our samples, and for every state, we'll
+
+
+compute a label by summing together the
+
+
+rewards from that state until the end of
+
+
+the trajectory in which that state
+
+
+occurred.
+
+
+And we'll we'll call these labels Y, and
+
+
+then we'll fit our
+
+
+value function neural network by
+
+
+minimizing the squared error to those
+
+
+labels Y, regular mean squared error
+
+
+regression.
+
+
+And this might seem at first a little
+
+
+strange because I spent a lot of time
+
+
+badmouthing these Monte Carlo estimates,
+
+
+but in fact, it's
+
+
+reasonable because when we train the
+
+
+neural network with those Monte Carlo
+
+
+estimates, the neural network should
+
+
+figure out that for states that are kind
+
+
+of similar, if they have very different
+
+
+labels, you should average out those
+
+
+labels and give something closer to this
+
+
+expected value.
+
+
+Yes.
+
+
+Yeah, so the question is what if the
+
+
+you you have multiple different modes?
+
+
+That's a very natural, like if you're if
+
+
+you visit similar states, you go one way
+
+
+you get a good result, you get another
+
+
+way you get a bad result. Remember that
+
+
+the value function
+
+
+is the expected value of that. So, we
+
+
+really do want the average in this case.
+
+
+So, we actually want it to average out
+
+
+those two modes.
+
+
+Yes.
+
+
+Yeah, the question is what does the
+
+
+architecture of the neural net here look
+
+
+like? Um
+
+
+there are a few different choices
+
+
+depending on the problem that you're
+
+
+solving. So, if you have a relatively
+
+
+small problem like like the ones in the
+
+
+homework where your input is a state
+
+
+with like, you know, 10 to 20
+
+
+dimensions, then just using a standard
+
+
+multi-layer perceptron MLP architecture
+
+
+is totally fine. If you have some
+
+
+complicated problem, maybe like the um
+
+
+the uh Atari from images that you'll be
+
+
+doing in homework three, then maybe use
+
+
+a neural network that's suitable for
+
+
+reading in images. For very large input
+
+
+spaces, what people sometimes actually
+
+
+do is they share parameters between the
+
+
+policy and the value function. So, if
+
+
+you have for example an image encoder,
+
+
+then you might have one image encoder
+
+
+and then it branches into two separate
+
+
+branches, one of which goes to output
+
+
+the actions and the other one goes to
+
+
+output the value function. And that's a
+
+
+good design if you have very large
+
+
+networks and you want to save on
+
+
+parameters.
+
+
+Yes.
+
+
+Right, so the question is
+
+
+what's the advantage of getting the
+
+
+value function to estimate these values
+
+
+instead of just directly plugging in the
+
+
+labels into policy gradient, right? So,
+
+
+the value function is going to average
+
+
+things out and um
+
+
+I actually I I I think the question
+
+
+about the bimodal distribution is maybe
+
+
+a good illustration of this. So, if
+
+
+you're really in a situation where for a
+
+
+particular state you have 50% chance of
+
+
+going somewhere good and 50% chance of
+
+
+going somewhere bad, the true value of
+
+
+that state is the average of those two.
+
+
+But no single trajectory is going to
+
+
+give you that average value.
+
+
+So, if uh
+
+
+all those trajectories go through
+
+
+literally the same state but then go to
+
+
+different outcomes, the neural net will
+
+
+figure that out. It will figure out that
+
+
+the value of that state is the average
+
+
+of the two branches, but no single
+
+
+sample estimate will ever give you that.
+
+
+So, the neural net gives you a better
+
+
+estimate of the expectation by
+
+
+generalizing over states.
+
+
+Yes.
+
+
+Yeah, this is actually a really
+
+
+interesting question. So, the question
+
+
+was do you have to throw out this
+
+
+training set every single iteration of
+
+
+policy gradient?
+
+
+Does anyone have a guess as to the
+
+
+answer?
+
+
+Yeah.
+
+
+Okay, so one answer is well, maybe I
+
+
+don't want to throw it out and there's
+
+
+some tricks like I can use important
+
+
+sampling to account for the fact that
+
+
+the samples came from the wrong
+
+
+distribution. That is true and we'll
+
+
+actually talk about some of that stuff.
+
+
+But the way I wrote it here, you do have
+
+
+to throw it throw it out because I'm
+
+
+trying to estimate V pi.
+
+
+And obviously if my samples didn't come
+
+
+from pi, then I'm not estimating V pi
+
+
+anymore. I'm estimating something else.
+
+
+Um but as a preview, yes, uh in
+
+
+in more advanced algorithms, we will try
+
+
+to do exactly this. We'll try to reuse
+
+
+those samples and we will need some
+
+
+tricks to do that.
+
+
+Okay.
+
+
+So, let's proceed. Let's try to do
+
+
+better.
+
+
+So, so far we trained our value function
+
+
+on these Monte Carlo targets. Monte
+
+
+Carlo is just a fancy way of saying use
+
+
+the empirical return in your trajectory.
+
+
+Empirical return is just a fancy way of
+
+
+saying the return you actually saw.
+
+
+Well,
+
+
+there is a relationship that we noted
+
+
+before, which is that the Q function has
+
+
+this kind of recursive expression,
+
+
+right? So, the expected value of the
+
+
+reward from now until the end can be
+
+
+expressed as the current reward, which
+
+
+is not random because it's fully
+
+
+determined by state and action, plus the
+
+
+expected future reward. And that future
+
+
+reward can be well approximated by the
+
+
+value function at the next state.
+
+
+Now, we're trying to learn the value
+
+
+function.
+
+
+That's awfully convenient. What if we
+
+
+actually use this relationship to get a
+
+
+better estimate If you believe that your
+
+
+current value function is better than
+
+
+the single sample Monte Carlo estimate,
+
+
+why don't you use your current value
+
+
+function to give you better labels for
+
+
+learning your value function?
+
+
+So, replace the true V, which you don't
+
+
+know, with your previous estimate V hat
+
+
+phi.
+
+
+And then directly use your previous
+
+
+value function to get a better label.
+
+
+It's a little circular because obviously
+
+
+we're trying to learn V hat, and the way
+
+
+we're going to learn V-hat is by
+
+
+supervising it with
+
+
+V-hat.
+
+
+But, it's the V-hat at the next time
+
+
+step.
+
+
+So, now our training data is given by
+
+
+every state we observed, and for each
+
+
+state, it's the reward that you got at
+
+
+that point in your trajectory, plus
+
+
+the value at the next state in that
+
+
+trajectory estimated using the previous
+
+
+value function that you trained.
+
+
+And this is now our label Y, and we're
+
+
+going to do supervised regression onto
+
+
+Y.
+
+
+This is sometimes referred to as a
+
+
+bootstrap estimate.
+
+
+Yes.
+
+
+So, in principle, yes. Uh in practice,
+
+
+you don't actually like explicitly step
+
+
+through the trajectory backwards, but
+
+
+the intuition is correct in the sense
+
+
+that you will get accurate values
+
+
+towards the end of the trajectory first,
+
+
+and then they will propagate towards the
+
+
+beginning. But, you do this at all when
+
+
+you actually implement it, you actually
+
+
+do it at all steps all at once.
+
+
+Yes.
+
+
+Yeah. So, um
+
+
+uh a key observation here is that well,
+
+
+if you initialize your neural net
+
+
+randomly, uh you're supervising your
+
+
+neural network with labels from a random
+
+
+neural network. And those labels are
+
+
+probably pretty garbage, so you're just
+
+
+training your your model to produce a
+
+
+lot of garbage. Um there's a a somewhat
+
+
+non-trivial way to prove that under some
+
+
+strong and highly unrealistic
+
+
+assumptions, uh this will actually
+
+
+converge to the true value function
+
+
+given enough uh iterations.
+
+
+Unfortunately, it is actually not
+
+
+guaranteed to the correct to converge to
+
+
+the correct value function when you're
+
+
+using neural networks. So, um we'll talk
+
+
+about this later when we discuss Q
+
+
+learning and value-based methods. For
+
+
+now,
+
+
+we'll just kind of accept that maybe
+
+
+it's okay, even though it's actually
+
+
+very much not okay.
+
+
+But, let's just be good deep learning
+
+
+practitioners and ignore the problem.
+
+
+Any other questions?
+
+
+But yeah, but I promise to tell you all
+
+
+about just how bad this really is.
+
+
+Now, there is another kind of problem
+
+
+that some of you might have noticed
+
+
+about this highly recursive way of
+
+
+training your value function.
+
+
+Um for those of you that didn't notice
+
+
+it, imagine that I have a really simple
+
+
+MDP where the reward is always one.
+
+
+And think about what happens when I
+
+
+train this value function.
+
+
+Maybe I initialize the value function so
+
+
+that it produces very small values, so
+
+
+that the first value function I have
+
+
+mostly produces just zero. So, in the
+
+
+first time I do this, I'm basically
+
+
+training my value function to regress
+
+
+onto 1 + 0, which is 1. So, now I get a
+
+
+neural net that's really good at
+
+
+producing 1.
+
+
+And now I'm going to do this again, I'm
+
+
+going to regress onto 1 +
+
+
+1. So, now I regress my neural network
+
+
+onto 2, and I get a network that's
+
+
+really good at producing 2.
+
+
+Now, if I do this 10 times, 20 times, 30
+
+
+times, my value function just keeps
+
+
+getting bigger and bigger and bigger.
+
+
+And that's like a bit uncomfortable.
+
+
+At least it makes me uncomfortable.
+
+
+So, the trouble is that so far we've
+
+
+been talking about finite horizon
+
+
+problems. We always sum from t = 1 to h.
+
+
+And now we've sort of, in a subtle way
+
+
+that maybe some of you didn't notice,
+
+
+turned all this into an infinite horizon
+
+
+problem. Because the horizon h doesn't
+
+
+show up anymore. Question.
+
+
+Yes, that's what I'm going to do in the
+
+
+next slide, exactly. So, basically what
+
+
+I've done is I've kind of pulled a fast
+
+
+one on you and turned this finite
+
+
+horizon problem into an infinite horizon
+
+
+problem. As a side note, by the way, I
+
+
+could totally solve this just by feeding
+
+
+the time step T into the value function
+
+
+to tell it that this is a finite horizon
+
+
+problem.
+
+
+But, I don't want to do that because in
+
+
+reality
+
+
+we actually often do care about infinite
+
+
+horizon problems.
+
+
+Even problems that seem like they have a
+
+
+clear conclusion really are infinite
+
+
+horizon problems in disguise. Like, if
+
+
+I'm playing chess, I'm not concerned
+
+
+about like having the best policy that
+
+
+plays chess for 20 moves.
+
+
+I want the best policy that plays chess
+
+
+until the end of the game.
+
+
+And if I'm driving a car, I'm not
+
+
+concerned about the best policy that
+
+
+drives the car for an hour. I want the
+
+
+best policy that drives the car to its
+
+
+destination. So, actually, infinite
+
+
+horizon problems are kind of ubiquitous.
+
+
+And
+
+
+we can talk a lot about finite horizon,
+
+
+and there's a lot of like interesting
+
+
+math we can do about it, but really, for
+
+
+the things that you're going to use in
+
+
+practice, chances are that an infinite
+
+
+horizon formulation is actually the
+
+
+right one for you.
+
+
+And there's a very simple trick that you
+
+
+can use to make all this work just fine
+
+
+in the infinite horizon case.
+
+
+And this trick is very philosophical.
+
+
+Uh the key to this trick is to recognize
+
+
+that
+
+
+we all
+
+
+you know, live for a finite amount of
+
+
+time, and therefore, we prefer good
+
+
+stuff now over good stuff 10,000 years
+
+
+from now.
+
+
+So, fear of one's own mortality is the
+
+
+key to making infinite horizon work.
+
+
+Very philosophical.
+
+
+So,
+
+
+some tasks are episodic. Uh some tasks
+
+
+are infinite horizon.
+
+
+And the simple trick to make infinite
+
+
+horizon work
+
+
+is to
+
+
+is that it's better to get rewards
+
+
+sooner rather than later. And once you
+
+
+recognize that, now there's a very
+
+
+simple change that you can introduce,
+
+
+which is to slightly discount your
+
+
+future state.
+
+
+To say that it's not that I it my Q
+
+
+value is not actually my reward now plus
+
+
+my value later. It's my reward now plus
+
+
+my value later times some number that is
+
+
+a little bit less than one.
+
+
+So, all else being equal, I'd rather get
+
+
+the reward now than later. Not by a lot.
+
+
+Maybe gamma is 0.99.
+
+
+But, it's less than one.
+
+
+So,
+
+
+some number between zero and one and
+
+
+0.99 works well. 0.999 if you have a
+
+
+very high frequency task.
+
+
+And I made this joke about, you know,
+
+
+being afraid of mortality.
+
+
+That's not a joke. It's actually real.
+
+
+So, it turns out that when you introduce
+
+
+gamma, what you're really doing is
+
+
+you're changing your MDP.
+
+
+So,
+
+
+this equation with the gamma in front is
+
+
+exactly what you would get if you were
+
+
+to compute expected values without the
+
+
+discount under an MDP where at every
+
+
+state there is a one minus gamma
+
+
+probability
+
+
+of death.
+
+
+So, this is the original MDP and now you
+
+
+have this this bad state that you don't
+
+
+want to enter and your probability of
+
+
+going to that state is one minus gamma.
+
+
+So, you always have one minus gamma that
+
+
+you enter that state and receive no
+
+
+reward forever. And then with
+
+
+probability gamma, everything else
+
+
+happens.
+
+
+So, this discounted estimator is just
+
+
+the expected reward in this modified
+
+
+MDP.
+
+
+And that kind of makes sense, right?
+
+
+Like if you believe that there's a
+
+
+probability of one minus gamma that the
+
+
+episode will end and you'll just get
+
+
+zero rewards, then you'd rather collect
+
+
+the rewards now than later because
+
+
+uh
+
+
+the the the the further out you go, the
+
+
+more likely it is that the episode will
+
+
+end.
+
+
+So, a pretty simple trick that allows
+
+
+you to handle infinite horizon and
+
+
+intuitively kind of makes sense. Like we
+
+
+know in in economics, people do prefer
+
+
+uh rewards sooner rather than later. And
+
+
+obviously, if I asked all of you if you
+
+
+want like, you know, uh $10 now versus
+
+
+$10 100 years from now, chances are most
+
+
+of you prefer to get it now rather than
+
+
+100 years from now.
+
+
+All right. Any questions about this?
+
+
+Yes.
+
+
+Yeah, so the question was well, would
+
+
+you have a like a rational agent that
+
+
+prefers reward rewards later rather than
+
+
+now? Absolutely, right? So, remember
+
+
+that you're discounting by some small
+
+
+amount. So, certainly if the reward in
+
+
+the future is like 10 times larger than
+
+
+than the reward now, you're going to get
+
+
+it like 100 steps from now. You can do
+
+
+the math, you can raise gamma to the
+
+
+power of 100 and see whether the amount
+
+
+of discounting does or does not exceed
+
+
+the increase in reward.
+
+
+And of course, people do this
+
+
+calculation all the time if you're like
+
+
+calculating compounded interest and all
+
+
+that stuff like very kind of classic
+
+
+economics.
+
+
+Any other questions?
+
+
+All right.
+
+
+So,
+
+
+the the way that you modify the MDP to
+
+
+make this happen is just to
+
+
+write down new transition probabilities
+
+
+that are just gamma times the old
+
+
+transition probabilities and then with
+
+
+probability 1 minus gamma you enter that
+
+
+absorbing state. And that changes the
+
+
+the RL objective. So, this is not the
+
+
+same RL problem anymore. It changes it
+
+
+to introduce discounting so that you are
+
+
+no longer optimizing for just the
+
+
+largest total reward but for the largest
+
+
+total discounted reward.
+
+
+So, it is it is a different objective.
+
+
+You this will actually lead to a
+
+
+different op- but in many cases,
+
+
+that's okay and you're quite happy to
+
+
+get a solution to this problem for the
+
+
+convenience of being able to handle
+
+
+infinite horizon tasks and not worry
+
+
+about uh horizons.
+
+
+Okay. Now,
+
+
+one of the things that's happening now
+
+
+that we've switched to an infinite
+
+
+horizon formulation is that the time
+
+
+step T, this little subscript here, is
+
+
+not actually all that important to you.
+
+
+So, we don't actually
+
+
+we often don't actually care about
+
+
+the time step at which the data was
+
+
+collected.
+
+
+Once we use this kind of bootstrapped
+
+
+estimator, all that really matters to us
+
+
+is
+
+
+the the sequence, the state, action, and
+
+
+next state, and where that's uh that
+
+
+tuple occurs in the trajectory is not
+
+
+very relevant.
+
+
+So,
+
+
+this is the picture of our MDP. Uh if we
+
+
+assume we have the same dynamics
+
+
+everywhere, and we have an infinite
+
+
+horizon, then really all we want to do
+
+
+is take every pair of sequential states
+
+
+in our trajectory and pull out what we
+
+
+call a transition. A transition is just
+
+
+a tuple s i a i and then the next state.
+
+
+So, that's why I sometimes write s i
+
+
+prime instead of s t plus one, because I
+
+
+don't really care what t is. All I care
+
+
+about is that that state with the prime
+
+
+next to it came after the preceding
+
+
+state.
+
+
+So, this is called a transition. And
+
+
+often times that you will see RL
+
+
+algorithms that operate on transitions
+
+
+rather than trajectories, that just
+
+
+means that that algorithm doesn't care
+
+
+about what the time step is. All it
+
+
+cares about is
+
+
+do you have a tuple of sequential states
+
+
+and actions? So, do you have s a s a and
+
+
+s prime?
+
+
+So, using this kind of notation, I can
+
+
+write down my training objective as
+
+
+regressing from s i to reward
+
+
+at s i a i plus the value at s i prime.
+
+
+And then if I want to discount, I'll put
+
+
+a little gamma in front of that v hat.
+
+
+And then the same regression objective.
+
+
+These are just notational convenience. I
+
+
+didn't I I didn't really change anything
+
+
+about the problem. Uh so, the only
+
+
+takeaway from this slide is just if you
+
+
+see someone write out their algorithm
+
+
+without any subscript t, but using this
+
+
+kind of prime thingy, all they're trying
+
+
+to convey to you is they don't care what
+
+
+the time step is. They only care about
+
+
+uh these transitions.
+
+
+Yes.
+
+
+Can you ignore the time step if you
+
+
+don't put the discount? So,
+
+
+without a discount,
+
+
+in general, you might not have finite
+
+
+values. But, you might have finite
+
+
+values sometimes.
+
+
+So, you can set up a problem, for
+
+
+example, where uh you don't like like
+
+
+the game of chess, where you don't
+
+
+receive a reward until the end, and at
+
+
+the end you get a reward of plus one or
+
+
+minus one, and then the episode ends.
+
+
+So, in chess, the total reward is always
+
+
+finite, but it's a special property of
+
+
+how I chose the reward.
+
+
+So, you can do infinite horizon without
+
+
+a discount, but in general, it can go
+
+
+horribly wrong.
+
+
+Yes.
+
+
+Yeah, yeah. The So, that's what I said,
+
+
+is that you could have a gamma in there,
+
+
+or you could not. It's It's your choice.
+
+
+All right.
+
+
+So, let's talk about some examples of
+
+
+policy evaluation, because we talked
+
+
+about all this kind of abstract math,
+
+
+but in reality, policy evaluation is
+
+
+actually a fairly natural concept.
+
+
+In uh 1992, uh before AlphaGo, uh before
+
+
+Deep Blue, before all these uh
+
+
+superhuman game-playing agents, there
+
+
+was uh TD-Gammon. TD-Gammon was actually
+
+
+the first deep RL uh game-playing agent
+
+
+that that was competitive with expert
+
+
+human players, and it played backgammon.
+
+
+It used a tiny neural network uh to
+
+
+train an agent to play backgammon, and
+
+
+it used value functions.
+
+
+The reward was the outcome of the game,
+
+
+just like I mentioned for chess, plus
+
+
+one if you win, minus one if you lose.
+
+
+And the value function
+
+
+is
+
+
+literally just estimating the expected
+
+
+outcome given the board state.
+
+
+In fact, there's a very close connection
+
+
+between value functions and
+
+
+probabilities. If you assign a prob- a a
+
+
+reward of one if you win and zero if you
+
+
+lose,
+
+
+then the value is literally the
+
+
+probability that you will win.
+
+
+So, that's pretty natural. Like, the
+
+
+value is like is like the probability
+
+
+you'll win.
+
+
+Uh for AlphaGo, 2016,
+
+
+same exact thing.
+
+
+Much more advanced algorithm, much
+
+
+larger network, trained on a lot more
+
+
+chips, with billions and billions of
+
+
+simulated games of Go
+
+
+but the same exact thing. Policy
+
+
+evaluation, value function, estimating
+
+
+the probability that your agent will win
+
+
+the game.
+
+
+So, it makes sense like we call it
+
+
+policy evaluation because you're
+
+
+literally evaluating how likely you are
+
+
+to win.
+
+
+Now, in general, you might have more
+
+
+complex rewards, in which case the value
+
+
+function will will reflect this much
+
+
+more complicated expected sum, but
+
+
+the intuition is basically the same that
+
+
+it's predicting how well you will do in
+
+
+a particular state.
+
+
+All right.
+
+
+So,
+
+
+now, um let's put these pieces together
+
+
+and combine them into a basic
+
+
+actor-critic algorithm.
+
+
+So, here's a basic batch mode
+
+
+actor-critic algorithm. It's essentially
+
+
+going to be like the reinforce
+
+
+algorithm, but with this addition of a
+
+
+value function critic.
+
+
+Step one,
+
+
+sample your trajectories.
+
+
+And we're going to be operating on these
+
+
+transitions, so
+
+
+what you actually do in step one is
+
+
+exactly the same as before, but I'm
+
+
+going to write it differently. I'm going
+
+
+to write sample transitions s i a i s i
+
+
+prime from the policy.
+
+
+I didn't actually change what I do in
+
+
+the algorithm, I'm just changing how I
+
+
+describe it because I'm only going to
+
+
+care about transitions rather than
+
+
+trajectories, but of course the way you
+
+
+get those transitions by sampling
+
+
+trajectories and taking every transition
+
+
+in each trajectory.
+
+
+So, I'm still sampling trajectories, but
+
+
+I'm going to quickly chop them up into
+
+
+transitions, store the transitions, and
+
+
+I don't really care what the
+
+
+trajectories originally looked like.
+
+
+Step two,
+
+
+for every transition, compute a target
+
+
+value.
+
+
+And the target value is this bootstrap
+
+
+target value, the reward at s i a i plus
+
+
+gamma times the value at s i prime.
+
+
+Yes.
+
+
+So, the question was, are you not
+
+
+sampling the reward? Um
+
+
+This is kind of kind of a matter of
+
+
+terminology. So, in the classic RL
+
+
+setup, like if you read the Sutton and
+
+
+Barto textbook, the reward is assumed to
+
+
+be something produced by the
+
+
+environment. Uh the standard assumption
+
+
+in RL is that you do not have function
+
+
+access to the reward. You don't know
+
+
+what what function it is, but every time
+
+
+you experience a transition, the
+
+
+environment tells you, "And here's the
+
+
+reward that you got." So, in that case,
+
+
+the conventional way to write it would
+
+
+be that you actually sample s i a i s i
+
+
+prime and r i.
+
+
+But, it's just a notational thing. So,
+
+
+whether you you know, in reality in your
+
+
+code, you almost certainly do have
+
+
+functional access to the reward
+
+
+function. I I have a hard time I mean, I
+
+
+can actually imagine settings where you
+
+
+wouldn't. So, the setting where you
+
+
+wouldn't is if there's a person there
+
+
+literally telling you whether you got a
+
+
+reward or punishment, like training a
+
+
+dog. So, in general, you might not have
+
+
+functional access, but in your code, you
+
+
+certainly will in in your homework. So,
+
+
+just call that function.
+
+
+But, yes, you will sometimes see it
+
+
+written as sampling r, and that's the
+
+
+same thing.
+
+
+Okay. So, now we've got our targets, and
+
+
+now we're going to refit v hat to our
+
+
+targets by running supervised
+
+
+regression.
+
+
+And then we will use v hat
+
+
+to compute an advantage estimate for
+
+
+every single one of our transitions.
+
+
+So, the advantage estimate very simple,
+
+
+the reward plus gamma times the next
+
+
+value minus the current value. How much
+
+
+better did we get after taking that
+
+
+action?
+
+
+And then you will plug those into policy
+
+
+gradient. The same grad log pi as
+
+
+before, except now we're multiplying it
+
+
+by this a hat.
+
+
+And notice that now there's no sum over
+
+
+t because we're just scrambling
+
+
+everything together. We're saying all of
+
+
+our transitions go into one big bucket,
+
+
+and all we're doing is just summing over
+
+
+transitions.
+
+
+When you store this in your
+
+
+in memory in your in your
+
+
+in your Python program, you can store it
+
+
+with trajectories, or you can store it
+
+
+as transitions, whatever you prefer.
+
+
+But, mathematically, it doesn't matter.
+
+
+So, you might as well just treat it as
+
+
+one big bucket of transitions.
+
+
+And then, now that you've got your
+
+
+policy gradient, make a gradient update,
+
+
+and then repeat the whole thing.
+
+
+And deep down, this is still that same
+
+
+reinforce algorithm, just with a better
+
+
+advantage estimator, a better estimate
+
+
+of that baseline reward to go.
+
+
+And if you want to the anatomy picture,
+
+
+we've only changed the green box. In the
+
+
+green box, now we are not merely summing
+
+
+over rewards, we're actually estimating
+
+
+V hat.
+
+
+So, we've got two models. We've got our
+
+
+policy pi theta, which with parameters
+
+
+theta that output the distribution over
+
+
+actions, and our value function V hat
+
+
+with with parameters phi, which outputs
+
+
+a number corresponding to our value.
+
+
+Any questions about this algorithm? Yes.
+
+
+So, the true expected value Well, okay.
+
+
+So, so what you really want is you want
+
+
+the true expected value of that whole
+
+
+grad log pi expression.
+
+
+So,
+
+
+there there is two sources of variance
+
+
+there, the fact that you're sampling the
+
+
+states and actions that go into the into
+
+
+grad log pi, and the fact that you're
+
+
+sampling something to get A hat.
+
+
+So,
+
+
+if you are constrained to using samples
+
+
+for the grad log pi, which you are for
+
+
+now, then the best you can do is to to
+
+
+get a better A hat.
+
+
+Yes.
+
+
+Yeah.
+
+
+Yeah. So, the way to think about line
+
+
+four is that it's Q minus V.
+
+
+So, so what you want in in line four is
+
+
+you want Q of S I A I minus V of S I.
+
+
+And Q of S I A I is just R plus gamma V
+
+
+S prime.
+
+
+So the reason that there's a gamma there
+
+
+is that that's just the the identity for
+
+
+the Q function.
+
+
+Yes.
+
+
+Yeah, okay. So this is a very good
+
+
+question. So the question was, well,
+
+
+I did a little bit of a statistical
+
+
+no-no, which is that I'm estimating my
+
+
+value function using a set of samples
+
+
+and using that same set of samples to
+
+
+compute the gradient. And this is this
+
+
+will in fact, like if you're in a stats
+
+
+class, this will make you go to jail.
+
+
+Like it's not allowed.
+
+
+It And in fact, some people get a kind
+
+
+of concerned about this and they'll
+
+
+actually do something kind of funky
+
+
+where they will use a different set of
+
+
+samples for estimating the value than
+
+
+they do for the policy or maybe they'll
+
+
+use like old samples for the value and
+
+
+the new samples for the gradient. It is
+
+
+technically kind of a no-no.
+
+
+In practice,
+
+
+I think you'll probably be fine. Like I
+
+
+think it's okay, but technically it does
+
+
+mess things up.
+
+
+Okay.
+
+
+Um
+
+
+So
+
+
+one of the things that is kind of
+
+
+interesting to note about this method is
+
+
+that now I wrote everything in terms of
+
+
+transitions because I'm doing these
+
+
+bootstrap estimates and
+
+
+the trajectories don't show up anywhere.
+
+
+And that raises kind of an interesting
+
+
+possibility. Maybe I don't have to even
+
+
+collect entire trajectories before I
+
+
+update my value function because the
+
+
+value function update there just relies
+
+
+on individual transitions. So I could
+
+
+also imagine deriving a different
+
+
+actor-critic algorithm by exploiting the
+
+
+fact that everything is operating on
+
+
+transitions now and update my value
+
+
+function and policy much more often.
+
+
+Even within a single trajectory. Maybe I
+
+
+have very long trajectories. Maybe I'm
+
+
+going to drive my car for like 10 hours
+
+
+before I get a single trajectory sample.
+
+
+But because I don't actually rely on it
+
+
+having entire trajectories, only
+
+
+transitions, I can actually update my
+
+
+policy and critic every single minute.
+
+
+So, now that I'm expressing everything
+
+
+in terms of transitions,
+
+
+I could also derive an online
+
+
+actor-critic algorithm
+
+
+where
+
+
+even a single transition can be enough
+
+
+to update my actor and critic.
+
+
+So,
+
+
+what I'm going to do is I'm going to
+
+
+sample one transition,
+
+
+basically take one step in my MDP, and
+
+
+now I have one S A and S prime.
+
+
+I'm going to compute a target value for
+
+
+that one single transition.
+
+
+I'm going to take one gradient step on
+
+
+my regression objective on that
+
+
+transition. I don't want to take too
+
+
+many gradient steps, otherwise I'll I'll
+
+
+overfit to that single sample.
+
+
+And then I'm going to compute a single
+
+
+sample policy gradient estimate uh and
+
+
+uh using the the advantage from that one
+
+
+transition,
+
+
+and I will take a step on my policy
+
+
+gradient.
+
+
+This is a little bit of a crazy
+
+
+algorithm because in general you want
+
+
+mini batches, uh but in in principle,
+
+
+you could have a fully online
+
+
+actor-critic algorithm based on this
+
+
+principle.
+
+
+So, get one transition by taking one
+
+
+step in your MDP.
+
+
+Evaluate the target value for that one
+
+
+step because the target value only
+
+
+depends on S I A I and S I prime. You
+
+
+just took one step, so you've got S I
+
+
+prime. You have the bare minimum you
+
+
+need to compute the target value.
+
+
+Update your value function parameters
+
+
+phi with one gradient step on your
+
+
+regression objective.
+
+
+Use that to estimate an advantage for
+
+
+your transition.
+
+
+Use it to get
+
+
+an estimate of the policy gradient,
+
+
+and then update your policy.
+
+
+This is a very classic algorithm. In
+
+
+fact, the first actor-critic algorithm
+
+
+did exactly this.
+
+
+This um and and then repeat. This
+
+
+algorithm has uh some issues.
+
+
+Does anyone want to tell me about
+
+
+issues here? Yes.
+
+
+Right. So, one issue is that we're
+
+
+taking only one gradient step on the V.
+
+
+So, in general, your V is like
+
+
+perpetually out of date. Like, this is
+
+
+not enough to actually get the true
+
+
+value function. You're going to That
+
+
+gradient step on the V will give you a
+
+
+better value function you had before,
+
+
+but it's not actually correct. So,
+
+
+there's bias now. It's no longer an
+
+
+unbiased method. Yes.
+
+
+So, that's an interesting comment. So,
+
+
+the comment is that, well, maybe you're
+
+
+you're losing the benefit of that long
+
+
+horizon optimization.
+
+
+In principle, that's actually okay
+
+
+because the value function will
+
+
+eventually capture that long horizon
+
+
+dependency. So, because the value
+
+
+function keeps getting updated with that
+
+
+bootstrap estimate, if it's updated
+
+
+enough, eventually the value function
+
+
+will actually realize that there's these
+
+
+long horizon rewards. Now, the
+
+
+convergence properties of this are
+
+
+actually quite complicated, and we'll
+
+
+talk about that more when we talk about
+
+
+some RL theory later. But, in principle,
+
+
+if everything goes well, you can
+
+
+actually still capture long horizon
+
+
+dependencies.
+
+
+Yes.
+
+
+So, one big issue is that the data is
+
+
+not IID. That's right. So, you keep
+
+
+doing these gradient updates with this
+
+
+algorithm, but
+
+
+stochastic gradient descent assumes that
+
+
+you sampled your batches or your data
+
+
+points independently. Whereas here,
+
+
+they're surely not independent because
+
+
+they're literally sequential. So, it
+
+
+will mess up the statistics of your
+
+
+stochastic gradient optimizer. And then,
+
+
+the other obvious problem is that, well,
+
+
+this is essentially like SGD with a
+
+
+batch size of one. So, those of you that
+
+
+have played around with neural networks
+
+
+a bit will probably know that using a
+
+
+batch size of one with SGD, it can
+
+
+sometimes work, but it's not a great
+
+
+idea.
+
+
+Now, there are algorithms that actually
+
+
+do this. Probably the most widely used
+
+
+example is a method called A3C. It
+
+
+stands for like
+
+
+asynchronous advantage actor-critic, I
+
+
+believe.
+
+
+And A3C does basically this, except that
+
+
+it runs multiple threads in parallel,
+
+
+where you have you have multiple workers
+
+
+that are all collecting experience, so
+
+
+that you get a mini batch. It's
+
+
+essentially like N copies of this
+
+
+algorithm all running concurrently.
+
+
+And then you get a mini batch, you still
+
+
+have this problem with non-IID data, so
+
+
+it can be a tough algorithm to
+
+
+stabilize, lots of hyperparameter
+
+
+tuning, but it can actually work.
+
+
+So, getting this to work in practice
+
+
+typically requires multiple parallel
+
+
+workers and a whole lot of
+
+
+hyperparameter tuning.
+
+
+Um there are some cases where this is
+
+
+actually a good idea.
+
+
+Probably not your method of your go-to
+
+
+method of choice in most cases, but good
+
+
+to know about and something that is
+
+
+actually quite historically relevant.
+
+
+All right, we'll do an intermission and
+
+
+come back in 5 minutes at 9:12.
+
+
+Yeah.
+
+
+You mean collect 10 or 20 steps in
+
+
+sequence?
+
+
+So, you can do that. That really
+
+
+exacerbates this non-IID problem. So, so
+
+
+you can you can basically take 10 steps,
+
+
+combine them together, but now those 10
+
+
+steps are very, very correlated with
+
+
+each other. So, it's actually much
+
+
+better to have 10 separate threads.
+
+
+Yeah, obviously in the real world having
+
+
+10 threads means like having 10 copies
+
+
+of your physical system, which might not
+
+
+be feasible, but it is much better
+
+
+statistically.
+
+
+Did you have a question?
+
+
+>> Yeah. Um
+
+
+So, earlier you mentioned that
+
+
+like our V was dependent on pi, and so
+
+
+basically we would have to like throw it
+
+
+away every time we updated our policy.
+
+
+Seems like we were
+
+
+>> That's right. So, so So, this is a
+
+
+problem. And what we're what we're doing
+
+
+once V is no longer V pi, once it kind
+
+
+of is this like lagged copy, now it's no
+
+
+longer an unbiased estimator.
+
+
+So, now even with infinite samples you
+
+
+will have some error. Uh now the hope is
+
+
+that if your policy is not changing too
+
+
+quickly and you're updating your value
+
+
+function quickly with this nice stable
+
+
+supervised learning objective, maybe
+
+
+it'll kind of catch up. And in practice
+
+
+the way that this shows up in practical
+
+
+implementation of this algorithm is that
+
+
+people tune the learning rates very
+
+
+carefully. And you want to tune the
+
+
+learning rates carefully so that the
+
+
+value function kind of keeps up.
+
+
+>> Okay.
+
+
+>> And that's one of the things that makes
+
+
+these algorithms hard to use is that you
+
+
+do have to like tune them quite a bit to
+
+
+get this to happen.
+
+
+>> So the pi is basically like one small
+
+
+step ahead of the policy.
+
+
+>> Yes. Yeah.
+
+
+>> Okay.
+
+
+>> Yeah. But if this sounds like a mess
+
+
+it's because it is a mess.
+
+
+>> Yeah. Okay, but it's
+
+
+not insane hard.
+
+
+>> Yeah.
+
+
+>> Mhm.
+
+
+>> Deep learning.
+
+
+>> Um given that the project you just
+
+
+released, may I ask um what are some
+
+
+common failure modes in RL projects?
+
+
+>> Um common failure modes in RL projects,
+
+
+um
+
+
+the biggest failure mode is starting the
+
+
+project too late and not leaving enough
+
+
+time for long long training runs to
+
+
+finish. So uh and that's probably the
+
+
+most common failure mode. So um
+
+
+uh uh
+
+
+as with all deep learning, stuff takes a
+
+
+long time to train, but even worse than
+
+
+regular deep learning, stuff takes a lot
+
+
+of hyperparameter tuning. So you have
+
+
+to, you know, if you need if your
+
+
+training run takes uh T hours, then you
+
+
+have T times N where N is the number of
+
+
+hyperparameter tuning iterations.
+
+
+Yeah.
+
+
+>> What about research in general? Like
+
+
+what are the common failure modes in
+
+
+research?
+
+
+>> Mhm, that's a big question.
+
+
+>> Oh, you mean like like actual research?
+
+
+>> Yeah.
+
+
+So one of the things that's a really
+
+
+really good idea is to um
+
+
+have a
+
+
+a quick iteration cycle and try out
+
+
+ideas rapidly and set set things up so
+
+
+that it's easy to try ideas that are
+
+
+non-incremental.
+
+
+So often times a really delicate balance
+
+
+to strike
+
+
+um in this kind of research is the
+
+
+balance between studying like big
+
+
+important problems and studying things
+
+
+at a small enough scale that it's easy
+
+
+to try out new stuff.
+
+
+And I'll you know often times these are
+
+
+in contradiction because if you work in
+
+
+like a tiny little grid world
+
+
+environment, you can try lots of stuff
+
+
+quickly, but you don't get as clear of a
+
+
+signal as to how effective or relevant
+
+
+it is. Whereas if you do things with
+
+
+like, you know, big I don't know LLM
+
+
+training runs or big vision-based
+
+
+robotics things, then you're really
+
+
+seeing the relevance of that for real
+
+
+problems, but it's much much harder to
+
+
+try out really unusual ideas. So,
+
+
+striking a good balance between those
+
+
+can be really important.
+
+
+>> So, failure is striking the balance
+
+
+between the
+
+
+>> Yeah.
+
+
+Mhm.
+
+
+Yeah.
+
+
+Do you have a question?
+
+
+>> Yeah, I had a question about
+
+
+Wednesday's lecture. So, when we were
+
+
+determining that like the reward minus
+
+
+the baseline is unbiased, we did like
+
+
+this integral and we had like the
+
+
+you know, the trick where you like
+
+
+turned it into a log.
+
+
+>> Mhm.
+
+
+>> But, how did we factor out the B from
+
+
+the integral given that B is a function
+
+
+that depends on tau?
+
+
+>> So, it's not a function. B is a is a
+
+
+constant.
+
+
+>> Oh, okay.
+
+
+>> So, basically what this proof is showing
+
+
+is that this is this holds for any
+
+
+for any constant B.
+
+
+>> I see. Okay.
+
+
+>> And in general, you can do this for any
+
+
+distribution. So, B can actually depend
+
+
+on other variables as long as it doesn't
+
+
+depend on the on the random variable of
+
+
+this distribution. So, this is this is
+
+
+like A given S, then B could depend on
+
+
+S, but not on A.
+
+
+>> Okay, got it. But, then
+
+
+didn't we define B as like the sum of
+
+
+like the
+
+
+average reward over like all time steps?
+
+
+>> That's right.
+
+
+>> that not like dependent on
+
+
+>> Well, it's it's a constant, right? So,
+
+
+uh basically what you can think of this
+
+
+as is this is an estimate of the
+
+
+expected value under P of tau. So, the
+
+
+expected value doesn't actually depend
+
+
+on tau.
+
+
+>> I see. Okay, okay. Got it. Thank you so
+
+
+much. Appreciate it.
+
+
+>> I had a quick question about like the
+
+
+IID like breaking kind of assumption.
+
+
+Um
+
+
+Or like if this would solve it, right?
+
+
+A friend and I thought, what if we like
+
+
+take the last 10 states instead of just
+
+
+the last state? Maybe just like kind of
+
+
+assume that all the correlation would be
+
+
+that last 10 states would capture
+
+
+>> Sorry, I'm not sure I understand. What's
+
+
+the last 10 states?
+
+
+>> Yeah. I think what we thought was like
+
+
+we would take the last 10 states and
+
+
+then that would kind of reduce the
+
+
+>> You're You're saying that instead of
+
+
+like sampling transitions just like for
+
+
+from from running the policy, you
+
+
+somehow sequence them so that you start
+
+
+off using the ones towards the end of
+
+
+the trajectory?
+
+
+>> That sounds like a good idea. That's a
+
+
+good idea.
+
+
+>> Um maybe we can talk after class. I
+
+
+should probably restart the the lecture
+
+
+now.
+
+
+All right, please find a seat. We're
+
+
+going to get started again.
+
+
+Okay.
+
+
+So,
+
+
+in the second half of today's lecture,
+
+
+we'll actually go through a couple of
+
+
+algorithms that are that are very
+
+
+practical. These are algorithms that you
+
+
+might actually want to use. In fact, you
+
+
+kind of have to use them because it's
+
+
+going to be on your homework.
+
+
+Uh and it will be based on the ideas
+
+
+that we introduced so far.
+
+
+And
+
+
+basically, there's two two classes of
+
+
+methods I'm going to talk about.
+
+
+On-policy actor-critic algorithms, which
+
+
+are basically like policy gradient
+
+
+methods that actually work.
+
+
+And off-policy actor-critic algorithms,
+
+
+which are
+
+
+much more efficient but more
+
+
+computationally expensive. And these are
+
+
+two big categories of methods that
+
+
+people actually use in practice.
+
+
+So, on-policy actor-critic is how we get
+
+
+to widely used policy gradient methods
+
+
+like PPO, and we'll derive that later in
+
+
+the course. And off-policy actor-critic
+
+
+is how we get to methods like SAC that
+
+
+are very efficient and often used in uh
+
+
+tasks where you need sample efficiency.
+
+
+So, let's start with the on-policy
+
+
+stuff.
+
+
+So, we'll go back to this batch mode
+
+
+actor-critic algorithm. So, you remember
+
+
+this one was essentially an evolution of
+
+
+reinforce. It's basically like
+
+
+reinforce, but now with a critic.
+
+
+And
+
+
+the question I'm going to ask is what do
+
+
+we need to do to make this work in
+
+
+practice? This is pretty close to an
+
+
+actual working algorithm you could use,
+
+
+uh but there are a few little tricks uh
+
+
+that can make it better and more
+
+
+practically applicable that you will
+
+
+actually be implementing in homework
+
+
+two.
+
+
+So,
+
+
+one thing is
+
+
+uh even better ways to estimate A hat.
+
+
+The estimator I had here is decent, but
+
+
+I can do better.
+
+
+And another way another thing that I'm
+
+
+going to need is a better way to
+
+
+estimate the gradient
+
+
+once I have the advantage.
+
+
+So, I'm going to talk about better
+
+
+advantage estimators today, and I'm
+
+
+going to introduce something called the
+
+
+GAE estimator.
+
+
+And then I'll talk about better gradient
+
+
+estimators later when we talk about
+
+
+importance sampling and discuss PPO. Uh
+
+
+so, I just wanted to preview that we
+
+
+will need both of these things to get
+
+
+really effective policy gradient
+
+
+methods, and I'll do one of the two
+
+
+today.
+
+
+So, let's talk about better ways to get
+
+
+the advantage.
+
+
+So, so far we've seen two advantage
+
+
+estimators.
+
+
+The actor-critic, the classic
+
+
+actor-critic estimator, which is the
+
+
+current reward plus gamma times the next
+
+
+value minus the current value. And then
+
+
+we saw the one from uh Wednesday, which
+
+
+is just sum up the rewards and subtract
+
+
+the average reward baseline.
+
+
+These are two different ways to get an
+
+
+estimator for the same thing.
+
+
+The actor-critic
+
+
+advantage estimator has lower variance
+
+
+because of the critic, but in general,
+
+
+your critic
+
+
+it's represented by some neural network
+
+
+model, it's not going to be perfect,
+
+
+and you don't really know how it's going
+
+
+to be imperfect.
+
+
+Often times you didn't you you're not
+
+
+going to run your regression all the way
+
+
+to convergence. You're not going to
+
+
+reinitialize the critic every iteration.
+
+
+You'll probably just initialize it from
+
+
+the previous iteration and take, you
+
+
+know, 300 gradient steps or something.
+
+
+So, the critic is not really a great
+
+
+estimate of V pi. It's probably better
+
+
+at estimating V pi than whatever you had
+
+
+before, but it's not going to be
+
+
+perfect. And because of that, this is
+
+
+actually not in general an unbiased
+
+
+estimator. Meaning that even if you have
+
+
+infinitely many samples,
+
+
+if your critic is imperfect, you will
+
+
+not get the true policy gradient.
+
+
+And that might be worth it because if
+
+
+you're mo- mostly worried about
+
+
+variance, maybe it's okay to add a
+
+
+little bit of bias from an imperfect
+
+
+critic for the sake of drastically
+
+
+reducing your variance. So, it's not
+
+
+necessarily a bad trade-off, but it is a
+
+
+very different trade-off than the
+
+
+estimator that we had on Wednesday,
+
+
+which is completely unbiased, meaning
+
+
+that it is guaranteed to be exactly
+
+
+equal to your policy gradient if you
+
+
+have infinitely many samples,
+
+
+but it has higher variance because it's
+
+
+using these single sample estimates
+
+
+instead of a critic network. So, these
+
+
+two things have very different pros and
+
+
+cons. In fact, they're quite
+
+
+complementary.
+
+
+So, one question you could ask is, well,
+
+
+can you use V hat
+
+
+and still get an unbiased estimator?
+
+
+Uh anyone have an idea for how to do
+
+
+this?
+
+
+Yes?
+
+
+Yeah, okay. That's So, that that's
+
+
+basically the right idea. So, you could
+
+
+you could
+
+
+plug in the sum of rewards into that
+
+
+first thing, which would replace the R
+
+
+plus gamma V, but still keep the minus
+
+
+V. So, essentially use your critic as a
+
+
+baseline.
+
+
+And that's actually okay because
+
+
+for the baseline, any quantity that does
+
+
+not depend on A, you can subtract.
+
+
+And that quantity can depend on on S.
+
+
+So, you can subtract any function of S,
+
+
+and that is still
+
+
+going to average out to the same thing
+
+
+in expectation. It is still unbiased.
+
+
+And in particular, it means you can
+
+
+subtract V of S. So, this is a perfectly
+
+
+reasonable estimator. A question?
+
+
+Yeah, so why is it a problem that the
+
+
+actor-critic um
+
+
+estimator is not unbiased? The reason
+
+
+it's a problem is that your value
+
+
+function can be wrong in all sorts of
+
+
+crazy ways. So, if you didn't do a good
+
+
+job of training your value function, it
+
+
+could be completely off.
+
+
+Now, hopefully you tuned your algorithm
+
+
+correctly and you did your best and you
+
+
+trained the value function so that it's
+
+
+pretty good, but in general, there's no
+
+
+reason to expect that simply reducing
+
+
+the mean squared error, unless you
+
+
+actually drive it all the way to zero,
+
+
+will give you a more accurate policy
+
+
+gradient. Because you might have some
+
+
+errors this way and that in places that
+
+
+uh
+
+
+you know uh correlate with your sampling
+
+
+error or something like that. So, it's
+
+
+very hard to show any uh any guarantee
+
+
+that this will converge to the correct
+
+
+gradient.
+
+
+Yes.
+
+
+So,
+
+
+the result that I went through on
+
+
+Wednesday, that showed that you can put
+
+
+have any baseline you want,
+
+
+you can go through that same math
+
+
+for So, I went through it with um
+
+
+where I had the
+
+
+probability of tau, but you can go
+
+
+through that same math where you have a
+
+
+probability of A, and you'll get the the
+
+
+same result. So, basically, as long as
+
+
+the thing you're subtracting doesn't
+
+
+depend on the random variable for the
+
+
+distribution for which you're taking the
+
+
+grad log uh pi, then everything works
+
+
+out.
+
+
+It's actually kind of a nice homework
+
+
+exercise to do is basically go go go
+
+
+back to my uh baseline slide and just
+
+
+repeat that derivation for a single time
+
+
+step with grad log pi A given S, and the
+
+
+same exact logic will actually show that
+
+
+uh it goes to zero.
+
+
+In fact, it's such a good idea that I
+
+
+might make an exam question about it.
+
+
+Um all right, so this is an unbiased
+
+
+estimator uh and it does have
+
+
+uh lower variance than just subtracting
+
+
+a constant B because now I'm subtracting
+
+
+a baseline that is sort of specialized
+
+
+to each state.
+
+
+So, that's nice. This is actually a a
+
+
+good way to go.
+
+
+Um and
+
+
+you can as an exercise prove that this
+
+
+is still unbiased. I guess I already
+
+
+gave away how how to do that and so it's
+
+
+a fun thing to do.
+
+
+But now we can take this idea even
+
+
+further. We can say that okay, this is
+
+
+also like a nice estimator. Uh
+
+
+it maybe has has like a favorable
+
+
+combination of the first two, but can we
+
+
+mix them even more? Can we maybe instead
+
+
+of choosing between bias but lower
+
+
+variance and uh no bias but higher
+
+
+variance, can we somehow interpolate?
+
+
+Can we introduce a knob so that we can
+
+
+trade off between these two things
+
+
+however we want with like a constant
+
+
+slider?
+
+
+And
+
+
+the idea for this
+
+
+can be derived starting from something
+
+
+called eligibility traces or n-step
+
+
+returns.
+
+
+So, the standard kind of actor-critic
+
+
+advantage is given by this. I'm going to
+
+
+call it AC for A-critic.
+
+
+Uh so, lower variance but high bias if
+
+
+the value is wrong. So, if your value
+
+
+function is incorrect because you're
+
+
+putting it in at the next time step,
+
+
+you're paying a heavy price.
+
+
+The Monte Carlo estimator with the value
+
+
+function baseline that we had on the
+
+
+previous slide,
+
+
+I can write it like this.
+
+
+And notice I I intentionally wrote them
+
+
+so they look kind of similar, right? So,
+
+
+they both subtract V hat and they just
+
+
+have a different way to estimate that Q
+
+
+term. One of them is estimating as
+
+
+reward plus next value. The other one is
+
+
+estimating as a sum of rewards.
+
+
+So, this has no bias but higher
+
+
+variance.
+
+
+So, can we do something in between? Can
+
+
+we combine these two to control the
+
+
+bias-variance trade-off?
+
+
+And to give you some intuition for why
+
+
+we might want to do that,
+
+
+the if you imagine that you have a
+
+
+uh a discount uh factor which uh, we
+
+
+have in these equations, then the
+
+
+discounted reward will decrease over
+
+
+time.
+
+
+So,
+
+
+if your value function is incorrect,
+
+
+that incorrectness hurts you less
+
+
+further in the future because the future
+
+
+is more discounted.
+
+
+So, um,
+
+
+you'd also expect to have higher
+
+
+variance further in the future,
+
+
+uh, because, you know, things things
+
+
+that happen in the next 10 time steps
+
+
+may be more certain than things that
+
+
+happen 100 time steps from now.
+
+
+And smaller variance closer to the
+
+
+present.
+
+
+So, it kind of makes sense that for
+
+
+things that happen very soon, you might
+
+
+prefer a less biased, higher variance
+
+
+estimator, and for things that happen
+
+
+much further in the future, you might
+
+
+prefer a lower variance with more biased
+
+
+estimator.
+
+
+So, perhaps what you want to do is you
+
+
+want to somehow cut these, uh, uh,
+
+
+the Monte Carlo estimate somewhere in
+
+
+the middle before the variance gets too
+
+
+big and kind of try to get the best of
+
+
+both worlds.
+
+
+So,
+
+
+here's what you can do. You can do what
+
+
+you you can use what's called an n-step
+
+
+estimator,
+
+
+um,
+
+
+which is kind of a a combination of
+
+
+these two things.
+
+
+So, you can sum the rewards not until
+
+
+the very end of the trajectory, but from
+
+
+the current time step until t plus n.
+
+
+And then, of course, you still need to
+
+
+add the value function after that, but
+
+
+the value function now is multiplied by
+
+
+gamma to the power n.
+
+
+So, you can sort of think of the classic
+
+
+critic estimator, the first line here,
+
+
+AC, as an n-step estimator for n equals
+
+
+1.
+
+
+But, you can do it for n equals like 20.
+
+
+So, sum up the next 20 rewards and then
+
+
+put gamma to the power 20 times the
+
+
+value function at ST plus 20.
+
+
+And then, you still have to subtract,
+
+
+obviously, the current value.
+
+
+So, this is kind of an in-between, uh,
+
+
+estimator.
+
+
+And the intuition for why this might be
+
+
+good is that in the future, you might
+
+
+have very high variance because the
+
+
+future is more uncertain, so there you
+
+
+want to use this like lower variance V
+
+
+and the bias from V isn't going to hurt
+
+
+you as much because it's going to be
+
+
+multiplied by gamma to the N, which is
+
+
+smaller than gamma. Uh and for the near
+
+
+term, for like the next 20 steps, you're
+
+
+just going to sum up the rewards that
+
+
+you actually saw.
+
+
+Yes.
+
+
+So, the way that you get that is you
+
+
+literally just plug in S T plus N into
+
+
+your learned value function. So, the
+
+
+it's it's quite straightforward. Um you
+
+
+do need to actually like keep the entire
+
+
+trajectory, so you can't do that thing
+
+
+where you lump everything together into
+
+
+one big bucket of transitions. You still
+
+
+need to keep the trajectories, but as
+
+
+long as you do that, this is all quite
+
+
+straightforward.
+
+
+Yes.
+
+
+It's lowering the bias. So, it basically
+
+
+the way to think about it is like if V
+
+
+is a is a crazy random number,
+
+
+multiplying it by a smaller number will
+
+
+make it less erroneous.
+
+
+And it kind of makes sense that if I
+
+
+trust my value function less, then maybe
+
+
+I want a larger N. If I trust it more,
+
+
+then maybe I want a smaller N.
+
+
+So, choosing N equal N greater than one
+
+
+often works better. As N goes to
+
+
+infinity, then I approach the Monte
+
+
+Carlo estimator. As N goes to one, then
+
+
+I approach the classic actor critic
+
+
+estimator. And for values in between,
+
+
+that might be a kind of a happy
+
+
+compromise.
+
+
+Okay.
+
+
+Uh any questions about this?
+
+
+Yes.
+
+
+>> Mhm.
+
+
+Mhm.
+
+
+Yeah, that that's that's a reasonable
+
+
+idea. So, for example, you know, one
+
+
+thing that's
+
+
+I guess one way I can interpret is one
+
+
+thing that's kind of annoying about the
+
+
+standard extra credit estimator is that
+
+
+if you're
+
+
+if you have a physical system that
+
+
+you're simulating in discrete time, if
+
+
+you like
+
+
+um if you change it so the time steps
+
+
+are 1/10 the length, now suddenly your
+
+
+backups are also 1/10 the length. Uh so,
+
+
+maybe you want to keep n such that, you
+
+
+know, you're backing up over always like
+
+
+half a second or something regardless of
+
+
+what your simulation frequency is.
+
+
+That's like a reasonable thing to do.
+
+
+Yeah.
+
+
+Yes, that's exactly right.
+
+
+Yeah.
+
+
+Um in fact, what we're going to do next
+
+
+is
+
+
+based on this idea. So, so far we
+
+
+decided that we want to choose a single
+
+
+n and basically cut off the sum at a
+
+
+particular value and then replace the
+
+
+rest of that sum, the tail, with the
+
+
+value function estimator.
+
+
+But, what if we don't have to choose a
+
+
+single n? What if we average together
+
+
+all possible n-step estimators
+
+
+and
+
+
+have a different trade-off parameter?
+
+
+And this might seem like kind of a
+
+
+strange thing to do, but it turns out to
+
+
+be very, very convenient. So,
+
+
+this is the standard n-step estimator.
+
+
+And
+
+
+uh
+
+
+in practice, when people do policy
+
+
+gradients, they actually don't use the
+
+
+n-step estimator. They use something
+
+
+called the GAE estimator. It stands for
+
+
+generalized advantage estimation. And
+
+
+the GAE estimator is a weighted
+
+
+combination of all possible n-step
+
+
+estimators.
+
+
+So, you basically sum over all possible
+
+
+values of n and you weight each n-step
+
+
+estimator by some weight wn. This might
+
+
+seem kind of bizarre because now don't I
+
+
+have to like compute way too many
+
+
+values, but there is an elegant
+
+
+mathematical identity that actually
+
+
+makes it easier to estimate these things
+
+
+than to estimate a single N-step
+
+
+estimator.
+
+
+So, we're what what people will actually
+
+
+use for policy gradients is this
+
+
+weighted combination of N-step returns.
+
+
+And
+
+
+for choosing the weights,
+
+
+basically the intuition is
+
+
+you would prefer
+
+
+cutting earlier and you would like to
+
+
+exponentially decay your weights into
+
+
+the future. So, we're going to choose
+
+
+these weights to be some constant lambda
+
+
+raised to the power N.
+
+
+So, N-step estimators with larger N get
+
+
+exponentially lower weights.
+
+
+Okay, it's a little bit of an arbitrary
+
+
+choice,
+
+
+uh but this choice will lead to kind of
+
+
+an elegant uh cancellation.
+
+
+So, if I were to actually write this
+
+
+out,
+
+
+I can substitute these things in and and
+
+
+what I'm going to get is I'm going to
+
+
+get the current reward plus gamma
+
+
+times the rest of the uh of the trace.
+
+
+And the rest of the trace is 1 minus
+
+
+lambda times the value at the next step
+
+
+plus lambda times the bootstrapped
+
+
+estimate for the next step. So, it's R
+
+
+plus gamma then 1 minus lambda times the
+
+
+value at T plus 1 plus lambda times the
+
+
+reward plus gamma 1 minus lambda V ST
+
+
+plus 2 and so on and so on and so on.
+
+
+So, it's almost like having a
+
+
+probability of 1 minus lambda of cutting
+
+
+the trace at every single step. Cutting
+
+
+the trace means you stop the sum and
+
+
+replace it with the value.
+
+
+And
+
+
+if you actually work through the algebra
+
+
+for this, you can actually collapse this
+
+
+together and express it as a sum over
+
+
+all time of gamma times lambda to the
+
+
+power of T prime minus T, basically how
+
+
+many steps ahead it is,
+
+
+times this thing called delta.
+
+
+And delta is
+
+
+just that that that uh
+
+
+critic only advantage estimator for one
+
+
+step. So, delta T prime is reward at T
+
+
+prime plus gamma of the next value minus
+
+
+the current value.
+
+
+You can check the math the algebra for
+
+
+this at home. It's like a fairly
+
+
+straightforward derivation, just a big
+
+
+telescoping sum, but
+
+
+the and the lambda here acts similarly
+
+
+to a discount.
+
+
+So, the cool thing about this is that
+
+
+now if you want to actually calculate
+
+
+this quantity, all you have to do is
+
+
+compute these deltas for all the time
+
+
+steps in your trajectory, and that's
+
+
+very straightforward. Like you already
+
+
+know how to do this from the basic
+
+
+actor-critic algorithm. And then instead
+
+
+of just plugging that in directly as the
+
+
+advantage, you average them together
+
+
+using this formula, and that's also
+
+
+really easy to do. And now you have a
+
+
+better advantage estimator, which kind
+
+
+of has all of the good parts of n-step
+
+
+returns, uh
+
+
+but is a bit more convenient to use, and
+
+
+turns out to be equivalent to a weighted
+
+
+combination of all possible n-step
+
+
+returns.
+
+
+So, because this thing is so darn
+
+
+convenient, this is actually the most
+
+
+widely used advantage estimator for
+
+
+policy gradient methods today. So,
+
+
+chances are if somebody's using PPO,
+
+
+they're using this advantage estimator.
+
+
+It's a little bit arbitrary, and uh
+
+
+and you know, like truth in advertising,
+
+
+I don't think there's really like a
+
+
+really good reason for those lambdas to
+
+
+for for those weights to be uh given by
+
+
+this exponential function of lambda.
+
+
+It's kind of an arbitrary thing, but it
+
+
+works pretty well. It has a pretty
+
+
+sensible interpretation as a weighted
+
+
+combination of all possible n-step
+
+
+estimators. It's easy to implement, and
+
+
+it seems to work well in practice.
+
+
+Yes.
+
+
+Right. So, the question is do we
+
+
+consider gamma times lambda a new
+
+
+hyperparameter? So, something to
+
+
+remember is that gamma determines the
+
+
+objective. So, the RL objective actually
+
+
+depends on gamma. If you use a different
+
+
+gamma, then you're optimizing a
+
+
+different objective, and in general, the
+
+
+lower gamma is, the more greedy you
+
+
+would expect your agent to be. So, low
+
+
+gamma means you prefer near-term rewards
+
+
+over long-term rewards. Low gamma agents
+
+
+are more hedonistic.
+
+
+High gamma agents have plan further into
+
+
+the future.
+
+
+Lambda does not change that. Lambda is
+
+
+purely a property of your estimator.
+
+
+So, with for different values of lambda,
+
+
+your gradient estimate might be more or
+
+
+less accurate, but it's not changing the
+
+
+objective. And if you have infinitely
+
+
+many samples, then lambda should not
+
+
+matter.
+
+
+Yes.
+
+
+That's a really good question. So, the
+
+
+question was, can you tune lambda as
+
+
+your value function changes just to try
+
+
+to adaptively modify it? So, with better
+
+
+value functions, maybe you want lower
+
+
+lambdas. With worse value functions, you
+
+
+want higher lambdas.
+
+
+Conceptually, you could.
+
+
+It's not typically done because it's
+
+
+actually very hard to determine how
+
+
+accurate your value function is, but
+
+
+it's a pretty reasonable idea if you had
+
+
+some way to estimate the accuracy of
+
+
+your value function.
+
+
+Okay.
+
+
+So, now that we've derived this somewhat
+
+
+funky and slightly arbitrary, yet
+
+
+embarrassingly effective advantage
+
+
+estimator, we can write out policy
+
+
+gradient with GAE, which is something
+
+
+that people actually use. Sample
+
+
+trajectories from your policy,
+
+
+compute these target values. And by the
+
+
+way, in step two, you can compute your
+
+
+target values in many different ways,
+
+
+including using the GAE estimator
+
+
+itself. So, the estimator you use for
+
+
+the target values is actually an
+
+
+independent choice from the estimator
+
+
+you use for the policy gradient. So, you
+
+
+could use GAE here, you could use Monte
+
+
+Carlo. In this case, I wrote it out with
+
+
+standard one-step bootstrap estimates,
+
+
+but that's a choice you make.
+
+
+Then, you fit your values to those
+
+
+targets.
+
+
+Evaluate the GAE advantage estimator,
+
+
+plug it into the policy gradient, and
+
+
+take a policy gradient step. And then,
+
+
+repeat.
+
+
+And uh
+
+
+in practice, there's a few other tricks
+
+
+that you need. One of the tricks is to
+
+
+center your advantages, so subtract the
+
+
+average and divide by the standard
+
+
+deviation,
+
+
+uh and that helps with better numerical
+
+
+properties. So, centering means you
+
+
+compute the average advantage, you
+
+
+compute the standard deviation of the
+
+
+advantages, and you have these centered
+
+
+advantages where you subtract the mean
+
+
+and divide by the standard deviation,
+
+
+and this makes the algorithm behave
+
+
+better. Very hard to justify, very hard
+
+
+to explain why it's good, but it's good.
+
+
+Trust me. Yes?
+
+
+Um so, in practice, if we were to
+
+
+implement it, you probably would center
+
+
+them. It's just so hard to explain why
+
+
+we should do it that I didn't want to
+
+
+explain it and confuse everybody. So, I
+
+
+think if you want like a conceptual
+
+
+understanding of this, everything
+
+
+mathematically makes sense until you get
+
+
+to that centering step. The centering
+
+
+step mostly just helps your
+
+
+your optimizer behave better.
+
+
+So, it kind of helps for the same reason
+
+
+like Adam or or or Adagrad and so on
+
+
+help.
+
+
+Yes?
+
+
+Yeah, it could also be bad if your
+
+
+deviation is small and you're like
+
+
+dividing by a number close to zero. Um
+
+
+so, yeah, there's like a lot a lot of
+
+
+like little tricks that'll go into it.
+
+
+Um the homework two assignment will
+
+
+describe the tricks that are needed to
+
+
+make it work, but yes, there's like a
+
+
+few little details like that. So,
+
+
+typically, if you divide by the standard
+
+
+deviation, you want to have some like
+
+
+little threshold so that it's if the
+
+
+standard deviation is less than like 10
+
+
+to the negative negative six or
+
+
+something, then you'll clamp it.
+
+
+Yes?
+
+
+That's right.
+
+
+And and then you
+
+
+and then you further modify it to center
+
+
+it.
+
+
+Okay.
+
+
+Uh yeah, and you can you can use other
+
+
+estimators for the target values as
+
+
+well. So, you can actually use GAE for
+
+
+both the policy gradient and the
+
+
+targets, or you can use a different
+
+
+estimator for the targets. That's a
+
+
+design choice.
+
+
+Um there are other good options. You
+
+
+could use N-step estimators. Uh you can
+
+
+use Monte Carlo estimator with V-hat as
+
+
+a baseline.
+
+
+Um
+
+
+and generally, switching to this GAE
+
+
+estimator is kind of the first part of
+
+
+implementing PPO. The other part is to
+
+
+use a slightly different gradient
+
+
+estimator with important sampling that
+
+
+we will learn about in a later lecture.
+
+
+Okay.
+
+
+Any questions about
+
+
+this method? This is uh policy gradient
+
+
+with GAE, which is like half of PPO.
+
+
+Yes.
+
+
+Uh I wouldn't. I would just um
+
+
+Basically, the the whole mu and sigma
+
+
+thing is
+
+
+it's like a little hack to make your um
+
+
+neural net optimizer more well-behaved.
+
+
+So, I would keep this part simple and
+
+
+just do it exactly like this.
+
+
+Okay.
+
+
+All right. So, now let's talk about the
+
+
+other big algorithm that we're going to
+
+
+learn about today, which is off-policy
+
+
+actor-critic. Off-policy actor-critic is
+
+
+based on very similar concepts, but it
+
+
+has very, very different trade-offs.
+
+
+And whereas policy gradient with GAE is
+
+
+a nice way to have a more stable, yet
+
+
+still simple policy gradient method that
+
+
+is on-policy, off-policy actor-critic is
+
+
+the way to have a more complex method
+
+
+that is more sample efficient. So, very
+
+
+different trade-offs. The policy
+
+
+gradient stuff is about something that's
+
+
+simple, computationally quick, but
+
+
+rather wasteful when it comes to
+
+
+samples. Off-policy actor-critic,
+
+
+computationally expensive, more
+
+
+complicated, harder to tune, but more
+
+
+efficient.
+
+
+So, let's talk about that.
+
+
+The key is to be able to reuse data. So,
+
+
+so far, all these on-policy algorithms
+
+
+that we've learned about, they throw out
+
+
+all of their samples every iteration and
+
+
+refit everything. If we want an
+
+
+algorithm that is more efficient, we
+
+
+want to be able to reuse data.
+
+
+And reusing data means storing the data
+
+
+in a buffer.
+
+
+So, let's go back to the online
+
+
+actor-critic algorithm.
+
+
+The online actor-critic algorithm
+
+
+doesn't reuse data. The online
+
+
+actor-critic algorithm takes one step in
+
+
+the MDP, gets one transition, computes
+
+
+one target value, takes one gradient
+
+
+step on the regression loss for the
+
+
+value function,
+
+
+computes the advantage,
+
+
+gets a one sample estimate of the policy
+
+
+gradient, and takes one gradient step on
+
+
+the policy. So, that's the classic
+
+
+online actor-critic.
+
+
+And one of the issues with the classic
+
+
+online actor-critic
+
+
+is that you're using only one sample, so
+
+
+it's like SGD with a mini-batch of one.
+
+
+The other problem is that the samples
+
+
+are very correlated at successive steps
+
+
+because time step two probably looks a
+
+
+lot like time step one.
+
+
+So, we can address these issues
+
+
+by
+
+
+slightly changing things at step one.
+
+
+So, in step one, when we sample that
+
+
+transition, we're not immediately going
+
+
+to use that transition for learning.
+
+
+Instead, we're going to store it in a
+
+
+bucket that we call a replay buffer. So,
+
+
+we'll just store it in a system memory.
+
+
+And then, for everything after step one,
+
+
+instead of using that latest transition,
+
+
+we're going to sample a mini-batch from
+
+
+our replay buffer.
+
+
+And that mini-batch might not even
+
+
+contain the latest transition that we
+
+
+sampled. So, we're going to sample that
+
+
+mini-batch IID from our replay buffer.
+
+
+It might consist of old transitions.
+
+
+And then, we'll use these things to uh
+
+
+compute the the value function target,
+
+
+update the value function, and all that
+
+
+stuff.
+
+
+Now, as I described it, this algorithm
+
+
+is a little bit broken.
+
+
+Can you spot the problem?
+
+
+Yeah.
+
+
+Exactly. So, this algorithm is as I
+
+
+described is broken because we're
+
+
+using some arbitrary old samples from
+
+
+our replay buffer that came from an
+
+
+older policy, but we're using it to
+
+
+estimate the value function that we're
+
+
+about to pretend is the value function
+
+
+of the current policy. So, that's not
+
+
+right.
+
+
+Like the old policy might have been
+
+
+completely terrible, and now we're going
+
+
+to pretend as though our latest policy,
+
+
+which hopefully is pretty good, is is
+
+
+just as terrible, and we'll probably get
+
+
+an incorrect update. So, this is not
+
+
+good enough.
+
+
+So, the trouble is that these S and A
+
+
+tuples no longer come from the latest
+
+
+policy.
+
+
+Which means that we don't have the right
+
+
+target value. And it also means that
+
+
+we're when we're doing that grad log pi,
+
+
+the action that's going into the
+
+
+log pi is not an action that was
+
+
+actually sampled from that policy, which
+
+
+means that the policy gradient formula
+
+
+from before doesn't actually apply. So,
+
+
+I just broke the the whole thing.
+
+
+That's no good. I need to somehow
+
+
+compensate for these two issues before I
+
+
+can do this.
+
+
+And the key idea is to switch from
+
+
+estimating the value function to instead
+
+
+estimate the Q function. And we'll see
+
+
+in a second how that makes it all work
+
+
+out.
+
+
+Now, estimating the Q function is not
+
+
+that different from estimating the value
+
+
+function. So, before we computed these
+
+
+target values, let's say let's go with
+
+
+the standard one-step critic update for
+
+
+simplicity, bootstrap update, regress,
+
+
+pretty straightforward.
+
+
+And here
+
+
+now we we have this case where
+
+
+the transition came from an older
+
+
+policy. So, this is wrong because
+
+
+that Y is no longer a correct target
+
+
+value for the new policy.
+
+
+What we want is we want an estimate of
+
+
+the expected uh
+
+
+value from the latest policy.
+
+
+What we got was the expected value under
+
+
+the old policy.
+
+
+Because the action came from the old
+
+
+policy.
+
+
+So, let's try to estimate the Q function
+
+
+instead.
+
+
+Uh it's not actually all that different.
+
+
+So, you can compute a bootstrap target
+
+
+value where Y is R plus gamma
+
+
+times the Q value at the next time step.
+
+
+But now, because the Q value is a
+
+
+function of both the state and the
+
+
+action, you have to plug some action in
+
+
+there.
+
+
+And the action here we're going to
+
+
+select from the latest policy.
+
+
+The thing is, the action, you can
+
+
+resample it all you want. You don't need
+
+
+to interact with the environment to get
+
+
+an action.
+
+
+So, what you can do is you can just take
+
+
+the state that you visited before,
+
+
+in this case it's SI prime, and just ask
+
+
+your latest policy, "Hey, what would you
+
+
+have done in that state?"
+
+
+Sample that action and plug it into your
+
+
+Q function.
+
+
+And then, just solve the same regression
+
+
+problem, uh but on Q instead.
+
+
+So, the reason that this works is
+
+
+because we can
+
+
+query any action we want with a Q
+
+
+function, and we can sample the action
+
+
+at any state we want using our policy,
+
+
+because the Q function and the policy
+
+
+are sitting there in the computer. You
+
+
+don't have to interact with the
+
+
+environment to figure out what Q and pi
+
+
+are. They're just neural networks that
+
+
+are sitting right there, uh in the
+
+
+computer.
+
+
+Whereas, if you wanted to get a new
+
+
+transition, then of course, you need to
+
+
+interact with the environment for that.
+
+
+So, to estimate this thing, this
+
+
+expected value, just sample an action
+
+
+from your latest policy, the one that
+
+
+you have right now,
+
+
+given the state that you saw before. So,
+
+
+sample a new AI prime
+
+
+by plugging in
+
+
+uh SI prime. There's a little typo
+
+
+there. It should be pi of A prime given
+
+
+SI prime. Uh and
+
+
+pretend like this expected value is just
+
+
+approximated by that single sample
+
+
+action.
+
+
+Yes.
+
+
+Right. So, the comment was, we're
+
+
+basically doing the same thing, except
+
+
+that we're not uh
+
+
+loading the action from the buffer,
+
+
+because we can just resample the action
+
+
+from the policy. Yes, and it's
+
+
+specifically the next the action of the
+
+
+next time step.
+
+
+Okay. So, note that we're using the
+
+
+latest policy here. So, that fixes the
+
+
+problem.
+
+
+Yes.
+
+
+Sir, what do you mean by the linear?
+
+
+Yeah.
+
+
+Uh
+
+
+>> two functions?
+
+
+>> Like Q Q Q like Q
+
+
+pi pi of something that
+
+
+Cuz like right now you have your own
+
+
+like Q pi pi and then
+
+
+>> Yeah.
+
+
+>> you get the corresponding A pi for that
+
+
+pi.
+
+
+Uh why don't you just take a linear
+
+
+average of everything?
+
+
+>> Uh what is everything?
+
+
+>> Like for the pi data, right?
+
+
+>> Uh-huh.
+
+
+>> For any given SI
+
+
+you have the corresponding distribution
+
+
+for A.
+
+
+>> Oh, you're just saying like why take one
+
+
+sample instead of many? Yeah, that's a
+
+
+totally fair point. So there's nothing
+
+
+stopping me from actually averaging
+
+
+multiple actions.
+
+
+Uh and that's a reasonable thing to do.
+
+
+Uh for convenience, I'm going to use
+
+
+only one action because it makes things
+
+
+easier to implement and easier to write
+
+
+out. The reason that people in practice
+
+
+don't like to use multiple actions is
+
+
+that you're loading data from the buffer
+
+
+anyway. So if you're going to take 10
+
+
+sampled actions, you might as well just
+
+
+sample 10 different data points and
+
+
+compute one action for each one.
+
+
+Because getting one action for 10 data
+
+
+points is better than getting 10 actions
+
+
+for one data point because you see more
+
+
+variety.
+
+
+But there's nothing incorrect about what
+
+
+you said. It's totally reasonable to do.
+
+
+Okay. So now let's modify this algorithm
+
+
+to put that into action. So these are
+
+
+the steps that we're going to need to
+
+
+change. Uh so
+
+
+um
+
+
+where we've noticed that for step two
+
+
+and three I've substituted in the Q
+
+
+function. So now I'm going to fix the
+
+
+policy update. So I've already fixed one
+
+
+problem just by replacing steps two and
+
+
+three with the Q function and now I'm
+
+
+going to fix the other problem by
+
+
+replacing steps four and five. Remember,
+
+
+in steps four and five the problem I was
+
+
+having was that I can't do the policy
+
+
+gradient
+
+
+estimator using using actions sampled
+
+
+from a different policy.
+
+
+So I'm going to use the same trick, but
+
+
+this time at the current step rather
+
+
+than the next step.
+
+
+So I'm going to sample an action from
+
+
+the latest policy
+
+
+given the state SI
+
+
+and then I'm going to estimate my policy
+
+
+gradient. I'm going to use pi AI pi just
+
+
+to make it clear that this is the action
+
+
+from the latest policy. And then I'm
+
+
+going to use
+
+
+that in my policy gradient. So now it's
+
+
+not grad log pi of the sampled action
+
+
+given the sampled state, it's grad log
+
+
+pi of the action that I just resample
+
+
+from my policy given the state from the
+
+
+buffer.
+
+
+And then I'm multiplying it by my
+
+
+advantage estimator.
+
+
+So, the action here is not from the
+
+
+buffer, but the state is.
+
+
+And
+
+
+for the advantage, I could take my Q
+
+
+function and I could actually estimate
+
+
+the value and subtract the value.
+
+
+But, in practice, and this is like a a
+
+
+little bit of a strange fact, but it
+
+
+it's true. In practice, people actually
+
+
+don't do that. They just use the Q
+
+
+function directly. Why? Well, because
+
+
+the reason you subtract the values to
+
+
+lower the variance.
+
+
+But, the other thing that lowers the
+
+
+variance is using more samples.
+
+
+And because you're loading your samples
+
+
+from your your replay buffer, the
+
+
+samples are actually cheap. The four
+
+
+samples were expensive, so we wanted to
+
+
+do all we could to lower the variance
+
+
+without asking for more samples. But
+
+
+now, our samples are just loaded from
+
+
+the buffer. They're just sitting there
+
+
+uh in memory. We can load as many as we
+
+
+want. So, while you could compute a
+
+
+better advantage by subtracting V from
+
+
+Q, in practice, you actually don't need
+
+
+to because you're going to estimate that
+
+
+V using samples anyway, so you might as
+
+
+well just generate more samples from
+
+
+your replay buffer
+
+
+uh and instead of estimating the value,
+
+
+just use the Q directly with more
+
+
+samples. And that reduces variance as
+
+
+well, so that's totally fine.
+
+
+So, just to make that a little just to
+
+
+say that again because I think that went
+
+
+by pretty fast.
+
+
+We could compute A hat by taking our Q,
+
+
+estimating V by averaging over many
+
+
+actions, subtracting V and getting an
+
+
+advantage.
+
+
+And that would lower the variance.
+
+
+But, we could also just load more
+
+
+samples from your replay buffer,
+
+
+not subtract the value, and get lower
+
+
+variance just by virtue of having more
+
+
+samples.
+
+
+And that is simpler. It's easier to do.
+
+
+It's easier to code up.
+
+
+That's actually its main virtue.
+
+
+Uh and it works pretty well because,
+
+
+hey, more samples also lowers variance.
+
+
+Um
+
+
+yes.
+
+
+Not increasing the buffer size,
+
+
+increasing the number of samples you
+
+
+sample from the buffer for each gradient
+
+
+update. Basically, increasing the
+
+
+mini-batch size.
+
+
+Yes.
+
+
+Yeah, that's a very good question. So,
+
+
+the question was
+
+
+is it a problem that the state
+
+
+distribution still doesn't match the
+
+
+latest policy? So, I fixed the problem
+
+
+with the action distribution. The action
+
+
+distribution now is correct, but the
+
+
+state distribution is still incorrect.
+
+
+And that is, in fact, uh a little bit of
+
+
+a quirk of this method.
+
+
+Now, the reason that we don't worry
+
+
+about that too much in practice is that
+
+
+when we train our policy
+
+
+in principle, all we really have to do
+
+
+is get our policy to be really good at
+
+
+the states of the policy will actually
+
+
+visit.
+
+
+So, if uh
+
+
+you know, if I'm driving my car in
+
+
+California, maybe I'm not very good at
+
+
+driving in the UK where they drive on
+
+
+the left side of the road, but I'm not
+
+
+going to go to the UK, so I don't care
+
+
+how how bad I am there.
+
+
+But, if you train the policy to also be
+
+
+good in states that it won't visit, it's
+
+
+not going to make it worse. Like, if you
+
+
+know, if I practice driving in in the
+
+
+UK, it's not going to make me worse at
+
+
+driving in California provided that you
+
+
+know, I have a big enough neural network
+
+
+to keep it straight that you do one
+
+
+thing in one place and a different thing
+
+
+in another place. So, while in
+
+
+principle, it is an issue that the state
+
+
+distribution doesn't match, in practice,
+
+
+it's not that big of a deal because
+
+
+you're essentially just asking your
+
+
+policy to do more than it has to.
+
+
+Any other questions about this?
+
+
+Yeah.
+
+
+It's not really multitask learning
+
+
+because there's still one task. It we're
+
+
+just talking about which states that you
+
+
+you train in.
+
+
+But, we will talk about multitask
+
+
+learning later in the course, and
+
+
+there's a lot of stuff there, too.
+
+
+Yeah.
+
+
+>> Is there any possibility that some state
+
+
+would never be visited in history?
+
+
+>> Is there a possibility that some states
+
+
+would never be visited? Well, so
+
+
+we still have step one. So, we are still
+
+
+collecting data from our latest policy.
+
+
+We we we might just
+
+
+have a lot more data from other
+
+
+policies, and in practice, what people
+
+
+actually often do is they limit the size
+
+
+of the replay buffer. So, they will
+
+
+start throwing things out of the replay
+
+
+buffer that are too old.
+
+
+Uh but, all you really need is you need
+
+
+to make sure that there's some fresh
+
+
+data, so that your latest policy is
+
+
+represented at least somewhat. Um and,
+
+
+you know, as with all things in deep RL,
+
+
+the tuning ends up being kind of
+
+
+important. So, you want to be careful
+
+
+that you're collecting data fast enough
+
+
+so that uh and maybe training the policy
+
+
+slow enough so that the buffer does
+
+
+contain representative data of what
+
+
+you'll visit.
+
+
+Like, one way to really mess up this
+
+
+algorithm is to change it so that either
+
+
+you omit step one, or you take many
+
+
+gradient steps in steps two through six
+
+
+without uh before you get a chance to
+
+
+see any data. And then, performance will
+
+
+degrade because essentially, your policy
+
+
+is changing so fast that you're not
+
+
+seeing representative samples.
+
+
+But, as long as you balance those
+
+
+things, you'll be okay.
+
+
+Okay.
+
+
+So, now let's summarize, you know,
+
+
+cleanly on one slide this uh off-policy
+
+
+actor-critic algorithm. Step one, get a
+
+
+sample by taking one step in your MDP,
+
+
+literally one step, like one simulation
+
+
+step in your physics simulator, or one
+
+
+step in the real world, and put that
+
+
+sample into your piggy bank, into your
+
+
+replay buffer.
+
+
+Then, load a batch from your replay
+
+
+buffer, and on that batch, estimate a
+
+
+target value for each of the samples in
+
+
+the mini-batch as the reward plus the
+
+
+next Q value, where, very importantly,
+
+
+the next action A' prime is sampled from
+
+
+your latest policy.
+
+
+Then,
+
+
+update your Q function parameters by
+
+
+taking a gradient step on the mean
+
+
+squared error loss. You can take a few
+
+
+gradient steps if you want.
+
+
+But if you're just getting started,
+
+
+maybe take one and then tune it later.
+
+
+Uh and then estimate your policy
+
+
+gradient by sampling an action from your
+
+
+latest policy
+
+
+and doing grad log pi
+
+
+times
+
+
+your Q function.
+
+
+And then update your policy by the
+
+
+policy gradient.
+
+
+Okay?
+
+
+So, that's the
+
+
+off-policy actor-critic algorithm.
+
+
+Um now, there is still this problem. I
+
+
+was hoping to like have a big reveal on
+
+
+this slide, but you guys already spoiled
+
+
+it, uh which is that your states didn't
+
+
+come from uh p theta. Uh so,
+
+
+as I said before, it is a bit of a
+
+
+problem conceptually. In practice, it's
+
+
+okay. And perhaps more importantly,
+
+
+there's nothing you you can do about it,
+
+
+so you kind of just have to accept it.
+
+
+Um
+
+
+but the intuition here is that you want
+
+
+the optimal policy on the distribution
+
+
+of states
+
+
+that you get from the current policy,
+
+
+and what you get instead is a good
+
+
+policy on a broader distribution of
+
+
+states,
+
+
+which maybe is not so bad.
+
+
+Okay. So, this is like an actual
+
+
+algorithm that you can code up. Like,
+
+
+this will actually work.
+
+
+There is uh uh
+
+
+in the last uh few minutes, I do want to
+
+
+discuss kind of a cool trick. But before
+
+
+I get into that trick, does anyone have
+
+
+any questions about this?
+
+
+If you feel like you would not be able
+
+
+to implement this right now, and there's
+
+
+some clarification you can ask, please
+
+
+ask. Yes.
+
+
+>> Where do you
+
+
+store your replay buffer? Where do you
+
+
+store it on the
+
+
+disk or in the
+
+
+system memory?
+
+
+>> Yeah, so the question was where do you
+
+
+store your replay buffer? This really
+
+
+depends on your problem. So, if you have
+
+
+relatively small, low-dimensional
+
+
+states, you can store in system memory.
+
+
+You could try to cache it out to disk.
+
+
+Um
+
+
+it's not such a great idea because you
+
+
+want random access into it. Uh so, for
+
+
+people that do this at a really large
+
+
+scale, what they'll often do is some
+
+
+kind of distributed replay buffer, uh
+
+
+implementation, where they'll actually
+
+
+like store it across multiple nodes. If
+
+
+you want to see an example of a
+
+
+distributed replay a buffer
+
+
+implementation, there's a package called
+
+
+Reverb from DeepMind that actually does
+
+
+this. So, that's kind of a a good thing
+
+
+to check out for anyone interested in
+
+
+systems.
+
+
+Yeah.
+
+
+Uh well, that's right. So, the two
+
+
+places on the slide where I have an
+
+
+expectation under pi theta, the way that
+
+
+you would do this in practice you would
+
+
+sample one action from pi theta and just
+
+
+use that as your estimator.
+
+
+There was another question back there?
+
+
+Yeah, so the question is like, do you
+
+
+want to discard any data from the replay
+
+
+buffer? There are different ways of
+
+
+doing this. There's some clever ways of
+
+
+doing it based on actually trying to
+
+
+find the valuable data, but the most
+
+
+common way is to just have a ring
+
+
+buffer, so that older data is
+
+
+automatically evicted as new data is
+
+
+added. And that's kind of pretty
+
+
+sensible because
+
+
+ideally you would like the states from
+
+
+the latest policy to be well
+
+
+represented, so it makes sense to
+
+
+discard the oldest samples because those
+
+
+are probably most different from your
+
+
+latest policy.
+
+
+Okay. So, here's a a little additional
+
+
+implementation trick that I want to tell
+
+
+you about, which is for this step, for
+
+
+the for the expectation where you
+
+
+over the actions under the latest
+
+
+policy. So, we can just sample an
+
+
+literally sample an action from the
+
+
+latest policy and compute this gradient.
+
+
+But,
+
+
+we can now
+
+
+derive a better gradient estimator by
+
+
+leveraging the fact that
+
+
+there are no samples from the system
+
+
+dynamics in here. This is a gradient
+
+
+of the expected value of the function Q.
+
+
+And the distribution under which we're
+
+
+taking the expectation is something that
+
+
+we know. This is sitting in our
+
+
+computer. And the Q function is
+
+
+something that we know. This is also
+
+
+sitting in our computer. So now
+
+
+everything here is actually
+
+
+differentiable and we can leverage that
+
+
+fact. So before we had to go through all
+
+
+these contortions to calculate the
+
+
+policy gradient because it was the
+
+
+gradient of a quantity that was not
+
+
+differentiable. It involved the system
+
+
+dynamics. This does not involve the
+
+
+system dynamics. So both pi and Q are
+
+
+differentiable neural networks.
+
+
+So we can actually compute the
+
+
+derivative of the Q function with
+
+
+respect to the action.
+
+
+Just with backprop.
+
+
+And we can use this derivative to get a
+
+
+better policy gradient estimator.
+
+
+This is called the reparameterization
+
+
+trick.
+
+
+So the reparameterization trick is a
+
+
+little bit special because it relies on
+
+
+some assumptions about
+
+
+your policy distribution. It does not
+
+
+work with discrete actions.
+
+
+You can derive it for all sorts of
+
+
+different parametric continuous action
+
+
+distributions, but it is easiest to
+
+
+derive for Gaussian policies. Meaning
+
+
+where the policy is a Gaussian
+
+
+distribution, a multivariate normal
+
+
+distribution where the mean and the
+
+
+variance are given by neural networks.
+
+
+You can do this for other parametric
+
+
+distributions, too, but it's easiest for
+
+
+a Gaussian.
+
+
+And this is like a pretty common policy
+
+
+class, so it actually makes sense to
+
+
+address this special case.
+
+
+If you want to sample from a policy
+
+
+like this
+
+
+and you want to implement Gaussian
+
+
+sampling in a in a computer program,
+
+
+what you'll probably actually do is
+
+
+you'll generate a random sample from a
+
+
+zero mean unit variance Gaussian
+
+
+and then you will multiply that sample
+
+
+by the variance and add the mean.
+
+
+You can also use the NumPy normal
+
+
+sampling thing where you plug in the
+
+
+mean and variance directly, but in the
+
+
+olden days this is how you would do
+
+
+this.
+
+
+Uh and this is actually pretty neat
+
+
+because what this is saying is that a
+
+
+sample from a Gaussian distribution is
+
+
+actually a deterministic function
+
+
+of a sample from a
+
+
+uh unit variance Gaussian distribution.
+
+
+And the cool thing about epsilon is that
+
+
+epsilon does not depend on your neural
+
+
+network.
+
+
+So we're going to exploit this fact.
+
+
+We're going to rewrite the expected
+
+
+value of Q of SA under pi of A given S
+
+
+such that it's an expectation under a
+
+
+distribution that does not depend on
+
+
+your neural network parameters.
+
+
+So what we'll do is we'll basically plug
+
+
+in this equation for A. A is mu plus
+
+
+sigma times epsilon
+
+
+into the A in this expectation and now
+
+
+it's an expected value under a unit
+
+
+Gaussian.
+
+
+So this is still an expected value, but
+
+
+the distribution under which you're
+
+
+taking the expectation is independent of
+
+
+your neural network. The neural network
+
+
+parameters are all inside the
+
+
+expectation. The theta and uh and all
+
+
+that stuff.
+
+
+So now the way that you can approximate
+
+
+this is sample from the zero mean unit
+
+
+variance Gaussian, one sample, and use
+
+
+that formula.
+
+
+And this you can plug into PyTorch and
+
+
+get it to give you a gradient.
+
+
+So this is easy to differentiate with
+
+
+any autograd library, PyTorch, Jax, what
+
+
+have you. So now your policy gradient is
+
+
+just given by the gradient of this thing
+
+
+and that PyTorch will happily give you.
+
+
+And this is called the reparameterized
+
+
+gradient. It is a different policy
+
+
+gradient estimator. It is not possible
+
+
+if the thing inside the expectation is
+
+
+non-differentiable. It is also not
+
+
+possible if your actions are discrete
+
+
+because you can't take the derivative
+
+
+with respect to a discrete quantity.
+
+
+But if your actions are continuous and
+
+
+given by a parametric distribution like
+
+
+a Gaussian, you can do this and this is
+
+
+a much better gradient because it is
+
+
+using your knowledge of uh the
+
+
+derivative of Q with respect to A.
+
+
+So this will be a better gradient. It
+
+
+will have lower error.
+
+
+Any questions about this?
+
+
+Yes.
+
+
+Yeah, so typically if you would have a a
+
+
+Gaussian policy, you would have one
+
+
+neural network with two outputs. One
+
+
+that outputs a mean vector and one that
+
+
+outputs either a covariance matrix or a
+
+
+diagonal of the covariance matrix. Now,
+
+
+you can also set the variance to one and
+
+
+only output the mean and all the same
+
+
+logic still applies. It's just that now
+
+
+now the covariance doesn't depend on the
+
+
+parameters.
+
+
+Any other questions?
+
+
+Okay.
+
+
+So, to put all of this together into a
+
+
+complete off-policy actor-critic
+
+
+algorithm with reparameterization, it's
+
+
+pretty straightforward just like before.
+
+
+Generate a sample, store it in your
+
+
+buffer, train the critic just like
+
+
+before, no change at all here, but now
+
+
+for the policy gradient, it is the
+
+
+gradient with respect to theta of Q
+
+
+where you plug in that formula for the
+
+
+sample. So, mu plus sigma times epsilon.
+
+
+And then use PyTorch to differentiate
+
+
+it.
+
+
+So, that's the reparameterized uh
+
+
+actor-critic. So, only step four
+
+
+changed.
+
+
+And this is like a an actual practical
+
+
+algorithm you can use. So, soft
+
+
+actor-critic typically uses this, TD3
+
+
+uses it, uh
+
+
+if you want to go from this to like a
+
+
+really good implementation, there are a
+
+
+few more tricks for Q function
+
+
+estimation that we'll learn about next
+
+
+week when we talk about Q functions. And
+
+
+another trick is using entropy
+
+
+regularization, uh which I will derive
+
+
+later in the course, although the
+
+
+formula for that is actually pretty
+
+
+simple and that will also be in the
+
+
+homework.
+
+
+So, we'll also learn about algorithms
+
+
+that do this with deterministic policies
+
+
+later and all sorts of other tricks, but
+
+
+the core idea of how to have an
+
+
+off-policy actor-critic method, this
+
+
+you've already learned and the
+
+
+reparameterization trick is a really
+
+
+nice way to get a much better gradient
+
+
+out of it. So, we'll adjourn here and
+
+
+I'll see you all next week.
+
+
+>> [music]
+
+
+[singing]
+
+
+>> Mhm.

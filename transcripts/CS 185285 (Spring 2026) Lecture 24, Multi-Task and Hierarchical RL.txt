@@ -1,0 +1,8131 @@
+I want to be close.
+
+
+All right, let's get started. So to
+
+
+recap what the schedule is for the rest
+
+
+of the semester, we have uh today we
+
+
+have a our a standard kind of technical
+
+
+lecture. Then next Wednesday uh we'll
+
+
+have uh you the usual shorter Wednesday
+
+
+lecture and that will be kind of a
+
+
+perspectives and a summary of the course
+
+
+and things like that. There won't be a
+
+
+quiz associated with that. Then next
+
+
+Friday uh we'll have a guest lecture
+
+
+that will be from uh Kevin France who
+
+
+will talk about uh RL and language
+
+
+models uh particularly in industry and
+
+
+then we'll have Sah Park uh the
+
+
+following Wednesday who will talk about
+
+
+offline online algorithms. Uh the two
+
+
+guest lectures will both start at 9:00
+
+
+am rather than uh 8 am as usual on
+
+
+Friday. Uh and uh they will be shorter.
+
+
+They'll be about 15 minutes. Then on the
+
+
+last Friday of the semester, we will not
+
+
+have class. That time will be for you
+
+
+guys to work on your final projects and
+
+
+that'll be the conclusion of the class.
+
+
+But today we have uh our regularly
+
+
+scheduled programming so to speak. uh
+
+
+and the the last set of kind of deep
+
+
+technical topics I want to talk about
+
+
+which are multitask and hierarchal
+
+
+reinforcement learning.
+
+
+So what is multitask reinforcement
+
+
+learning and why should we care about
+
+
+it? So for kind of a bit of big picture
+
+
+perspective, one of the big
+
+
+transformations that we've seen in the
+
+
+world of machine learning over the last
+
+
+um few years is a shift from specialized
+
+
+models that are really designed to solve
+
+
+individual task towards more general
+
+
+purpose foundation models. So it used to
+
+
+be that if you wanted to solve let's say
+
+
+uh an image segmentation problem, you
+
+
+would train a specific model to do image
+
+
+segmentation, something like a um a
+
+
+fully convolutional network. If you
+
+
+wanted to do classification, you would
+
+
+train CNN to do classification, uh image
+
+
+captioning, visual QA, etc. So each of
+
+
+these tasks would be a separate model
+
+
+with its own data set, uh its own
+
+
+architecture, everything that will be
+
+
+trained from scratch to each of these
+
+
+tasks. Um but the kind of models that
+
+
+are most widely used today are not built
+
+
+like this. They're built with a
+
+
+different procedure where we start with
+
+
+a much larger and more diverse data set
+
+
+that is not necessarily particularly
+
+
+carefully designed for any individual
+
+
+tasks that we might want to do but has
+
+
+many different tasks. Perhaps many of
+
+
+them are less useful to us but they kind
+
+
+of provide a source of knowledge uh to
+
+
+the model and then we train a kind of a
+
+
+general purpose foundation model in this
+
+
+data set. So if you want to do text then
+
+
+you train for example with next token
+
+
+prediction on lots of text from the web.
+
+
+If you want to do uh image recognition,
+
+
+you would train with uh image language
+
+
+contrastive learning on all the image
+
+
+and language data that you can get your
+
+
+hands on. And this kind of general
+
+
+purpose foundation model then either uh
+
+
+can be adapted to follow instructions or
+
+
+it can be fine-tuned to solve the tasks
+
+
+that you want. uh and this kind of
+
+
+approach is very powerful because of
+
+
+course what it means is that you no
+
+
+longer have to get large enough data
+
+
+sets for each of the tasks you care
+
+
+about to train your model from scratch.
+
+
+Uh so while you typically still need
+
+
+like some amount of data to illustrate
+
+
+the particular task you want like it's
+
+
+very hard to get an image segmentation
+
+
+model without at least some examples of
+
+
+image segmentation, you don't need a
+
+
+very carefully curated and very
+
+
+carefully labeled data set of image
+
+
+segmentation that is large enough to
+
+
+train a model from scratch. And that in
+
+
+practice is actually very very powerful
+
+
+and in some ways this has been one of
+
+
+the things that's most directly
+
+
+responsible for machine learning systems
+
+
+that are practical for use for uh kind
+
+
+of everyday tasks.
+
+
+So examples of this would be something
+
+
+like clip for example in the world of
+
+
+computer vision. Clip is a model that uh
+
+
+is trained by associating images with
+
+
+text and can then be adapted for uh free
+
+
+form uh image uh description, image
+
+
+classification, image captioning uh
+
+
+models like SAM. So the segment anything
+
+
+model which is trained on a wide range
+
+
+of different spatial computer vision
+
+
+tasks and of course large language
+
+
+models which all of you are probably
+
+
+familiar with.
+
+
+So these kinds of generalist models are
+
+
+everywhere. And chances are that if
+
+
+these days if you interact with a
+
+
+machine learning system, most likely
+
+
+it's either one of these generalist
+
+
+models or it's a bandit that is serving
+
+
+you ads on YouTube or Google. Those are
+
+
+still specialized models because they
+
+
+have plenty of data for people clicking
+
+
+on ads. But those are probably the two
+
+
+categories of models that you're most
+
+
+likely to have interacted with on a
+
+
+day-to-day basis. And the key idea
+
+
+behind these generalist models is
+
+
+basically multitask learning that by
+
+
+training on many tasks at once, these
+
+
+kinds of models require much less data
+
+
+on any single task which makes them
+
+
+practical to apply to a whole lot of
+
+
+different tasks. Okay, so that's a
+
+
+pretty powerful idea and of course we
+
+
+can think about what that idea would
+
+
+look like in the world of reinforcement
+
+
+learning and that's multitask RL. Okay,
+
+
+defining multitask RL is actually pretty
+
+
+straightforward. We've got our regular
+
+
+RL problem. So, you want to maximize the
+
+
+expected reward under the trajectory
+
+
+distribution of your policy. This is the
+
+
+thing we've been studying this whole
+
+
+semester. And multitask RL looks pretty
+
+
+similar except that now we have this uh
+
+
+task omega. And I'll just I'll explain
+
+
+what the task how the task is actually
+
+
+represented in a second. But let's say
+
+
+you have a a set of objects and each
+
+
+element in that set is called omega. uh
+
+
+and you would like to maximize your
+
+
+reward in expectation over some
+
+
+distribution of tasks which hopefully
+
+
+reflects the frequency of those tasks in
+
+
+the world. Uh and your policy now is
+
+
+conditioned on omega. So you tell it
+
+
+like hey you're doing task omega now go
+
+
+do the task as well as you can and your
+
+
+reward of course also depends on omega.
+
+
+So that's more or less exactly what
+
+
+you'd expect. uh and then in practice
+
+
+you would have a finite set of these
+
+
+tasks that you're training on and this
+
+
+expectation becomes a sum over all of
+
+
+the tasks that you have. Okay, so this
+
+
+omega we can sometimes refer to it as a
+
+
+context or a task context and the
+
+
+trajectory distribution is more or less
+
+
+exactly what you expect. It's just the
+
+
+usual product of the initial state, the
+
+
+transition probabilities and the policy
+
+
+probabilities where the policy
+
+
+probabilities now depend on omega. Yes.
+
+
+Yeah, we'll we'll come back to that.
+
+
+Yes.
+
+
+>> Um, so the question is shouldn't the
+
+
+state and action depend on omega as
+
+
+well? They could. Uh, it's um it depends
+
+
+on how you define the state. It turns
+
+
+out in practice it doesn't matter very
+
+
+much because for model free algorithms
+
+
+the transition probabilities typically
+
+
+don't show up in your algorithm. Yeah,
+
+
+it's a good point.
+
+
+Okay. And as usual the when I write r o
+
+
+r r r r r r r r r r r r r r r r r r r r
+
+
+r r r r r r r r r r r r r r r r r r r r
+
+
+of toa what I really mean is a sum over
+
+
+all the time steps of the single step
+
+
+reward. Okay. So what is this context?
+
+
+Um this is something that's very domain
+
+
+dependent. So in your domain you might
+
+
+have a particular notion of task that
+
+
+matters to you. Um if you are in the
+
+
+domain of uh training policies for
+
+
+walking robots that walk in different
+
+
+directions, omega might just be like a
+
+
+number that represents the direction in
+
+
+which the robot is walking. uh or if you
+
+
+are training a robot to do robot hockey,
+
+
+maybe omega is where the ro the hockey
+
+
+robot hits the puck. But it can also be
+
+
+something like a language command. So it
+
+
+could be a sequence of tokens
+
+
+representing a textual description of
+
+
+what the policy should do. This is what
+
+
+you guys did in homework 4. Uh it could
+
+
+be a representation of a goal in which
+
+
+case it's basically corresponding to a
+
+
+state. uh it can be the index of the
+
+
+Atari game that the Q-learning agent is
+
+
+supposed to play if you want to train
+
+
+one DQN agent for all of the Atari games
+
+
+in existence. Uh or it could be a
+
+
+location on a map that the autonomous
+
+
+car is supposed to drive to. So you you
+
+
+get to pick uh a representation of the
+
+
+context suitable for indexing the set of
+
+
+tasks that you would like your agent to
+
+
+learn.
+
+
+And of course you've seen this before.
+
+
+you this is actually exactly what you
+
+
+did a homework for uh perhaps without uh
+
+
+us explicitly uh discussing it at the
+
+
+time. But when you have a language model
+
+
+with a prompt well the prompt is in fact
+
+
+indexing into the set of tasks that you
+
+
+would like that language model to do.
+
+
+Any questions about this?
+
+
+Okay. So there are a variety of reasons
+
+
+why we might prefer to do multitask RL
+
+
+as opposed to training a completely
+
+
+separate policy for every context in our
+
+
+set of tasks. Uh one big reason is
+
+
+efficiency. So if you are learning to do
+
+
+one task like flipping a pancake uh then
+
+
+you have to get enough data to solve
+
+
+that one task. But if you have many
+
+
+different tasks and you can train on all
+
+
+of them and share that experience so
+
+
+that it is baked all into one big actor
+
+
+and critic, then perhaps you might learn
+
+
+each of these individual tasks more
+
+
+efficiently because there's some amount
+
+
+of knowledge being transferred from the
+
+
+other tasks. Uh and you might obtain a
+
+
+model that can then be more efficiently
+
+
+fine-tuned to a new task that is
+
+
+structurally similar. And both of these
+
+
+are kind of widely uh regarded benefits
+
+
+of a multitask approach. And of course,
+
+
+it's maybe like a little bit less
+
+
+obvious in this example because well, if
+
+
+you're like walking the dog versus
+
+
+flipping the pancake, it's like, okay,
+
+
+maybe those are pretty different things
+
+
+and it's a little hard to imagine how
+
+
+flipping the pancake helps you figure
+
+
+out how to walk a dog. But uh again, if
+
+
+you think back to homework 4 uh in a
+
+
+more realistic sort of multitask
+
+
+setting, if you are solving different um
+
+
+LLM problems with different language
+
+
+problems, well, those probably have like
+
+
+a lot of structural similarity. If
+
+
+you're solving different math problems,
+
+
+each math problem is a different task,
+
+
+but it's easy to imagine that there's a
+
+
+lot of structure is shared between those
+
+
+tasks.
+
+
+So, uh multitask learning can accelerate
+
+
+learning of all the tasks in your set of
+
+
+training tasks. Um, and it can also
+
+
+provide better pre-training for new
+
+
+downstream tasks that you'd like to
+
+
+acquire. And both of these are potential
+
+
+benefits.
+
+
+>> Um, yeah. Uh so so the question is uh is
+
+
+it uh like is it like a problem that
+
+
+sometimes if you're doing multitask
+
+
+learning you might need a very big model
+
+
+because uh you need a model with enough
+
+
+capacity to represent all the tasks. Um
+
+
+it depends because
+
+
+um
+
+
+there are there there are a large number
+
+
+of plat practical and logistical factors
+
+
+that affect how that plays out. So um if
+
+
+we narrow down the domain to something
+
+
+fairly specific like um like LLMs for
+
+
+example sometimes larger models are
+
+
+actually faster to train than smaller
+
+
+ones because uh while that requires more
+
+
+compute uh it might require less uh
+
+
+gradient steps. It's kind of a
+
+
+parallelism effect. Um so it like it
+
+
+depends on your domain.
+
+
+Okay. So the other very closely related
+
+
+uh benefit of multitask uh learning that
+
+
+is uh often kind of brought up is uh as
+
+
+a mechanism for transfer. So we have
+
+
+this example when we talked about
+
+
+exploration
+
+
+that uh you know some of the Atari games
+
+
+are easy and some of them are hard and
+
+
+when we discussed this before we talked
+
+
+about this from the perspective that
+
+
+well like the Montazuma's revenge game
+
+
+is harder because the sequence of moves
+
+
+that allows you to win the game is kind
+
+
+of harder to impute from just the
+
+
+intermediate rewards you receive. So
+
+
+it's really like a problem of
+
+
+information gathering. But there's a
+
+
+very different perspective you can take
+
+
+on these kinds of problems where you
+
+
+have a difficult task to learn.
+
+
+The reason that Montazuma's Revenge is
+
+
+not that hard for human players to
+
+
+figure out is that while the game itself
+
+
+has a fairly inscrutable reward
+
+
+structure, the visuals of the game give
+
+
+us a strong hint about how we should
+
+
+play it. Now, that hint sort of lives
+
+
+outside of the MVP of the game itself,
+
+
+right? Right? It's like you see the
+
+
+skull, you're pretty sure the skull
+
+
+isn't like your friend because we
+
+
+associate skulls with like bad stuff,
+
+
+right? That nothing about the game per
+
+
+se uh implies is this outside knowledge
+
+
+that we're bringing to the problem. And
+
+
+we we have some knowledge that things
+
+
+that look like keys probably open doors
+
+
+and we know enough about video games
+
+
+that like we might guess that a key is
+
+
+like a good thing and a relevant object
+
+
+to play the game whereas like random
+
+
+stuff in the background is less
+
+
+relevant.
+
+
+Okay, so we know what to do because we
+
+
+sort of understand what all these
+
+
+sprites mean and that knowledge comes
+
+
+from other sources. So prior
+
+
+understanding of problem structure can
+
+
+help us solve complex tasks more
+
+
+quickly. And this is of course true for
+
+
+many open world tasks in the real world
+
+
+because there's often a lot of external
+
+
+knowledge that you can bring to bear.
+
+
+So you could imagine that maybe if
+
+
+you've, you know, watched the movie
+
+
+Indiana Jones, you might have some
+
+
+better guess about how to play
+
+
+Montazuma's Revenge than if you hadn't.
+
+
+Or if you've played other video games
+
+
+and have some like kind of rough guess
+
+
+about what the different symbols in the
+
+
+video game mean. So if we've solved
+
+
+structurally related prior tasks, we
+
+
+might acquire useful knowledge for
+
+
+solving a new task. Uh, and there are
+
+
+different ways we can store this
+
+
+knowledge. So the most direct and
+
+
+obvious way to do it if you are training
+
+
+a model with multitask learning is to
+
+
+basically store it in your policy or
+
+
+your actor and your critic together and
+
+
+then simply train it some more on the
+
+
+task of interest and hope that things
+
+
+transfer. But there are also other
+
+
+things you could do. So um you could uh
+
+
+store it for example in a predictive
+
+
+model. So you could train a dynamics
+
+
+model on a variety of different tasks or
+
+
+environments and then perhaps the
+
+
+dynamics model transfers better because
+
+
+even if the particular strategy that you
+
+
+might employ in the game like the
+
+
+buttons you press for Montuma's revenge
+
+
+might be very different than the buttons
+
+
+you press for some other game but the
+
+
+predictive model might capture structure
+
+
+better uh if it has related dynamics.
+
+
+And then there's other even more
+
+
+indirect ways to transfer this kind of
+
+
+knowledge. uh a very common one is to
+
+
+transfer it through features or hidden
+
+
+states. So uh a very very common thing
+
+
+to do if you want to solve a task where
+
+
+the inputs consist of images is to use a
+
+
+pre-trained image encoder. Now the
+
+
+pre-trained image encoder is trained on
+
+
+many different computer vision tasks.
+
+
+They might very likely not be RL tasks
+
+
+at all. They're just computer vision
+
+
+tasks, but there are many of them. So it
+
+
+is also an instance of multitask
+
+
+learning. And you are not treating the
+
+
+encoder as though it were a policy.
+
+
+you're using it to provide a feature
+
+
+representation of the input that you
+
+
+then plug into a separate maybe smaller
+
+
+network that could be initialized from
+
+
+scratch just for your task. So that's
+
+
+also in a sense very indirectly an
+
+
+instance of multitask learning maybe not
+
+
+multitask RL but multitask learning
+
+
+because of how the encoder has been
+
+
+trained. Okay, so these are all
+
+
+different ways that uh people have
+
+
+explored for transferring knowledge. So
+
+
+we'll focus on multitask RL in
+
+
+particular for now but keep in mind
+
+
+there's these other ways of doing it.
+
+
+All right. Any questions here?
+
+
+>> Sorry. Sorry. What?
+
+
+>> So the question was like are any of
+
+
+these things like more empirically
+
+
+successful than others? It really
+
+
+depends on your domain. So, um,
+
+
+like, uh, just to illustrate some of the
+
+
+differences, if you're doing like image
+
+
+based tasks, then it's kind of a
+
+
+no-brainer that you should use a
+
+
+pre-trained image encoder because
+
+
+pre-trained image encoders are so good.
+
+
+If you're solving some kind of language
+
+
+based task, you're almost certainly
+
+
+using a pre-trained language model,
+
+
+which means that you're actually using a
+
+
+pre-trained policy because that's what a
+
+
+language model is. So, it's a little bit
+
+
+domain dependent.
+
+
+Okay,
+
+
+so let's dive into the technical
+
+
+details. Um, the basics of multitask RL.
+
+
+Um, let's start with
+
+
+a fairly basic question. Is multitask RL
+
+
+actually a different problem than
+
+
+regular RL? That's another way of
+
+
+saying, can you reduce multitask RL to
+
+
+regular single task RL?
+
+
+Anybody want to answer this question?
+
+
+Okay.
+
+
+Okay. So the answer is you can just add
+
+
+it to the state and that answer is
+
+
+correct. You can take omega append it to
+
+
+the state s get a new state with omega
+
+
+appended to it and that is now a single
+
+
+task RL problem. So the answer is no it
+
+
+is not different
+
+
+end of lecture. Um it's not different.
+
+
+And here's what the reduction looks
+
+
+like. You basically take so every task
+
+
+in your multitask problem is basically a
+
+
+different MDP. Okay? So you have a big
+
+
+set of MDPs and you can fuse them into
+
+
+one MDP where the way this one MDP works
+
+
+is on the first time step you sample one
+
+
+of the MDPs and then for the rest of the
+
+
+trajectory you follow that MDP. Okay. So
+
+
+this is what that reduction looks like
+
+
+on on the first time step. One MDP from
+
+
+your set of MDPs, one omega from your
+
+
+set of omegas is selected at random. And
+
+
+for the rest of the time steps, you just
+
+
+follow that that MDP. And to make this
+
+
+marovian, of course, as the gentleman
+
+
+here mentioned, you have to append the
+
+
+omega to the state so the agent knows
+
+
+which MDP it's in.
+
+
+And now you get a single task RL
+
+
+problem, which means that every single
+
+
+single task RL algorithm you've learned
+
+
+about can be used as a multitask RL
+
+
+algorithm provided that you set up your
+
+
+fused MDP correctly.
+
+
+And it really is that simple.
+
+
+So why do we have an entire lecture
+
+
+about this? Well, we have an entire
+
+
+lecture for kind of one happy reason and
+
+
+one sad reason. Uh the sad reason is
+
+
+that multitask RL tends to be sometimes
+
+
+quite a bit harder than single task RL.
+
+
+Um there's not that much to say about
+
+
+this other than like got to deal with
+
+
+it. Uh but then the happy reason is that
+
+
+because multitask RL has a little bit of
+
+
+special structure. There are a number of
+
+
+special methods we can develop that
+
+
+exploit that structure to do a better
+
+
+job. And roughly speaking the nature of
+
+
+that structure is that omega is like a
+
+
+very special variable. It stays constant
+
+
+throughout the trajectory and you select
+
+
+it at the beginning only. uh and
+
+
+typically you like know what omega is
+
+
+and what it means whereas the rest of
+
+
+the state is like kind of this
+
+
+inscrutable mess.
+
+
+Okay.
+
+
+So uh if you want to do the basic thing
+
+
+this is just kind of restating what I
+
+
+said on the previous slide here is the
+
+
+basic recipe for a multitask method. Uh
+
+
+you add omega as an input to your
+
+
+policy. So repres choose a reasonable
+
+
+representation for omega. If it's like
+
+
+the index of an Atari game, then you
+
+
+feed an integer into your policy. If
+
+
+it's a language command, then you feed a
+
+
+sequence of tokens typically into a
+
+
+sequence model. So, whatever is the
+
+
+appropriate way to input omega for your
+
+
+domain, add that to to the policy,
+
+
+append it to the state, and then for
+
+
+each trajectory, you sample omega from
+
+
+the distribution of tasks and then use
+
+
+the corresponding reward. or your
+
+
+environment might sometimes do this for
+
+
+you depending on how the task is set up
+
+
+and homework 4 was an instance of this.
+
+
+Now why is it difficult? Okay, so
+
+
+there was uh an interesting paper that I
+
+
+think pretty concisely describes this
+
+
+from quite a while back by um Tom Shaw
+
+
+and colleagues called ray interference.
+
+
+um they make a point in this paper which
+
+
+is kind of a more precise formulization
+
+
+of something that sort that everyone
+
+
+basically knew which is that when you go
+
+
+and try to solve a multitask RL problem
+
+
+things get really difficult really fast.
+
+
+Uh so if you for example try to train on
+
+
+all of the Atari games together and
+
+
+actually give your Q function in
+
+
+homework 3 the index of the Atari game
+
+
+that it's playing as an input. You'll
+
+
+probably find that out of the box, it's
+
+
+very, very difficult to get all of the
+
+
+games to train. You might get a policy
+
+
+that's pretty good at playing one of the
+
+
+games and really terrible at all the
+
+
+rest. You might also get a policy that's
+
+
+really terrible at all of them. Um, what
+
+
+this graph shows is a single training
+
+
+run with many tasks and each line
+
+
+corresponding to one of the tasks. And
+
+
+what you can see from looking at this is
+
+
+that the tasks don't all go up together
+
+
+that um some tasks go up early and some
+
+
+tasks go up later and there's like a
+
+
+very clear inflection point and roughly
+
+
+speaking so I should say this is like
+
+
+not a phenomena that is extremely well
+
+
+understood at this point but roughly
+
+
+speaking what's going on here is that
+
+
+when the algorithm starts making
+
+
+progress on some of the easy tasks or
+
+
+the first easy task it's very rewarding
+
+
+rewarding to make lots of progress on
+
+
+that easy task. It's comparatively very
+
+
+unrewarding to do anything special about
+
+
+any of the harder tasks. Uh and if you
+
+
+think about something like for example
+
+
+the structure of a policy gradient
+
+
+algorithm for a Gaussian distribution
+
+
+with policy gradient, the variance of
+
+
+the Gaussian would be expected to
+
+
+increase if you experience higher
+
+
+rewards more than one standard deviation
+
+
+away from the mean and decrease if you
+
+
+experience higher rewards less than one
+
+
+standard deviation away from the mean.
+
+
+So if this is your Gaussian and you get
+
+
+a high reward here in a low probability
+
+
+region, if you just work through the
+
+
+formula for policy gradient, you would
+
+
+expect the width of this Gaussian to
+
+
+increase. Basically the gradient of the
+
+
+uh variance will be positive. If you
+
+
+experience a high reward here, it will
+
+
+decrease. The variance uh the the the
+
+
+sign of the derivative of the variance
+
+
+will be negative. And logically makes
+
+
+sense. Like if you're if you're
+
+
+experiencing high rewards close to your
+
+
+mean, you should tighten up around the
+
+
+mean. If you're experiencing high
+
+
+rewards far from the mean, you should
+
+
+expand. So now imagine that you start
+
+
+making progress on one of your tasks.
+
+
+The policy says like, "Hey, I'm getting
+
+
+higher rewards close to my mean. Let's
+
+
+contract the whole thing. Stop exploring
+
+
+and just really really nail that high
+
+
+reward." And of course that tanks all
+
+
+the rest of the tasks because on the
+
+
+rest of the task you're not succeeding
+
+
+yet and you should be expanding this.
+
+
+Now that's for the special case of
+
+
+Gaussian policy gradient. Um different
+
+
+issues happen for other t for other
+
+
+things. This this experiment I believe
+
+
+was actually done with Q-learning. Uh
+
+
+but some variant of this issue tends to
+
+
+occur and the result is that you start
+
+
+making lots of progress on the first
+
+
+task that you pick up on and that
+
+
+sometimes comes at the expense of trying
+
+
+to solve the others. And it like also
+
+
+just intuitively at least to me it sort
+
+
+of makes sense like if I'm trying to do
+
+
+like five different jobs and one of the
+
+
+jobs starts like paying me more, I'm
+
+
+going to probably work a lot harder at
+
+
+that job and sort of forget about the
+
+
+rest because like who knows what the
+
+
+other four are up to. Um so as as a
+
+
+result even though we might hope that in
+
+
+multitask RL all these different tasks
+
+
+accelerate each other and if everything
+
+
+is set up very carefully and very well
+
+
+that does that that can in principle
+
+
+happen in practice sometimes it actually
+
+
+hurts.
+
+
+Now uh these guys were pretty diligent
+
+
+so they did actually test if you instead
+
+
+run supervised learning in this case
+
+
+behavioral cloning the same problem does
+
+
+not in fact occur. So this is basically
+
+
+the same exact plot except that now they
+
+
+have a u supervised training set for
+
+
+each of the tasks and they're just
+
+
+running BC with the same type of network
+
+
+and all that stuff and there you can see
+
+
+all the tasks are going up together.
+
+
+>> Yes.
+
+
+Yeah.
+
+
+So, broadly speaking, it's a similar
+
+
+problem. Um, as far as whether similar
+
+
+solutions work or not, um, again, it's a
+
+
+little bit domain dependent.
+
+
+So, sometimes yes, sometimes no. Um,
+
+
+okay.
+
+
+So, sometimes the easy tasks in a large
+
+
+set of tasks actually help because they
+
+
+provide a curriculum. So you might
+
+
+imagine that for like math problems,
+
+
+it's easier to solve the easy math
+
+
+problems than help you solve the harder
+
+
+ones. But annoyingly, sometimes they
+
+
+actually interfere because the agent is
+
+
+like too busy exploiting the easy tasks
+
+
+to try to learn the hard ones. And this
+
+
+makes multitask RL a little bit of a
+
+
+balancing act.
+
+
+Now there are a bunch of things that you
+
+
+can do to make multitask RL less
+
+
+difficult.
+
+
+Now the obvious one is the one I
+
+
+mentioned on the previous slide that if
+
+
+you set these the things up correctly
+
+
+and the tasks aren't interfering too
+
+
+much and you tune your hyperparameters
+
+
+just right and you choose the right
+
+
+exploration all that stuff uh then the
+
+
+easy tasks can in principle uh help us
+
+
+learn something useful which might help
+
+
+us solve the harder tasks and again the
+
+
+math problems from homework 4 are kind
+
+
+of an easy example of this. There's
+
+
+another maybe less obvious way in which
+
+
+multitask learning can be easier which
+
+
+is if you have functional access to the
+
+
+rewards for the different tasks meaning
+
+
+that you can like query each of the task
+
+
+reward functions with any state you
+
+
+want. Then you can do what is uh called
+
+
+relabeling meaning that you can take
+
+
+experience that you collected for one
+
+
+task and label it with a reward function
+
+
+for a different task. So if you have the
+
+
+little walking robot and the walking
+
+
+robot is supposed to walk in any
+
+
+direction, well you can take a
+
+
+trajectory that was collected when
+
+
+attempting to walk that way and label it
+
+
+with rewards for walking that way and
+
+
+that way and that way and this way and
+
+
+that in effect can serve to produce
+
+
+additional data. It's a kind of data
+
+
+augmentation trick.
+
+
+So here is sort of a schematic sketch of
+
+
+such a method. Uh I'm going to take the
+
+
+off policy actor template that we had
+
+
+before in the beginning of the course
+
+
+and augment it with task context. So you
+
+
+run your policy for some task omega and
+
+
+you collect a transition s prime and now
+
+
+the transition also has the context
+
+
+omega under which it was collected and
+
+
+you store that in in your replay buffer
+
+
+and then when you go to train your actor
+
+
+and critic you sample a batch from the
+
+
+replay buffer but then for each of the
+
+
+cont for for each of the samples you
+
+
+reample the context. So instead of
+
+
+loading up whatever context was
+
+
+associated with that sample basically
+
+
+the context that you gave to the policy
+
+
+when I collected that transition you
+
+
+sample a new context from your
+
+
+distribution uh p omega. Now in general
+
+
+you can actually uh instead of
+
+
+generating from
+
+
+P omega like this you can also actually
+
+
+generate it from P omega given omega I
+
+
+is a small change but what this
+
+
+basically means is uh if you collect the
+
+
+data like you know walking north uh
+
+
+maybe you don't want to reabel it with
+
+
+any random direction you want to re
+
+
+label with like nearby directions and so
+
+
+in general this distribution can
+
+
+actually depend on the context that you
+
+
+collected with on the slide it's just it
+
+
+is just independent.
+
+
+Okay. And then you just proceed as
+
+
+normal. You just run your um critic
+
+
+updates, your actor updates, all that
+
+
+stuff. This is just like regular actor
+
+
+critic. I just added omega everywhere.
+
+
+But now this omega i here is the one
+
+
+that you resampled when you loaded up
+
+
+the bash from the buffer. Yes.
+
+
+um so you can sample whatever task you
+
+
+want. Uh right this is still an RL
+
+
+algorithm so it gets the actual reward
+
+
+for that task. So if it did, you know,
+
+
+let's let's say that it did some task
+
+
+really well, you re label it with a task
+
+
+for which that trajectory was really
+
+
+bad. Then what you're telling it is this
+
+
+is really bad for that task.
+
+
+>> Yes.
+
+
+Okay, so the question is uh well what
+
+
+distribution should we use there for P p
+
+
+omega? Should we u use the original
+
+
+distribution that we used when we
+
+
+command our policy? Should we use
+
+
+something else? Um this is actually kind
+
+
+of a subtle question. So
+
+
+if you okay so first what is P omega? P
+
+
+omega uh comes from the definition of
+
+
+the problem you're solving. So your goal
+
+
+in multitaskl is to maximize the
+
+
+expected reward in expectation under P
+
+
+omega. Now this is very important
+
+
+because that means that P omega reflects
+
+
+the frequency of tasks you expect to see
+
+
+in the real world. So if you expect to
+
+
+solve math problems but you train on
+
+
+like English literature problems, you're
+
+
+probably not going to do very well in
+
+
+the math problems. And if you expect
+
+
+that math problems are 10 times more
+
+
+likely than English literature problems,
+
+
+then in principle what you should do is
+
+
+train on math problems 10 times as often
+
+
+as you train on English literature. Uh
+
+
+but now you could say that well maybe
+
+
+I'm really good at math and I'm really
+
+
+bad at English literature. So perhaps I
+
+
+don't really benefit from training more
+
+
+on math problems. So I might actually
+
+
+change this distribution away from the
+
+
+true test distribution because I believe
+
+
+this provides a better curriculum. And
+
+
+that's a perfectly valid answer if you
+
+
+know what you're doing. So what I so the
+
+
+way I would answer your question I think
+
+
+this is a very important and subtle
+
+
+question is that it's very safe to use
+
+
+the distribution of tasks that you will
+
+
+see at test time but there are some
+
+
+cases when you may choose to deviate
+
+
+from that because it creates more
+
+
+favorable learning dynamics and that's a
+
+
+very very rich and complex kind of a set
+
+
+of methods.
+
+
+Okay. So the way you can think about
+
+
+this kind of reabeling thing is that
+
+
+it's essentially a a type of data
+
+
+augmentation trick that lets us squeeze
+
+
+more out of the same data because we're
+
+
+not actually collecting additional
+
+
+transitions or additional trajectories.
+
+
+We're just taking the transitions that
+
+
+we've already collected and squeezing
+
+
+more knowledge out of them by asking
+
+
+well how good would they be for some
+
+
+other task other than the one I
+
+
+attempted. And I should say that this I
+
+
+presented this trick in a very very
+
+
+generic way here. There are some
+
+
+settings where it makes a lot of sense,
+
+
+some settings where it makes no sense
+
+
+whatsoever. So, if you're thinking about
+
+
+Atari games and you have a transition
+
+
+from like playing Breakout, it's almost
+
+
+like a type error to ask like, is that a
+
+
+good transition for playing Montuma's
+
+
+Revenge? Because like, hey, the pixels
+
+
+on the screen are the pixels for the
+
+
+other game. Uh, but if you are that
+
+
+walking robot and you're walking to
+
+
+different locations, then it actually
+
+
+makes a lot of sense to say like, hey,
+
+
+this trajectory, is it a good trajectory
+
+
+for some other location other than the
+
+
+one that I commanded?
+
+
+So,
+
+
+Because of that, it's kind of reasonable
+
+
+to talk about these uh reabeling methods
+
+
+in the context of specific notions of
+
+
+task. And that's what we'll do next. So,
+
+
+we'll talk about a very special kind of
+
+
+multitask RL which is very often studied
+
+
+called goal conditioned RL. Uh and we've
+
+
+already previewed this a little bit on
+
+
+Wednesday and now we'll go into a little
+
+
+more detail.
+
+
+So, let's say that you have a car that's
+
+
+driving to different locations in the
+
+
+world. Uh maybe different points on a
+
+
+map. Uh, and now you would want to learn
+
+
+a policy that doesn't just drive the car
+
+
+to some arbitrary place, but drives it
+
+
+to any place that you want to command. I
+
+
+mean, maybe for a real car, it would
+
+
+drive to like, you know, GPS coordinates
+
+
+on a map rather than like random places
+
+
+in a wiggly line. Uh, but, you know, you
+
+
+get the idea. So, you want a policy for
+
+
+reaching any location. Um,
+
+
+more generally, you could say that you
+
+
+have a policy that is reaching any goal.
+
+
+uh where g here could be an entire state
+
+
+or it could be some subset of the state.
+
+
+So maybe for the car the state consists
+
+
+of the car's position, orientation,
+
+
+velocity, etc. But maybe for the target,
+
+
+it only cares about the position. So
+
+
+it's okay if it's a subset of the state.
+
+
+Uh but if we want to keep this simple,
+
+
+we can just say G is an entire state.
+
+
+Okay.
+
+
+Uh and typically for these kinds of
+
+
+policies, the rewards are pretty simple.
+
+
+uh in discrete environments it might
+
+
+simply be an indicator that the state is
+
+
+exactly equal to the goal state. Now in
+
+
+very large or continuous environments
+
+
+this might not be such a good idea
+
+
+because you know if you're representing
+
+
+your state as floatingoint coordinates
+
+
+getting every single bit of those
+
+
+floatingoint numbers to match exactly is
+
+
+kind of annoyingly hard. So maybe a more
+
+
+common choice in larger or more
+
+
+continuous environments is to use a
+
+
+reward of one if the state has like a
+
+
+small distance to the goal. So if it's
+
+
+within a little ball of the goal, um,
+
+
+another oddly popular choice is to give
+
+
+a reward of negative one for every time
+
+
+step when the state is not equal to the
+
+
+goal and then a reward of zero for when
+
+
+they match. Um,
+
+
+this is actually exactly the same
+
+
+because if you subtract a constant from
+
+
+the reward, you don't change the
+
+
+problem. Uh but one of the reasons why
+
+
+people really prefer that last one, the
+
+
+one where you give a reward of negative
+
+
+one for every step until you reach the
+
+
+goal is that it's it looks roughly like
+
+
+a distance to a goal. It looks roughly
+
+
+like a number of time steps until you
+
+
+reach the goal. Now, if you have a
+
+
+discount, that's not strictly true
+
+
+because obviously you're discounting the
+
+
+distant rewards. If you imagine that
+
+
+this count is equal to one, then using
+
+
+that kind of reward actually makes it so
+
+
+that your value function is the negative
+
+
+of the number of time steps that you
+
+
+expect to need to reach the goal, which
+
+
+has a very appealing geometric
+
+
+interpretation.
+
+
+So this kind of goal condition stuff is
+
+
+pretty convenient because we don't need
+
+
+to manually define rewards for each
+
+
+task. We just have like a very simple
+
+
+sparse reward for each task. Um and you
+
+
+could in principle transfer a zero shot
+
+
+to a new task if the new task is also a
+
+
+goal task. Right? So uh hopefully your
+
+
+goals your your state space has like
+
+
+enough structure to it that if you train
+
+
+on a large sample of different goals,
+
+
+you will generalize to new goals and
+
+
+then you could command the goal that you
+
+
+actually want at test time even if it's
+
+
+like a little different from the goals
+
+
+you trained for because you know neural
+
+
+nets generalize.
+
+
+Um,
+
+
+goal condition RL typically is harder
+
+
+than non-goal conditioned RL. It's kind
+
+
+of the same multitask RL problem that I
+
+
+mentioned before. Like it really does
+
+
+show up here. And uh oftentimes these
+
+
+tricks like relabeling are actually
+
+
+important uh the to sort of like
+
+
+mitigate the downsides of having
+
+
+multitask learning. The other problem of
+
+
+course of a goal conditioned RL is that
+
+
+not all tasks that you might want to do
+
+
+can be expressed as goalreaching tasks.
+
+
+You can take 15 seconds to think about a
+
+
+potential task you might want to do that
+
+
+cannot be expressed as one of those
+
+
+rewards.
+
+
+Yeah.
+
+
+So this is kind of a complex question, a
+
+
+complex point. So uh the the answer for
+
+
+those of you that didn't hear is like
+
+
+okay well these LLM tasks is that is
+
+
+that really a goal reaching task? Um, it
+
+
+can be viewed as reaching a set of goals
+
+
+because the math problems have a a
+
+
+correct answer, but probably not a
+
+
+single goal. Uh, a very kind of classic
+
+
+uh example of this is a task where you
+
+
+need to reach some location and avoid
+
+
+something else that's very hard to
+
+
+express as a goal because uh the
+
+
+avoiding isn't really captured by the
+
+
+final state.
+
+
+If you want to learn more about this um
+
+
+there's a there are a lot of papers
+
+
+about goal conditioned RL but uh some of
+
+
+the kind of canonical ones are listed on
+
+
+this slide uh
+
+
+I'll go through some of this material
+
+
+but if you want kind of more on goal
+
+
+conditioned RL these four papers I think
+
+
+are kind of good places to start
+
+
+all right so let's uh talk about some
+
+
+tricks and some methods that we can use
+
+
+to make goal conditioned RL uh more
+
+
+practical. So the first one uh which is
+
+
+basically just a special case of the
+
+
+reabeling that I talked about before is
+
+
+to use that reabeling trick the ability
+
+
+to resample your context during training
+
+
+to reabel goals and that's actually very
+
+
+very natural. Uh so if you're trying to
+
+
+reach some very distant goal G star our
+
+
+reward for goal for goal condition RL
+
+
+oftentimes is sparse meaning that you
+
+
+would only get a reward for G star if
+
+
+you get close to G star. And that's very
+
+
+difficult because if you're driving this
+
+
+car around like maybe G star is like 20
+
+
+kilometers away and it's like a tiny
+
+
+little ball where you get a reward. So
+
+
+your chances of randomly driving 20
+
+
+kilometers and ending up in exactly the
+
+
+right place a priority if you don't know
+
+
+where you're supposed to be going are
+
+
+very very low. However, every location
+
+
+that you drive the car to is an
+
+
+opportunity to learn how to drive to a
+
+
+location. So if you imagine that you
+
+
+start over here, you want to get over
+
+
+here and you've driven to like lots of
+
+
+places here.
+
+
+Now you can learn how to reach all the
+
+
+locations in the circle and maybe
+
+
+generalize a little bit. So now you can
+
+
+reach a location a little bit outside of
+
+
+that circle. And now you drive here and
+
+
+here and here and here. And your circle
+
+
+gets a little bigger and then a little
+
+
+bigger and then eventually just
+
+
+generalize to the place you really want
+
+
+to go.
+
+
+And that's actually really cool because
+
+
+what we're actually doing if we can if
+
+
+we can do this successfully is we are
+
+
+learning a task that the star over there
+
+
+with a sparse reward that you are
+
+
+extremely unlikely to achieve through
+
+
+random exploration without any
+
+
+exploration method at all without
+
+
+without using any kind of exploration
+
+
+bonus just by doing multitask learning.
+
+
+So this is actually fairly powerful.
+
+
+Yes.
+
+
+So in the in the methods I'm discussing
+
+
+right now, these are all online RL
+
+
+methods. So everything here is if if you
+
+
+think back to like homework three, it's
+
+
+basically that setup. So everything here
+
+
+is learning from scratch just with the
+
+
+agent,
+
+
+right? So, uh, as you probably expect by
+
+
+now, the way this works is that all of
+
+
+these, uh, locations that you might have
+
+
+reached when you were, uh, running your
+
+
+policy, they're failures for the goal
+
+
+that you really want for Gar, but they
+
+
+can be treated as successes for whatever
+
+
+state was actually reached or whatever
+
+
+state is in the vicinity of what was
+
+
+reached. So, the key idea is that
+
+
+trajectories that fail for the thing
+
+
+that you actually want uh, might still
+
+
+succeed for something else. Now, that's
+
+
+not always the case. So, like if you're
+
+
+uh if you're not doing goal conditional,
+
+
+if you're like playing Atari games,
+
+
+obviously it doesn't make sense to say
+
+
+that a failed trajectory breakout
+
+
+succeeds at Montazuma's Revenge because
+
+
+the games are so different. But here,
+
+
+because the different tasks have so much
+
+
+shared structure, it actually does make
+
+
+sense uh to say that.
+
+
+So, here's an example goal condition RL
+
+
+algorithm. And again, this is going to
+
+
+look extremely uh uh similar to the
+
+
+relabeled example from before. So get a
+
+
+transition by taking one step with your
+
+
+policy for whatever goal you chose to
+
+
+command. And what is the goal sampled
+
+
+from in the beginning? Well, it's
+
+
+sampled from P of G because P of G is
+
+
+the distribution of tasks that you
+
+
+expect to see in the world. Yes.
+
+
+>> So G is omega.
+
+
+>> Yeah. Yeah. It's G is just another name
+
+
+for omega here because here the omegas
+
+
+are special because they correspond to
+
+
+goals. But yeah, this G is omega. So you
+
+
+take your transition, you store it in
+
+
+your replay buffer, and then you load up
+
+
+your batch from your replay buffer. And
+
+
+now just like before, you're going to
+
+
+sample a new context for each sample uh
+
+
+in your batch. And the context is G. So
+
+
+you're going to essentially choose an
+
+
+appropriate G for your trajectory. And
+
+
+we'll talk about how you choose it. Um
+
+
+so
+
+
+let's say that in in the trajectory that
+
+
+you generated you reached the the a
+
+
+state G reached.
+
+
+What you could do is with 50%
+
+
+probability
+
+
+use the reached goal G reached. So
+
+
+basically be optimistic and pretend as
+
+
+though the thing that you did was
+
+
+actually a thing you were supposed to do
+
+
+and maybe with 50% probability you use
+
+
+the commanded goal G commanded.
+
+
+Why? Why why wouldn't we want to always
+
+
+use the reached goal
+
+
+when we re label? Why might we want to
+
+
+mix in the commanded goal?
+
+
+Yeah.
+
+
+Yeah. Yeah. Uh so the answer was if you
+
+
+were unable to reach the goal you were
+
+
+actually supposed to reach that's a good
+
+
+learning signal and that's very true. In
+
+
+fact if you don't do this it's actually
+
+
+pretty bad because
+
+
+if you think back to this picture
+
+
+when you re label with reached goals
+
+
+you're making the task seem easier than
+
+
+it is a lot easier.
+
+
+So that's kind of bad news because if
+
+
+you're training your agent to maximize
+
+
+expected reward under a set of tasks
+
+
+that is easier than a task that it'll be
+
+
+asked to to perform, it probably won't
+
+
+be a very good agent. So in general,
+
+
+it's actually a very good idea to not be
+
+
+overly optimistic when you re label. Uh
+
+
+this is something that's sometimes
+
+
+referred to as hindsight bias. Um and
+
+
+because ultimately what you want is you
+
+
+want the agent to do well in expectation
+
+
+under the task goal distribution. Right?
+
+
+This is what you want.
+
+
+So you don't want to be overly you don't
+
+
+you don't want to give the agent an
+
+
+overly rosy picture of how well it's
+
+
+doing. Otherwise it might not have
+
+
+enough incentive to go to the star.
+
+
+But there are many different reabeling
+
+
+strategies you could use. So, this kind
+
+
+of 50-50 mixing is like a a reasonable
+
+
+initial rule of thumb, but there's been
+
+
+quite a lot of research on different
+
+
+ways to do this. Yes.
+
+
+>> So,
+
+
+this one is actually fairly clean. Um
+
+
+the reached uh state is the last time
+
+
+step of a trajectory in the data set in
+
+
+in your replay buffer. Uh you don't
+
+
+actually have to use the last step. You
+
+
+could also you know the other thing that
+
+
+people sometimes do is you have
+
+
+discounting. So what you can do is you
+
+
+can sample a time step from a geometric
+
+
+distribution with parameter gamma and
+
+
+take a time step that's this far in the
+
+
+future from the transition you sampled.
+
+
+So it's basically an actual future state
+
+
+that you reached and it's lit literally
+
+
+the entire state. So this is independent
+
+
+of of your choice of MDP. And then G
+
+
+commanded is literally what you fed into
+
+
+the policy when it produced the
+
+
+transition.
+
+
+So there isn't really like much of a
+
+
+design space here other than how you
+
+
+choose this time step. So it can either
+
+
+be the very last step in the trajectory
+
+
+or it can be a step that's some distance
+
+
+in the future from your current
+
+
+transition depending on how long your
+
+
+trajectories are.
+
+
+Okay. Uh, and then the rest of the
+
+
+algorithm is like is exactly like
+
+
+before. Like once you've relabeled these
+
+
+goals with your chosen reabeling method,
+
+
+then you just do regular actor critic
+
+
+and feed in your resample G into the
+
+
+critic and the actor updates. And that's
+
+
+it. That's the method.
+
+
+Um, now this really requires using an
+
+
+off policy algorithm. So this works with
+
+
+Q-learning and it works with off policy
+
+
+actor. It can kind of work with PO, but
+
+
+you have to be a little careful because,
+
+
+you know, PO is off policy because of
+
+
+the importance sampling, but it's not
+
+
+that good if you go far off policy.
+
+
+Why do you need an off policy algorithm
+
+
+here? Any ideas?
+
+
+Why can't this work with like reinforce
+
+
+for example?
+
+
+Yeah.
+
+
+Okay. So, you're changing the reward.
+
+
+That's that's kind of on the right
+
+
+track, but there's something a little
+
+
+bit more even more severe than than the
+
+
+reward that's going on here. If we
+
+
+didn't have enough Yes,
+
+
+you're using a replay buffer. The So,
+
+
+yeah. Well, the replay buffer is the
+
+
+solution not the problem. The problem is
+
+
+actually in line number four. So the
+
+
+issue here is that when you re label the
+
+
+goal like let's say that we re label it
+
+
+with a reached goal.
+
+
+Now the distribution of actions under
+
+
+the policy might be different than what
+
+
+it was when it took those actions.
+
+
+Right? When you re label with the reach
+
+
+goal like in principle it looks like
+
+
+you're making the problem easier. You're
+
+
+saying like hey the place you actually
+
+
+got to was the place you were supposed
+
+
+to go. But if your policy is really bad,
+
+
+if you actually gave it that goal, it
+
+
+might not have driven in that direction.
+
+
+It might have driven in the opposite
+
+
+direction because it's a really bad
+
+
+policy. So even though it kind of looks
+
+
+like you're making the task easier, you
+
+
+are actually changing the states because
+
+
+the goal is part of the state. And your
+
+
+policy might not have taken those
+
+
+actions after in in the relabeled
+
+
+states. It might have made a mistake. So
+
+
+you really need an off policy algorithm
+
+
+for this to work. Uh but fortunately uh
+
+
+many off policy algorithms will be
+
+
+adequate.
+
+
+All right. Uh the last thing I want to
+
+
+talk about for for goals is um a little
+
+
+bit of geometry. Um remember I mentioned
+
+
+that if you use a reward of minus one
+
+
+for every time step until you reach the
+
+
+goal and then zero at the goal. It has
+
+
+kind of an interesting interpretation as
+
+
+uh a number of time steps to the goal. A
+
+
+kind of a distance. So
+
+
+the value function which is now a
+
+
+function of state end goal for a reward
+
+
+that is minus one until you reach the
+
+
+goal and then zero at the goal um with a
+
+
+gamma of one can be thought of as a kind
+
+
+of distance. So this is just the bellman
+
+
+equation. So the value is the negative
+
+
+of the reward plus the expectation of
+
+
+the next thing and the episode ends when
+
+
+you reach the goal. So that's why
+
+
+there's a delta s not equal to g
+
+
+multiplying the target value. So when
+
+
+you're actually at the goal, you don't
+
+
+bootstrap at the goal, you just get a
+
+
+zero and you're done. And that's like
+
+
+the best you can hope for. So under
+
+
+these conditions,
+
+
+um basically the the value the another
+
+
+way to write this is that the value is
+
+
+negative 1 plus the next uh value if s
+
+
+is not g and zero if s is equal to g.
+
+
+Under these conditions, v of s comma g
+
+
+is the expected number of time steps
+
+
+from s to g. Okay?
+
+
+and it behaves a little bit like a
+
+
+distance.
+
+
+Um, it is not actually a distance
+
+
+function for the kind of subtle reason
+
+
+that it's not symmetric, meaning that if
+
+
+you flip SNG arguments, you don't
+
+
+necessarily get the same value. Um, you
+
+
+can scramble an egg, but you can't
+
+
+unscramble an egg. So, in general,
+
+
+dynamics in an MDP are not reversible.
+
+
+So, it's not a true distance. It it's a
+
+
+what's called a quasimetric rather than
+
+
+a metric, but it has many of the same
+
+
+properties as a distance function. And
+
+
+you can actually use those properties.
+
+
+So one property it has is it should obey
+
+
+the triangle inequality. Meaning that
+
+
+the number of steps you need to reach
+
+
+some goal is less than or equal to the
+
+
+number of steps you need to go somewhere
+
+
+else and then from there go to the goal.
+
+
+This is the triangle inequality.
+
+
+Um and this can be used for a number of
+
+
+things. It can be used for planning with
+
+
+goal condition value functions. So you
+
+
+could train goal condition value
+
+
+functions for short horizon goals and
+
+
+then plan long horizon trajectories
+
+
+with way points where those way points
+
+
+are optimized to have low distances
+
+
+between each other. So you can kind of
+
+
+use this goal condition value function
+
+
+almost as like a pseudo model.
+
+
+There are a number of works that have
+
+
+done this. This is one example of this
+
+
+um paper by Sriani.
+
+
+Um, it can also be used as uh an
+
+
+auxiliary loss function. So you can say
+
+
+I'm going to train my goal condition
+
+
+value function with my Bellman backup
+
+
+like using I don't know Q-learning or
+
+
+something. But I'm also going to take
+
+
+this triangle inequality and turn it
+
+
+into uh some kind of loss to add an
+
+
+auxiliary loss to help me train a better
+
+
+value function. Like since I know that
+
+
+it needs to obey the triangle inequality
+
+
+that can give me a little bit more
+
+
+learning signal to train more quickly.
+
+
+And this is actually a very old idea. It
+
+
+was introduced uh to my knowledge in a
+
+
+1993 paper by Leslie Cabling called
+
+
+Learning to Achieve Goals. Although
+
+
+I met Leslie a couple weeks ago and she
+
+
+told me that she in fact did not come up
+
+
+with the idea and that it was introduced
+
+
+in an even earlier paper by Richard
+
+
+Bellman. So, you know, whatever. Uh I
+
+
+guess it's a fairly classic idea. Uh but
+
+
+uh it kind of makes sense that if you
+
+
+know that there's some additional
+
+
+structure that you uh uh that your value
+
+
+function can obey, you can turn that
+
+
+structure into a loss that will help you
+
+
+learn it. And there are of course uh
+
+
+quite a few uh newer papers that uh try
+
+
+to leverage this property in all sorts
+
+
+of ways.
+
+
+Okay, so it's 9:00 a.m. So we'll pause
+
+
+for uh let's say about 6 minutes. We'll
+
+
+come back at 9:06 and then we'll
+
+
+continue.
+
+
+Okay, let's get started. So the next
+
+
+topic I want to tell you about is um
+
+
+a kind of a fairly classic topic in
+
+
+reinforcement learning but it's
+
+
+something that is not as widely known
+
+
+that has kind of a close relationship to
+
+
+goal conditioned RL. I'll preface this
+
+
+by saying that successor representations
+
+
+and successor features are
+
+
+perhaps not the most imminently useful
+
+
+thing to know about, but it's something
+
+
+that provides a a kind of a a good
+
+
+conceptual grounding of where some of
+
+
+this like goal condition and multitask
+
+
+stuff is really coming from and also
+
+
+illustrates a really interesting
+
+
+connection between modelbased and model
+
+
+free methods. So I'm going to describe
+
+
+this as a somewhat mathematically
+
+
+complex topic but um keep in mind that
+
+
+probably the right takeaway from it is
+
+
+not like a method that you go and use
+
+
+but rather a particular way of uh
+
+
+understanding models and value functions
+
+
+in the context of uh goal conditioned RL
+
+
+that might give you a deeper perspective
+
+
+on how these things work.
+
+
+So here is a somewhat bold claim. goal
+
+
+conditioned RL is produces something
+
+
+that is a lot like a model. What's a
+
+
+model? A model is something that
+
+
+predicts the future like P of S prime
+
+
+given SA. Um in goal conditioned RL at
+
+
+least in off policy goal condition RL
+
+
+you learn a value function. Obviously
+
+
+that it's not exactly the same as a
+
+
+model. It's not a P of S prime given SA
+
+
+but my bold claim is that it has a lot
+
+
+of things in common.
+
+
+Okay. So uh from the the definition that
+
+
+I had before the intermission with this
+
+
+triangle inequality I said well one way
+
+
+you could set up a goal condition value
+
+
+function is to say that it's zero if s
+
+
+is equal to g. So you get a a value of
+
+
+zero when you reach the goal and if you
+
+
+didn't reach the goal and it's minus one
+
+
+plus the expected value uh at the next
+
+
+state. So that leads to this kind of
+
+
+distance interpretation because the uh
+
+
+you would expect that the values will
+
+
+then end up being roughly like the
+
+
+number of time steps to the goal. And of
+
+
+course it obeys the triangle inequality
+
+
+and all that good stuff.
+
+
+So what this kind of value function
+
+
+tells us is how easy is it to reach
+
+
+various states and that's a kind of a
+
+
+model because if you know exactly how
+
+
+much time you need to get to every
+
+
+location in the world then you can build
+
+
+a kind of reachability graph of all the
+
+
+locations in the world and that's
+
+
+serving a similar
+
+
+role to a dynamics model like it's it's
+
+
+allowing you to understand something
+
+
+about the physics that govern the world
+
+
+if you know exactly how long it takes
+
+
+you to get to every location.
+
+
+And of course you can use it for for
+
+
+planning with goal condition value
+
+
+functions.
+
+
+But let's dig into this a little bit
+
+
+more. Let's actually make this
+
+
+relationship between goal condition
+
+
+value functions and models a bit more
+
+
+precise
+
+
+and we'll just go back to regular model
+
+
+based RL for a second and say okay let's
+
+
+just focus on the problem of policy
+
+
+evaluation. Okay policy evaluation is
+
+
+when you have a fixed policy pi and you
+
+
+want to know how good it is. And
+
+
+remember in RL we have this uh these
+
+
+three parts generating samples
+
+
+evaluating the the policy and improving
+
+
+the policy. So policy evaluation is an
+
+
+integral part of RL methods. If you can
+
+
+evaluate your policy then that's a step
+
+
+towards improving it. So we'll just
+
+
+focus on policy evaluation. Policy
+
+
+evaluation is the problem of given a
+
+
+policy figure out how good it is ideally
+
+
+how good it is in every in every state
+
+
+and for every action all that good
+
+
+stuff. Okay. So the job of the model is
+
+
+to evaluate the policy. Uh if you could
+
+
+evaluate, you can make it better. This
+
+
+is what you're evaluating. J of pi. J of
+
+
+pi is the expected value uh over the
+
+
+initial state distribution of the value
+
+
+of pi.
+
+
+And
+
+
+one of the ways you could write it which
+
+
+is a little bit peculiar uh is you can
+
+
+write the value as a sum over all the
+
+
+time steps from now until the end of
+
+
+time of the discount
+
+
+raised to the power of how many time
+
+
+steps ahead you are times the
+
+
+expectation over all the states you
+
+
+could land at in that time step. Right?
+
+
+So maybe I'm starting over here. This is
+
+
+ST and then at the next time step I
+
+
+might be over here. This is the
+
+
+distribution ST plus one. At the next
+
+
+time step I'm over here. This is the
+
+
+distribution ST plus2 etc. Right? So if
+
+
+I want to
+
+
+estimate the value function what I'll do
+
+
+is I'll take my expected reward here
+
+
+multiply by one the expected reward here
+
+
+multiply it by gamma. The expected
+
+
+reward here and multiply it by gamma
+
+
+squared and so on and so on and so on.
+
+
+And that's what that expression is
+
+
+saying. So it's a sum over all the
+
+
+future time steps of gamma raised to the
+
+
+power of how many steps in the future
+
+
+you are times an expected value over uh
+
+
+the states that you'll get and the
+
+
+action that you'll take at that step.
+
+
+And since we're doing policy evaluation
+
+
+the policy is just fixed. So we don't
+
+
+care about the distinction between
+
+
+policies and dynamics. So we can
+
+
+simplify this a little bit. And let's
+
+
+just pretend for now the reward doesn't
+
+
+depend on action. I know in general it
+
+
+does but it'll make the notation
+
+
+simpler. So let's say the reward depends
+
+
+only on state. And then you can write
+
+
+this even more concisely that it's just
+
+
+an expectation over uh P of ST prime
+
+
+given ST. Now that that distribution
+
+
+does depend on the policy pi of course.
+
+
+Okay.
+
+
+So
+
+
+what this might tell us now is if we
+
+
+want to estimate the value of a policy,
+
+
+what we really need is those
+
+
+probabilities over ST prime given ST.
+
+
+Okay, so basically what does this
+
+
+distribution look like given this?
+
+
+And we can rearrange the terms a little
+
+
+bit and simplify it a little bit more.
+
+
+So
+
+
+let's uh expand the the just plug in the
+
+
+definition of expectation so that
+
+
+everything is written as a sum. And now
+
+
+what I'm going to do is I'm going to put
+
+
+some uh parentheses. I'm going to take
+
+
+the sum over states and I'll take it
+
+
+outside of the sum. So I'll write it as
+
+
+a sum over states and then inside of it
+
+
+a sum over all the time steps the
+
+
+discount times the probability of
+
+
+landing at that state at that time step
+
+
+and I'll take the reward outside of
+
+
+that. And that's all totally legit,
+
+
+right? Because the reward depends on us.
+
+
+Yes.
+
+
+Um
+
+
+so just to clarify u P of ST prime is
+
+
+not P of S prime T.
+
+
+So so this is not the next time step.
+
+
+This is the time this is the state at
+
+
+time step T prime which might be like an
+
+
+arbitrary time step. So that that P of
+
+
+this is actually a good point for
+
+
+everyone in the class that didn't hear
+
+
+that probability that says P of ST prime
+
+
+given ST this is not the probability of
+
+
+the next state this is the probability
+
+
+of the state at some future time step T
+
+
+prime so T prime might be like 100 and T
+
+
+might be one so the way to think about
+
+
+it is that it's the probability of this
+
+
+given this
+
+
+okay so when I change the order of
+
+
+summation now what I did is Okay,
+
+
+express this whole thing as a sum over
+
+
+states of the reward of that state times
+
+
+some stuff.
+
+
+And remember, an expected value is a sum
+
+
+over states of
+
+
+the probability of that state times the
+
+
+function that you're taking the
+
+
+expectation of. So this thing can also
+
+
+be expressed as an expectation, not a
+
+
+sum over time anymore, just an
+
+
+expectation
+
+
+under a particular distribution. And the
+
+
+distribution is that thing in
+
+
+parenthesis.
+
+
+And we're going to call that
+
+
+distribution P of S future.
+
+
+So S future is basically the probability
+
+
+of landing at a step at a particular
+
+
+state
+
+
+under a geometric distribution over
+
+
+future time steps. Why a geometric
+
+
+distribution? Well, because of the
+
+
+discount. So remember one of the ways
+
+
+that you can interpret a discount is a
+
+
+probability of uh of exiting a
+
+
+probability of death right with
+
+
+probability of one minus gamma every
+
+
+single time step the agent ceases to
+
+
+exist. So what that p of s future is
+
+
+really saying is how likely are
+
+
+different states to occur in the future
+
+
+in this kind of model of the world where
+
+
+you might cease to exist with
+
+
+probability one minus k.
+
+
+So that's basically saying like like
+
+
+let's take all these circles and then
+
+
+average them together where every circle
+
+
+is weighted by the probability that you
+
+
+live long enough to get to that time
+
+
+step.
+
+
+So this one is weighted by gamma. This
+
+
+one is weighted by gamma squared etc etc
+
+
+etc.
+
+
+>> Yes.
+
+
+So s probability of s future means the
+
+
+probability that you will be at a
+
+
+particular state in the future in this
+
+
+model of the world where you might cease
+
+
+to exist with probability one minus
+
+
+gamma at every step. So that means that
+
+
+states that are like a 100 steps from
+
+
+now are necessarily going to have lower
+
+
+probabilities because you have a one uh
+
+
+um uh one minus gamma to the 100th power
+
+
+probability of landing there. Whereas
+
+
+here you have a um sorry a gamma to the
+
+
+100th power probability of landing
+
+
+there. Whereas here you have a gamma
+
+
+probability of landing there. So if
+
+
+gamma is like 0.9 the probability of
+
+
+seeing a state here is proportional to
+
+
+0.9. The probability of seeing a state
+
+
+very far in the future is proportional
+
+
+to 0.9 to a large power which is a
+
+
+smaller number.
+
+
+Do these things sum to one?
+
+
+So there's there's one little issue here
+
+
+which is that they they don't sum to
+
+
+one. Um the way you can think about is
+
+
+imagine the prob imagine that each of
+
+
+these circles actually just a point. So
+
+
+at every future time step you have only
+
+
+one state you can land into. That means
+
+
+those probabilities are all one. Then uh
+
+
+the sum there is basically one of these
+
+
+sums. Sum over t uh gamma to the t
+
+
+* 1. And this of course is not equal to
+
+
+one.
+
+
+But we know what it's equal to because
+
+
+it's just a geometric series. So it's
+
+
+it's equal to
+
+
+one over one minus gamma.
+
+
+So it's very easy to normalize this
+
+
+thing and make it sum to one
+
+
+because it sums up to one over one minus
+
+
+gamma. All you have to do is multiply by
+
+
+one minus gamma and then it is a good
+
+
+well- behaved probability distribution.
+
+
+So this now is an actual probability
+
+
+distribution. It truly honest to
+
+
+goodness sums to one and therefore you
+
+
+can take expected values under it. And
+
+
+one minus gamma is a constant. So
+
+
+putting that out front doesn't actually
+
+
+change anything.
+
+
+So this is just to ensure that it sums
+
+
+to one. So now here's what we've got.
+
+
+We've got our probability of S future
+
+
+given by this equation. The value
+
+
+function is 1 over 1 minus gamma times
+
+
+the sum over all the states of the
+
+
+probability of S future times R of S.
+
+
+And that's just an expected value under
+
+
+probability of S future. And if you live
+
+
+in a discrete state space such that you
+
+
+can represent probabilities over states
+
+
+as vectors and rewards as vectors, you
+
+
+can also think of that sum as an inner
+
+
+product between the vector
+
+
+representation of the reward and the
+
+
+vector representation of those future
+
+
+state probabilities. So I'm going to use
+
+
+mu pi of s to represent this
+
+
+distribution over s future.
+
+
+Okay. So mu mu pi of st t i is the
+
+
+probability that s future is i.
+
+
+So this is what's called a successor
+
+
+representation. Uh it was introduced in
+
+
+a 1993 paper by Peter Diane uh called
+
+
+improving generalization for temporal
+
+
+difference learning
+
+
+and it draws a connection a very close
+
+
+connection between value functions and
+
+
+models. The reason it draws a close
+
+
+connection between value functions and
+
+
+models is that this successor
+
+
+representation the probability of s
+
+
+future can be trained with the same
+
+
+exact algorithms that we use to train
+
+
+value functions. And let's uh briefly
+
+
+summarize it. It's actually fairly
+
+
+straightforward. So this is the
+
+
+expression for uh p of s future or mu.
+
+
+And you can recursively express it as 1
+
+
+minus gamma time the indicator that
+
+
+you're currently at state I plus gamma
+
+
+times the expected value of mu at the
+
+
+next state. And that actually makes a
+
+
+lot of sense. This is basically a goal
+
+
+condition value function where the goal
+
+
+is the state whose probability you're
+
+
+evaluating
+
+
+and um the reward is uh one if you reach
+
+
+that state and zero otherwise.
+
+
+So it's like a bellman backup with the
+
+
+reward uh one minus gamma times this
+
+
+indicator. Sorry, it's it's not one,
+
+
+it's one minus gamma. So one minus gamma
+
+
+if you reach this state and uh zero
+
+
+Um, and of course you have a different
+
+
+value for every possible state. So in
+
+
+practice you can use a vectorzed backup
+
+
+for all of the different states all at
+
+
+once.
+
+
+Yes.
+
+
+>> Oh, there's a typo.
+
+
+Um, all right. So this is like a
+
+
+conceptually very elegant thing. it's
+
+
+kind of nice and clean. Uh you can train
+
+
+it with TD backups. There are a few
+
+
+practical issues though if we want to go
+
+
+from just a theoretical formulation to
+
+
+something that we can actually use. Um
+
+
+first it's not actually clear if
+
+
+learning these successor representations
+
+
+is any easier than doing model free RL
+
+
+right because we started from the
+
+
+premise that we want to evaluate a
+
+
+policy. To evaluate a policy we need a
+
+
+value function. But instead of training
+
+
+the value function with Bellman backups
+
+
+the way we would in like regular RL
+
+
+algorithms, we're saying like, hey,
+
+
+let's just train this thing instead and
+
+
+use it to recover a value. But it seems
+
+
+like this thing is like strictly more
+
+
+complicated than a value function
+
+
+because a value function you train by
+
+
+backing up a scalar quantity and this
+
+
+thing we train by backing up a vector
+
+
+valued quantity. So it's like we're
+
+
+doing like strictly more work. Um it's
+
+
+also not clear how to scale it to large
+
+
+state spaces because you need a vector
+
+
+with a size equal to the number of
+
+
+states and if the number of states is
+
+
+infinite then that vector gets rather
+
+
+large in fact infinitely large um or uh
+
+
+how to do this in continuous state
+
+
+spaces.
+
+
+So this is a a very
+
+
+useful idea to know about a very elegant
+
+
+idea but it's not something that we can
+
+
+immediately apply to deepl problems. So
+
+
+if you really wanted to use a CN deep,
+
+
+there is a um a variant of this that is
+
+
+actually much more practical and that's
+
+
+called a successor feature. Before I get
+
+
+into that, does anyone have any
+
+
+questions about successor
+
+
+representations?
+
+
+Okay, so let's shift gears to the next
+
+
+thing and this is now going to be an
+
+
+actual thing that we could use and
+
+
+that's successor features. So here's the
+
+
+idea.
+
+
+The value function we could express
+
+
+before as a inner product of these
+
+
+successor representation probabilities
+
+
+and the vector representation of the
+
+
+reward.
+
+
+In fact,
+
+
+this isn't just true for the reward. So
+
+
+you can take any feature let's call it
+
+
+phi any feature of the uh state uh of fi
+
+
+j and you can construct a value like
+
+
+counterpart to 5 j which we're going to
+
+
+call ci j which is just formed by taking
+
+
+the inner product between 5 j of s uh
+
+
+and and mu.
+
+
+So you can say that well before whenever
+
+
+we learned a value function the value
+
+
+function was a discounted sum of
+
+
+rewards. But now we could say let's
+
+
+generalize this notion. Let's say that
+
+
+we can take any arbitrary feature not
+
+
+necessarily the reward that we want to
+
+
+maximize but just any any function of
+
+
+the state and we could back it up and
+
+
+get a value like counterpart. So if the
+
+
+feature is fi its value like counterpart
+
+
+is s
+
+
+and
+
+
+uh and again we can express this with
+
+
+linear algebra. So we can say that ci j
+
+
+is the inner product between mu and fi j
+
+
+where the vector fj is just a vector
+
+
+where every entry is the feature uh
+
+
+value for that state.
+
+
+And now we're going to pick these
+
+
+features fi so that the reward can be
+
+
+represented as a linear combination of
+
+
+those features.
+
+
+Okay. So we we'll pick uh many features.
+
+
+So each fi j is a feature and we have
+
+
+many js. Uh maybe we have like 20
+
+
+features. Okay. and we'll pick those
+
+
+features so that we can express our
+
+
+reward as the feature vector dotted with
+
+
+some weights.
+
+
+Okay.
+
+
+And by the way, if the if the feature
+
+
+vector is just an an identifier for a
+
+
+state, so basically if fi has a number
+
+
+of entries equal to the number of states
+
+
+with a a one for each index, then of
+
+
+course uh the weights are the reward
+
+
+function. But in general you can have uh
+
+
+some other feature vector that is more
+
+
+concise.
+
+
+It turns out that if you pick fi so that
+
+
+this is true then the value function can
+
+
+be expressed as the inner product of the
+
+
+corresponding size with the same
+
+
+weights.
+
+
+We can u walk through this to see why
+
+
+this is the case. So if I take s uh
+
+
+transpose w I can the I'll just write
+
+
+out the inner products. It's a sum over
+
+
+all the j's of j uh * wj
+
+
+and ci j that equation up at the top. I
+
+
+can just substitute that in there. J uh
+
+
+is just the inner product between mu and
+
+
+5 j.
+
+
+And now I can rearrange the terms and
+
+
+write it as mu times the sum over all
+
+
+the fs of 5 j * the sorry that that bold
+
+
+of w should be a wj. It should be a wj.
+
+
+Um and then of course the sum over j of
+
+
+5 j * wj is just the reward.
+
+
+So that's actually really cool. That
+
+
+means that if I have a feature
+
+
+representation fi so that my reward can
+
+
+be expressed as a linear combination of
+
+
+those features, the corresponding value
+
+
+function can be expressed as a linear
+
+
+combination of the corresponding size
+
+
+with the same exact weights.
+
+
+And now this actually is true for any
+
+
+feature representation that is
+
+
+sufficient to represent the reward. And
+
+
+that doesn't have to have one entry for
+
+
+every for every single state. So I might
+
+
+have like a million states but only 20
+
+
+features
+
+
+as long as the features are sufficient
+
+
+to represent the reward.
+
+
+And the reason that it might be easier
+
+
+to find features that can represent the
+
+
+reward is because the reward is
+
+
+typically quite a bit simpler.
+
+
+So uh you might have uh some like really
+
+
+complicated environment like Montazuma's
+
+
+revenge where you only get a reward when
+
+
+you like pick up the key and open the
+
+
+door or something. So as long as your
+
+
+features represent those events uh they
+
+
+can ignore all the other stuff.
+
+
+So now you can have a much smaller
+
+
+feature vector much smaller than the
+
+
+total number of states and still use
+
+
+this kind of feature space successor
+
+
+representation idea and that's called a
+
+
+successor feature. Yes.
+
+
+Uh W is a vector of numbers one number
+
+
+for each feature.
+
+
+So if you have 20 features per state, so
+
+
+if your feature representation of a
+
+
+state is 20 numbers, then W is just 20
+
+
+numbers.
+
+
+Uh W is the weights on the features. So
+
+
+if you have 20 features, it's literally
+
+
+just 20 numbers.
+
+
+Uh the features are some function of the
+
+
+state. So, for example, uh if you're
+
+
+doing mont if you're playing Montuma's
+
+
+revenge, then maybe your features would
+
+
+be u one entry that indicates are you
+
+
+currently picking up a key, another one
+
+
+that indicates, are you currently
+
+
+opening a door? Another one that
+
+
+indicates are you currently like
+
+
+stepping on the skull or something.
+
+
+So, in this formulation, you have to
+
+
+pick the features and it's up to you to
+
+
+figure out what those features should
+
+
+be.
+
+
+Okay. So um what's kind of the point of
+
+
+all this? Well, if the number of
+
+
+features is much less than the number of
+
+
+states, then learning them is a lot
+
+
+easier than learning the original
+
+
+successor representation.
+
+
+And once we've learned it, then we can
+
+
+recover the value of uh uh of our
+
+
+policy.
+
+
+Okay. So here is the learning rule, the
+
+
+backup that we had before for the
+
+
+successor representation, the
+
+
+probabilities of states. And if we want
+
+
+to go from that to successor features,
+
+
+all we do is we just set up the regular
+
+
+Bellman backup, but instead of the
+
+
+reward, we use the feature fi. And this
+
+
+is still a vector valued backup because
+
+
+we have to be backing up every single
+
+
+feature. Um, but of course, the number
+
+
+of features is much smaller than the
+
+
+number of states. And in fact, you can
+
+
+think of the original successor
+
+
+representation as just a special case of
+
+
+these successor features where you have
+
+
+one feature for every state and the fe
+
+
+and the feature for its state is just
+
+
+one in that state and zero everywhere
+
+
+else
+
+
+like an identity mapping from states to
+
+
+features.
+
+
+And of course you can also construct a Q
+
+
+function-l like version. So, so far
+
+
+we've constructed uh successor features
+
+
+that are only a function of state but
+
+
+you can also make them a function of
+
+
+state and action and that works
+
+
+perfectly fine too and then you can use
+
+
+this to recover the Q function rather
+
+
+than just the value function and that
+
+
+then you can plug into an actor critic
+
+
+algorithm or a Q-learning algorithm and
+
+
+so on. So then the Q function uh for a
+
+
+particular policy is just the inner
+
+
+product between its size and the weights
+
+
+w that you use to express the reward.
+
+
+All right. Any questions about this?
+
+
+>> Yeah.
+
+
+That's right. So for those that didn't
+
+
+hear, we're basically saying that if you
+
+
+have features fi that can be used to
+
+
+represent the reward, then we can
+
+
+recover the q function for the for the
+
+
+policy by taking the
+
+
+um successor features of fi which are
+
+
+the size and using the same weights w on
+
+
+them and that gives us the q function.
+
+
+Okay, so that's the idea. Now let's talk
+
+
+about how to use it. Um there is one way
+
+
+of using it which is maybe like the more
+
+
+obvious one but also the less powerful
+
+
+one which is to use it to recover a Q
+
+
+function very quickly. So step one train
+
+
+sci using those Bellman backups vector
+
+
+value backups on the feature vector fi
+
+
+and this you can do without any reward.
+
+
+You just get your features and you still
+
+
+need to get the features somewhere but
+
+
+the features can be sort of like a
+
+
+supererset of everything you need. So
+
+
+you have to somehow come up with like
+
+
+some idea of like all of the features
+
+
+you could possibly need for any task. It
+
+
+could be a pretty large set as long as
+
+
+it's uh you know finite and you can
+
+
+learn from it and train the size and
+
+
+then go and get some rewards and maybe
+
+
+this this might be a much smaller amount
+
+
+of experience than what you use to train
+
+
+the size in the first place. So get some
+
+
+reward samples and don't use those
+
+
+reward samples to to do any Q-learning
+
+
+or anything like that. Just use those
+
+
+reward samples to fit the W's. So
+
+
+basically solve a linear regression
+
+
+problem to find the W's so that five
+
+
+transpose W is close to the rewards you
+
+
+sampled. And because of that successor
+
+
+feature relationship now you know that Q
+
+
+is just uh given by the size you learned
+
+
+multiply by the W's that you used to fit
+
+
+the reward.
+
+
+So this is potentially a very appealing
+
+
+algorithm because while you do need to
+
+
+do something that looks a lot like model
+
+
+free RL in step one to train those size,
+
+
+you don't need to know anything about
+
+
+the reward function when you're doing
+
+
+it. So you can just explore the
+
+
+environment, fit these size and then
+
+
+once you get a little bit of reward
+
+
+information, fit the W's and recover
+
+
+your Q function. And this is why we say
+
+
+that this has a close relationship to
+
+
+model based RL because in a lot of ways
+
+
+this is a lot like what you would do um
+
+
+potentially with a model. You might
+
+
+explore the environment, get some
+
+
+transitions, fit your model, and then
+
+
+when you get even a little bit of
+
+
+information about your reward, you can
+
+
+use your model to figure out how good
+
+
+your policy is for that reward. Yes.
+
+
+>> The question is, is it is it limiting
+
+
+that the uh reward is a linear
+
+
+combination of features? It's a very
+
+
+domain dependent thing. Um, the reason
+
+
+that it's perhaps not as limiting as it
+
+
+sounds is that rewards tend to be pretty
+
+
+simple and you can choose the features
+
+
+to be um, kind of whatever you want. So
+
+
+you don't need to use all the features
+
+
+to fit the reward. Like one way you can
+
+
+think about it is like just like list
+
+
+down all the salient things you see in
+
+
+the Montuma's re revenge image and maybe
+
+
+like 90% of them are irrelevant but 10%
+
+
+of them are and then it's fine.
+
+
+Okay. Uh, yeah. Okay. And then once you
+
+
+get you have this Q function, then you
+
+
+run the policy just the same way that
+
+
+you would with regular Q-learning by
+
+
+greedily selecting the argmax of the Q
+
+
+function, which is to say the arg of
+
+
+scanspose w.
+
+
+Okay. Now here is a question. This pi
+
+
+prime this arg of spose
+
+
+w is this the optimal q function?
+
+
+or sorry the optimal policy and
+
+
+therefore is the Q function the optimal
+
+
+Q function is it the best Q function you
+
+
+could have for the reward uh given by
+
+
+transpose W
+
+
+yeah
+
+
+okay that's a good point so one reason
+
+
+why it might not be optimal is that
+
+
+maybe your features can't perfectly fit
+
+
+the reward. That's definitely true. But
+
+
+even if your features can perfectly fit
+
+
+the reward, is it optimal? Yeah.
+
+
+>> Right. So, so the so the comment here
+
+
+was well sigh is dependent on policy pi.
+
+
+Uh in fact this Q function that you get
+
+
+um this is this is not the optimal Q
+
+
+function. This is the Q function for
+
+
+that task for the policy pi. And when
+
+
+you take the arg max of it you're
+
+
+essentially doing one step of policy
+
+
+iteration.
+
+
+So taking the arg max of some other
+
+
+policies Q function does give you a
+
+
+better policy but it doesn't immediately
+
+
+give you the optimal policy because if
+
+
+you want to get to the optimal policy
+
+
+you have to repeat this process multiple
+
+
+times. You have to take the argmax
+
+
+policy, fit its Q function, take its
+
+
+argmax, fit its Q function, repeat and
+
+
+repeat and repeat until you converge and
+
+
+that will be the optimal policy. So this
+
+
+is like doing one step of policy
+
+
+improvement, but to get the optimal
+
+
+policy, you need to do many steps of
+
+
+policy improvement. It's like one step
+
+
+through that RL cycle. So this is not
+
+
+bad. This is actually better than doing
+
+
+nothing, but it's not optimal.
+
+
+And this is actually a non-trivial
+
+
+limitation because these successor
+
+
+features or successor representations
+
+
+they are for a particular policy.
+
+
+So this is equivalent to one step of
+
+
+policy direction. So here's a better uh
+
+
+way of using them uh idea two. And the
+
+
+better way of using them is to recover
+
+
+successor features from many different
+
+
+policies.
+
+
+So maybe you have a collection of
+
+
+policies
+
+
+pi 1 through pi capital k. We're going
+
+
+to index them as pi k. Maybe you have a
+
+
+hundred different policies. Maybe
+
+
+they're even random policies, but
+
+
+they're all random in different ways.
+
+
+For each of those policies, train a
+
+
+corresponding si k. Okay. So now you
+
+
+have a a vector of successor features
+
+
+for every policy. So you can stack them
+
+
+up and you have a matrix of successor
+
+
+features, one column for every policy.
+
+
+Then you get some rewards. Then you fit
+
+
+the W's.
+
+
+And now you know that Q
+
+
+can be approximated by SIK
+
+
+multiplied by W. So for every one of
+
+
+those 100 policies for which you
+
+
+computed the size, you can get its Q
+
+
+function for the current reward.
+
+
+So now you have some options. You have
+
+
+some stuff to work with.
+
+
+And then the way that you recover your
+
+
+policy and this part is actually a
+
+
+little bit clever is you take the argmax
+
+
+over the actions
+
+
+and a max over the policies. So in every
+
+
+single state you take the highest Q
+
+
+value action of the highest Q value
+
+
+policy.
+
+
+And this is now very good.
+
+
+One reason that it's very good, of
+
+
+course, which is a slightly trivial, is
+
+
+if one of the pi ks happens to be pi
+
+
+star. If one of the policies in your set
+
+
+is already the optimal policy, then
+
+
+you're going to pick it because it's
+
+
+going to be the one with the highest Q
+
+
+value. But also, you're not picking the
+
+
+same policy in every state. So if you
+
+
+have a number of different policies and
+
+
+some are better in some states and some
+
+
+are better in other states, you'll
+
+
+actually get the better policies in each
+
+
+state. So if pi star is not in your set
+
+
+of policies, you won't get the optimal
+
+
+policy, but you will improve more than
+
+
+if you just picked the one best policy
+
+
+in your set. So this is actually like a
+
+
+fairly effective method and if you have
+
+
+enough policies, it can actually work
+
+
+quite well. So it finds the highest
+
+
+reward policy in each state. uh if you
+
+
+want to learn more about this then I
+
+
+would recommend to check out this paper
+
+
+by uh Beretta doll called successor
+
+
+features for transfer and reinforcement
+
+
+learning. This is an older paper. There
+
+
+are newer papers that build on this idea
+
+
+but this one has kind of a a reasonable
+
+
+summary of the core concepts. Um and
+
+
+just to give you like a little bit of a
+
+
+sense for how people have extended this.
+
+
+Well, one natural extension is that you
+
+
+don't need to have a discrete set of
+
+
+policies. You can have a continuous
+
+
+space of policies and you can train sigh
+
+
+conditioned on some representation of uh
+
+
+where you are in that continuous set.
+
+
+One of the ways you can represent it for
+
+
+example is with a goal. So you can have
+
+
+a s comma a comma g and then pick the
+
+
+best goal for getting the highest q
+
+
+value on your reward. So you can have
+
+
+whatever continuous representation of
+
+
+the policy space you'd like to have as
+
+
+long as you can search over it to
+
+
+maximize. So that's actually a very
+
+
+flexible framework and you can do a lot
+
+
+with it.
+
+
+>> Yeah.
+
+
+Yeah. So, so the the question was well
+
+
+before when we did model free RL we
+
+
+would keep iterating but now we get the
+
+
+best uh the best thing just in kind of
+
+
+one shot sort of I mean you still have
+
+
+an iterative procedure in step one. So
+
+
+what you're buying with this is the
+
+
+iterative thing can be done separately
+
+
+from the rewards. So the way to think
+
+
+about it is like it's a little bit like
+
+
+what we discussed on Wednesday where you
+
+
+can practice for a whole bunch without
+
+
+any rewards learn those size essentially
+
+
+build up your model of the world and
+
+
+then when you're given a reward you can
+
+
+very quickly recover what it is that
+
+
+you're supposed to do. So kind of the
+
+
+right mental model for this is you can
+
+
+think of it as another one of these
+
+
+fine-tuning ideas where there's kind of
+
+
+a pre-training phase in step one which
+
+
+is agnostic of the task that you want at
+
+
+test time and once you've pre-trained
+
+
+and gained this like world knowledge
+
+
+represented in the size then you can
+
+
+recover the policy for your reward with
+
+
+only a small amount of data to identify
+
+
+the reward function.
+
+
+Any more questions about this?
+
+
+So with idea one, what we're doing is we
+
+
+are learning SI for a particular policy.
+
+
+Now what is SI really? SI is basically
+
+
+just a kind of a a prediction about
+
+
+states that you'll reach in the future
+
+
+when you follow a policy. Except instead
+
+
+of predicting the probability of states,
+
+
+it predicts expectations of features. So
+
+
+like the way you can think about it is
+
+
+like if one of the features is you
+
+
+picked up the key all it's saying is
+
+
+like how likely are you to pick up the
+
+
+key from this state if uh you're using
+
+
+your policy pie. So it kind of has like
+
+
+a very natural interpretation.
+
+
+And the problem with this is that the
+
+
+best you can do if this is what you're
+
+
+learning is you can pick an action from
+
+
+which your one policy pi is most likely
+
+
+to pick up the key. So the kind of the
+
+
+mental model when you take that arg max
+
+
+the way to think about it is you're
+
+
+choosing the action such that if you
+
+
+take that action and then follow the
+
+
+policy pi how high will those features
+
+
+be which is okay like it's better than
+
+
+just playing pi blindly but it's not the
+
+
+best you can do whereas here what you're
+
+
+doing is you're saying well I have a
+
+
+variety of different policies a variety
+
+
+of different skills I could use and
+
+
+given this set of skills and my
+
+
+successor features for each of those
+
+
+skills which skill is more likely to
+
+
+pick up the key.
+
+
+>> Well, you have to pick the pies. So,
+
+
+this tells us nothing about which pies
+
+
+to use. One of the ways you can pick
+
+
+them is you can use the algorithms from
+
+
+Wednesday. Uh but it's up to you to to
+
+
+to figure that out. This just says if
+
+
+you have your your different policies
+
+
+and you have your different features,
+
+
+how to synthesize them into decision-m
+
+
+method. Yeah.
+
+
+So the question is is the number of
+
+
+features fixed? So it's another thing
+
+
+that you have to pick. So this this
+
+
+algorithm doesn't tell you where the
+
+
+features come from. Uh it just assumes
+
+
+that you give it some functions that
+
+
+evaluate those features. And in
+
+
+practice, you would use some other
+
+
+learning method to figure out the
+
+
+features.
+
+
+That's right. Yeah. It's just the um the
+
+
+reason that this is generally much more
+
+
+practical is that if you're doing if
+
+
+you're like solving a large MDP like
+
+
+Atari games, the number of states is
+
+
+like literally the number of possible
+
+
+combinations of pixel values. So pretty
+
+
+much any function you pick is going to
+
+
+be better than that.
+
+
+Any other questions? Okay. Um all right.
+
+
+So
+
+
+as you might have guessed from the the
+
+
+nice questions here that uh this method
+
+
+is uh you know by itself you have to
+
+
+like do a bit of work to like really use
+
+
+it. You have to figure out the features
+
+
+figure out the the policies and a lot of
+
+
+the ideas we discussed so far in the
+
+
+course actually give us some of the
+
+
+building blocks for that. So we can use
+
+
+the skill discovery methods or the goal
+
+
+condition policies to get the policies.
+
+
+We can use something like VAES to
+
+
+acquire latent states that we can use as
+
+
+features. So you have to kind of make
+
+
+those choices. But if you make those
+
+
+choices carefully, then this is kind of
+
+
+an an interesting perspective on an
+
+
+alternative to classic model based RL.
+
+
+There is
+
+
+um one more idea that I want to talk
+
+
+about which is um again it's one of
+
+
+those ideas that is not by itself the
+
+
+most practically useful but gives us
+
+
+like good conceptual tools which is if
+
+
+you go back from these successor
+
+
+features to the successor
+
+
+representations the probabilities
+
+
+there is also kind of an issue with this
+
+
+besides the fact that the the vector is
+
+
+very charge. There's an issue with even
+
+
+defining successor representations
+
+
+if you have this is still successor
+
+
+representations this thing uh defining
+
+
+them if you have continuous states. One
+
+
+of the issues with defining successor
+
+
+representations if you have continuous
+
+
+states is that that delta the delta s
+
+
+equals i makes no sense for continuous
+
+
+states because for continuous states you
+
+
+want probability densities you don't
+
+
+want probabilities the probability of
+
+
+any continuous state is zero.
+
+
+because there's infinitely many of them
+
+
+its probability density might be non
+
+
+zero. So this is actually not a well-
+
+
+definfined thing for continuous states.
+
+
+Um and there is a potentially kind of a
+
+
+cute idea that we can use to extend
+
+
+successor representations to continuous
+
+
+states if we don't want to use the
+
+
+features. Um
+
+
+and I'll describe it next. And this is
+
+
+think of it as a kind of a tool that we
+
+
+can use um in various places. Yes.
+
+
+>> Yeah. So, so you can do the norm ball
+
+
+thing, but um that actually has a kind
+
+
+of a subtle meaning because then you're
+
+
+not learning the probability of reaching
+
+
+states. You're learning the probability
+
+
+of reaching norm balls, which is a well-
+
+
+definfined quantity, but it's not the
+
+
+same as what the successor
+
+
+representation was supposed to be. uh
+
+
+the successor representation is sort of
+
+
+original formulation for continuous
+
+
+states would have to be a density and
+
+
+densities are a different kind of object
+
+
+than probabilities. They behave a lot
+
+
+like probabilities in many cases but for
+
+
+example probability densities um can be
+
+
+larger than one whereas probabilities
+
+
+cannot be.
+
+
+Okay. So the problem is that uh for
+
+
+continuous states uh this delta function
+
+
+is always zero for any sample state if
+
+
+the states are continuous. Um so what we
+
+
+can do is we can kind of reframe these
+
+
+successor representations as a kind of
+
+
+classification problem. So we'll
+
+
+introduce this binary classifier that is
+
+
+a function of a state an action and a
+
+
+future state. And the classifier
+
+
+outputting one means that s future is a
+
+
+future state from ST and A under the
+
+
+policy pi. So the set of positives is
+
+
+the set of actual future states and the
+
+
+classifier outputting zero means it is
+
+
+not a future state. And this might seem
+
+
+like kind of a bizarre concept, but it's
+
+
+actually very easy to construct a
+
+
+training set for one of these binary
+
+
+classifiers because you construct the
+
+
+set of positives as just literally the
+
+
+future states you reached from a
+
+
+particular state and you construct the
+
+
+set of negatives as all of the states
+
+
+that you've ever seen.
+
+
+And then
+
+
+um something kind of interesting
+
+
+happens.
+
+
+We know that a bay optimal classifier uh
+
+
+is equal to the probability of something
+
+
+being in the positive set divided by the
+
+
+probability of being in the positive set
+
+
+plus the probability of being in the
+
+
+negative set. Right? This is kind of a a
+
+
+standard base optimal classifier.
+
+
+And
+
+
+if we get a base optimal classifier, we
+
+
+can actually manipulate this equation to
+
+
+recover exactly the successor
+
+
+representation. Okay, so here's what
+
+
+we've got. We train our classifier with
+
+
+positives that are actual futures that
+
+
+we've seen from a particular state,
+
+
+negatives that are all the states and if
+
+
+we did a good job of training it, we
+
+
+know that it should be equal to this
+
+
+odds ratio.
+
+
+So, and then of course the negative the
+
+
+the probability of the classifier
+
+
+outputting zero is the other way around.
+
+
+So outputting one is P of S future uh
+
+
+given S S A P P probability of
+
+
+outputting zero is just P of all states
+
+
+all seeing that future for any any prior
+
+
+state. And now if you take the ratio of
+
+
+these two classifiers
+
+
+the denominators of course cancel out.
+
+
+So you get the probability that you get
+
+
+S future given SA divided by the
+
+
+probability of S future. multiply both
+
+
+sides by probability of S future and
+
+
+that gives you exactly the successor
+
+
+representation.
+
+
+So the density that you want the
+
+
+probability of S future given SA is just
+
+
+the ratio of these two classifiers the
+
+
+the probability of outputting true
+
+
+divided by the probability of outputting
+
+
+false times the prior probability of
+
+
+that state occurring and we just got
+
+
+that just from the uh the definition of
+
+
+the base optimal classifier. So what
+
+
+that means is if you train your
+
+
+classifier to take in your current state
+
+
+and action and classify whether a
+
+
+candidate other state is in the set of
+
+
+futures you've seen for that essay or
+
+
+not.
+
+
+Then taking the ratio of that
+
+
+classifier's probability of outputting
+
+
+true divided by its probability of
+
+
+outputting false and multiplying it by
+
+
+the probability of that state occurring
+
+
+in nature gives you the successor
+
+
+representation.
+
+
+And it's it's just a bit of algebra like
+
+
+it's not like a um it's not a terribly
+
+
+profound fact. Uh but it does give us a
+
+
+practical way to get successor
+
+
+representations even for continuous
+
+
+spaces without having to deal with all
+
+
+of the the intricacies of measure theory
+
+
+and all that other kind of business.
+
+
+And of course this P of S future is a
+
+
+little bit mysterious. Getting a density
+
+
+model over all possible states might be
+
+
+pretty hard. But it doesn't depend on S
+
+
+and A.
+
+
+So while recovering this exactly is
+
+
+pretty hard because you still need to
+
+
+know P of S future. If you want to
+
+
+recover it up to a constant which is all
+
+
+you need if you want to get like a Q
+
+
+function then you can just disregard
+
+
+this term then you won't get a successor
+
+
+representation get a successor
+
+
+representation times some constant but
+
+
+as long as you don't care about that
+
+
+constant and you just want to for
+
+
+example use this to select the arg max a
+
+
+then this is actually good enough and
+
+
+you can just disregard that.
+
+
+So the method uh is more or less exactly
+
+
+what might be implied on that slide for
+
+
+every state and action in your in your
+
+
+replay buffer. And uh for every state
+
+
+action in your replay buffer, you
+
+
+construct training examples for your
+
+
+classifier where the positive set
+
+
+contains the future states you've seen
+
+
+on that trajectory. The negative set is
+
+
+just states sampled randomly from your
+
+
+buffer. So it's basically a set of all
+
+
+states. You train the classifier to
+
+
+classify between these things. Uh and
+
+
+then you take the ratio of the positive
+
+
+and the negative and that gives you a Q
+
+
+function like object. It gives you uh an
+
+
+object that is proportional to the
+
+
+probability of reaching that state, the
+
+
+density of that state given a state in
+
+
+action.
+
+
+Uh and when you sample as future, if you
+
+
+really want this to be a proper
+
+
+successor representation, you don't just
+
+
+sample it uniformly from all the future
+
+
+states. You sample it according to a
+
+
+geometric distribution which means that
+
+
+uh you have a probability of gamma of
+
+
+getting the next time step probability
+
+
+of gamma squared of the time step after
+
+
+that gamma cub time step after and so on
+
+
+and so on and so on. So you're sampling
+
+
+the futures proportionally to how likely
+
+
+they are to happen in this gamma
+
+
+discounted kind of world.
+
+
+Okay, any questions about this?
+
+
+Yeah.
+
+
+>> Uh, sorry, which line are you referring
+
+
+to?
+
+
+>> So, sample S from P P prime PIS future
+
+
+just means take one of your training
+
+
+trajectories. So in one of your training
+
+
+trajectories uh like let's say that this
+
+
+is the thing that you drew from your
+
+
+replay buffer and you have a bunch of
+
+
+future states
+
+
+pick a future time step. So pick like uh
+
+
+uh t prime according to a geometric
+
+
+distribution with gamma plus t right so
+
+
+it's so it's some number of steps in the
+
+
+future hop to that location and then
+
+
+that's s future.
+
+
+Any other questions?
+
+
+>> All right. Oh yes.
+
+
+Yeah. So the question is like why use
+
+
+the geometric distribution? Why not just
+
+
+uniformly pick a future time step?
+
+
+That's just how the successor
+
+
+representation is defined. So the
+
+
+successor representation is defined as
+
+
+this like gamma discount of future
+
+
+distribution. You can use a uniform
+
+
+distribution of future time steps. It
+
+
+just gives you a different um a
+
+
+different MDP formulation. uh it's a
+
+
+little bit harder to pin down what
+
+
+exactly that that says about your
+
+
+transition probabilities but you can do
+
+
+it and that would actually be like a
+
+
+pretty reasonable method in practice.
+
+
+Okay. So in the last part of today's
+
+
+lecture uh I'm going to talk a little
+
+
+bit about hierarchical reinforcement
+
+
+learning and hierarchal reinforcement
+
+
+learning is general is a very big topic
+
+
+but fortunately we've already put
+
+
+together most of the concepts that we
+
+
+need to understand hierarchal RL. Um
+
+
+so there's a classic perspective on
+
+
+hierarchy and reinforcement learning
+
+
+that I'm going to describe. This is not
+
+
+a a framework that people really use
+
+
+very often. um and the frameworks that
+
+
+people do use very often are actually
+
+
+drastically simplified from this. So
+
+
+I'll describe the original version and
+
+
+then I'll describe the simplified
+
+
+versions that are actually in much wider
+
+
+practical use. So the classic
+
+
+formulation is based on something called
+
+
+options. You can think of options as a
+
+
+kind of a mini policy or a skill.
+
+
+Formally an option is defined in terms
+
+
+of three objects.
+
+
+an in an initiation set which is the set
+
+
+of states in which you can start using
+
+
+the option
+
+
+a termination set which is the set of
+
+
+states where the option kind of hands
+
+
+back control and the option policy
+
+
+itself.
+
+
+So you can think of it visually as
+
+
+there's like some set of states where
+
+
+you're allowed to start running the
+
+
+option. The option is just a policy just
+
+
+distribution over actions given states
+
+
+and it takes you to some termination
+
+
+set. Okay, now this is like a a very
+
+
+general definition. So, uh for example,
+
+
+if your option just takes you to a goal,
+
+
+then the termination set might just be
+
+
+like a little ball near that goal. Uh
+
+
+and the initiation set might be just
+
+
+like everything like you can start
+
+
+anywhere. Uh but in general, an option
+
+
+would have these three things.
+
+
+And then the way that you can think
+
+
+about doing hierarchal RL with these
+
+
+options is you basically augment your
+
+
+action space to include the set of
+
+
+options that are available. Now this
+
+
+says nothing about where those options
+
+
+came from. You sort of like assume that
+
+
+someone gave you these particular
+
+
+skills. Maybe you learn them with some
+
+
+skill discovery method. Uh and then what
+
+
+you do is you construct this hybrid
+
+
+action space that contains primitive
+
+
+actions. Primitive actions act for only
+
+
+one time step and these options which
+
+
+act until they reach their termination
+
+
+set. And then you learn a policy that is
+
+
+allowed to use options in place of
+
+
+actions and a Q function if you want to
+
+
+do Q-learning or something that that
+
+
+uses options in place of actions.
+
+
+And the one additional kind of concept
+
+
+that you need to make this work if
+
+
+you're going to be training value
+
+
+functions. If you're training policy
+
+
+gradient, then this is all done. But if
+
+
+you're training value functions, you
+
+
+need one more concept to account for the
+
+
+fact that these options don't give up
+
+
+control immediately. So the options act
+
+
+for some period of time which means that
+
+
+now your Bellman backups don't back up
+
+
+the next time step. They back up some
+
+
+number of time steps h into the future.
+
+
+So you sum up the let's say the option
+
+
+is active for h steps. You sum up the
+
+
+rewards over the next h steps while the
+
+
+option is in control. And then you back
+
+
+up the target value from the from h
+
+
+steps in the future where you're taking
+
+
+the maxes. This would be Q-learning the
+
+
+max over the option you would take uh
+
+
+once the current option gives up
+
+
+control. So this is potentially very
+
+
+desirable because if H is quite large,
+
+
+this is effectively reducing the horizon
+
+
+of the problem for this high level Q
+
+
+function. So maybe you have a an Atari
+
+
+game where you need 10,000 steps to
+
+
+finish the game, but your options each
+
+
+act for about a thousand steps. Maybe
+
+
+they're traversing an entire level of
+
+
+Montazuma's Revenge. So now your Q
+
+
+function is effectively only dealing
+
+
+with a 10 timestep problem instead of a
+
+
+10,000 timestep problem which should be
+
+
+a lot easier. And of course it should
+
+
+also be a lot easier if these options
+
+
+are actually good options so that they
+
+
+uh do coherent things in the world
+
+
+rather than just moving around at
+
+
+random. Yeah.
+
+
+>> Um so
+
+
+The idea is that you're backing up the Q
+
+
+function from h steps in the future. So
+
+
+you start at step t and you're backing
+
+
+up step t plus h. So that means that h
+
+
+steps have elapsed. So you're discounted
+
+
+by gamma to the h.
+
+
+>> You mean for the rewards?
+
+
+>> Yeah. Yeah. Uh right. Right? So that if
+
+
+you want to draw parenthesis, the
+
+
+parentheses are around the rewards.
+
+
+Okay. So why is this a good idea? Uh so
+
+
+I I already alluded to this. Uh if a h
+
+
+is pretty big, then this is a much
+
+
+shorter problem potentially. So the
+
+
+effect of horizon for the high level Q
+
+
+function is much lower. And of course
+
+
+smart options might also really simplify
+
+
+exploration. So if your options are like
+
+
+solving an entire level of Montazuma's
+
+
+revenge, then they might be doing a lot
+
+
+of heavy lifting for you for
+
+
+exploration.
+
+
+Um, now this might also be a limiting
+
+
+idea because uh you need to actually get
+
+
+these options somehow and if you want to
+
+
+learn your options at the same time as
+
+
+you learn the high level policy, then
+
+
+you might not actually get that much
+
+
+benefit because learning the options
+
+
+might be just as hard as learning a flat
+
+
+non- hierarchal policy in the first
+
+
+place. Now some people have tried this
+
+
+and uh a fairly classic DPRL paper on
+
+
+this uh is this paper by bacon at all
+
+
+called the option critic architecture
+
+
+which does try to learn both options and
+
+
+a high level policy at the same time. Uh
+
+
+but uh it's a very complex topic as to
+
+
+whether that actually helps over just
+
+
+learning a flat policy. So if you are
+
+
+given very good options then it's a
+
+
+clear win but if you have to discover
+
+
+them even as you go then it's a little
+
+
+bit less obvious. Now the one of the
+
+
+ways that you can get clearer benefit is
+
+
+if the options themselves have some sort
+
+
+of structure that makes them easier to
+
+
+learn than the high level policy and
+
+
+there are a few ways to do this. So uh
+
+
+this gets us into the kind of the more
+
+
+practical frameworks that people have
+
+
+explored with this. So typically
+
+
+what people do is this. They say okay
+
+
+I'm not going to treat every option as a
+
+
+separate policy. I'm going to learn one
+
+
+low-level policy that is conditioned on
+
+
+the option that takes the option as a
+
+
+context like a multitask policy
+
+
+or a goal condition policy or a policy
+
+
+condition on some Z or some omega. So
+
+
+options are a multitask policy
+
+
+essentially. And what you can do is you
+
+
+can disregard this whole initiation set
+
+
+and termination set business. Let's say
+
+
+that options initiate in any state. They
+
+
+have no termination set. They'll always
+
+
+act for 20 time steps, some number of
+
+
+time steps. Just pick a constant. That's
+
+
+a simplified version of the framework.
+
+
+And then the algorithm is train your
+
+
+low-level policy with some kind of skill
+
+
+discovery method. Maybe one of the
+
+
+methods from Wednesday or train it as a
+
+
+goal condition policy, something like
+
+
+that. So use one of the methods that we
+
+
+saw before to train this thing as a
+
+
+low-level policy.
+
+
+And then you train a high level policy
+
+
+that selects the skill
+
+
+and it switches the skill every K steps
+
+
+like let's say every 20 steps
+
+
+and you just use use that same backup
+
+
+except that now this this H or K or
+
+
+whatever we want to call it is it's just
+
+
+a constant it doesn't depend on any
+
+
+termination set or initiation set.
+
+
+So it's it's just like this just with a
+
+
+K.
+
+
+Now this is uh a simplification of the
+
+
+original option framework but it's a
+
+
+very practical simplification and it
+
+
+allows us to very directly plug in a lot
+
+
+of the things that we already learned
+
+
+about. So for the low-level policy, we
+
+
+can do the skill discovery from
+
+
+Wednesday. We can do the goal condition
+
+
+policies from today. We can use like
+
+
+language condition policies. What
+
+
+whatever kind of multitask method you
+
+
+you like to use to get multitask
+
+
+policies. Use that for step one and then
+
+
+treat the context, the goal or the skill
+
+
+index or whatever as the action space
+
+
+for the high level policy.
+
+
+And now this is something that we can
+
+
+put together from the building blocks
+
+
+that we've already described. So
+
+
+specific instantiations of this people
+
+
+have done this with goals uh switch the
+
+
+goal every case steps. This works really
+
+
+well if you have a good goal condition
+
+
+policy. There is a an interesting paper
+
+
+by Nahim who used this for a version of
+
+
+the ant task uh the little quadripedal
+
+
+robot where it like plays like little
+
+
+puzzle games where it has to like push
+
+
+this block out of the way so it can
+
+
+enter the room with a green arrow and
+
+
+stuff like that. very long horizon tasks
+
+
+where you can exploit these goal
+
+
+condition policies to have the high
+
+
+level set the goals for the low level
+
+
+and solve very long horizon tasks. Um
+
+
+you can also do this with text. Um I
+
+
+won't get into the details of this but
+
+
+one of the interesting things you can do
+
+
+with hierarchal RL over language models
+
+
+is that you can have a low-level policy
+
+
+that outputs singlestep replies in text
+
+
+and a high level policy that um operates
+
+
+over multiple turns of a conversation.
+
+
+So you can have a conversational agent
+
+
+that is running a hierarchal policy
+
+
+where the lowle generates the individual
+
+
+tokens in a single response and the high
+
+
+level reasons across multiple responses.
+
+
+Um if you want to learn about that you
+
+
+can check out this paper by Zadol called
+
+
+Archer.
+
+
+Okay. So uh it's past 10 a.m. I'll
+
+
+adjourn here. I'll see you all on
+
+
+Wednesday for the for my last lecture
+
+
+and then uh I would really urge all of
+
+
+you to come to class for next Friday and
+
+
+the Wednesday after for the guest
+
+
+lectures.
+
+
+So when you're doing

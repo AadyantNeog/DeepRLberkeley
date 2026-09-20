@@ -1,0 +1,9595 @@
+All right. Let's get started. So, on
+
+
+Wednesday, we talked about variational
+
+
+inference. And variational inference,
+
+
+the way we talked about it on Wednesday,
+
+
+is kind of a
+
+
+you know, a a neat theoretical
+
+
+derivation that shows us that when we
+
+
+have latent variable models, we can do
+
+
+this
+
+
+approximate posterior thingy and
+
+
+actually train those latent variable
+
+
+models without having to solve an
+
+
+intractable inference problem. And
+
+
+today, we're going to see how we can use
+
+
+that first to actually build practical
+
+
+and useful generative models in deep
+
+
+learning, and then
+
+
+we'll see how it actually applies to
+
+
+reinforcement learning.
+
+
+So, let's briefly recap where we were at
+
+
+on Wednesday.
+
+
+So, today we're going to go from
+
+
+variational inference to something
+
+
+called amortized variational inference.
+
+
+Um, those of you that are
+
+
+uh, that know what the word amortized
+
+
+means might be able to guess what's
+
+
+going to happen, but let's first
+
+
+summarize what happened
+
+
+before.
+
+
+So,
+
+
+on Wednesday we showed that if you have
+
+
+a latent variable model modeling a
+
+
+distribution p of x with
+
+
+unobserved latent variables z,
+
+
+then you can lower bound the log
+
+
+likelihood with this equation. Now,
+
+
+lower bounding the log likelihood is
+
+
+really useful because the way we're
+
+
+going to typically train our model is by
+
+
+maximizing the log likelihood. So, we
+
+
+have an expression that is
+
+
+um a lower bound on it, then we can
+
+
+maximize that lower bound, and if we
+
+
+maximize it hard enough, eventually
+
+
+we'll actually also raise the log
+
+
+likelihood of the data.
+
+
+And remember that our model consists of
+
+
+two terms, log p of x given z, which is
+
+
+a
+
+
+comparatively simple distribution that
+
+
+maps latent variables to x's, and log p
+
+
+of z, which models the distribution over
+
+
+z's. And usually log p of z is really,
+
+
+really simple. It's just like a zero
+
+
+mean unit variance Gaussian or
+
+
+something. And log p of x given z is
+
+
+like a transformation of those random
+
+
+variables into x's. So, composed
+
+
+together, p of x given z and p of z can
+
+
+represent really, really complicated
+
+
+distributions.
+
+
+Okay. So, the bound we derived is formed
+
+
+by picking an approximate posterior q i
+
+
+of z, which is not the real posterior,
+
+
+and typically you would choose it to
+
+
+have some very convenient form like a
+
+
+Gaussian with mean mu i and variance
+
+
+sigma i,
+
+
+and using an expected log likelihood
+
+
+under this q of z, and we showed that if
+
+
+you take that expected log likelihood
+
+
+and you add the entropy of q to it, that
+
+
+is a valid lower bound on log p of x,
+
+
+and we called that bound l i, as which
+
+
+is a function of p and q i, and the
+
+
+reason that everything has a subscript i
+
+
+is because it depends on the data point
+
+
+x i. So, different data points will have
+
+
+a different q i and a different l i.
+
+
+And then we said that well, instead of
+
+
+maximizing the intractable log
+
+
+probability of all of your data, let's
+
+
+instead maximize this much more
+
+
+tractable variational lower bound.
+
+
+And we wrote out this algorithm
+
+
+for every XI or a mini batch of your
+
+
+XIs, calculate the gradient with respect
+
+
+to the parameters of your model, and the
+
+
+way you do it is you sample a Z from the
+
+
+posterior,
+
+
+calculate the gradient using that sample
+
+
+Z, and notice that the only thing in
+
+
+that lower bound that depends on the
+
+
+model parameters theta is X given Z, so
+
+
+that's just grad theta log P theta XI
+
+
+given Z, where Z is the Z you sampled.
+
+
+Update your model parameters,
+
+
+and then somehow update your QI, and we
+
+
+saw that the best QI is also the one
+
+
+that maximizes the lower bound because
+
+
+that will minimize the KL divergence
+
+
+between QI and the true posterior,
+
+
+which is P of Z given XI.
+
+
+And how do you
+
+
+update QI? Well, you have to represent
+
+
+it somehow, so maybe you represent it as
+
+
+a Gaussian with two parameters, a mean
+
+
+UI and a variance sigma I, and maybe
+
+
+you'll use the gradient with respect to
+
+
+those parameters, so you can do like
+
+
+a gradient ascent on a lower bound to
+
+
+get QI as well.
+
+
+All right.
+
+
+So, there This is a perfectly valid
+
+
+algorithm. Everything here is correct.
+
+
+Well, it's a correct approximation at
+
+
+least.
+
+
+Approximation here means it's like it's
+
+
+an actual lower bound.
+
+
+But, this is generally in the modern day
+
+
+quite a bad algorithm.
+
+
+Yes.
+
+
+Yeah, so you have to compute the
+
+
+gradient of the entropy as well.
+
+
+Uh the entropy of a of a Gaussian uh you
+
+
+could basically it's it's just a
+
+
+standard formula. Like you look it up on
+
+
+Wikipedia, you get the formula for the
+
+
+entropy of a Gaussian and just plug it
+
+
+into PyTorch.
+
+
+Um
+
+
+No, both terms are not necessarily
+
+
+positive.
+
+
+Okay. So, this is a bad algorithm. Uh
+
+
+what makes it bad? Well, it's those QIs.
+
+
+Uh typically when you do machine
+
+
+learning, you have a lot of data points.
+
+
+And the more data points you have, the
+
+
+better it's going to be. And the problem
+
+
+we have is that uh now every data point
+
+
+has these additional parameters attached
+
+
+to it, the mu I and sigma I. And that's
+
+
+no good because we don't want that many
+
+
+parameters. So, we have the number of uh
+
+
+dimensions of theta, but then we have
+
+
+the number of dimensions of mu plus the
+
+
+number of dimensions of sigma multiplied
+
+
+by the number of data points.
+
+
+And that's very, very annoying.
+
+
+It's not incorrect, it's just kind of
+
+
+hard to plug into existing machine
+
+
+learning kind of uh systems, which are
+
+
+really built around the expectation that
+
+
+you will have a fixed-size parameter
+
+
+vector, a giant data set, and sample
+
+
+mini batches each time you update your
+
+
+parameters.
+
+
+So,
+
+
+we would like to
+
+
+do something else so that we don't have
+
+
+these parameters for every data point.
+
+
+So, um
+
+
+we want our QI of Z to approximate the
+
+
+posterior P of Z given XI.
+
+
+So, um
+
+
+yeah, does anyone have any ideas on what
+
+
+we could do?
+
+
+So that we don't have the number of
+
+
+parameters increasing with the number of
+
+
+data points.
+
+
+Yeah.
+
+
+Yeah, so what if we have all the data
+
+
+points share the same Q? So, uh kind of
+
+
+a simple version of this is
+
+
+I just have one mu and sigma.
+
+
+Okay, so first So, this is like a good a
+
+
+good opportunity for us to check our
+
+
+understanding. If I only have one mu and
+
+
+sigma, so I just so every single data
+
+
+point shares the same mu and sigma, is
+
+
+that a valid lower bound?
+
+
+You guys can shout it out.
+
+
+Yes, it is because literally every Q is
+
+
+a is a valid lower bound.
+
+
+Uh is it a good lower bound? What Yeah,
+
+
+probably not, right? Because unless
+
+
+you're all your data points happen to
+
+
+have the same posterior,
+
+
+uh
+
+
+you probably are not going to accurately
+
+
+approximate the posterior of your data
+
+
+points with the same exact distribution
+
+
+for everybody.
+
+
+Uh in fact, probably you will get uh
+
+
+uh a Q that's equal to the prior because
+
+
+that's the thing that averages
+
+
+everything out.
+
+
+So, it is a valid approximation, just a
+
+
+really bad one.
+
+
+Yes.
+
+
+Um it's very real. Uh we'll actually see
+
+
+some examples of latent variables later.
+
+
+Okay. So, maybe instead of having um
+
+
+just one posterior for everybody, we can
+
+
+make it one function for everybody.
+
+
+So, perhaps instead of representing the
+
+
+posterior with just a mu and a sigma, we
+
+
+can represent it as a function of xi.
+
+
+And of course, a good way to represent
+
+
+functions is using neural nets.
+
+
+So, what if we say that qi of z is
+
+
+actually given by some function that
+
+
+produces a distribution over z which
+
+
+we're going to call q of z given xi.
+
+
+And this is a deep reinforcement
+
+
+learning class, so that means that we we
+
+
+like to represent our functions with
+
+
+deep nets.
+
+
+That's like a perfectly valid thing. So,
+
+
+now every xi will have a different
+
+
+posterior, but we don't have parameters
+
+
+for every qi of z. We just have one set
+
+
+of parameters for that neural network.
+
+
+So, now if we think about the objects
+
+
+that we're learning, we have our
+
+
+original model which maps z to
+
+
+p of x given z.
+
+
+And then we have this new model which is
+
+
+representing our posteriors which maps x
+
+
+to
+
+
+q of z given x.
+
+
+And we're going to learn both of these
+
+
+things.
+
+
+So, essentially this second network is
+
+
+going to output the mean and variance
+
+
+for the for Z given a particular X.
+
+
+Okay? And our model has parameters theta
+
+
+and this approximate posterior
+
+
+uh has uh parameters
+
+
+phi.
+
+
+Yes.
+
+
+Exactly. So, the the the number of
+
+
+dimensions in phi does not depend on the
+
+
+size of your data set.
+
+
+And uh
+
+
+here is another kind of test of uh
+
+
+how um
+
+
+how well all this is going.
+
+
+Can anybody raise their hand and tell me
+
+
+how you would train the parameters phi?
+
+
+What would be the objective for it?
+
+
+Yeah.
+
+
+>> Uh reconstruction loss
+
+
+and maybe like a KL term that
+
+
+disincentivizes like a small sigma.
+
+
+>> That is the right answer. But what what
+
+
+what's Is there something on the slide
+
+
+that is the objective for phi?
+
+
+>> On the slide
+
+
+You want to maximize
+
+
+uh
+
+
+P X given Z given X. That seems kind of
+
+
+hard and circular. I don't think that's
+
+
+the answer.
+
+
+>> Yeah. So,
+
+
+uh any any other i- ideas?
+
+
+Yes.
+
+
+>> Maximize elbow.
+
+
+>> Yeah, exactly. It's actually on the
+
+
+slide. So, it says, "Update QI to
+
+
+maximize LI of P {comma} QI."
+
+
+So, if we change how we represent QI,
+
+
+that statement is still valid because
+
+
+you still want the most accurate
+
+
+posterior. So, now instead of optimizing
+
+
+each QI with respect to LI P {comma} QI,
+
+
+you optimize the parameters phi
+
+
+using the same exact objective.
+
+
+Just averaged over all your data points.
+
+
+So the objective is the same, nothing
+
+
+changed. All we changed is the
+
+
+parameterization of the posterior.
+
+
+All of the math from Wednesday still
+
+
+applies perfectly well.
+
+
+Now, the reason we call this amortized
+
+
+variational inference is that before the
+
+
+hard work of finding that posterior had
+
+
+to be done by each data point, by each
+
+
+of those mu i's and sigma i's. But now
+
+
+we are spreading the load, we're getting
+
+
+all of the data points to work together
+
+
+to find one posterior, so the difficulty
+
+
+of getting the posterior is amortized
+
+
+over all the data points. So people call
+
+
+this amortized variational inference
+
+
+because
+
+
+uh you are kind of spreading the load of
+
+
+learning that posterior over all the
+
+
+data points together.
+
+
+Okay. So
+
+
+you you want your uh to lower bound your
+
+
+log P of X. You have the same bound as
+
+
+before,
+
+
+um
+
+
+and now that bound is a function of P
+
+
+theta and Q phi.
+
+
+So now the algorithm will be for your XI
+
+
+or a mini batch of X i's,
+
+
+calculate the gradients of that lower
+
+
+bound with respect to theta, which is
+
+
+done by sampling a Z from your
+
+
+posterior,
+
+
+and then
+
+
+approximating the gradient by the
+
+
+gradient of P of X given Z using that
+
+
+sample Z. And then do a gradient step on
+
+
+that.
+
+
+And then you do a gradient step on phi
+
+
+using the same objective.
+
+
+Yeah.
+
+
+Uh yeah, so the question was, well, they
+
+
+there's a learning rate there, alpha, do
+
+
+these two things have the same learning
+
+
+rate? They don't have to.
+
+
+Uh
+
+
+but
+
+
+usually for this kind of thing, there's
+
+
+not really a reason to make them
+
+
+different.
+
+
+Okay. So now we still have to talk about
+
+
+how to calculate that gradient and this
+
+
+is going to be kind of fun. Uh so we've
+
+
+got uh our lower bound.
+
+
+And the gradient here is with respect to
+
+
+phi, okay? So if we all look at this
+
+
+equation, you'll see that phi pops up in
+
+
+two places.
+
+
+Look at the equation, see where it pops
+
+
+up. Two places. One place is in the
+
+
+entropy and the second place is in the
+
+
+expectation. So the expectation is taken
+
+
+with respect to q phi. Those are the
+
+
+only two places where phi shows up.
+
+
+Uh and as a reminder, what phi is is
+
+
+uh
+
+
+a Gaussian distribution over x uh where
+
+
+the mean and the variance are given by a
+
+
+fun by this uh neural network with
+
+
+parameters phi. Yes.
+
+
+>> Can you define again what amortized
+
+
+means?
+
+
+>> Uh amortized means uh uh spread across
+
+
+multiple things.
+
+
+So if we need to like lift a heavy
+
+
+object and we all do it together, then
+
+
+we're amortizing the weight of that
+
+
+object across all of us. And in this
+
+
+case, the cost of training the this uh
+
+
+uh posterior is amortized over all the
+
+
+data points.
+
+
+All right, so we've got this phi in two
+
+
+different places.
+
+
+And the entropy one is kind of the easy
+
+
+one because the entropy of a Gaussian
+
+
+distribution is just a like a textbook
+
+
+formula. So you look it up on the
+
+
+internet, you find the formula, you plug
+
+
+it in and PyTorch will happily
+
+
+differentiate that formula for you. So
+
+
+that part is very, very straightforward.
+
+
+So the difficult part is that
+
+
+expectation.
+
+
+And now here is the the uh the cool kind
+
+
+of connection that happens here.
+
+
+The gradient
+
+
+of
+
+
+the expectation of some complicated
+
+
+thing with respect to the parameters of
+
+
+the distribution under which you're
+
+
+taking that expectation
+
+
+is something that we've seen multiple
+
+
+times before in this course.
+
+
+And we have techniques for computing
+
+
+these kinds of gradients.
+
+
+Does Does have any suggestions for a
+
+
+kind of technique we could use to
+
+
+compute this?
+
+
+Yeah.
+
+
+Right. So, getting samples and doing a
+
+
+policy gradient.
+
+
+So, to make this even more suggestive,
+
+
+uh let's rewrite this uh in a form that
+
+
+you know, uses a letter. I'll pick the
+
+
+letter R because that's a very
+
+
+convenient letter.
+
+
+Um so, all that stuff inside it doesn't
+
+
+depend on phi, so it's just some number
+
+
+and I'm going to call that number R. So,
+
+
+what I want is the gradient of the
+
+
+expected value
+
+
+uh over Z with uh distributed according
+
+
+to Q phi of Z given X of some function R
+
+
+of X I comma Z.
+
+
+So, you can just use policy gradient.
+
+
+Uh and then if you use policy gradient,
+
+
+then you would generate samples. These
+
+
+are samples of Z. Uh you would evaluate
+
+
+the
+
+
+R
+
+
+not the reward, it's R, which is called
+
+
+it R, for each of those samples,
+
+
+uh and then you would do grad
+
+
+grad phi of log Q phi times that
+
+
+number.
+
+
+This is policy gradient.
+
+
+This is a perfectly valid way to compute
+
+
+the this uh
+
+
+um
+
+
+uh this gradient. And then you would add
+
+
+to it the gradient of the entropy and
+
+
+that's your gradient of L.
+
+
+Okay.
+
+
+Um so,
+
+
+what's wrong with this gradient? Why
+
+
+might we not want to use this kind of
+
+
+technique even though we've spent so
+
+
+much time in this course talking about
+
+
+it? What's the problem with policy
+
+
+gradient? Yeah.
+
+
+So, the reward depends on theta, but
+
+
+that's actually not a problem because
+
+
+this is a gradient with respect to phi.
+
+
+So, that part is fine. Yes?
+
+
+Yeah, so the issue is that the this is a
+
+
+high variance gradient estimator, which
+
+
+is to say that you need either lots of
+
+
+samples or you're going to end up with a
+
+
+pretty noisy gradient.
+
+
+It's not like a fundamental problem. You
+
+
+can just generate more samples.
+
+
+Everything here is in the computer, so
+
+
+you can generate samples all day long,
+
+
+but it's just kind of costly and slow.
+
+
+So, maybe it would be nice to try to
+
+
+find a different gradient estimator
+
+
+that's a little bit more suited to this
+
+
+case where all of the things inside the
+
+
+that expectation are objects that I know
+
+
+and that I can differentiate and all
+
+
+that kind of good stuff. So, this is a
+
+
+valid way to do this, but there's a
+
+
+better gradient estimator, which we also
+
+
+actually learned about using the
+
+
+parameter reparameterization trick.
+
+
+So, the better way of doing this
+
+
+is
+
+
+again, this is this is the thing we're
+
+
+we're trying to differentiate is to
+
+
+realize that for a Gaussian
+
+
+Q of Z given X
+
+
+Z is given by mu of X plus some random
+
+
+number epsilon times sigma of X, where
+
+
+the random number is distributed
+
+
+according to a canonical Gaussian,
+
+
+meaning a zero mean unit variance
+
+
+Gaussian.
+
+
+This is kind of obvious, like the way
+
+
+you would implement this in a computer
+
+
+is you would first generate a zero mean
+
+
+unit variance Gaussian sample, multiply
+
+
+by the standard deviation and add the
+
+
+mean. So, that means that you can
+
+
+express Z as a deterministic function
+
+
+of
+
+
+the outputs of your neural network and a
+
+
+sample epsilon that does not depend on
+
+
+your neural network.
+
+
+Okay, so the the sample is independent
+
+
+of phi.
+
+
+So, that means that you can rewrite that
+
+
+objective as the expected value under a
+
+
+zero mean unit variance Gaussian.
+
+
+So, the random variable now is epsilon,
+
+
+not Z. And hence why it's called
+
+
+reparameterization, we're
+
+
+reparameterizing the random variable in
+
+
+terms of epsilon rather than Z, and then
+
+
+you just plug in that equation for Z
+
+
+into the second argument for R.
+
+
+So, it's still an expectation, but now
+
+
+the expectation is under a distribution
+
+
+that is constant and the phis are just
+
+
+inside the argument to R.
+
+
+And now there's a a very convenient way
+
+
+to estimate this gradient.
+
+
+You sample your epsilons
+
+
+from this zero mean unit variance
+
+
+Gaussian. You can use just a single
+
+
+sample, that's fine, too. And then you
+
+
+estimate the gradient just by doing
+
+
+backprop.
+
+
+So, you can literally implement, you
+
+
+know, R of X {comma} mu of X plus
+
+
+epsilon sigma of X in PyTorch and call
+
+
+dot gradient on it.
+
+
+Because epsilon doesn't depend on phi.
+
+
+Yes.
+
+
+So, this gives you lower variance. And
+
+
+the price you are paying to get lower
+
+
+variance is that you have to be able to
+
+
+differentiate R.
+
+
+So, in regular policy gradients, we
+
+
+couldn't do this because in regular
+
+
+policy gradients, we typically can't
+
+
+differentiate the reward of the entire
+
+
+trajectory because it depends on the
+
+
+unknown dynamics.
+
+
+But here, there is nothing unknown.
+
+
+Everything is known. So, we can compute
+
+
+a gradient with respect to R.
+
+
+Um
+
+
+so, the question was, what do I mean by
+
+
+single sample?
+
+
+Uh so,
+
+
+in practice, if you were to implement
+
+
+this,
+
+
+you wouldn't generate multiple epsilons.
+
+
+You would actually generate just one
+
+
+epsilon.
+
+
+This is The reason for this is actually
+
+
+a little subtle. Uh
+
+
+any number of epsilons is a perfectly
+
+
+valid estimator. And the more epsilons
+
+
+you take, the lower the variance of your
+
+
+estimator will be.
+
+
+But,
+
+
+almost always when we code this up, we
+
+
+use one epsilon.
+
+
+And the reason for this is that
+
+
+we're going to have a mini batch of X's.
+
+
+So, you're doing stochastic gradient
+
+
+descent. So, you're not going to do this
+
+
+for just one X. You're going to
+
+
+uh
+
+
+take, let's say,
+
+
+256 X's from your data set.
+
+
+And then you'll generate one epsilon
+
+
+epsilon for each of them.
+
+
+You could generate two epsilons for each
+
+
+of them, but then you're doing twice as
+
+
+much computation. So, you might as well
+
+
+just get two times more X's and generate
+
+
+one epsilon for each of them.
+
+
+So, in practice, it's not really worth
+
+
+it to have multiple epsilons for one X.
+
+
+You'd rather just get more X's and have
+
+
+one epsilon for each of them.
+
+
+Yes.
+
+
+I mean that M equals 1.
+
+
+And then you you do this for each uh X
+
+
+in your batch. And you might have quite
+
+
+a few X's. That's your mini batch size.
+
+
+Um so, this is all for the case where
+
+
+we're we're just modeling P of X. So,
+
+
+the X's are all assumed to be IID.
+
+
+So, imagine that X is like an uh an
+
+
+image. You have a data set of images and
+
+
+you're trying to learn a generative
+
+
+model over images that will generate
+
+
+more realistic-looking images.
+
+
+Okay.
+
+
+So, this is now actually very simple.
+
+
+So, most auto diff software like PyTorch
+
+
+will just happily compute this for you.
+
+
+And now we can actually put all of this
+
+
+together.
+
+
+So, we've got our objective.
+
+
+We're going to slightly rearrange this
+
+
+objective in a form that makes it a
+
+
+little easier to implement. So, we'll
+
+
+split apart this uh expectation of P of
+
+
+X given Z and P of Z. So, we'll just by
+
+
+linearity of expectation, we'll actually
+
+
+have two expectation terms, the expected
+
+
+value of
+
+
+log P of X given Z and the expected
+
+
+value of log P of Z.
+
+
+And now we're going to notice that the
+
+
+second and third term together
+
+
+are actually equal to the negative KL
+
+
+divergence between
+
+
+Q of Z given X and P of Z.
+
+
+Okay, this is just like a little bit of
+
+
+algebra.
+
+
+Uh and this is often very convenient to
+
+
+to write down because Q of Z given X is
+
+
+a Gaussian distribution
+
+
+where the mean and variance are
+
+
+functions of X.
+
+
+P of Z is a Gaussian distribution where
+
+
+the mean is a number and the variance is
+
+
+a number. Typically, the numbers are 0
+
+
+and 1.
+
+
+So, this is a KL divergence between two
+
+
+Gaussians.
+
+
+And that is a textbook formula. So, you
+
+
+can look it up, just plug in the
+
+
+equation for it. Very easy to evaluate,
+
+
+very easy to differentiate. So, we like
+
+
+to see KL divergence between two
+
+
+Gaussians because that's very easy. And
+
+
+that first term, the expectation of log
+
+
+p of x given z, that's a kind of a
+
+
+complicated term.
+
+
+So, we'll group the second and third
+
+
+term together into an easily
+
+
+differentiable quantity
+
+
+where we'll just like look up the
+
+
+formula for it on Wikipedia.
+
+
+And for that first term, we're going to
+
+
+use the reparameterized gradient. So,
+
+
+we'll we'll rewrite this as a as an
+
+
+expectation over epsilon and plug in
+
+
+that equation for z as a function of
+
+
+epsilon, mu, and sigma into the
+
+
+argument. Okay, so now I've actually
+
+
+written this in in a form that you could
+
+
+code up in PyTorch and differentiate.
+
+
+Uh and if you use one sample for
+
+
+epsilon, then things simplify like this.
+
+
+And it would help to actually draw the
+
+
+computational graph that you will get if
+
+
+you code it up in PyTorch.
+
+
+So, we'll start with xi. This is the
+
+
+the actual like uh
+
+
+uh data point from your data set. And
+
+
+we'll pass xi through our network q phi.
+
+
+And q phi outputs two things.
+
+
+It outputs a mean and it outputs a
+
+
+variance.
+
+
+Okay?
+
+
+And now we need to combine that mean and
+
+
+variance together, and that requires an
+
+
+epsilon. That requires a random Gaussian
+
+
+sample. So, over here we'll sample an
+
+
+epsilon and we'll put these three things
+
+
+together to get z.
+
+
+And this is a computation graph. Like,
+
+
+this is literally what you're the graph
+
+
+you're expressing in PyTorch when you
+
+
+code this up. So, z is equal to mu of x
+
+
+plus epsilon sigma of x.
+
+
+Okay, that's a operation that you can
+
+
+implement in PyTorch.
+
+
+And now that z
+
+
+goes into
+
+
+p theta.
+
+
+And this outputs a distribution over X
+
+
+given Z.
+
+
+It's typically also a Gaussian
+
+
+distribution.
+
+
+And then I need I I also need to put
+
+
+that KL divergence loss on there, and
+
+
+that that KL divergence loss uh gets put
+
+
+on mu and sigma, mu phi and sigma phi.
+
+
+So, this is a computation graph uh that
+
+
+can be implemented. And if you
+
+
+differentiate this computation graph,
+
+
+then you get the derivatives with
+
+
+respect to theta and phi of your
+
+
+variational lower bound.
+
+
+Yes.
+
+
+>> Is this similar in
+
+
+architecture to like a VAE?
+
+
+>> So, the question is is it similar in
+
+
+architecture to a VAE? Those are For
+
+
+those of you that know what a VAE is,
+
+
+this is exactly a VAE.
+
+
+Uh and uh VAE stands for variational
+
+
+autoencoder. It's variational because we
+
+
+use variational inference, and it's an
+
+
+autoencoder because it takes X, encodes
+
+
+it into Z, and then decodes it back into
+
+
+X.
+
+
+So, this is uh this is sometimes called
+
+
+an autoencoder.
+
+
+So, this is basically the simplest kind
+
+
+of uh practical generative model
+
+
+implemented with amortized variational
+
+
+inference.
+
+
+Okay, any questions about this thing?
+
+
+Yeah.
+
+
+>> I'm I'm curious about the the KL term. I
+
+
+see
+
+
+I mean, please correct me if I'm wrong,
+
+
+this is forward KL loss?
+
+
+Or would this be considered backward?
+
+
+>> This is This would be considered uh
+
+
+reverse KL because the parameters are
+
+
+phi. So, the parameters are in the first
+
+
+argument.
+
+
+>> I see.
+
+
+So, could you clarify on whether this
+
+
+the behavior
+
+
+through this formulation of the KL loss
+
+
+be mean seeking or like coverage
+
+
+seeking?
+
+
+>> So, here you would want uh
+
+
+It's It's mode seeking, but it kind of
+
+
+doesn't matter because P of Z is a
+
+
+unimodal Gaussian.
+
+
+Um
+
+
+If you If we want to think about the
+
+
+intuition behind what this term is
+
+
+doing, it's basically saying all else
+
+
+being equal, I would prefer for my
+
+
+posterior to look like my prior.
+
+
+Now, you you can't actually set the
+
+
+posterior to look exactly like the prior
+
+
+because then it carries no information.
+
+
+So, if uh Q of Z given X is equal to P
+
+
+of Z, then
+
+
+uh essentially there's nothing about X
+
+
+contained in Z, and you will not be able
+
+
+to reconstruct X accurately. So, the
+
+
+game that this thing plays is it tries
+
+
+to actually find a posterior that
+
+
+contains as little information as
+
+
+possible while still allowing you to
+
+
+reconstruct X.
+
+
+And this is actually a really good idea
+
+
+because if you want to take some
+
+
+complicated piece of information like an
+
+
+image and represent it with a very
+
+
+simple, low-information vector, then you
+
+
+will be forced to pull out the
+
+
+underlying degrees of variation. So, if
+
+
+you think back to the the example with
+
+
+the cars on the highway at the beginning
+
+
+of the class, well, representing that
+
+
+image with the cars using the position
+
+
+of the cars is pretty simple.
+
+
+Representing it by the color of all the
+
+
+pixels is very complex. So, a simpler
+
+
+representation with less information
+
+
+uh is preferred with this formulation.
+
+
+That's kind of what we want. That would
+
+
+be a good representation.
+
+
+Yes.
+
+
+>> Aren't you assuming that Z and X
+
+
+are
+
+
+dependent or like Z depends on X?
+
+
+>> That's right. So, Z Z definitely depends
+
+
+on X because
+
+
+um
+
+
+different Zs reconstruct different Xs.
+
+
+So, if you know an X, that tells you a
+
+
+lot of information about what the Z is.
+
+
+>> But like
+
+
+you ever been like in a problem setting
+
+
+where that's not the case and it
+
+
+doesn't work out as well?
+
+
+>> Well, if Z and X are independent, then
+
+
+then there is no um there's no need for
+
+
+any of this because if Z doesn't depend
+
+
+on X, then P of X given Z is just P of
+
+
+X. And you could just directly go and
+
+
+maximize that without worrying about VI.
+
+
+Okay. So, a quick discussion about this
+
+
+uh reparameterization trick versus
+
+
+policy gradient. So, the policy
+
+
+gradient, this thing, uh that can handle
+
+
+both discrete and continuous latent
+
+
+variables. So, it is kind of the most
+
+
+general way of doing this. So far, I did
+
+
+everything for continuous variables, but
+
+
+if you had discrete variables in there,
+
+
+then reparameterization trick doesn't
+
+
+work, whereas policy gradient does. But,
+
+
+the policy gradient has high variance
+
+
+and requires multiple samples and small
+
+
+learning rates. Reparameterization
+
+
+trick, this thing,
+
+
+only handles continuously in variables,
+
+
+but it's very simple to implement and
+
+
+has low variance. So, in practice, for
+
+
+amortized variational inference with
+
+
+continuous latent variables, people
+
+
+basically always use the
+
+
+reparameterization trick.
+
+
+You can derive it even for non-Gaussian
+
+
+distributions, although it's a little
+
+
+bit more complex. But, if you have
+
+
+discrete variables, then you have to do
+
+
+something else. You could try doing
+
+
+policy gradient, or there's even more
+
+
+advanced tricks that you could employ.
+
+
+So, if you want like kind of a a rule of
+
+
+thumb,
+
+
+use reparameterization trick. If you
+
+
+have like advanced mode and you happen
+
+
+to have discrete variables, then it
+
+
+won't work anymore, and then you can try
+
+
+policy gradient.
+
+
+Yeah.
+
+
+Oh, yeah, yeah. So, that first line
+
+
+should be grad J. That's right.
+
+
+Okay. So, let's put this together into
+
+
+some generative models. So, uh
+
+
+as as we've already heard actually, the
+
+
+simplest generative model of this sort
+
+
+is called a variational autoencoder,
+
+
+which is literally exactly the same as
+
+
+what I just showed. So, a variational
+
+
+autoencoder is a model that has latent
+
+
+variable Z
+
+
+and observations X, and has what's
+
+
+called a decoder with parameters theta
+
+
+and an encoder with parameters phi. And
+
+
+that's just terminology to explain the
+
+
+thing that we already learned about. So,
+
+
+these are the two neural networks in a
+
+
+variational autoencoder, Q phi, which is
+
+
+a distribution over Z given X, and P
+
+
+theta, which is a distribution over X X
+
+
+given Z. And your goal in training a
+
+
+variational autoencoder is to get
+
+
+P theta, because you want to be able to
+
+
+generate X's. But, in the course of
+
+
+training that, you need to also train Q
+
+
+phi, so that you can do variational
+
+
+inference.
+
+
+So, if you want to generate samples from
+
+
+a variational autoencoder once it's been
+
+
+trained, then you generate an a Z from
+
+
+your prior, which is typically a zero
+
+
+mean unit variance Gaussian, and then
+
+
+you decode that Z, meaning run it
+
+
+through P theta, to get an X.
+
+
+And you can use this to, for example,
+
+
+generate pictures of, you know, what
+
+
+have you.
+
+
+This animation shows different samples
+
+
+from a VAE trained on faces as the
+
+
+latent variables are changed. So, here
+
+
+there's kind of a random walk around the
+
+
+latent space, and each
+
+
+position in the latent space is decoded
+
+
+into an image.
+
+
+And this is the architecture of the VAE,
+
+
+so this is exactly the thing that I
+
+
+showed before.
+
+
+And the objective, if I were to like
+
+
+plug everything in, is just to maximize
+
+
+with respect to theta and phi,
+
+
+the average over all of your samples of
+
+
+log P theta of XI given the encoding of
+
+
+XI with a randomly sampled epsilon,
+
+
+minus the KL divergence between your
+
+
+posterior and your prior.
+
+
+And again, that KL divergence is just a
+
+
+formula that you look up in a textbook
+
+
+and implement it in PyTorch.
+
+
+Okay. So,
+
+
+how would we use a variational
+
+
+autoencoder?
+
+
+Well, you can use it to generate
+
+
+pictures of faces. That's kind of nice.
+
+
+You can use it to generate other
+
+
+pictures as well.
+
+
+Um you would train it you by basically
+
+
+maximizing a lower bound on the
+
+
+likelihood
+
+
+using the eyes we discussed, and you
+
+
+would sample from it by sampling a Z
+
+
+from the prior, and then sampling the X
+
+
+according to the model given that that
+
+
+Z.
+
+
+One kind of
+
+
+interesting question we could ask is
+
+
+why does
+
+
+sampling in this way actually work well?
+
+
+So, there's something that for a while
+
+
+to me seemed a little mysterious about
+
+
+this the VAE, because when you sample,
+
+
+you generate Z from a zero mean unit
+
+
+variance Gaussian. So, you basically
+
+
+just sample a random normally
+
+
+distributed
+
+
+latent vector. But, when you train it,
+
+
+you only ever train it using Zs that
+
+
+come from the approximate posterior.
+
+
+Like, you never use Zs from the prior
+
+
+when you train the VAE.
+
+
+So, for a while this really worried me
+
+
+because I thought, well,
+
+
+it seems like test doesn't match
+
+
+training. At test time, you're sampling
+
+
+these Zs from a canonical Gaussian, but
+
+
+at training time you only ever train
+
+
+your decoder p theta to decode Zs that
+
+
+come from the posterior.
+
+
+And yet, it works.
+
+
+Why is that?
+
+
+Yeah.
+
+
+>> Does the KL loss kind of push it towards
+
+
+the
+
+
+towards the Gaussian?
+
+
+>> Yeah, exactly. So, for all the math
+
+
+about variational inference, the
+
+
+equation we ended up with actually
+
+
+logically kind of makes sense because
+
+
+it's saying, "Hey, take all the Zs from
+
+
+Q and turn them into nice-looking
+
+
+images." That's the first term. And the
+
+
+second term that just says, "Make Q look
+
+
+like the prior." So, you're going to
+
+
+sample from the prior, so just make your
+
+
+Qs as close to the prior as possible.
+
+
+And the way you can think about it is
+
+
+for each of your data point, you have a
+
+
+little posterior Q, and you're trying to
+
+
+make that posterior sort of cover the
+
+
+unit Gaussian in the in the space of Z.
+
+
+So, the Z needs to carry some
+
+
+information, so it won't put every
+
+
+single data point in the same exact
+
+
+spot. So, it'll kind of like put these
+
+
+little Gaussian balls inside the Z space
+
+
+to cover that unit Gaussian such that
+
+
+every sample from the unit Gaussian
+
+
+corresponds to some reasonable image.
+
+
+It's actually like despite all the kind
+
+
+of
+
+
+complicated math, the actual method ends
+
+
+up looking fairly natural. Yeah.
+
+
+>> Does it ever make sense for
+
+
+more complex data sets like images or
+
+
+something to
+
+
+sample more Zs than just one?
+
+
+>> Yeah, so the question is does it ever
+
+
+make sense for more complex data sets to
+
+
+sample multiple Zs? You actually could.
+
+
+So, there are all sorts of fancier
+
+
+versions of uh training algorithms. One
+
+
+of them is called uh
+
+
+uh
+
+
+I way I W uh
+
+
+uh
+
+
+what importance
+
+
+I W A A E importance weighted
+
+
+autoencoder, which basically use
+
+
+multiple samples with importance waiting
+
+
+for the sake of getting a more
+
+
+expressive posterior.
+
+
+So, there are all sorts of fancy things
+
+
+like that.
+
+
+Okay.
+
+
+Um so, how do we use this thing? Uh
+
+
+well, if you just want to make nice
+
+
+pictures, you can use it to make nice
+
+
+pictures. Uh actually, there's a very
+
+
+high chance that if you use the
+
+
+diffusion model, it probably actually
+
+
+had a a VAE inside of it because these
+
+
+days typically diffusion models are
+
+
+trained over the latent space of a VAE.
+
+
+So, there's like a VAE on the outside
+
+
+and the diffusion model on the inside.
+
+
+That's what like uh you know, stable
+
+
+diffusion does and many others.
+
+
+But, this is a deep RL course, so we
+
+
+want to talk about how to use this in
+
+
+the context of deep RL.
+
+
+One of the ways to use it is as a
+
+
+representation of complicated states.
+
+
+So,
+
+
+you train the model
+
+
+so that the Zs represent states.
+
+
+And then, the way you could use it is
+
+
+you could take some complicated image
+
+
+observation like the images in Atari
+
+
+games, and instead of training your RL
+
+
+algorithm using directly those images,
+
+
+you might train it on the latent
+
+
+variables of a VAE trained on those
+
+
+images.
+
+
+Okay, so you train your VAE on the
+
+
+states in your replay buffer,
+
+
+run RL, and use Z as the state instead
+
+
+of S, and then repeat this process.
+
+
+Why might this be a good idea?
+
+
+Let's think about that for a few
+
+
+seconds.
+
+
+Well, one of the things that often
+
+
+happens if you are very careful and
+
+
+about how you train your VAE is that the
+
+
+latent variables, the Zs,
+
+
+are
+
+
+simpler
+
+
+in a very particular sense than the
+
+
+images that they're trained on.
+
+
+Remember that the the Zs are trying to
+
+
+when you train your your posterior, it's
+
+
+trying to get the Zs to represent as
+
+
+little information as possible because Q
+
+
+wants to get close to that prior. So,
+
+
+all else being equal, if there's
+
+
+redundant information in the image,
+
+
+it'll try to remove that redundant
+
+
+information from Z.
+
+
+And if you are very smart, what you will
+
+
+get is you will get uh
+
+
+Zs that represent the underlying factors
+
+
+of variation in an image. So, uh in a
+
+
+toy data set like uh the the thing on
+
+
+the left there is a data of chairs
+
+
+viewed from different orientations, it
+
+
+will actually have different subspaces
+
+
+in Z correspond to things like the
+
+
+orientation of the chair.
+
+
+Question.
+
+
+>> It seems like the
+
+
+part of the purpose of a VAE is uh to
+
+
+make it easy to to sample the states,
+
+
+right? But, why is there a use of a VAE
+
+
+rather than just a normal autoencoder
+
+
+with a bottleneck if your purpose is to
+
+
+make the
+
+
+>> Yeah.
+
+
+So, the question is uh why use a VAE
+
+
+instead of uh another model uh
+
+
+that is an autoencoder? Um there are
+
+
+other ways to do this as well. Uh
+
+
+usually all autoencoders will have some
+
+
+mechanism to bottleneck information. Uh
+
+
+now, you could bottleneck information,
+
+
+for example, by just reducing the
+
+
+dimensionality of the bottleneck. The
+
+
+trouble with reducing dimensionality is
+
+
+that it doesn't necessarily get you a
+
+
+simple representation, right? So, you
+
+
+could just have everything kind of
+
+
+spaghettified and crammed into that into
+
+
+that space in a way that is not uh very
+
+
+nicely disentangled.
+
+
+VAEs tend to be fairly good at
+
+
+disentangling underlying factors of
+
+
+variation. They're far from perfect, but
+
+
+kind of respectable.
+
+
+Yes.
+
+
+>> If there was never a constraint to make
+
+
+the intermediate representation
+
+
+interpretable, then why is the model
+
+
+recovering things that we can use and
+
+
+understand?
+
+
+>> Yeah, so the question is
+
+
+we kind of like how is it able to figure
+
+
+it out? Like we kind of didn't tell it
+
+
+what
+
+
+be having interpretable factors of
+
+
+variation means, so how how does it find
+
+
+them? Uh it it's an
+
+
+it's not doing it because those factors
+
+
+of variation are somehow semantically
+
+
+meaningful. It's doing it because they
+
+
+are um Um, the true underlying factors
+
+
+of variation, the true underlying
+
+
+parameters of that particular problem
+
+
+space.
+
+
+So, uh,
+
+
+if you for example, instead of rotating
+
+
+the chairs about the vertical axis,
+
+
+rotated them about the horizontal axis,
+
+
+or if you, you know, turned the
+
+
+If you had like different kinds of
+
+
+chairs all viewed from the front or
+
+
+something, you would have you would get
+
+
+different factors of variation. So, the
+
+
+way to think about it is, basically the
+
+
+model is trying to figure out what were
+
+
+the knobs you turned when you generated
+
+
+the data.
+
+
+And it's trying to recover those knobs.
+
+
+And the reason it does that is because
+
+
+it is trying to find the most compressed
+
+
+representation.
+
+
+So, uh, a sample algorithm that does
+
+
+this, uh, an example, would be collect
+
+
+your your transitions, add them to your
+
+
+uh, replay buffer, update your uh,
+
+
+decoder and encoder using a mini batch
+
+
+from your replay buffer, and then update
+
+
+your Q using a batch from your replay
+
+
+buffer using Z in place of S as the
+
+
+input of the Q function. So, that's an
+
+
+example of an algorithm that could use a
+
+
+VAE as a representation learning
+
+
+algorithm, in this case for Q-learning.
+
+
+You can also use a VAE as a
+
+
+representation learning algorithm for
+
+
+actor-critic or what have you.
+
+
+Yeah.
+
+
+>> In this case, [clears throat] why do we
+
+
+denote it as state and Z instead of
+
+
+observation state?
+
+
+>> Uh, yeah, so the question was, uh, I I I
+
+
+kept saying state instead of
+
+
+observation. Uh, the reason is that if
+
+
+you have an observation, then you
+
+
+actually need to deal with the partial
+
+
+observability and use history and so on.
+
+
+You could do that as well, and it's
+
+
+perfectly legit for example to have a
+
+
+VAE over sequences of observations, uh,
+
+
+and we'll actually talk about that
+
+
+later. Uh,
+
+
+but to keep keep away from sequences for
+
+
+now, I said state. And I realize that it
+
+
+sounds weird because I'm giving you a
+
+
+picture of an image, and I'm calling
+
+
+that a state, but then some of you are
+
+
+like, oh, wait, but that's an
+
+
+observation, and and you're right.
+
+
+And you caught me.
+
+
+Okay. Uh, this is also a great way to by
+
+
+the way to use prior data. So, if
+
+
+someone gives you like a ton of like
+
+
+Atari traces, and you want to use them
+
+
+somehow before you start doing RL, you
+
+
+could use all those Atari episodes to
+
+
+train up your representation and then
+
+
+maybe that representation will allow
+
+
+your RL algorithm to be a bit faster.
+
+
+Yes.
+
+
+>> Uh
+
+
+is this is that sort of why we're using
+
+
+the entire VAE? I guess like why not
+
+
+just start just train the encoder with
+
+
+some kind of like
+
+
+random thing, you
+
+
+>> Yeah.
+
+
+You need to you Well, you need something
+
+
+to train the encoder. Yeah. So, you you
+
+
+if you if you all All you want is the
+
+
+Zs, it's true that you do not actually
+
+
+need the decoder here, but you need to
+
+
+train the encoder somehow.
+
+
+Yeah.
+
+
+>> Uh understanding that this is a sample
+
+
+algorithm, is it common practice to
+
+
+jointly optimize your VAE with your Q
+
+
+network?
+
+
+>> Is it common practice to jointly
+
+
+optimize your VAE with your Q network?
+
+
+Uh
+
+
+yeah. So, people have done it both ways.
+
+
+You can either train in advance, freeze
+
+
+it, and then run RL. Or if you want like
+
+
+a fully online method, you can keep
+
+
+updating them together. Both have been
+
+
+done before.
+
+
+And they kind of have the obvious
+
+
+trade-offs. Like if you do them
+
+
+together, then it's like a little bit
+
+
+more unstable. If you do the VAE in
+
+
+advance, then you have the data in
+
+
+advance. Yes.
+
+
+>> If we were to try to create a VAE
+
+
+for an Atari game,
+
+
+would it be
+
+
+possible and
+
+
+like maybe even encouraged to use
+
+
+different Atari games?
+
+
+>> Mhm, I see. So, the question was, okay,
+
+
+if you want to train a VAE on Atari
+
+
+games,
+
+
+uh and you're like playing Montezuma's
+
+
+Revenge, would it be a good idea to use
+
+
+other games to train the VAE? It
+
+
+depends. Uh
+
+
+so, it definitely makes things harder in
+
+
+some ways because the VAE is going to
+
+
+represent the underlying factors of
+
+
+variation. So, if you give it images
+
+
+from like Montezuma's Revenge and
+
+
+Breakout and Pong, it's trying to find
+
+
+the dimensions of all three of those
+
+
+games together. And because the games
+
+
+are pretty different, it'll probably
+
+
+say, "Okay, I want to allocate some
+
+
+variables to represent the position of
+
+
+the paddle in Pong and some variables to
+
+
+represent the position of like the dude
+
+
+in Montezuma's Revenge and so on." So,
+
+
+you're you're going to get a lot of
+
+
+these extra variables. But on the other
+
+
+hand, you could imagine that in other
+
+
+scenarios, like maybe if you have a game
+
+
+with multiple levels, maybe if you train
+
+
+your representation on all the levels
+
+
+together, that will actually be a more
+
+
+robust representation because then
+
+
+you'll you'll you'll use that
+
+
+representation to train your Q function
+
+
+when you move on to the next level,
+
+
+already your Q function generalizes a
+
+
+little bit. So, it depends on whether
+
+
+you you see a lot of information sharing
+
+
+between those domains or not.
+
+
+Probably for Atari games, my guess is
+
+
+that it won't help because the games are
+
+
+so different, but in other settings it
+
+
+might. Yeah.
+
+
+>> Uh so, my confusion is
+
+
+how is a variational autoencoder
+
+
+different than
+
+
+autoencoder you or like a encoder
+
+
+decoder
+
+
+um you'd see in like supervised
+
+
+learning, like you know, convolutional
+
+
+network?
+
+
+>> Um these are kind of orthogonal choices.
+
+
+So, the architecture that you use for
+
+
+your for your encoder or decoder
+
+
+uh
+
+
+is up to you. So, you can use a convolu-
+
+
+Typically, if you if you're doing
+
+
+images, your encoder would actually be a
+
+
+convolutional neural network. Uh and
+
+
+that's a perfectly reasonable choice.
+
+
+What the What the VAE framework
+
+
+prescribes is the objective for training
+
+
+this thing.
+
+
+And you can use that objective with
+
+
+whatever choice of neural network design
+
+
+you would like.
+
+
+Okay.
+
+
+Uh now, you could also use this to train
+
+
+conditional models.
+
+
+Conditional models which are models over
+
+
+Y given X. So, if you have a conditional
+
+
+model, all you do is you
+
+
+replace all the X's with Y's and you
+
+
+plug in your X's to the right of the
+
+
+conditioning bar for both the encoder
+
+
+and decoder.
+
+
+So, now your posterior is Q of Z given X
+
+
+{comma} Y
+
+
+and your decoder is Y given X {comma} Z.
+
+
+And your prior, you can optionally have
+
+
+a prior that depends on X or that
+
+
+doesn't depend on X. That's kind of a a
+
+
+design choice you can make. So, this is
+
+
+what you would use if you want to, for
+
+
+example, represent a complicated policy
+
+
+and you'd like to use a variational
+
+
+autoencoder. So, your policy now is
+
+
+going to be
+
+
+uh
+
+
+one of these Y given X {comma} Z things,
+
+
+and you would feed in P of Z or P of Z
+
+
+given X.
+
+
+So, basically everything here is just
+
+
+like before, only now you're generating
+
+
+Y's, and you plug in X into everything
+
+
+as the conditioning information. So, for
+
+
+a policy, X would be the image, Y would
+
+
+be the action, and what you're modeling
+
+
+is the distribution of actions given the
+
+
+image and the latent code.
+
+
+Okay? And your prior P of Z can depend
+
+
+on X, or it can be independent of X.
+
+
+Both are valid choices.
+
+
+So, if you are to if if I were to draw
+
+
+the the architecture for this, X and Y
+
+
+go into the encoder, and that produces a
+
+
+mu and a sigma. I get my epsilon, I form
+
+
+my Z, and then I plug both Z and X into
+
+
+my decoder, and that gets me P of Y
+
+
+given X {comma} Z. Yes.
+
+
+>> So,
+
+
+Z is
+
+
+being trained on
+
+
+X.
+
+
+Correct?
+
+
+>> Um
+
+
+Well, Z is not being trained. Z is a Z
+
+
+is a variable.
+
+
+Uh the enco- the encoder Q is being
+
+
+trained on data points consisting of
+
+
+tuples of X and Y.
+
+
+So, this this is a conditional
+
+
+prediction problem. So, every data point
+
+
+here now is X {comma} Y.
+
+
+Yes.
+
+
+>> I think before you were saying something
+
+
+how like
+
+
+like Z kind of represents state like in
+
+
+a compressed way.
+
+
+>> Mhm.
+
+
+>> So, in this case, why do we need to also
+
+
+be
+
+
+X like in Z?
+
+
+>> Yeah, so so now now we're modeling Y
+
+
+rather than X. So, now Z represents the
+
+
+different modes in the action
+
+
+distribution.
+
+
+So, the case where you might want this
+
+
+is like if you remember the example with
+
+
+the tree going left or right around the
+
+
+tree, Z might represent are you going
+
+
+left or right?
+
+
+So, at test time, if you want to sample
+
+
+from this policy, just like before, get
+
+
+a Z from your
+
+
+uh
+
+
+prior,
+
+
+which could optionally depend on X if
+
+
+you want, and then get a Y by decoding
+
+
+it using your decoder.
+
+
+Yeah.
+
+
+So, yeah.
+
+
+So, in this case, um
+
+
+if you like if you want to use this to
+
+
+represent a multimodal policy, you
+
+
+typically wouldn't use the encoder at at
+
+
+runtime. You would just
+
+
+generate samples from the prior because
+
+
+if you're training a policy, then you
+
+
+just want to like run that policy. If
+
+
+you're doing like imitation learning,
+
+
+for example.
+
+
+That's right.
+
+
+Yeah, so you you would just pick Z's
+
+
+from the prior for that.
+
+
+Uh so, you could use this for multimodal
+
+
+imitation learning as an alternative to
+
+
+the uh the stuff that we did in homework
+
+
+one.
+
+
+Uh and here, you're modeling P of A
+
+
+given S comma Z, and one reason why you
+
+
+might do that is if you have a
+
+
+multimodal
+
+
+uh so, if you have a demonstration like
+
+
+going left or right around the tree,
+
+
+then you would expect that some Z's
+
+
+would map to behaviors that go left
+
+
+around the tree, and some Z's would map
+
+
+to behaviors that go right around the
+
+
+tree. And this is something that people
+
+
+have actually done. There have been like
+
+
+papers written that use these kind of
+
+
+variational autoencoder
+
+
+uh models to represent very complex
+
+
+action distributions, typically in an
+
+
+imitation learning setting.
+
+
+Um so, here's an example of a uh of a
+
+
+paper that did this for learning from
+
+
+very diverse human data, where they had
+
+
+this uh people kind of like playing
+
+
+around and executing all sorts of
+
+
+different actions, and they wanted to
+
+
+figure out what are the underlying
+
+
+behaviors in this kind of like play
+
+
+style data.
+
+
+Uh here is another one. This is a a
+
+
+robotics project where there were these
+
+
+kind of dexterous bimanual
+
+
+demonstrations collected with a with a
+
+
+robot, and then to model that
+
+
+accurately, the model actually consisted
+
+
+of uh a variational autoencoder policy,
+
+
+where both the encoder and the decoder
+
+
+were transformers. So, it's like a a
+
+
+sophisticated architecture.
+
+
+Um one thing I wanted to mention briefly
+
+
+here is the relationship between
+
+
+these variational autoencoders and the
+
+
+models that you already implemented in
+
+
+homework one, namely flow matching.
+
+
+Uh and I'll talk about both diffusion
+
+
+and flow matching. The story with flow
+
+
+matching is actually a little bit more
+
+
+complex, but in so far as flow matching
+
+
+is essentially the same as diffusion,
+
+
+the same basic principle applies,
+
+
+although the math ends up being a little
+
+
+different.
+
+
+So, if you want to represent your policy
+
+
+with a conditional variational
+
+
+autoencoder,
+
+
+that means that you're sampling a Z,
+
+
+you're taking your state, you're
+
+
+plugging that into your decoder, which
+
+
+is P of A given S {comma} Z, and you get
+
+
+back an action. So, that's pretty
+
+
+straightforward. Your latent variables
+
+
+are Z.
+
+
+If you're doing diffusion,
+
+
+then you start off with the last time
+
+
+step of diffusion sampled from your
+
+
+noise distribution.
+
+
+Uh as a note here, in diffusion, the
+
+
+noise is denoted A1, and flow matching
+
+
+is denoted as A0. There's a difference
+
+
+in convention, so diffusion, you're kind
+
+
+of when you're decoding, you're running
+
+
+backwards, and flow matching, you're
+
+
+running forward. So, I'll use the
+
+
+diffusion notation, which means you
+
+
+start with A1, and you go back to A0,
+
+
+and A0 is like your final action. So,
+
+
+don't be confused by that.
+
+
+And every step of diffusion basically
+
+
+represents a distribution over
+
+
+P of A tau minus delta tau, so like the
+
+
+previous step, given S,
+
+
+the current step A tau, and the current
+
+
+time step tau.
+
+
+And you just run this backwards multiple
+
+
+steps until you get your fully denoised
+
+
+action.
+
+
+So, this is what a diffusion model is
+
+
+doing.
+
+
+And now, looking at these two things,
+
+
+kind of that they look a bit different,
+
+
+right? But it actually turns out that
+
+
+diffusion is can be interpreted as a
+
+
+very weird kind of variational
+
+
+autoencoder.
+
+
+Uh so, for a variational autoencoder,
+
+
+the objective is this lower bound, where
+
+
+in the lower bound, you take an
+
+
+expectation with respect to the
+
+
+distribution over Z, with respect to the
+
+
+unknown variables. So, Z is the variable
+
+
+that is not in your data set.
+
+
+For diffusion, you can do the same
+
+
+thing.
+
+
+Uh it's much more complex to prove, and
+
+
+I'm not going to do I'm not going to
+
+
+write out the proof in this course. So,
+
+
+I'll I'll just I'll just state the
+
+
+conclusion, and the conclusion is
+
+
+exactly analogous. The conclusion is
+
+
+that diffusion optimizes a variational
+
+
+lower bound on the probability of your
+
+
+fully denoised action given your state,
+
+
+and the bound is expressed in terms of
+
+
+an expectation over the variables that
+
+
+are not in your data set.
+
+
+And for this
+
+
+diffusion process, what are the
+
+
+variables that are not in your data set?
+
+
+It's It's all of the steps. So, the uh
+
+
+lower bound for diffusion is an expected
+
+
+value over all of those intermediate
+
+
+A's. Uh
+
+
+so, the the somewhat tortured expression
+
+
+is this A delta tau through one
+
+
+distributed according to Q. And then the
+
+
+prior is over the the the the entire
+
+
+process. So, the prior is basically the
+
+
+forward noising process where you add
+
+
+noise to each step, and the posterior is
+
+
+the denoising process.
+
+
+So, it's kind of a it's a very complex,
+
+
+very structured prior, not like the nice
+
+
+simple prior you have in a VAE, but the
+
+
+same exact basic principle, which is
+
+
+that in diffusion, you are optimizing a
+
+
+lower bound on the likelihood of your
+
+
+actions
+
+
+using an expected log likelihood plus a
+
+
+KL divergence term, where the
+
+
+expectation is taken over all of those
+
+
+intermediate noi- denoising steps.
+
+
+So, that's pretty cool. That Basically,
+
+
+diffusion is a kind of like really,
+
+
+really amped up VAE.
+
+
+Yeah.
+
+
+Yeah, I'm I'm just showing what hap-
+
+
+what the model is. So, basically, the
+
+
+the parlance for generative models is
+
+
+that the model is the P. The Q is uh a
+
+
+posterior and it's kind of just like a
+
+
+tool that you use to train the model.
+
+
+And it's a little bit of a fiction, of
+
+
+course, because if we're doing
+
+
+representation learning, that's maybe
+
+
+that's actually the Q that we want.
+
+
+>> Yeah, but in this case, like if you just
+
+
+use a
+
+
+multivariate normal for Z, you don't
+
+
+need to train the
+
+
+encoder at all
+
+
+or not really.
+
+
+Cuz like I feel like if you
+
+
+the reason why we train it is to get
+
+
+parameters of mu and sigma, right?
+
+
+But if you simply just put in the noise
+
+
+like that, which means that you don't
+
+
+need to train it at all, right?
+
+
+>> So, the reason that you need the Q is to
+
+
+evaluate the lower bound on the log
+
+
+likelihood, so that you have an
+
+
+objective for training.
+
+
+If you just want to sample from it, you
+
+
+don't need Q.
+
+
+So, the picture just shows what happens
+
+
+once it's all trained and you want to
+
+
+generate a sample.
+
+
+>> In this case, why do you need to train
+
+
+it then? Cuz it's like for this model,
+
+
+oh, when you train the whole model, you
+
+
+need the Q to also train
+
+
+>> Yeah, you need you need the Q to compute
+
+
+the the derivative with respect to the
+
+
+parameters of P of a lower bound on the
+
+
+log likelihood.
+
+
+Yeah.
+
+
+>> For during training, do we compute Z by
+
+
+running some kind of network
+
+
+within the network
+
+
+to to get Z and then, you know,
+
+
+having like the KL and the
+
+
+reconstruction loss
+
+
+>> You mean for diffusion or for the
+
+
+conditional VAE?
+
+
+>> Just for the conditional VAE.
+
+
+>> So, for the conditional VAE during
+
+
+training, you get the Z from your
+
+
+approximate posterior from your encoder,
+
+
+which is Q.
+
+
+>> So,
+
+
+I'm I'm wondering then if
+
+
+the encoder is sort of like a
+
+
+deterministic
+
+
+thing during during training where where
+
+
+we get the Z, then is it possible to get
+
+
+sort of,
+
+
+you know, when you sample to get Zs that
+
+
+aren't
+
+
+sort of like even though they're on the
+
+
+normal distribution during training,
+
+
+that maybe like the Z that you sample
+
+
+isn't
+
+
+Um
+
+
+I don't know. It's like on
+
+
+some sort of like different
+
+
+>> So, in general, if training has not
+
+
+converged, there's no reason to expect
+
+
+the Zs coming out of Q to look similar
+
+
+to the prior. Like you're going to
+
+
+initialize Q to be like a random neural
+
+
+network. It's going to spit out
+
+
+completely arbitrary Z's. But, the
+
+
+process of training it, because of that
+
+
+KL divergence term, will really
+
+
+encourage Q to produce Z's that look
+
+
+like the Z's that come from the prior.
+
+
+So, this idea that you can just take Z's
+
+
+from the prior and plug them into your
+
+
+decoder and get reasonable samples,
+
+
+that's only really valid after you've
+
+
+trained the thing. If you haven't
+
+
+trained it yet, there's no reason to
+
+
+expect that to to work at all.
+
+
+Okay.
+
+
+Um
+
+
+All right. So, that that's that's
+
+
+diffusion. Uh now, another kind of model
+
+
+that I want to tell you about, and this
+
+
+part will be brief. I don't expect you
+
+
+to to fully uh
+
+
+know everything about this model. We'll
+
+
+talk about it more actually when we talk
+
+
+about model-based RL, but for now, I
+
+
+want to just briefly remark on this just
+
+
+as an illustration of how flexible this
+
+
+uh VAE framework is. It that's the state
+
+
+space model.
+
+
+So,
+
+
+let's say that we want to handle the
+
+
+partial observability case.
+
+
+Uh and we want to really embrace the
+
+
+fact that our Atari games
+
+
+the the images are not actually states.
+
+
+The image The images are just
+
+
+observations, and there's some
+
+
+underlying state that may not be fully
+
+
+apparent from the image. So, there might
+
+
+be things that you're not seeing that
+
+
+are part of the world.
+
+
+And you have one of these partially
+
+
+observed Markov decision processes, and
+
+
+you want to learn what the underlying
+
+
+state is. So, your observations are
+
+
+these images.
+
+
+Well, you can actually frame the problem
+
+
+of learning an unobserved state space
+
+
+as a kind of very fancy variational
+
+
+autoencoder.
+
+
+And in this case,
+
+
+the the X's are going to correspond not
+
+
+just to a single image, but to an entire
+
+
+sequence of images, an entire trajectory
+
+
+of images.
+
+
+And what you'll be trying to learn is a
+
+
+very structured latent space
+
+
+that doesn't have just a simple Gaussian
+
+
+prior. The prior in the latent space is
+
+
+actually going to contain dynamics. It's
+
+
+going to contain transition
+
+
+probabilities.
+
+
+So, the latent space is actually a
+
+
+sequence of Z's and the observation
+
+
+space is a sequence of images.
+
+
+And now the prior is going to be quite a
+
+
+bit more complex, right? Because
+
+
+I want
+
+
+the distribution over a sequence of Z's
+
+
+to to be a product of the initial Z
+
+
+distribution
+
+
+times a product of dynamics P of ZT + 1
+
+
+given ZTAT.
+
+
+But this is still a perfectly
+
+
+well-defined prior.
+
+
+I need to learn it, so I I probably
+
+
+can't just like fix it to something in
+
+
+advance. I need to put put some neural
+
+
+nets in there with some parameters.
+
+
+But it's still perfectly reasonable, so
+
+
+maybe I'll choose P of Z1 to be a zero
+
+
+mean unit variance Gaussian and then
+
+
+I'll actually learn P of ZT + 1 given
+
+
+ZTAT.
+
+
+So now my prior is kind of representing
+
+
+some kind of uh trajectory inside the
+
+
+latent space.
+
+
+And then the decoder
+
+
+the distribution over a sequence of O's
+
+
+given a sequence of Z's is just a
+
+
+product of independent posteriors. So
+
+
+basically every O every OT is decoded
+
+
+given its corresponding ZT.
+
+
+That's kind of the obvious thing
+
+
+basically.
+
+
+But this is still a perfectly
+
+
+well-defined VAE. It's just a much more
+
+
+structured VAE than the one I had
+
+
+before. It's saying that my decoder
+
+
+uh factorizes into this product of
+
+
+distributions over every time step and
+
+
+my prior has this dynamics uh
+
+
+distribution inside of it.
+
+
+Uh and then the encoder, well the
+
+
+encoder is a choice that I get to make
+
+
+and since in general my state might
+
+
+might be very hard to infer from just a
+
+
+single image, maybe I'll actually choose
+
+
+an encoder that encodes ZT given a
+
+
+history of past observations and maybe I
+
+
+would use like a transformer model for
+
+
+this.
+
+
+So
+
+
+uh we'll discuss much more how this kind
+
+
+of stuff can actually be set up when we
+
+
+talk about model-based RL, but mostly
+
+
+what I want to get across here is that
+
+
+the VAE framework is actually very
+
+
+flexible and it can go all the way from
+
+
+like a very classical model that just
+
+
+models individual images with latent
+
+
+codes so you can find the underlying
+
+
+factors of variation to a very
+
+
+sophisticated model that represents
+
+
+distributions over entire sequences of
+
+
+observations and learns dynamics in the
+
+
+latent space for learning models of
+
+
+partially observed Markov decision
+
+
+processes.
+
+
+Okay, any questions about VAEs or
+
+
+anything else that I talked about so
+
+
+far?
+
+
+Yeah.
+
+
+Yeah, why is it useful to interpret
+
+
+diffusion as a kind of VAE? Well, first
+
+
+it's useful because it helps me kind of
+
+
+make the case to you guys why you should
+
+
+care about this stuff, but second, it
+
+
+can actually be used as a way to
+
+
+um argue that diffusion is a principled
+
+
+way to train models with max likelihood
+
+
+because it shows that diffusion is
+
+
+actually a well-defined lower bound on
+
+
+the likelihood of your data.
+
+
+All right, let's do an intermission and
+
+
+let's come back at 9:10 in 3 minutes.
+
+
+Hello.
+
+
+>> All right, let's get back to it. Please
+
+
+find a seat.
+
+
+In the second half of today's lecture,
+
+
+we will
+
+
+at least begin talking about
+
+
+a topic that is like maybe a a little
+
+
+bit esoteric and unfortunately quite
+
+
+complicated, but it's going to be quite
+
+
+useful in understanding both some of the
+
+
+most
+
+
+effective RL algorithms like the soft
+
+
+actor-critic algorithm that you'll be
+
+
+implementing in the homework as well as
+
+
+more advanced topics like learning
+
+
+reward functions from data.
+
+
+We might not get through all of this
+
+
+today because there's kind of a lot of
+
+
+material here, but we'll at least make a
+
+
+brave attempt to get started. And you
+
+
+know, this section is
+
+
+a little bit
+
+
+advanced in terms of some of the math,
+
+
+but if you bear through it, it actually
+
+
+leads to a relatively simple conclusion
+
+
+at the end.
+
+
+But I'll I'll talk about
+
+
+I'll start by talking about kind of a
+
+
+weird question.
+
+
+Let's forget about training our policies
+
+
+to solve tasks and let's instead think
+
+
+about modeling human behavior.
+
+
+So, we like to believe that people are
+
+
+rational. I like to think that I'm
+
+
+rational and rational people optimize
+
+
+objectives. So, actually the definition
+
+
+of rationality according to Stuart
+
+
+Russell is that a rational agent is
+
+
+somebody that actually takes actions
+
+
+that maximize their utility, which is of
+
+
+course what we do in RL. So, basically,
+
+
+RL is virtually the definition of a
+
+
+rational agent. So, if you believe that
+
+
+people are rational in how they do motor
+
+
+control, how they walk around, how they
+
+
+perform reaching motions, or how they
+
+
+choose to drive around uh a city, then
+
+
+you might be tempted to assume that
+
+
+human behavior can be well modeled by
+
+
+maximization of rewards. And if you
+
+
+observe somebody performing a behavior,
+
+
+you observe someone's sequence of
+
+
+actions, you could ask the question,
+
+
+well, for which reward function is the
+
+
+sequence of actions maximized?
+
+
+And that's actually a really powerful
+
+
+question to ask, because if I know what
+
+
+your reward function is, and I believe
+
+
+that you're rationally maximizing, then
+
+
+I can predict what you're going to do
+
+
+next.
+
+
+That's really cool, because if I can
+
+
+predict what you're going to do next,
+
+
+then I know quite a lot about you. Um
+
+
+so, if you believe that humans are doing
+
+
+this kind of argmax,
+
+
+um or at least the argmax of the
+
+
+expected reward or something, then if
+
+
+you can figure out their reward, then
+
+
+that'll really explain their behavior in
+
+
+a very powerful way.
+
+
+And besides the kind of the psychology
+
+
+motivation for this, of course,
+
+
+understanding people's rewards can be
+
+
+quite useful for all sorts of practical
+
+
+applications. RLHF, for example, which
+
+
+is the dominant way of fine-tuning LLMs,
+
+
+is essentially doing a version of this.
+
+
+Okay.
+
+
+Um but I've got some bad news for you,
+
+
+which is that people and animals are
+
+
+generally not rational, at least not in
+
+
+the classic way. Um and uh one thought
+
+
+exercise for this is uh
+
+
+a little experiment. This is like a real
+
+
+experiment that's actually been done. Uh
+
+
+people who study motor control, they'll
+
+
+often get a monkey
+
+
+and they'll have that monkey play a
+
+
+monkey video game, where they have a
+
+
+screen with some dots on it, and the
+
+
+monkey holds a joystick, and moves the
+
+
+joystick to move the dots on the screen
+
+
+around. And uh you know, if you want to
+
+
+study monkey motor control, what you'll
+
+
+do is you'll train the monkey to move
+
+
+the dot to a particular target location.
+
+
+And if you train the monkey enough, it
+
+
+gets like really good at this.
+
+
+Um so, it starts at some location, it's
+
+
+trying to go to some other location, and
+
+
+ideally you would expect that a very
+
+
+rational monkey will just take a
+
+
+straight-line path to the destination.
+
+
+But, of course, as you probably can
+
+
+guess, a real monkey isn't going to
+
+
+quite do this. A real monkey is very
+
+
+incentivized to get the reward, but, you
+
+
+know, sometimes it's having a bad day
+
+
+and will do this, or it'll do this, and
+
+
+it'll typically get to the objective,
+
+
+but, you know, if the monkey's being a
+
+
+little lazy, it doesn't take quite a
+
+
+straight-line path.
+
+
+So, you can say, "Well, okay, maybe
+
+
+there's like something wrong with the
+
+
+monkey, like the the rationality
+
+
+circuit in the brain is broken." But, of
+
+
+course, you know, we as people have all
+
+
+had good days and bad days, so we
+
+
+understand this is like pretty pretty
+
+
+typical behavior. And um
+
+
+basically, some mistakes matter a lot
+
+
+more than others. And the monkey knows
+
+
+that it can be a little lazy, and it can
+
+
+be a little bit approximate, as long as
+
+
+it gets to the target, it's still going
+
+
+to get the reward.
+
+
+So,
+
+
+mostly the monkey is rational, but it's
+
+
+only approximately rational. It's only
+
+
+approximately optimal.
+
+
+And the behavior is stochastic.
+
+
+But, it's not stochastic in an arbitrary
+
+
+way. It's not like the monkey adds like
+
+
+some random noise to every single thing
+
+
+that it does. It still really wants to
+
+
+get to the target, because it wants to
+
+
+get the reward, and it will add
+
+
+randomness in places where it doesn't
+
+
+matter.
+
+
+So, if you're walking to class, you're
+
+
+not going to go to a random classroom,
+
+
+you'll probably go hopefully to this
+
+
+classroom, but you might have some
+
+
+randomness in how you walk, in which
+
+
+path you take, as long as you end up in
+
+
+the right spot, you're pretty happy with
+
+
+the outcome.
+
+
+So, good behavior is still the most
+
+
+likely, but all sorts of suboptimal
+
+
+behaviors have non-zero probability,
+
+
+even though they're like a little bit
+
+
+irrational.
+
+
+And what we can try to do is we can
+
+
+construct a probabilistic model that
+
+
+describes why suboptimal behaviors might
+
+
+happen when they are mostly harmless.
+
+
+And that's stochastic uh that
+
+
+probabilistic model is going to be a
+
+
+much better model of actual human
+
+
+behavior.
+
+
+It's also going to have all sorts of
+
+
+other appealing properties.
+
+
+So, instead of
+
+
+modeling behavior as like a perfect
+
+
+maximization, forget about this thing,
+
+
+we're going to draw a graphical model
+
+
+that represents how humans and animals
+
+
+behave.
+
+
+Um it's going to be based on the MDP, so
+
+
+it has these transition probabilities.
+
+
+But, uh just uh saying that
+
+
+uh
+
+
+your
+
+
+you know, your your probability of
+
+
+trajectory comes from the dynamics is
+
+
+not enough because obviously you need to
+
+
+ascribe intentions to it somehow. So, uh
+
+
+we're going to have these uh trajectory
+
+
+probabilities
+
+
+and we need to introduce some other
+
+
+things into this model to model the fact
+
+
+that you have intentions, that you that
+
+
+you want to be optimal.
+
+
+So, there's no assumption of optimal
+
+
+behavior in the standard MDP. It's just
+
+
+a a model of physics essentially. So,
+
+
+we'll add these variables that are a
+
+
+little bit mysterious, but they'll
+
+
+actually all make sense in a second,
+
+
+which we call uh optimality variables.
+
+
+Basically, uh a binary variable at every
+
+
+step that represents that the monkey is
+
+
+being optimal or at least doing its best
+
+
+to be as close to optimal as it can
+
+
+manage.
+
+
+And these are observations because we
+
+
+are observing the fact that the monkey
+
+
+intends to be optimal. It's a little bit
+
+
+of a fiction we have.
+
+
+So, I'm going to call these variables O,
+
+
+uh
+
+
+and what I want is not just the
+
+
+probability of a trajectory happening
+
+
+like physically, but I want the
+
+
+probability of a trajectory given that
+
+
+the monkey is trying to be optimal,
+
+
+given that at every time step the value
+
+
+of O is true.
+
+
+Or if the monkey has multiple goals,
+
+
+maybe the value of O is like whatever
+
+
+its goal is. But for now, we'll just say
+
+
+the goal for simplicity the goal is
+
+
+binary. Either it's being a good monkey
+
+
+or a bad monkey. So, basically, what's
+
+
+the probability of trajectory given good
+
+
+monkey?
+
+
+Um and I'll make a a seemingly arbitrary
+
+
+choice, but we'll see in a second that
+
+
+this kind of arbitrary choice leads to a
+
+
+very elegant conclusion. I'm going to
+
+
+say that the probability
+
+
+of the optimality variable O at time
+
+
+step t given the state and action at
+
+
+time t
+
+
+is equal to the exponential of the
+
+
+reward at that time step. I need to
+
+
+assume the rewards are all negative so
+
+
+that the these values are all between 0
+
+
+and 1. But
+
+
+you know, assume with a
+
+
+for this first second the rewards are
+
+
+all negative,
+
+
+this is going to be my model. And this
+
+
+is an arbitrary choice for now, but
+
+
+we'll see that this seemingly arbitrary
+
+
+choice leads to kind of a very natural
+
+
+conclusion about how the monkey behaves.
+
+
+Okay. So, now I want this conditional P
+
+
+of tau given that O is true at all the
+
+
+time steps.
+
+
+Uh and uh
+
+
+of course the conditional is given by
+
+
+the joint divided by the
+
+
+the the thing on the right of the
+
+
+conditioning bar. So,
+
+
+if I want to express just the
+
+
+probability of tau, this is going to be
+
+
+proportional to the probability of tau
+
+
+occurring physically, that's basically
+
+
+all the dynamics terms,
+
+
+times the product over all the time
+
+
+steps of the probability of OT given ST
+
+
+{comma} AT, and that's just the
+
+
+exponential of the rewards.
+
+
+So, the probability of a trajectory
+
+
+given that the monkey is optimal at all
+
+
+the steps is the probability
+
+
+that the trajectory can happen
+
+
+physically, P of tau, times the
+
+
+exponential of the sum of the rewards
+
+
+over all the steps.
+
+
+And this is now actually a fairly kind
+
+
+of sensible equation because we're
+
+
+saying that yes, the monkey can take all
+
+
+of the physically possible trajectories,
+
+
+but the highest reward trajectory
+
+
+is going to be the most probable
+
+
+assuming the physics are
+
+
+are pretty simple. So, if you assume
+
+
+like basically
+
+
+all of the physically possible
+
+
+trajectories have some fixed probability
+
+
+and everything that's impossible is a
+
+
+probability of zero, then the physically
+
+
+possible and maximally rewarding
+
+
+trajectory is the most likely because of
+
+
+that exponential.
+
+
+And as the trajectory gets less
+
+
+rewarding, it becomes exponentially less
+
+
+likely.
+
+
+So, that actually kind of makes sense.
+
+
+Like Uh, perhaps you get a little bit
+
+
+less reward if you take a very indirect
+
+
+path to class in the morning, so you're
+
+
+less likely to take a more indirect
+
+
+path, but you get a really bad reward if
+
+
+you don't actually make it to class, so
+
+
+you'll probably make it to class, but
+
+
+you're more likely to take a slightly
+
+
+indirect path because that exponential
+
+
+reward term will only be a little bit
+
+
+lower if you take a longer path.
+
+
+Okay. So, that kind of explains why the
+
+
+monkey might take these very indirect
+
+
+paths, but still reach the target. Yes?
+
+
+>> Does O represent state or action?
+
+
+>> O represents,
+
+
+uh, the, uh, monkey's intent.
+
+
+So, in this case, O is a binary random
+
+
+variable.
+
+
+O equals true means the monkey is trying
+
+
+to be good, O equals false means the
+
+
+monkey is just doing random stuff.
+
+
+>> I see, so it's neither state nor action.
+
+
+>> Correct.
+
+
+And you can generalize, you can say,
+
+
+well, instead of making it binary, maybe
+
+
+it can be some reflection of the
+
+
+monkey's goal. Maybe some days the
+
+
+monkey wants to reach the target, and
+
+
+some days it wants to like mess with the
+
+
+researcher, and some days it wants to
+
+
+like, you know, go home or whatever. So,
+
+
+depending on whatever goal it has, that
+
+
+might be a reflection of its goal.
+
+
+Yes?
+
+
+>> So, why is there no assumption of
+
+
+optimal behavior? Because if this was
+
+
+just a stochastic policy, right, then it
+
+
+would just be the probability of
+
+
+the physical trajectory happening,
+
+
+right? There wouldn't be a
+
+
+Like, you wouldn't have the reward term
+
+
+at all.
+
+
+>> Well, so P of tau is just the You can
+
+
+think of P of tau as physics. Like, P of
+
+
+tau is saying, how likely is this
+
+
+trajectory to occur physically? And
+
+
+anything that's physically impossible
+
+
+have a P of tau of zero. But then you
+
+
+need to add something else to indicate
+
+
+that the monkey isn't just doing random
+
+
+trajectory, it's trying to actually
+
+
+accomplish something. And that's the
+
+
+optimality variables.
+
+
+>> Yeah, so
+
+
+why is there no sort of assumption that
+
+
+>> Uh, that's referring to the to the top
+
+
+line, just the the P of A {comma} S.
+
+
+So, the assumption of optimal behavior
+
+
+comes in when I add the Os.
+
+
+>> Okay.
+
+
+>> And by the way, don't take this too
+
+
+seriously. Like, I'm not necessarily
+
+
+telling you that monkeys really behave
+
+
+this way. This is just a model that we
+
+
+can use that will explain why somebody
+
+
+might act a little bit suboptimally, yet
+
+
+still mostly prefer to accomplish their
+
+
+goals.
+
+
+Yes.
+
+
+Um
+
+
+Yeah, this is not really an algorithm.
+
+
+Like it's it's not like you would you
+
+
+would In order to use this, you need to
+
+
+actually know P of tau. This is a
+
+
+probabilistic model. So, this is just
+
+
+kind of a way of thinking about the
+
+
+world and telling a story about why
+
+
+things happen the way they happen.
+
+
+Yes.
+
+
+Yeah, so the question is, could it be
+
+
+could it be that the reward is also a
+
+
+function of the of the intent? And you
+
+
+could do that. So, so far I I have the
+
+
+simplest case where this thing is
+
+
+binary, basically like either optimal or
+
+
+not, but it could be that uh the
+
+
+optimality variable is like some goal,
+
+
+and that goal actually goes into the
+
+
+reward function and determines the
+
+
+reward. And that's a perfectly
+
+
+reasonable generalization of this.
+
+
+Okay.
+
+
+So, um why do we care about this other
+
+
+than like, you know, having a funny
+
+
+story? Well, um
+
+
+this kind of probabilistic model of
+
+
+behavior can ascribe non-zero
+
+
+probability to slightly suboptimal
+
+
+behavior. And this is very important if
+
+
+you want to infer someone's reward
+
+
+function.
+
+
+Because if you have a deterministic
+
+
+model of behavior and I want to infer
+
+
+your objective function and you're not
+
+
+perfectly maximizing that objective
+
+
+function, then I'm going to ascribe some
+
+
+incredibly complex objective to you. If
+
+
+I see you going to class not in a
+
+
+straight line, but uh taking a little
+
+
+detour, I'll say, "You want to get to
+
+
+class and you also really want at like
+
+
+37 minutes in to take one step a little
+
+
+bit more to the left than you should
+
+
+have." And that's like a really bizarre
+
+
+objective. Like clearly you didn't
+
+
+intend to do that. You intended to get
+
+
+to class. So, I need some model that
+
+
+that allows me to basically disregard
+
+
+noise.
+
+
+And yet still take into account the fact
+
+
+that you are trying to accomplish your
+
+
+goal. So, this is a model that allows
+
+
+you to disregard noise. And of course,
+
+
+if you use a probabilistic model, you'll
+
+
+get a much much more parsimonious
+
+
+solution when inferring someone's
+
+
+objective.
+
+
+Um
+
+
+you can also use this to apply inference
+
+
+algorithms to solve control and planning
+
+
+problems. This is kind of a subtle
+
+
+statement, but
+
+
+so far we're not doing RL, we're drawing
+
+
+a probabilistic graphical model and
+
+
+describing how this probabilistic
+
+
+graphical model models approximately
+
+
+rational behavior. Which means that
+
+
+inference in this model, probabilistic
+
+
+inference of the sort that you learned
+
+
+about introductory ML, actually solves
+
+
+control problems.
+
+
+And that's pretty cool because there are
+
+
+a lot of good probabilistic inference
+
+
+tools.
+
+
+And it also provides an explanation for
+
+
+why stochastic behavior might be
+
+
+preferred. And that can be kind of
+
+
+useful if we want to inject
+
+
+stochasticity into otherwise good
+
+
+behavior, for example, to explore or to
+
+
+be more robust to some random
+
+
+variability.
+
+
+Okay.
+
+
+So, let's talk about some methods that
+
+
+we can apply to this kind of
+
+
+probabilistic model.
+
+
+So, in this probabilistic model, doing
+
+
+inference, which means inferring the
+
+
+probabilities of like actions or states,
+
+
+actually solves control or planning
+
+
+problems.
+
+
+So, there are a few different kinds of
+
+
+inference problems that we care about.
+
+
+One of the problems we care about is
+
+
+something called a
+
+
+backward message. We'll We'll see in a
+
+
+second why this is relevant. It's going
+
+
+to seem a little esoteric at first, but
+
+
+a backward message is a function of a
+
+
+state and action at a particular time
+
+
+step, which tells you how likely are you
+
+
+to be optimal at that step and all
+
+
+future steps given that state and
+
+
+action.
+
+
+Okay, this is kind of a weird object. Uh
+
+
+so,
+
+
+suspend your disbelief about this.
+
+
+You'll actually see in a few slides why
+
+
+this is a an important object to think
+
+
+about.
+
+
+The second one is a little bit more
+
+
+obvious. Compute a policy. Compute a
+
+
+distribution over actions, AT, given ST,
+
+
+{comma} O1 through uh capital T. So,
+
+
+basically, how likely is an action given
+
+
+a state and given that the monkey is
+
+
+optimal over the entire trajectory.
+
+
+This is probably the most important
+
+
+question because if you want to know
+
+
+what the monkey is going to do, this is
+
+
+essentially saying, use your assumption
+
+
+of the monkey's optimality to figure out
+
+
+how likely different actions are.
+
+
+And you know, intuitively what you'd
+
+
+expect to see is that actions that
+
+
+actually take it towards the goal are
+
+
+the most likely, but then other slightly
+
+
+sub-optimal actions might also have
+
+
+non-zero probability, especially if they
+
+
+represent kind of harmless mistakes that
+
+
+the monkey can easily recover from.
+
+
+And then the third question, which is
+
+
+even more esoteric, but I'll show you at
+
+
+the end why this actually can be very
+
+
+useful, is what's called a forward
+
+
+message. And a forward message is the
+
+
+probability of reaching a state given
+
+
+that you've been optimal up until that
+
+
+state.
+
+
+And the punchline here is the backward
+
+
+messages are what we use to compute
+
+
+policies and forward messages is what we
+
+
+can use use to figure out what state
+
+
+you're going to end up in.
+
+
+And both are important questions because
+
+
+if you want to figure out what action
+
+
+somebody might take, you'd like to
+
+
+basically find their policy given your
+
+
+assumption that they're being
+
+
+approximately optimal. And if you want
+
+
+to figure out what state they're going
+
+
+to be in, then you can use forward
+
+
+messages. And we'll we'll see that in a
+
+
+second. So, don't worry about that
+
+
+statement being a little bit cryptic for
+
+
+now.
+
+
+Um
+
+
+Okay.
+
+
+So, let's first talk about backward
+
+
+messages. And here I'm going to go
+
+
+through a derivation. It'll be a little
+
+
+mysterious as to why I'm doing this, but
+
+
+you'll actually see things come together
+
+
+in a pretty nice way at the end. So, for
+
+
+now, just bear with me. Just uh
+
+
+take me at my word that this probability
+
+
+is something that we would like. We'll
+
+
+derive that probability. We'll derive
+
+
+actually a recursive procedure for
+
+
+computing it, and then we'll see that it
+
+
+actually ends up being quite familiar to
+
+
+us.
+
+
+So, the quantity we care about is the
+
+
+probability that the optimality variable
+
+
+is true from the current time step until
+
+
+the end given a particular state and
+
+
+action.
+
+
+And what we're going to do is we're
+
+
+going to derive a recursive rule for
+
+
+this. We're going to say, if we know
+
+
+this probability at a at a particular
+
+
+time step um
+
+
+t plus 1
+
+
+can we derive it at time step t?
+
+
+And that recursive rule is very
+
+
+convenient because at the very last time
+
+
+step at time step capital T
+
+
+that's just the probability of the last
+
+
+optimality variable given the last state
+
+
+and action which is given by what?
+
+
+It's actually on the slide.
+
+
+Yeah, it's given by the exponential
+
+
+reward. So that's in the top right
+
+
+corner. So at the very last time step
+
+
+the backward message is just exponential
+
+
+of the reward of the last step comma the
+
+
+last action. So the the the base case
+
+
+for the recursion is very simple. And
+
+
+now what we want to do is we want to do
+
+
+that recursion backwards through time.
+
+
+So we'll do uh quite a bit of algebra.
+
+
+Uh it's not terribly exciting algebra,
+
+
+but I'll just walk you through it and
+
+
+you'll see the conclusion.
+
+
+So
+
+
+since we know the backward message by
+
+
+construction at the next step, we're
+
+
+going to introduce s t plus 1 into this.
+
+
+So if we want to introduce s t plus 1,
+
+
+we just add it to the left of the
+
+
+conditioning bar and we integrate it
+
+
+out. So the message uh p of o little t
+
+
+through capital T given s t a t is equal
+
+
+to the integral over all values of s t
+
+
+plus 1 of p of o comma s t plus 1 given
+
+
+s t a t.
+
+
+And now we'll break this up into a
+
+
+product of terms. So uh we'll
+
+
+put in the dynamics p of s t plus 1
+
+
+given s t a t.
+
+
+Uh and then we will recognize that
+
+
+because of the structure of that
+
+
+graphical model
+
+
+s t plus 1 d separates all future
+
+
+optimality variables from all past
+
+
+optimality variables. Basically, if s t
+
+
+plus 1 is is given, if it's to the right
+
+
+of the conditioning bar, then uh you can
+
+
+separate out the future from the past.
+
+
+That's just the Markov property. So you
+
+
+can break that up into three terms. The
+
+
+probability of
+
+
+optimality at t plus 1 until the end
+
+
+given s t plus 1, the probability of s t
+
+
+plus 1 itself given the previous state
+
+
+and action, and the probability of uh
+
+
+the optimality at time step little t
+
+
+given s t a t.
+
+
+And that's actually really nice because
+
+
+two of these three terms are known,
+
+
+right? So, optimality variable
+
+
+probability, that's just the exponential
+
+
+reward underlined in red. The transition
+
+
+probabilities, those are just in the
+
+
+graphical model.
+
+
+And then this mysterious
+
+
+term that you have at the beginning,
+
+
+that one we have to work on. Yes.
+
+
+>> Would you mind writing on the board
+
+
+again like why you can decompose it in
+
+
+this way? I say I understand it, but
+
+
+like mathematically it doesn't go
+
+
+through my brain right now.
+
+
+>> Right. So,
+
+
+on the second line, you have the
+
+
+probability of all the optimality
+
+
+variables n t plus n s t plus one.
+
+
+>> Yes.
+
+
+>> Now, uh
+
+
+the uh by the chain rule, you can
+
+
+express the probability of all those
+
+
+future optimality variables as being
+
+
+dependent on on just t plus one, right?
+
+
+Because s t plus one breaks up
+
+
+everything. It diseparates all the
+
+
+future from the past.
+
+
+>> But where is s t and a t
+
+
+from Markov chain?
+
+
+>> is gone?
+
+
+>> Where is s t and a t?
+
+
+>> Yeah. Cuz like when you try to decompose
+
+
+it, you should also condition on like s
+
+
+t plus one, s t and a t, right?
+
+
+That's why I say like
+
+
+>> Oh, you mean for the first term?
+
+
+>> Yes.
+
+
+>> Uh because
+
+
+i- if you look at the graphical model,
+
+
+like s two diseparates everything after
+
+
+that from s one and a one.
+
+
+>> Oh, okay.
+
+
+>> So, basically, everything after s two, o
+
+
+two, a two, s three, a three, o three,
+
+
+they're they're conditionally
+
+
+independent of s one and a one given s
+
+
+two.
+
+
+So, that's why you can remove those from
+
+
+the the right of the conditioning bar.
+
+
+Okay. So, we still have that uh that uh
+
+
+first term, the o t plus one through
+
+
+capital T given s t plus one to deal
+
+
+with, and that's kind of a mysterious
+
+
+term.
+
+
+So, um
+
+
+here's what I'm going to do. I'm going
+
+
+to try to rewrite it as an integral
+
+
+where I put in the actions.
+
+
+So, if I try to put in a t plus one,
+
+
+then I get uh the probability of o t 1
+
+
+through capital T of ST given ST + 1, AT
+
+
++ 1 times the probability of AT + 1
+
+
+given ST + 1.
+
+
+And this thing right here
+
+
+this is just the backward message at
+
+
+time T + 1.
+
+
+I mean, literally just by definition.
+
+
+So
+
+
+I'm almost there. I have this kind of
+
+
+mysterious P of AT + 1 given ST + 1 term
+
+
+right there.
+
+
+And notice this is not actually the the
+
+
+optimal policy because there's no
+
+
+optimality variable in here. This is
+
+
+what's called the action prior. It's
+
+
+basically how likely is the monkey to
+
+
+take some action regardless of what it's
+
+
+trying to do.
+
+
+And
+
+
+for now we're going to assume that the
+
+
+action prior is just uniformly random.
+
+
+Meaning that it's just a a constant for
+
+
+all actions. We'll see later on why this
+
+
+assumption is actually very very
+
+
+reasonable.
+
+
+But for now we'll just assume that if
+
+
+the monkey doesn't have any intent then
+
+
+all actions are equally likely. It's
+
+
+kind of a sensible assumption. Like if
+
+
+if it's not trying to do anything in
+
+
+particular it'll just move randomly.
+
+
+So we'll disregard this term
+
+
+and treat it as a constant.
+
+
+And now we're basically done, right?
+
+
+Because we've expressed everything in
+
+
+terms of quantities that we have. So we
+
+
+can write down our algorithm, our
+
+
+recursive algorithm for computing these
+
+
+backward messages from the last step
+
+
+backwards until the beginning
+
+
+where the backward message at time step
+
+
+T is just given by the probability of
+
+
+optimality at time step T
+
+
+times the integral over ST + 1, which is
+
+
+really an expectation over ST + 1, of
+
+
+this thing that I'm going to call BT + 1
+
+
+ST + 1.
+
+
+So that's this is basically this line.
+
+
+And BT of ST is just the expectation
+
+
+under the action prior, which I said is
+
+
+uniform, of the backward message.
+
+
+And that's just this equation.
+
+
+So it's kind of like a lot of algebra,
+
+
+but it's not particularly mysterious.
+
+
+It's just just applying chain rule of
+
+
+probability over and over again in this
+
+
+graphical model.
+
+
+Okay. So, so far this is like maybe a
+
+
+little cryptic, right? Like okay, we did
+
+
+a bunch of math, we figured out a
+
+
+recursive algorithm, but why are we
+
+
+doing this? What does this actually
+
+
+correspond to?
+
+
+Let's interpret this a little bit more.
+
+
+I'm going to introduce some
+
+
+variables uh that have very suggestive
+
+
+names.
+
+
+I'm going to take the log of beta t s t
+
+
+and I'm going to call it v.
+
+
+So, v t of s t is uh log of beta t s t.
+
+
+And I'm going to take the log of
+
+
+beta t s t a t and call it q.
+
+
+Just some letters that I came up with.
+
+
+And I and then I'm going to rewrite
+
+
+these equations in terms of v and q.
+
+
+Right? That's that's pretty
+
+
+straightforward. Like they're just
+
+
+defined in terms of the logs of these
+
+
+backward messages, so I can rewrite it.
+
+
+So, if I write this thing underlined in
+
+
+red
+
+
+uh in terms of v, then it ends up being
+
+
+v t of s t is equal to the log of the
+
+
+integral over all of my actions of the
+
+
+exponential of q t s t a t.
+
+
+Okay. So, I all I did is I just
+
+
+substituted this this v and q.
+
+
+And um I'm going to call this thing a
+
+
+soft max. Not to be confused with a soft
+
+
+max, like like the one you implement in
+
+
+PyTorch. Uh it's just a similar sounding
+
+
+term, but it's a soft max, two words.
+
+
+Uh and uh no, it's I'm that's actually
+
+
+not a joke. Like it's actually a
+
+
+different thing.
+
+
+>> [laughter]
+
+
+>> Uh and uh maybe a question I have for
+
+
+you guys is
+
+
+well, why did I call it a soft max? Like
+
+
+that sort of implies it has something in
+
+
+common with a max.
+
+
+But it's not a max, it's an integral.
+
+
+So, So why would I call this thing a
+
+
+soft max?
+
+
+Yeah.
+
+
+>> It's kind of like
+
+
+does a similar thing to maximum where
+
+
+it takes whatever the maximum value is
+
+
+and like outputs that, but it's a little
+
+
+it's differentiable.
+
+
+>> It's a little soft, yeah.
+
+
+Uh all right, so yeah, that's that's
+
+
+basically exactly right. So the way you
+
+
+can think about this is that the
+
+
+exponential makes small values a little
+
+
+bigger and big values a lot bigger.
+
+
+So if you imagine that different actions
+
+
+have different Q values, the exponential
+
+
+will really accentuate the biggest one.
+
+
+And when you then take the log of that,
+
+
+that big one will dominate the integral.
+
+
+So if you take the log of the integral
+
+
+of the exponentials,
+
+
+if the values are big enough, it'll
+
+
+eventually approach the max.
+
+
+And in particular, if you take the if
+
+
+you take the Q value the the Q values
+
+
+and you multiply them by like a million,
+
+
+it'll get closer to the max. It'll
+
+
+probably also overflow, but you know,
+
+
+details. Yes.
+
+
+>> I've heard people say like log sum
+
+
+exponential function, right? I mean,
+
+
+this is basically just an integral
+
+
+instead of the the sum.
+
+
+>> Yeah.
+
+
+>> But is that sort of It's exactly the
+
+
+same thing.
+
+
+>> Okay.
+
+
+>> Yeah, so if if you've heard someone say
+
+
+log sum exp, this is exactly this,
+
+
+except this is log int exp.
+
+
+But if it's discrete actions, it'll be
+
+
+sum.
+
+
+So essentially this thing approaches the
+
+
+max over Q
+
+
+as the Qs get bigger.
+
+
+If the Qs are all really small, then it
+
+
+looks kind of like an average. If the Qs
+
+
+are all really big, then it looks kind
+
+
+of like a max.
+
+
+So we call it a soft max.
+
+
+Okay, that's kind of interesting. Uh and
+
+
+then there's this line.
+
+
+Uh let's take let's write this in log
+
+
+space. So uh if I take the log of the
+
+
+right-hand side, remember the log of a
+
+
+product becomes a sum of logs. So
+
+
+uh Q T S T 8 is equal to R S T A T plus
+
+
+the log of the expected value over the
+
+
+next state of the exponential of V.
+
+
+Okay, that's kind of interesting. Um it
+
+
+looks a little bit like a Bellman
+
+
+backup, but not exactly because of that
+
+
+log expected whatever thingy.
+
+
+Um so I'm getting to something that
+
+
+starts to look an awful lot like a value
+
+
+iteration algorithm, except that
+
+
+instead of taking the expected value of
+
+
+the over the next time step, I have this
+
+
+like log of the expectation of the next
+
+
+time step. And so instead of taking a
+
+
+hard max, I'm taking this soft max.
+
+
+Now, in the special case where my
+
+
+dynamics are deterministic, meaning that
+
+
+there's only one possible ST + 1 given a
+
+
+particular ST AT, then actually things
+
+
+simplify really elegantly because of the
+
+
+dynamics are deterministic, then that on
+
+
+that right side that log of the
+
+
+expectation doesn't matter because the
+
+
+expectation assigns a non-zero
+
+
+probability only one state. So you have
+
+
+a log of an exponential, which is just
+
+
+the value.
+
+
+So in the very special case of
+
+
+deterministic transitions,
+
+
+the Q is given by exactly the standard
+
+
+Bellman backup, and the only difference
+
+
+from value iteration is using the soft
+
+
+max instead of the hard max.
+
+
+That's pretty cool. And that kind of
+
+
+maybe accords with our intuition because
+
+
+like, "Hey, we started off by talking
+
+
+about how the monkey might be optimal."
+
+
+And look, we get something that looks a
+
+
+little bit like a softened version of an
+
+
+algorithm that we've previous previously
+
+
+derived in order to compute optimal
+
+
+behavior.
+
+
+But if you have stochastic dynamics,
+
+
+then there's something a little
+
+
+problematic going on here.
+
+
+Uh you see, this is also a log
+
+
+integral exponential. It It is also a
+
+
+soft max, except it's over the
+
+
+transition probability. And that's
+
+
+actually kind of bad because it's saying
+
+
+that
+
+
+the monkey is being optimistic over
+
+
+stochastic outcomes. It's a It's an
+
+
+optimistic monkey. Uh and that maybe is
+
+
+not so rational because uh irrational
+
+
+optimism can get you into trouble.
+
+
+Let's not worry about this now. We'll
+
+
+actually come back to this later and
+
+
+we'll see
+
+
+probably next week at this rate how
+
+
+variational inference can help us deal
+
+
+with the successive optimism. But at
+
+
+least in the deterministic case, this
+
+
+all kind of squares away and makes a lot
+
+
+of sense.
+
+
+Okay.
+
+
+So, we'll come back to the stochastic
+
+
+case later.
+
+
+And to summarize what we what we've
+
+
+learned about the backward pass,
+
+
+we we're computing these backward
+
+
+messages which have a well-defined
+
+
+probabilistic interpretation of the
+
+
+probabilities of future optimality
+
+
+variables given the current state and
+
+
+action.
+
+
+We compute them recursively from the end
+
+
+of the trajectory to the beginning.
+
+
+Uh and if we express them in log space,
+
+
+then the log of these things is kind of
+
+
+Q function-like or value function-like.
+
+
+Using an a method that looks a lot like
+
+
+the methods we used to compute Q
+
+
+functions and value functions, but now
+
+
+with a soft max in place of a hard max
+
+
+and this weird optimistic transition
+
+
+probability that we don't like very
+
+
+much.
+
+
+Okay.
+
+
+So, if you let V be the log of beta t s
+
+
+t and you let Q be the log beta t of s t
+
+
+a t, then the method looks suggestively
+
+
+similar to value iteration.
+
+
+Any questions about this? This is kind
+
+
+of a lot to take in, so if you have
+
+
+questions or concerns or
+
+
+reservations about this, please tell me.
+
+
+Yeah.
+
+
+>> Could you please elaborate on like
+
+
+the optimism and sort of why again what
+
+
+that causes an issue?
+
+
+>> Um I'll come back to that later because
+
+
+I have an entire slide just about that.
+
+
+So, I I want to suspend our disbelief
+
+
+about that for now.
+
+
+Yeah.
+
+
+>> Well, I'm still a bit confused about the
+
+
+backward pass.
+
+
+>> Mhm.
+
+
+>> How do you derive the
+
+
+formulas for beta t s t and psi t s t?
+
+
+>> Yeah, so the derivation for the formulas
+
+
+is basically
+
+
+the entirety of this slide. It's a
+
+
+relatively unglamorous bunch of algebra,
+
+
+and
+
+
+all we're doing is we're just using the
+
+
+chain rule of probability using that
+
+
+graphical model.
+
+
+So,
+
+
+uh what I would recommend for those of
+
+
+you that were confused by this is
+
+
+uh load up the slides from the website
+
+
+and just go through those steps uh
+
+
+carefully yourself as well. Um it's like
+
+
+it's a little bit nuanced, but it's not
+
+
+particularly clever, I would say.
+
+
+Once we crunch through the math, we
+
+
+essentially get a recursion for the beta
+
+
+T's expressed in terms of the beta T of
+
+
+the next time step. And then the rest is
+
+
+all just interpretation. So, then we we
+
+
+want to rewrite this in log space, not
+
+
+because it actually changes the
+
+
+algorithm anyway, but it just allows us
+
+
+to better understand the relationship
+
+
+between these otherwise very esoteric
+
+
+probabilistic equations and the more
+
+
+familiar uh equations that we saw before
+
+
+with value functions and Q functions.
+
+
+And basically the point of all of this
+
+
+is that
+
+
+the value iteration algorithm that we
+
+
+saw before, which was derived entirely
+
+
+from the standpoint of maximizing
+
+
+reward, bears a surprisingly close
+
+
+similarity to an algorithm that is doing
+
+
+inference in a graphical model. And on
+
+
+the surface, we might think that
+
+
+inference in graphical models has
+
+
+nothing to do with computing values for
+
+
+RL, but in reality, they look awfully
+
+
+similar. And in fact, in the
+
+
+deterministic case, they're almost
+
+
+identical, with the main difference
+
+
+being that the hard max is replaced with
+
+
+a soft max. And that's kind of I think
+
+
+the main thing that I'd like you guys to
+
+
+take away from this.
+
+
+Uh there was a question here?
+
+
+>> Yeah. Yeah. I guess I'm I'm wondering
+
+
+sort of the way you define
+
+
+up to the
+
+
+the
+
+
+the O function is basically sort of
+
+
+related to the exponential of the
+
+
+reward.
+
+
+So, I'm wondering sort of
+
+
+like why is this something new? Because
+
+
+it seems sort of intuitive that of
+
+
+course like the exponential of the
+
+
+reward, if you take it in log space,
+
+
+then it's just going to be the value
+
+
+>> Yeah.
+
+
+So, so that that that's a good
+
+
+observation. And and basically like
+
+
+another way that you could interpret
+
+
+everything that I've said uh in this
+
+
+section of the lecture is that I kind of
+
+
+like figured out how to reverse engineer
+
+
+the machinery of probabilistic inference
+
+
+and plug something into it so that a
+
+
+standard probabilistic inference
+
+
+algorithm gets me something that looks
+
+
+like value iteration.
+
+
+So, it's it's it's kind of like a funny
+
+
+inverse exercise where like, you know,
+
+
+if someone gives you an implementation
+
+
+of probabilistic inference and you need
+
+
+to plug in some graphical model to force
+
+
+that algorithm to do control, well,
+
+
+here's what you plug in. You plug in
+
+
+exponential reward. Yes.
+
+
+>> Just a quick question, like is there any
+
+
+place you already use the fact that
+
+
+extra prior is uniform?
+
+
+I didn't see any reason why you need
+
+
+those two there.
+
+
+>> I'm actually going to talk about that
+
+
+right now. Yeah. So, that's a that's a
+
+
+good good point. I I have a little aside
+
+
+about the action prior because this is
+
+
+something that uh
+
+
+sometimes uh
+
+
+can be a source of some confusion. So,
+
+
+uh I had this kind of hand-wavy step
+
+
+before where I said, well,
+
+
+when I have uh the probability of future
+
+
+optimality variables given the current
+
+
+state and I need to plug in the action
+
+
+there, I get this term P of AT + 1 given
+
+
+ST + 1 and I kind of said that like,
+
+
+hey, don't worry about it. Just assume
+
+
+it's a constant because if you don't
+
+
+have any intent, then all actions are
+
+
+equally likely. That was a bit
+
+
+hand-wavy. So, I want to talk about that
+
+
+a little bit more. And you could say,
+
+
+well, maybe not not all actions are
+
+
+equally likely. Maybe the monkey, if
+
+
+it's not trying to be optimal, it's lazy
+
+
+and it wants to take small actions
+
+
+rather than big actions. Like that's a
+
+
+pretty reasonable model. So, maybe it's
+
+
+not a uniform thing. It's maybe uh a
+
+
+Gaussian centered at zero because small
+
+
+actions are more likely than big
+
+
+actions.
+
+
+Well, what happens if you have uh a
+
+
+non-uniform action prior is that it's
+
+
+going to show up inside of the equation
+
+
+for V as just another term that you add
+
+
+to Q.
+
+
+And uh you can go through the equations
+
+
+and and and see this for yourself.
+
+
+And
+
+
+if you actually then write out Q,
+
+
+then, well, Q is just R plus the next V.
+
+
+So, if you're adding a term to Q, you
+
+
+might as well just add it to R.
+
+
+So, so you can define a new Q that we're
+
+
+going to call Q tilde, which is just the
+
+
+old Q plus log P of AT given ST.
+
+
+And now you can see that basically, if I
+
+
+have a non-uniform action prior, I can
+
+
+also just take that action prior and add
+
+
+it to the reward, replace the the action
+
+
+prior with a uniform one, and just treat
+
+
+it as a change in the reward function.
+
+
+All of this is to say that changes in
+
+
+the action prior are equivalent to
+
+
+changes in the reward.
+
+
+And that actually makes sense because,
+
+
+hey, if the reason the monkey is more
+
+
+likely to take a small action than a big
+
+
+one is because it's more rewarded by a
+
+
+small action. So, instead of saying that
+
+
+it has a different action prior, you can
+
+
+just say it has a different reward.
+
+
+And that's pretty convenient because
+
+
+then you can, without loss of
+
+
+generality, just say the action prior is
+
+
+always uniform, and I'm just going to
+
+
+take any action dependent terms and plug
+
+
+them into my reward function.
+
+
+So, that gets rid of that little bit of
+
+
+complexity, and
+
+
+essentially, you can just say that your
+
+
+your action prior is always uniform, and
+
+
+if you really want a non-uniform one,
+
+
+just add that to the reward function.
+
+
+Yeah.
+
+
+From the action prior.
+
+
+Um
+
+
+So, the reason that it shows up there is
+
+
+because that integral is actually an
+
+
+expectation under the action prior.
+
+
+Well, yeah, yeah, but but I didn't write
+
+
+it as an expectation under the the
+
+
+action prior. I wrote it as an integral.
+
+
+So, you can write it as an expectation
+
+
+under the action prior, but then the the
+
+
+P of AT given ST term actually shows up.
+
+
+Right. So, so basically, the equation
+
+
+for V of ST is really the log of the
+
+
+expectation under the action prior of
+
+
+the exponential of Q.
+
+
+Uh so, that means that it's a P of AT
+
+
+given ST times the exponential of Q, and
+
+
+that's the same as the exponential of Q
+
+
+plus log P of AT given ST.
+
+
+Okay.
+
+
+Um
+
+
+All right. So, basically, the short
+
+
+version of this, you can always fold the
+
+
+action prior into the reward and that
+
+
+actually kind of makes sense because if
+
+
+the monkey
+
+
+uh is more likely to take a small
+
+
+action, that means that it has a higher
+
+
+reward for a small action. Pretty
+
+
+logical.
+
+
+Okay. So, now let's get to the part
+
+
+where we actually compute the policy and
+
+
+this is actually going to be really easy
+
+
+because the backward messages, the Q and
+
+
+the V, basically tell us everything that
+
+
+we need to know. Just like in regular uh
+
+
+policy iteration, uh once you have the Q
+
+
+function, you can just take the arg max
+
+
+of the Q function and it gets you a
+
+
+greedy optimal policy. Here too, the
+
+
+backward messages very easily get you
+
+
+the policy.
+
+
+So, again, we'll do like a little bit of
+
+
+probabilistic inference math. So, what
+
+
+we want is we want P of AT given ST
+
+
+{comma}
+
+
+all of the optimality variables being
+
+
+true for all time and that's basically
+
+
+the policy.
+
+
+So, uh again, ST d-separates the past
+
+
+from the future, which means that you
+
+
+can replace O 1 through capital T with O
+
+
+little t through capital T. Basically,
+
+
+the past optimality variables don't
+
+
+matter here.
+
+
+And
+
+
+now what I can do is I can use the
+
+
+definition of conditional probability to
+
+
+write P of A given S {comma} O as P of A
+
+
+{comma} S given O divided by P of S
+
+
+given O, right? So, basically,
+
+
+I'm taking the S to the right of the
+
+
+conditioning bar and applying the
+
+
+definition of conditional probability to
+
+
+it.
+
+
+And now I'm going to do something a
+
+
+little complicated. I'm going to apply
+
+
+Bayes rule to both the numerator and the
+
+
+denominator of this thing.
+
+
+Okay?
+
+
+So, I'm going to rewrite both the
+
+
+numerator and the denominator with O on
+
+
+the left of the conditioning bar using
+
+
+Bayes rule.
+
+
+So, it's a it's a big complicated
+
+
+equation, but it's really just Bayes
+
+
+rule applied to the top and bottom.
+
+
+And when I apply Bayes rule to the top
+
+
+and bottom, I get a denominator of
+
+
+P of O 1 through capital T on both
+
+
+sides, so that just cancels out.
+
+
+Okay? So, now I'm actually left with a
+
+
+product of two terms in the numerator
+
+
+and in the denominator.
+
+
+And I can split those apart like this.
+
+
+And both terms actually make a lot of
+
+
+sense.
+
+
+So,
+
+
+the first term, the numerator is the
+
+
+backward message over ST AT, and the
+
+
+denominator is the backward message over
+
+
+ST.
+
+
+And in the second fraction,
+
+
+that's just the action prior, AT given
+
+
+ST.
+
+
+Okay?
+
+
+So, remember that beta T ST AT is P of O
+
+
+little T through capital T given ST AT,
+
+
+so that's just the numerator in that
+
+
+final equation.
+
+
+Beta T ST is the denominator of the
+
+
+final equation.
+
+
+And
+
+
+that second fraction is the action
+
+
+prior, which we assume is uniform. So,
+
+
+that means that this whole thing is just
+
+
+equal to
+
+
+the backward message over states and
+
+
+actions divided by the backward message
+
+
+over states.
+
+
+And we just computed those things, so we
+
+
+actually know what they are.
+
+
+So, that's our policy.
+
+
+Okay?
+
+
+A fairly straightforward bit of math,
+
+
+but now again, let's do a little bit of
+
+
+interpretation for this. So, remember
+
+
+that when we express everything in log
+
+
+space, we get these things that look
+
+
+like Q's and V's. So, if we were to
+
+
+express the policy with Q and V,
+
+
+well, it's just the exponential of Q
+
+
+minus V.
+
+
+Right? Because the numerator is
+
+
+exponential of Q, the denominator is
+
+
+exponential of V, so the entire policy
+
+
+is the exponential of Q minus V, which
+
+
+is the exponential of the advantage.
+
+
+And that's really cool, right? That's
+
+
+just saying that you are most likely to
+
+
+take the action with the highest
+
+
+advantage, and as the action becomes
+
+
+less advantageous, you become
+
+
+exponentially less likely to take it.
+
+
+And like hey, like that actually, to me
+
+
+at least, that makes sense. Like the
+
+
+monkey is going to take the best action
+
+
+with the highest probability, and as the
+
+
+action gets worse with respect to its
+
+
+long-term reward
+
+
+relative to the to the current value,
+
+
+it's exponentially less likely to take
+
+
+it.
+
+
+So, even though we've gone through this
+
+
+completely different path, deriving this
+
+
+from the sample of probabilistic
+
+
+inference, we've actually arrived at a
+
+
+method that looks an awful lot like the
+
+
+methods that we already saw with
+
+
+value-based methods and actor-critic.
+
+
+Okay, so just to summarize this part,
+
+
+um
+
+
+there are a few little details that I've
+
+
+glossed over in deriving this. So,
+
+
+uh
+
+
+one little detail that people sometimes
+
+
+use with this kind of derivation is to
+
+
+introduce a temperature. So, basically
+
+
+the scale of the Q values and value
+
+
+function values depends on the reward.
+
+
+If you increase your rewards by like
+
+
+10x, then everything becomes sharper.
+
+
+So, oftentimes to make that explicit, uh
+
+
+it's very common to put in a temperature
+
+
+alpha where you
+
+
+actually
+
+
+divide the advantage by some
+
+
+by this alpha to soften or harden your
+
+
+policy. So, that's something that you'll
+
+
+see often in the literature.
+
+
+Um better actions are more probable
+
+
+under this.
+
+
+One nice thing is you get random tie
+
+
+breaking. So, you if you have two
+
+
+actions with the same advantage, under
+
+
+this framework they're equally likely to
+
+
+be taken. Whereas, if you take a max,
+
+
+you need to do tie breaking somehow. And
+
+
+this is actually very analogous to
+
+
+Boltzmann exploration, which we talked
+
+
+about before for Q functions. In fact,
+
+
+if you do Q learning with Boltzmann
+
+
+exploration, it's exactly this method
+
+
+under deterministic dynamics with the
+
+
+only difference being that the hard max
+
+
+is replaced by soft max.
+
+
+Uh and the And as you increase the
+
+
+temperature, basically if you um
+
+
+Sorry, as as you decrease the
+
+
+temperature, as alpha goes to zero, then
+
+
+this approach is a hard max policy, an
+
+
+optimal policy. Yes.
+
+
+Yeah, so one one one thing to watch out
+
+
+for is with all these exponentials, if
+
+
+you actually if you were to actually
+
+
+implement this as an alternative to
+
+
+value iteration, you need to be careful
+
+
+because exponentiating large values will
+
+
+overflow. So, in practice, if you were
+
+
+to actually implement
+
+
+uh this kind of like log of the
+
+
+exponential of Q, you need to make sure
+
+
+to use a uh a safe way of calculating
+
+
+this. Commonly, a safe way of
+
+
+calculating this is to
+
+
+um subtract the maximum value from Q
+
+
+first, then do the log sum exp, and then
+
+
+add it back in. So, that's a kind of a
+
+
+common numerical trick.
+
+
+Yes.
+
+
+Um
+
+
+So, hold that question until later. I
+
+
+think uh probably Wednesday next week
+
+
+I'll talk about how you can have a
+
+
+practical policy gradient based on this.
+
+
+And it's going to look almost identical
+
+
+to regular policy gradient, and you'll
+
+
+use all the same tricks. So, basically
+
+
+all the tricks are still used, and this
+
+
+actually ends up being a very small
+
+
+change to actual methods.
+
+
+Yes.
+
+
+Um the assumption here is actually the
+
+
+reward is always negative.
+
+
+And the reason And the reason that you
+
+
+want to assume the reward is always
+
+
+negative is because
+
+
+uh O is a Bernoulli random variable, and
+
+
+its probability is the exponential of
+
+
+the reward. So, if the reward were
+
+
+positive, then it would be larger than
+
+
+one.
+
+
+But, we can assume that the reward is
+
+
+always negative without loss of
+
+
+generality because adding a constant to
+
+
+the reward doesn't actually change the
+
+
+solution. So, if you just subtract the
+
+
+largest reward from all the rewards,
+
+
+you'll ensure that they're always less
+
+
+than uh zero.
+
+
+And And it's only um that's only kind of
+
+
+like a a mathematical technicality. In
+
+
+practice, you don't actually worry about
+
+
+this.
+
+
+So, it's a mathematical technicality to
+
+
+get all of the probabilistic stuff to
+
+
+work out.
+
+
+Okay. Um
+
+
+the last thing that I want to go
+
+
+through, and this will be pretty brief,
+
+
+is the forward message. And the forward
+
+
+message, you might be wondering why we
+
+
+actually need this because we already
+
+
+finished computing the the policy. In
+
+
+fact, we usually don't need it, but it
+
+
+is kind of useful to have if you ever
+
+
+want to compute state probabilities.
+
+
+Usually, if you're just doing RL, you
+
+
+don't actually need state probabilities,
+
+
+but there are some cases in learning
+
+
+rewards where you do need state
+
+
+probabilities.
+
+
+Forward messages are computed uh through
+
+
+another bit of algebra, which is again
+
+
+not that glamorous, but I'll go through
+
+
+it briefly. So, the forward message is
+
+
+the probability of ST given that the
+
+
+optimality variables are true at all
+
+
+past time steps.
+
+
+And
+
+
+uh again, it's a recursive algorithm
+
+
+this time going from the beginning to
+
+
+the end.
+
+
+We're going to introduce the previous
+
+
+state and action into the integral. So,
+
+
+now we have P of ST {comma} ST minus one
+
+
+AT minus one given all the past
+
+
+optimality.
+
+
+And again, we're going to break it up
+
+
+into three terms. I won't go through
+
+
+this in detail. Like, it's not actually
+
+
+very interesting, and if you really want
+
+
+to go through the math, you can uh go
+
+
+through it on the slide. Uh but
+
+
+at a at a high level, the logic is very
+
+
+similar to the backward messages, where
+
+
+we're going to be introducing these
+
+
+terms
+
+
+uh using conditional independence,
+
+
+the Markov property basically, and
+
+
+massaging it until we get an expression
+
+
+expressed in terms of the previous
+
+
+forward message. So, the um
+
+
+probability of the transition doesn't
+
+
+depend on the optimality variable, so
+
+
+that becomes the transition probability.
+
+
+We have the probability of the action
+
+
+given the previous state and optimality,
+
+
+and the previous forward message.
+
+
+So, this is the transition, uh and that
+
+
+middle term is a little complex. Again,
+
+
+I'm
+
+
+kind of short on time, so I won't go
+
+
+through it in detail because I don't
+
+
+think it's actually that important. But
+
+
+in the end, you're going to end up with
+
+
+an expression for the forward message.
+
+
+The point I wanted to make here though,
+
+
+before I wrap up, is that once you have
+
+
+the backward message and you have the
+
+
+forward message,
+
+
+now you can actually compute the
+
+
+probability of a state along an optimal
+
+
+trajectory.
+
+
+And the probability of a state along an
+
+
+optimal trajectory
+
+
+uh
+
+
+can be written as the probability of ST
+
+
+{comma} optimality divided by the
+
+
+probability of optimality.
+
+
+Uh
+
+
+because of uh the Markov property,
+
+
+because S uh D separates future and past
+
+
+optimality, that's just the probability
+
+
+of future optimality given S, and that's
+
+
+our backward message, uh times the
+
+
+probability of S {comma} past
+
+
+optimality.
+
+
+And
+
+
+because of that, this actually breaks up
+
+
+really nicely, where you have the
+
+
+backward message,
+
+
+the forward message, and a term that
+
+
+doesn't depend on S.
+
+
+So that means that the probability of a
+
+
+state along an optimal trajectory is
+
+
+proportional to the product of the
+
+
+backward and the forward messages.
+
+
+So if you compute those backward
+
+
+messages, the value function, you
+
+
+compute the forward messages, the
+
+
+probability of S given past optimality,
+
+
+and you multiply them together, that's
+
+
+going to be proportional to how likely
+
+
+you are to be in a particular state
+
+
+along uh you know, when you execute an
+
+
+approximately optimal policy.
+
+
+So you can sort of think of it as the
+
+
+backward messages are this cone of
+
+
+states that are going to go to the goal,
+
+
+and the forward message is this cone of
+
+
+states that you can get from their
+
+
+starting position if you're acting uh
+
+
+near optimally, and if you multiply
+
+
+these things together, then you get the
+
+
+state marginals, the place where you
+
+
+might end up in the middle.
+
+
+So
+
+
+again, this is not something that you
+
+
+would need to to use if you want to just
+
+
+compute policies, but it is something
+
+
+that can be very helpful to understand
+
+
+if you see trajectories of let's say
+
+
+people doing something, where you
+
+
+observe their states, and you want to
+
+
+try to
+
+
+infer their rewards. And in fact, uh
+
+
+when uh
+
+
+people have analyzed, for example, human
+
+
+motor control for goal-reaching
+
+
+behaviors, like for example, using your
+
+
+hand to reach for a particular location
+
+
+in space, you actually observe
+
+
+distributions that resemble this kind of
+
+
+thing, where people are more
+
+
+deterministic close to the end,
+
+
+obviously more deterministic at the
+
+
+start because that's where they're
+
+
+starting, and then have more variability
+
+
+in the middle.
+
+
+Kind of maybe an obvious conclusion
+
+
+because hey, like the middle is where it
+
+
+matters less, but it's kind of nice that
+
+
+the probabilistic model actually accords
+
+
+with what you can measure empirically.
+
+
+Okay, so this is just a little side
+
+
+note. Don't worry about this too much.
+
+
+But uh to summarize the main points, uh
+
+
+probabilistic graphical model for
+
+
+optimal control, that's basically the
+
+
+MDP uh Bayes net augmented mented with
+
+
+these optimality variables.
+
+
+Control corresponds to inference. It's
+
+
+similar to what you would do for like a
+
+
+hidden Markov model or an extended
+
+
+common filter. Basically, it's a uh
+
+
+it's a dynamic Bayes net, and you would
+
+
+use standard kind of inference
+
+
+techniques.
+
+
+And what you get is similar to dynamic
+
+
+programming methods like value
+
+
+iteration,
+
+
+but quote-unquote soft, meaning that
+
+
+hard maxes are replaced with soft maxes.
+
+
+Okay.
+
+
+So, um
+
+
+next week, we're going to actually
+
+
+connect this up to the framework of
+
+
+variational inference and put these two
+
+
+together to arrive at some actual
+
+
+algorithms that we might use in
+
+
+practice. So, I'll see you all next
+
+
+Wednesday.
+
+
+>> Mhm.
+
+
+>> Mhm.

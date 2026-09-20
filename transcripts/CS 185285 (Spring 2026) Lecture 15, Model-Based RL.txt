@@ -1,0 +1,4120 @@
+All right. Uh, welcome everybody. Let's
+
+
+get started.
+
+
+So, uh, today we're going to shift gears
+
+
+and go from our discussion of model free
+
+
+RL algorithms, which is what we
+
+
+discussed so far in the course, to a new
+
+
+topic, which is modelbased RL. Um before
+
+
+I get into that, uh a few things I
+
+
+wanted to announce. Um and hopefully all
+
+
+of you also listening online will hear
+
+
+this announcement too. Um homework 4 is
+
+
+is out now and homework 4 is uh focused
+
+
+on reinforcement learning for
+
+
+large language models. We tried our best
+
+
+to find the smallest large large
+
+
+language model for you to work with uh
+
+
+so that your experiments are a bit more
+
+
+manageable. This is the first time that
+
+
+we are giving this assignment and a word
+
+
+of warning to all of you because large
+
+
+language models are large even the small
+
+
+ones uh they do take quite a while to
+
+
+train especially when training with RL
+
+
+um they also take a lot longer to train
+
+
+if you either implemented your algorithm
+
+
+incorrectly or you're you are using the
+
+
+wrong kind of compute setup. So uh the
+
+
+advice I would have for all of you if
+
+
+you would like to be successful on
+
+
+homework 4 is first read the
+
+
+instructions very carefully. Uh the
+
+
+instructions uh will explain uh the uh
+
+
+compute setup you should use and there
+
+
+should be in the starter code like a
+
+
+little bit of uh um material to to help
+
+
+you start the correct kind of node on
+
+
+modal. Uh make sure that you're using
+
+
+the right kind of compute. If you are
+
+
+fortunate enough to have access to your
+
+
+own high-end GPUs, by all means, use
+
+
+them. If you do not, uh, make sure you
+
+
+avail yourself of the opportunity, uh,
+
+
+to get the course provided compute. Uh,
+
+
+but if you do not run this on something
+
+
+like an H100 or A100, uh, your homework
+
+
+will take a very long time. So, uh,
+
+
+please take a look at that in advance.
+
+
+Don't leave it until the last moment
+
+
+because if you try to figure out all the
+
+
+compute stuff and how to redeem the
+
+
+voucher in the last like 3 days before
+
+
+the homework is due, you will most
+
+
+likely not be able to finish it. So, uh
+
+
+start early and make sure that you can
+
+
+at least like run stuff successfully.
+
+
+And if you can't run stuff successfully,
+
+
+please ask one of the TAs about it. The
+
+
+second thing is even if you do
+
+
+everything correctly and you have the
+
+
+right compute setup and the right code,
+
+
+it takes a while to train. uh in some of
+
+
+our tests uh 6 to 12 hours is a pretty
+
+
+reasonable training time for the final
+
+
+run. We tried to make sure that there is
+
+
+a small scale config for quick testing
+
+
+but you will not succeed at finishing
+
+
+your homework on time if you start it
+
+
+less than 12 hours before it's due
+
+
+because your training run will not
+
+
+finish even if you can implement it
+
+
+instantly. So please leave plenty of
+
+
+time for this one. Uh and uh if you
+
+
+leave plenty of time then you will be
+
+
+able to finish everything and we'll
+
+
+finish training on time and so on. But
+
+
+if you start at the last moment, you
+
+
+will not be able to finish the homework
+
+
+because it takes a long time to train.
+
+
+And this will hopefully give you a very
+
+
+realistic impression of what it's like
+
+
+to actually work with RL for LLMs. And
+
+
+waiting for long experiments to finish
+
+
+is part of the fun, but make sure you
+
+
+leave yourself enough time to have
+
+
+plenty of fun. Um the uh second
+
+
+announcement is uh thank you all for
+
+
+filling out the course survey. Uh if you
+
+
+haven't filled it out yet, uh please do
+
+
+so. We do take your feedback on the
+
+
+course survey very seriously. Um I've
+
+
+looked through some of the initial uh
+
+
+responses. One of the things I I want to
+
+
+note to everybody is that uh we will
+
+
+have the exam after spring break. We
+
+
+will release uh problems practice
+
+
+problems for the exam. So we'll get that
+
+
+to you soon. We don't have that yet uh
+
+
+because again this is the first time
+
+
+this course has an exam. So we do not
+
+
+have an exam from previous years that we
+
+
+could just give you. But uh Sei Hong and
+
+
+I are working hard on it and we will
+
+
+make the real exam and then we'll make a
+
+
+bunch of extra problems just for you
+
+
+just so that you can see uh what kind of
+
+
+things will be on the exam that you can
+
+
+practice. We will also have two entire
+
+
+lecture periods and a section dedicated
+
+
+to exam review. Uh so uh your comments
+
+
+about my lectures being quite difficult
+
+
+are well noted. Uh and I will do my
+
+
+utmost to make them less difficult but
+
+
+also to make it up to you. I will
+
+
+dedicate two entire lecture periods to
+
+
+go back and review the material we've
+
+
+covered so that you have a uh chance to
+
+
+kind of recap on the important topics
+
+
+that will be on the test.
+
+
+Any questions about homework 4 or about
+
+
+the exam that I can answer quickly?
+
+
+>> Yeah.
+
+
+the the estimated training time for
+
+
+homework four for the final uh training
+
+
+run uh it should be if everything is
+
+
+great it should be closer to six hours
+
+
+but I would recommend leaving uh up to
+
+
+12 hours like six hours is what like the
+
+
+TA with the best implementation could
+
+
+get which may not which may be faster
+
+
+than what you can get
+
+
+okay all right so let's dive into
+
+
+Today's material um model based RL so
+
+
+regular model free reinforcement
+
+
+learning it's called model free because
+
+
+it assumes that during training you do
+
+
+not know the transition probabilities
+
+
+the P of S+1 given STA and furthermore
+
+
+that you you do not even attempt to
+
+
+learn the transition probabilities. So
+
+
+policy gradients, astrocritic,
+
+
+valuebased methods, all of these
+
+
+algorithms are designed to interact with
+
+
+a kind of a blackbox environment where
+
+
+you don't know anything about the
+
+
+environment a priori and you do not
+
+
+attempt to learn how the environment
+
+
+works. You're just trying to directly
+
+
+find a policy or a value function.
+
+
+But what if we instead try to learn how
+
+
+the how the world works? What if we try
+
+
+to learn the laws of physics or learn
+
+
+how to predict things and then
+
+
+essentially acquire a kind of a learned
+
+
+simulator?
+
+
+Well, uh, this is something that maybe,
+
+
+uh, is on a lot of people's minds these
+
+
+days because generative models have
+
+
+gotten really, really good. Um, I tried
+
+
+to pull up a few videos of generative
+
+
+models. Um, I I found videos of the
+
+
+latest generative models and I didn't
+
+
+want to include them in this slide
+
+
+because it's kind of boring. Like, it
+
+
+actually looks too realistic. So, I
+
+
+thought it would be funnier to include
+
+
+videos of slightly older generative
+
+
+models because they have some artifacts
+
+
+and that makes it a little bit more
+
+
+obvious that it's a generative model.
+
+
+So, this is a Veo 2. This is the
+
+
+previous generation of Veo. This is the
+
+
+I think like two generations back the
+
+
+older Sora model and these are video
+
+
+generation models and they produce
+
+
+outputs that are actually like pretty
+
+
+cool like they look photorealistic. Uh
+
+
+they capture all sorts of you know
+
+
+physical phenomena, reflections,
+
+
+liquids, all this kind of stuff. Like it
+
+
+kind of seems like with advances in
+
+
+generative models our ability to learn
+
+
+things that can kind of simulate the
+
+
+world is getting pretty good. So it
+
+
+might be tempting to think well can we
+
+
+use good predictive models good
+
+
+generative models as essentially learn
+
+
+simulators to help us do RL better. So
+
+
+uh a kind of a notional algorithm a
+
+
+rough sketch of an algorithm that works
+
+
+on this principle would look like this.
+
+
+Step one is you get some data and we're
+
+
+not doing imitation learning so we don't
+
+
+care if this data is optimal or not.
+
+
+just some data of kind of exploring the
+
+
+world and the data as usual in RL
+
+
+consists of tupils of state action and
+
+
+next state s prime and then we use this
+
+
+data to learn some kind of simulator
+
+
+yeah in general you would actually want
+
+
+to train a stochcastic model a
+
+
+probability distribution but for
+
+
+simplicity let's say it's a
+
+
+deterministic model it's just a function
+
+
+that takes in s and a and predicts s
+
+
+prime so maybe s is the image in an
+
+
+Atari game a is the button that was
+
+
+pressed and s prime is the next image
+
+
+that resulted from that. Okay.
+
+
+And then step three is once you've
+
+
+learned this function f uh run your
+
+
+favorite RL method but not in the real
+
+
+world, not on real data but inside of
+
+
+this learned simulator.
+
+
+Okay. Yes.
+
+
+>> Yeah. Yeah. So if you have a stochcastic
+
+
+environment then you have a choice of
+
+
+how you represent the distribution. Uh
+
+
+you could actually use the like flow
+
+
+matching or diffusion models that we
+
+
+learned about in homework one uh or any
+
+
+other probability distribution that you
+
+
+think might be powerful enough.
+
+
+Okay. So
+
+
+there are a few things to keep in mind
+
+
+about this notional algorithm uh that
+
+
+are going to be important later. So in
+
+
+step one when you uh collect data
+
+
+it's important to remember that data
+
+
+comes from a particular policy a
+
+
+particular distribution we would
+
+
+generically refer to it as pi beta for
+
+
+behavior policy. So there's some kind of
+
+
+behavior policy that collects some data
+
+
+that you're going to train on.
+
+
+Um so maybe you want to go from like the
+
+
+green dot to the orange dot but your
+
+
+behavior policy maybe just kind of goes
+
+
+all over the place. That might be pretty
+
+
+decent because if it goes all over the
+
+
+place, it kind of gives you examples of
+
+
+all sorts of different physical
+
+
+phenomena. Like you learn how to go
+
+
+left, how to go right, how to go up, how
+
+
+to go down, all that kind of stuff. Uh
+
+
+when you train your model, you have to
+
+
+figure out some suitable loss for
+
+
+training it. So maybe the simplest if
+
+
+you have like just like a regular
+
+
+deterministic model is to minimize mean
+
+
+squared error. Or in general, if you
+
+
+have a probabistic model, it would be to
+
+
+maximize log likelihood. So this would
+
+
+be just some model that takes in S and A
+
+
+and outputs S spray. Okay, that's what
+
+
+the simplest version is straightforward.
+
+
+The more complex versions would use more
+
+
+complex models. And then for step three,
+
+
+obviously you have to choose how you're
+
+
+going to use your learned model to
+
+
+actually recover a policy and there's a
+
+
+lot of choices to be made. So you could
+
+
+literally just run one of the model free
+
+
+RL algorithms that we talked about
+
+
+before like you could run policy
+
+
+gradient or actor critic and just use f
+
+
+in as as though it were a simulator or
+
+
+you could actually use algorithms that
+
+
+make use of the fact that you have kind
+
+
+of programmatic access to f some kind of
+
+
+planning algorithm like a tree search
+
+
+algorithms and we'll talk about those
+
+
+later as well. Okay so this is roughly a
+
+
+sketch of what in a nutshell model based
+
+
+RL looks like. Yes.
+
+
+Yeah. So the question is well the
+
+
+algorithms we use they don't assume that
+
+
+we know the transition dynamics. So why
+
+
+might this be helpful? Um
+
+
+you can actually use f with a standard
+
+
+model free algorithm and that model free
+
+
+algorithm doesn't care whether it's
+
+
+running in a simulator or in the real
+
+
+world or under a learn model. One of the
+
+
+reasons we might suppose this to be
+
+
+helpful is if we're very good at
+
+
+learning F, maybe this can be a more
+
+
+efficient method than trying to learn
+
+
+through model free RL directly through
+
+
+interaction with the physical world.
+
+
+Okay. Um so
+
+
+a question I could ask is uh for this
+
+
+kind of basic scheme, will this actually
+
+
+work well the way I've described it and
+
+
+why might it fail?
+
+
+Okay, there are actually quite a few
+
+
+reasons why it might fail.
+
+
+Um, and each of the stages has some
+
+
+risks associated with it. So, for this
+
+
+first stage, here's a a simple
+
+
+illustration of a possible risk. This is
+
+
+a little maze, and you can see that
+
+
+green dot. The green dot is trying to go
+
+
+to different locations. So, the way that
+
+
+this task is set up uh is you're given a
+
+
+target location, the red dot, and you
+
+
+have to navigate to that red dot from
+
+
+any place you might be in the maze.
+
+
+Okay, so on the servers it might seem
+
+
+like this is not a very hard problem
+
+
+because well it's just 2D navigation
+
+
+like you've got a 2D action space, a 2D
+
+
+state space. Um, and perhaps this is a
+
+
+good candidate for model based RL
+
+
+because you know learning that that
+
+
+relationship that if you command left
+
+
+you go left unless there's a wall that
+
+
+doesn't seem too hard. But of course it
+
+
+depends a lot on what the data is. So if
+
+
+your data set just visits all the states
+
+
+over here in the top left of the maze,
+
+
+it's very difficult to use just that
+
+
+data to figure out how to navigate
+
+
+anywhere in the maze.
+
+
+So
+
+
+that distribution pi beta is actually
+
+
+very important for determining whether
+
+
+this method will succeed. you need the
+
+
+right data distribution and if you have
+
+
+the wrong data distribution you it might
+
+
+be extremely difficult to learn the
+
+
+things you need to know in order to uh
+
+
+perform the task successfully. So the
+
+
+data is important
+
+
+when it comes to learning the model.
+
+
+This one is also fairly complex because
+
+
+uh obviously in some settings the model
+
+
+is very simple. In other settings the
+
+
+model might be extremely comp extremely
+
+
+complicated and you have to choose a
+
+
+model class and a learning algorithm
+
+
+that will actually capture the dynamics
+
+
+of your task with sufficient fidelity so
+
+
+that control actually works. Here's a
+
+
+fun example. This is an older version of
+
+
+the Sora model that was prompted to make
+
+
+a video of a humanoid robot standing
+
+
+near the table with red, green, and blue
+
+
+cubes on it and perform a cube stacking
+
+
+tasks with red in the bottom and blue on
+
+
+on the top. Uh
+
+
+that is actually kind of what happens.
+
+
+But if you watch the video, probably
+
+
+this is not a behavior that would be
+
+
+very easy to perform. Let me play this
+
+
+again. It's actually kind of magical.
+
+
+Okay, so there you go. First, you turn
+
+
+the green cube into a blue cube. Then
+
+
+you spawn a red cube underneath it and
+
+
+then you'll turn it into a green cube
+
+
+and then you make a blue cube appear.
+
+
+That's a very straightforward set of
+
+
+step-by-step instructions and shame on
+
+
+you if you can't do this. Uh so in
+
+
+practice uh the design of the model is
+
+
+kind of domain dependent. Like if you're
+
+
+training a model on natural images and
+
+
+kind of realistic videos like this, then
+
+
+you want one choice of model. If you're
+
+
+training it on like complicated physics
+
+
+for like launching a rocket into space,
+
+
+then maybe a different kind of model
+
+
+would be appropriate. So, uh it's a
+
+
+little difficult to come up with a kind
+
+
+of a generic one-sizefits-all recipe for
+
+
+model based RL. Um and some domains are
+
+
+much easier to simulate than others.
+
+
+There are some domains where it's very
+
+
+easy to learn a model. Other domains
+
+
+where it's very easy to learn a policy,
+
+
+but maybe very hard to learn a model. So
+
+
+depending on your domain, you might find
+
+
+that this either works very well or very
+
+
+poorly or that it requires a lot of
+
+
+careful uh model architecture design or
+
+
+maybe very little model architecture
+
+
+design.
+
+
+And then of course you have to choose a
+
+
+suitable algorithm to use inside of your
+
+
+model. And this also has some
+
+
+interesting trade-offs. So big neural
+
+
+neural models can be much more expensive
+
+
+expensive computationally than
+
+
+conventional simulators. Like rigid body
+
+
+dynamics is something that people know
+
+
+how to simulate very well very quickly
+
+
+with like hundreds of thousands of
+
+
+frames per second. But if you have a
+
+
+large 10 billion parameter uh video
+
+
+model, it might actually run much much
+
+
+slower than real time uh requiring a
+
+
+different set of tradeoffs for the
+
+
+choice of algorithm. Um and uh just
+
+
+because you have the simulator uh as a
+
+
+function that you can access, it doesn't
+
+
+mean that planning or RL is necessarily
+
+
+easy in that simulator. It may be that
+
+
+the learn dynamics are very complex and
+
+
+that exploration for example still
+
+
+presents a big challenge to you. Um,
+
+
+if your state space is very complicated,
+
+
+like for example, the images you had in
+
+
+Atari games,
+
+
+methods from planning and optimal
+
+
+control that could actually leverage the
+
+
+fact that you have a simulator rather
+
+
+than just uh blackbox interaction might
+
+
+not work very well in that
+
+
+representation and model free RL in the
+
+
+learn simulator might be very
+
+
+timeconuming uh or it might be very
+
+
+susceptible to local optimum if you have
+
+
+an exploration challenge. Uh in fact in
+
+
+some domains the third stage there
+
+
+running the the actual control method
+
+
+might be so difficult that you might opt
+
+
+for a simpler model one that is less
+
+
+realistic but that is easier to optimize
+
+
+through. And it's actually not uncommon
+
+
+for model based RL methods to
+
+
+intentionally choose a model class that
+
+
+is that is a bit less accurate but
+
+
+easier in some way like for example
+
+
+being smoother or easier to
+
+
+differentiate or something like that.
+
+
+Okay. So, any questions about these
+
+
+things?
+
+
+Yeah.
+
+
+Yeah. So, the question is, well, why why
+
+
+bother then if there's all these
+
+
+challenges? Well, there's challenges
+
+
+with the model free stuff, too. Um,
+
+
+conventionally the the most obvious
+
+
+challen the most obvious benefit that
+
+
+people see from using modelbased RL is
+
+
+that if done correctly, it can be more
+
+
+sample efficient. Meaning that uh for
+
+
+this either you need less samples or for
+
+
+the same number of samples, you can get
+
+
+a better policy. Another less obvious
+
+
+benefit is that depending on how you set
+
+
+it up, it might be easier to leverage
+
+
+other data sources. So maybe it's hard
+
+
+for you to get data from your current
+
+
+policy through online interaction, but
+
+
+maybe it's easier to get data from some
+
+
+something else like PI Beta that you can
+
+
+use to essentially pre-train your model
+
+
+and that can be another benefit. Yes.
+
+
+So um if you want to use let's say like
+
+
+a trajectory optimization method or a
+
+
+planning method, I I'll talk about some
+
+
+of these things uh on Friday.
+
+
+the size of your state space can make a
+
+
+big difference and also how smooth your
+
+
+dynamics function is. So for image
+
+
+pixels are kind of a uh almost like a
+
+
+worst case scenario for a lot of uh
+
+
+planning methods because if you imagine
+
+
+a pixel representation of an object
+
+
+moving across the screen the position of
+
+
+the object might be changing smoothly
+
+
+but the pixel values change very non
+
+
+smoothly because when the object
+
+
+occupies a particular pixel if it moves
+
+
+like one pixel over to the left then one
+
+
+pixel kind of vanishes and the other one
+
+
+appears. So in pixel space it's actually
+
+
+very complicated but in position space
+
+
+it's very simple.
+
+
+Okay. So
+
+
+today we're actually going to focus very
+
+
+heavily on question number one. This uh
+
+
+relationship between the data that you
+
+
+have and the kind of model that you get.
+
+
+And this is primarily a statistics or
+
+
+algorithms problem. It's actually very
+
+
+related to the distributional shift
+
+
+problem that we saw before with
+
+
+imitation learning where it was the
+
+
+policy that was suffering from
+
+
+distributional shift. But now the model
+
+
+will suffer from distributional shift.
+
+
+Problem number two, the problem of
+
+
+learning the model is really uh kind of
+
+
+a a deep learning or modeling problem.
+
+
+Like this is where uh all of that deep
+
+
+learning model ar kind of uh neural net
+
+
+architecture knowledge comes in to
+
+
+design good models. And problem three is
+
+
+basically a control or RL problem. So
+
+
+problem one is like a fun one to talk
+
+
+about in class because we actually have
+
+
+a good understanding of how the um data
+
+
+influences the accuracy of the model.
+
+
+That's kind of a lot of statistics that
+
+
+we can actually write down and more or
+
+
+less understand. Problem number two is a
+
+
+fun problem to talk about in industry
+
+
+because it's a lot about, you know, kind
+
+
+of getting big models to train on lots
+
+
+of GPUs. Um, but there isn't as much
+
+
+kind of theory to say about it. And
+
+
+problem number three is often not very
+
+
+fun to talk about because planning
+
+
+control and RL are really hard, but
+
+
+we'll talk about it anyway. And that'll
+
+
+be on Friday.
+
+
+All right. So, let's talk about problem
+
+
+number one. Let's talk about the
+
+
+relationship between data, the model,
+
+
+and how well that model does for um how
+
+
+well that model serves the the needs of
+
+
+learning a policy.
+
+
+So, here's our three-step notional
+
+
+algorithm. Get data using pi beta, learn
+
+
+the model on that data, and then use the
+
+
+model to get a policy. And for now,
+
+
+let's just assume that the way you use
+
+
+the model to to get a policy is you just
+
+
+run um your favorite RL algorithm. Let's
+
+
+say you run PO uh treating the mall as
+
+
+though it was a simulator just to keep
+
+
+things simple.
+
+
+Okay, so here's my environment and my
+
+
+goal is to get to the top of the
+
+
+mountain. I want to get to the to the
+
+
+peak that's right in the middle top of
+
+
+the image and there's my data. So I'm
+
+
+walking around on the side of the
+
+
+mountain there and that's my pi beta.
+
+
+And uh if I look at this data and I
+
+
+train my model, I'll I'll figure out the
+
+
+relationship that the further to the
+
+
+right I go, the higher up I get on the
+
+
+mountain, that relationship holds when I
+
+
+am on the left side there. So of course,
+
+
+if I take that model and I run PO to
+
+
+optimize for the most rewarding policy
+
+
+that gets to the highest point, I will
+
+
+do this because I want to go as far to
+
+
+the right as possible. So that's clearly
+
+
+bad news.
+
+
+And the root of the issue is that the
+
+
+distribution over states that I see when
+
+
+I run my policy uh is different from the
+
+
+distribution of states I see when I look
+
+
+at my data.
+
+
+So my data I can say that this it has a
+
+
+state distribution pi beta of ST. When I
+
+
+run my policy pf, I get the distribution
+
+
+of states piff of ST. And PIF of ST is
+
+
+not the same as PI beta of ST. Which
+
+
+means that when I ask my model, when I
+
+
+ask f what state will I get if I take a
+
+
+particular action when I'm there at the
+
+
+top of the mountain, it'll say oh like
+
+
+it'll get even higher up because that's
+
+
+what I saw in all of my data. So this is
+
+
+a distributional shift problem. It is a
+
+
+very similar kind of problem to the
+
+
+problem that we saw uh in imitation
+
+
+learning when we saw that when we train
+
+
+our policy on a particular training set
+
+
+and that policy then visits states that
+
+
+were not seen in the data it might take
+
+
+incorrect actions. The problem is
+
+
+actually exacerbated here because the
+
+
+policy pf is optimized to reach a
+
+
+particular outcome against the model f.
+
+
+So if the model f makes some kind of
+
+
+mistake that looks like it might lead to
+
+
+higher reward, the policy pif will want
+
+
+to kind of exploit that mistake. So when
+
+
+the model says like, hey, you're going
+
+
+further to the right and that leads you
+
+
+to getting higher up on the mountain.
+
+
+The policy will say, oh yes, like I like
+
+
+that. Let's go even further to the
+
+
+right. So it's kind of tricky to
+
+
+actually train this model so that it
+
+
+prevents this kind of like mistake
+
+
+exploitation, this model exploitation
+
+
+problem.
+
+
+Okay, so this is the first challenge uh
+
+
+with modelbased RL that we're going to
+
+
+have to tackle. Any questions about this
+
+
+problem?
+
+
+>> Yes.
+
+
+Yeah.
+
+
+Yeah. So the question was, well, can you
+
+
+just like detect that you're going far
+
+
+away from your data and retrain? In
+
+
+fact, we're going to do something very
+
+
+much like that. Um, the trickiest thing
+
+
+here is detecting that you are
+
+
+experiencing something uh unfamiliar.
+
+
+And the reason this is such a tricky
+
+
+question is that we actually want models
+
+
+to generalize. So uh the whole point of
+
+
+training this model is that it can make
+
+
+reasonable predictions on states and
+
+
+actions that were not seen in your data
+
+
+as long as they are close enough in
+
+
+terms of the distribution. So like the
+
+
+video models I showed at the beginning,
+
+
+there was no training clip of that like
+
+
+bus scene that Veo2 was tested on and
+
+
+yet V2 could generate a reasonable video
+
+
+of the bus scene. So one of the hardest
+
+
+things about these model based RL
+
+
+methods is that you have to figure out
+
+
+whether your model will successfully
+
+
+generalize to a particular state or not
+
+
+and we'll talk about how to do that in a
+
+
+second. Uh but the first thing that we
+
+
+do and this helps a lot is to add step
+
+
+four and step four is basically to
+
+
+change your pi beta to be your newly
+
+
+learned policy pf. Add data from pif
+
+
+into your data set and retrain your
+
+
+model.
+
+
+now and then repeat.
+
+
+Now does this actually fix the problem?
+
+
+Well, sort of. So clearly if you add the
+
+
+data from PIF into the data set, just
+
+
+like with Dagger, if you added
+
+
+additional data from your policy to the
+
+
+data set, eventually you will address
+
+
+the distributional shift problem.
+
+
+But you have to be still a little bit
+
+
+careful about this because when you
+
+
+learn the optimal policy under your
+
+
+current model,
+
+
+if you kind of proceed naively the way
+
+
+I've described, if you literally like
+
+
+run PO treating the model as though it
+
+
+were a simulator,
+
+
+the policy that you will get will be um
+
+
+pretty crazy. like this problem with
+
+
+like going off the cliff. It's only a
+
+
+slight exaggeration because
+
+
+the model will make the most inaccurate
+
+
+prediction on states that are very
+
+
+different from the training. So what you
+
+
+would get if you actually train with RL
+
+
+to convergence against your model is a
+
+
+policy that is essentially as far as
+
+
+possible from the things that you've
+
+
+seen in your data. And probably that
+
+
+policy will be extremely unreasonable.
+
+
+So if you proceed with this method the
+
+
+way I've described it here, you will
+
+
+essentially pingpong between different
+
+
+extreme policies and while you will
+
+
+collect data from each of these extreme
+
+
+policies and eventually if you run this
+
+
+infinitely long you will basically see
+
+
+everything and then you will get in the
+
+
+limit a perfect model it might take an
+
+
+extremely long time to get there because
+
+
+the policies that you're testing are
+
+
+mostly going to be extremely bad and
+
+
+extremely different from each other.
+
+
+>> Yes.
+
+
+Well, yeah. So, as written, step three
+
+
+just says find whatever policies optimal
+
+
+under the current model. And the problem
+
+
+is that your model is only valid in a
+
+
+subset of your states. Whereas step
+
+
+three is saying optimize for the best
+
+
+policy over the set of all states and
+
+
+actions. So, because it's a
+
+
+maximization, it's a maximization of the
+
+
+reward of that policy. Uh in most cases
+
+
+there will be some states or actions
+
+
+where your model will predict an
+
+
+erroneous but extremely good state in
+
+
+response to an unreasonable action. And
+
+
+if such a situation exists, a good
+
+
+enough algorithm will find it. Which
+
+
+means that pretty much every time you
+
+
+run step three, you're going to get a
+
+
+policy that doesn't try to do something
+
+
+reasonable, but it just tries to find
+
+
+the most unusual state it can find and
+
+
+take some really weird action for which
+
+
+the model erroneously predicts a good
+
+
+outcome.
+
+
+And while you will then add that
+
+
+experience to the data and retrain your
+
+
+model, it might take a very long time
+
+
+for this process to then eventually
+
+
+converge. like when you jump off the
+
+
+cliff like okay you're going to add a
+
+
+bunch of states down there at the bottom
+
+
+of the cliff or states where you're like
+
+
+injured and lying at the bottom of the
+
+
+cliff I guess but those are not like
+
+
+particularly useful examples for
+
+
+learning how to get to the top of the
+
+
+mountain. Yes.
+
+
+>> Yeah. It's a very similar problem. uh
+
+
+and uh actually I I guess to give away
+
+
+the punchline here in the LLM RL setting
+
+
+if you have a reward model the reward
+
+
+model is also a model like uh basically
+
+
+the MDP consists of two things
+
+
+transition and reward now in an LLM the
+
+
+transitions are trivial it's just like
+
+
+append the token but the reward is
+
+
+non-trivial so that setting is extremely
+
+
+similar to this actually
+
+
+okay so here's a small modification we
+
+
+can make instead of learning the optimal
+
+
+policy in step number three. Why don't
+
+
+we just improve the policy a little bit?
+
+
+Like for example, why don't we take one
+
+
+iteration of PO instead of running PO to
+
+
+convergence?
+
+
+That's actually a very good idea because
+
+
+then instead of finding the craziest
+
+
+policy that most optimally fools your
+
+
+model into producing a good outcome, you
+
+
+get a slightly better policy than you
+
+
+had before. But there is a little bit of
+
+
+a of a tension here because
+
+
+ideally you would like to squeeze as
+
+
+much juice as you can out of your model.
+
+
+You'd like to make as much progress as
+
+
+you can at every step. So
+
+
+it's a bad idea to train the policy all
+
+
+the way to convergence in step three,
+
+
+but it's also a bad idea to train it too
+
+
+little because then you're not making as
+
+
+much progress as you could. So the kind
+
+
+of tension that you get in model based
+
+
+RL, like if you're using model based RL,
+
+
+it's because you want learning to be
+
+
+more efficient. The tension you get is
+
+
+you you'd like in step three to optimize
+
+
+the policy as much as possible but not
+
+
+too much. So you'd like the policy to
+
+
+change a lot but only in so far as the
+
+
+model's prediction of the policy's
+
+
+performance remains accurate. And that's
+
+
+basically the challenge that we're going
+
+
+to need to deal with. Okay? So that way
+
+
+you stay at the top of the mountain
+
+
+instead of falling off. So basically the
+
+
+big question that we have to deal with
+
+
+is how far can we go? How far can we
+
+
+change the policy until the model's
+
+
+predictions of the policies uh
+
+
+performance are inaccurate? Yes,
+
+
+it's definitely not guaranteed to be
+
+
+sample efficient, but the reason that it
+
+
+might be more sample efficient is that
+
+
+in so far as your model is accurate in
+
+
+some region, you can make more progress
+
+
+improving your policy within that
+
+
+region.
+
+
+Okay? So if you want to learn fast, you
+
+
+need to go as far as possible, but not
+
+
+so far that you fall off the cliff.
+
+
+And this problem is potentially pretty
+
+
+bad. So uh here is a an example uh plot.
+
+
+Uh the way you can think about this plot
+
+
+is that the x-axis is a one-dimensional
+
+
+representation of trajectories and the
+
+
+y-axis is what you get if you uh uh
+
+
+basically run the actions in that
+
+
+trajectory through a model and measure
+
+
+their reward. So the the model plus our
+
+
+reward is making some kind of
+
+
+prediction. The black dots represent the
+
+
+ground truth data points and the blue
+
+
+line represents your fit. And you can
+
+
+see that there is this phantom peak over
+
+
+here. Obviously this is like a massively
+
+
+overfitted function. Uh but it's very
+
+
+tempting when you optimize your policy
+
+
+to go to that phantom peak. Essentially
+
+
+if your model makes a mistake somewhere
+
+
+and that mistake makes some behavior
+
+
+look better than it really is. That's
+
+
+exactly the behavior that your policy
+
+
+will want to pick up on.
+
+
+Okay. So there are some things we could
+
+
+do. We could try not to change the
+
+
+policy too much.
+
+
+Uh like for example, you can take a few
+
+
+iterations of PO. You can impose some
+
+
+kind of trust region and all that stuff.
+
+
+And you can try to stick to places where
+
+
+the model is confident. And this is a
+
+
+very loaded term. That's why it's in
+
+
+quotes. Basically, you would like the
+
+
+modelbased RL process in step three uh
+
+
+to
+
+
+stick to places where there's some
+
+
+reason to believe the model will be
+
+
+accurate. And this is something that we
+
+
+need to kind of dig into a little bit
+
+
+because estimating whether a neural
+
+
+network is accurate is actually a very
+
+
+fraught proposition. And there are some
+
+
+good ways to do it and there are also
+
+
+some very bad ways to do it.
+
+
+So what we might want to do is use a
+
+
+probabilistic or uncertainty aware model
+
+
+and maybe use some kind of penalty uh
+
+
+that makes the policy reluctant to go to
+
+
+places where the model is very
+
+
+uncertain. Somehow punish the policy for
+
+
+doing things that take it to regions
+
+
+where we believe the model will make
+
+
+inaccurate predictions.
+
+
+So maybe we'd like to get some data and
+
+
+then learn a probabilistic model and
+
+
+I'll explain exactly what probabistic
+
+
+means because this is a somewhat complex
+
+
+concept. Uh and then find the best
+
+
+policy in expectation under this
+
+
+probabistic model. Essentially hedge
+
+
+your bets against your uncertainty about
+
+
+the model. If the model thinks that you
+
+
+might get something good in this region,
+
+
+but you might also get something really
+
+
+bad, then be careful. But if the model
+
+
+is very confident you'll get something
+
+
+good, then go for it. like that seems
+
+
+like something you should do. Uh and
+
+
+then of course update the the the
+
+
+policy, collect more data and then
+
+
+repeat. Okay. So this is the procedure
+
+
+that we're going to try to figure out.
+
+
+Yes.
+
+
+>> Yeah. So the trick here is we have to
+
+
+take the expectation with respect to the
+
+
+correct source of uncertainty.
+
+
+So conventionally in RL we always
+
+
+optimize for the highest reward in
+
+
+expectation but it's typically an
+
+
+expectation taken with respect to
+
+
+stochcastic transitions like uh you know
+
+
+if you're if you're playing the lottery
+
+
+you want the best expected outcome that
+
+
+takes into account your probability of
+
+
+winning the lottery and the cost of a
+
+
+lottery ticket but if you're doing model
+
+
+based RL you have to also take into
+
+
+account the fact that you are uncertain
+
+
+about the probabilities of things
+
+
+happening and that's a different kind of
+
+
+uncertainty.
+
+
+So how can uncertainty estimation help?
+
+
+Uh well here's an an example of a
+
+
+function with uh uncertainty. So this is
+
+
+actually something called a Gaussian
+
+
+process. Uh and the shaded blue regions
+
+
+represent like one standard deviation uh
+
+
+confidence intervals. So essentially
+
+
+what this plot is showing is that this
+
+
+kind of probabistic estimator thinks
+
+
+that any function that goes through that
+
+
+blue stuff is probable and anything
+
+
+outside of it is improbable. And maybe
+
+
+our task is to walk to the edge of a
+
+
+cliff. uh we have a very kind of
+
+
+outdoorsy theme to today's tasks. So we
+
+
+have to get to that orange star. And if
+
+
+you're very confident in your dynamics,
+
+
+if you're certain you know where the
+
+
+cliff is, then you can walk right up to
+
+
+the edge of the cliff and get the
+
+
+highest reward. But if you have an
+
+
+uncertainty interval that you maybe you
+
+
+say like, oh, if I walk in this
+
+
+direction, anything within that red
+
+
+circle is probable, then you might be a
+
+
+little more careful. And if you have a
+
+
+big uncertainty region, then you might
+
+
+be even more careful yet. If you have a
+
+
+big uncertainty region, you don't know
+
+
+where the cliff is. Maybe you'd rather
+
+
+stay a little bit far away from it, get
+
+
+a little bit less reward, but be
+
+
+confident that you don't fall off. So,
+
+
+if you average your reward over your
+
+
+uncertainty, then in a setting like
+
+
+this, it'll cause you to be more careful
+
+
+and not fall off the cliff.
+
+
+So, expected reward under high variance
+
+
+uh prediction is very low here, even
+
+
+though the mean might be the same.
+
+
+Now, there are a few caveats about this.
+
+
+So
+
+
+um in general you want to balance your
+
+
+desire to explore to find novel regions
+
+
+against your desire to avoid the truly
+
+
+unfamiliar states where you cannot make
+
+
+any reasonable prediction. So you don't
+
+
+want to be overly conservative in this
+
+
+case if you're collecting additional
+
+
+data. So you have to balance these
+
+
+things. You also have to choose how
+
+
+you're going to use your uncertainty.
+
+
+And this is a very non-trivial choice.
+
+
+You could average the outcomes over your
+
+
+uncertainty region or you could take the
+
+
+worst case or you could take the best
+
+
+case. If you take the best case, you're
+
+
+kind of asking for maximal exploration.
+
+
+You're also asking for maximal model
+
+
+exploitation. So in a purely model based
+
+
+RL setting, just optimism is not such a
+
+
+good idea. But optimism in combination
+
+
+with some kind of constraint can
+
+
+actually be pretty reasonable if you
+
+
+really want exploration. You can take
+
+
+the worst case and that's good if you
+
+
+really want to be very careful or you
+
+
+can take the average case which is kind
+
+
+of reasonable in a scenario like this
+
+
+because the average case will say hey
+
+
+like you know since falling off the
+
+
+cliff is so bad then if I average
+
+
+everything in that red circle uh I'll
+
+
+know to stay further away from the cliff
+
+
+but it's a choice that you make and it
+
+
+kind of depends on how you want to
+
+
+balance rapidly exploring versus taking
+
+
+more uh uh policy iteration steps on
+
+
+your model uh versus if you care about
+
+
+things like safety all that kind of
+
+
+stuff. So this is a very non-trivial
+
+
+choice. Yes.
+
+
+>> Yeah, that's right. So generally we're
+
+
+not too worried about how costly it is
+
+
+to uh estimate these expectations
+
+
+because you kind of do it the same way
+
+
+every time. You generate samples and you
+
+
+average together samples and samp sample
+
+
+based estimates of expectations are kind
+
+
+of the bread and butter of all RL. And
+
+
+you know the if what we care about is
+
+
+sample efficiency generally we would
+
+
+approach it by saying that well samples
+
+
+through the model are not that
+
+
+expensive. Of course in reality if
+
+
+you're using very large models like if
+
+
+you're using these giant video
+
+
+prediction models then samples through
+
+
+the model are actually computationally
+
+
+very expensive but at least they're not
+
+
+costing you more data.
+
+
+Yes, back there.
+
+
+Can variational inference be helpful? Uh
+
+
+yes. So variational inference is
+
+
+something that we can use to train our
+
+
+model. Uh there is an important caveat
+
+
+which I'll get to uh in the next section
+
+
+about the kind of uncertainty we want
+
+
+and we can use variational inference but
+
+
+a different kind of variational
+
+
+inference than the kind that we use for
+
+
+VAE. So I'll talk about that in a
+
+
+second. Yes.
+
+
+>> The most likely next state
+
+
+So my point here is that um
+
+
+the
+
+
+um the distribution over future states
+
+
+in your model, it might have the same
+
+
+expected next state but a different
+
+
+distribution.
+
+
+And you don't just care about the most
+
+
+likely state you'll land in. You care
+
+
+about the distribution of states you
+
+
+land in.
+
+
+>> Yeah. Basically the expected value of
+
+
+the reward is not the same as the reward
+
+
+of the expected state.
+
+
+Okay. So let's talk about estimating
+
+
+confidence. Let's talk about how we can
+
+
+estimate uh whether we expect our model
+
+
+to be accurate or inaccurate in a
+
+
+particular situation.
+
+
+So here's one idea for estimating if
+
+
+your model will be correct.
+
+
+If your model outputs a distribution
+
+
+over the next state, could you use the
+
+
+entropy of that distribution as a
+
+
+measure of confidence? So I've got my
+
+
+model and it predicts a probability of
+
+
+ST+1 given ST. Maybe this is a
+
+
+continuous state and the model outputs a
+
+
+mean and a variance. Maybe I can use
+
+
+that variance as a gauge on confidence.
+
+
+Uh so in if if it's a discrete
+
+
+distribution, you can measure a discrete
+
+
+entropy. If it's a continuous
+
+
+distribution, you can take its variance.
+
+
+Why is this not good enough? Why can't I
+
+
+just take the entropy of the predicted
+
+
+next state distribution and use it as a
+
+
+measure of confidence? Does anyone have
+
+
+any ideas? Uh yes, over there.
+
+
+Right. So the model might be erroneously
+
+
+confident and in fact uh yes.
+
+
+>> Okay. is the model might be erroneously
+
+
+confident and in fact that is exactly
+
+
+what you would expect from a model
+
+
+that's a little bit overfitted. So if we
+
+
+go back to this example,
+
+
+the blue curve is clearly not correct,
+
+
+right? If you if you just look at the
+
+
+black dots and pretend the blue curve
+
+
+isn't there, probably this is not the
+
+
+prediction you would make.
+
+
+The training error of the blue curve is
+
+
+zero.
+
+
+It goes directly through the black dots.
+
+
+So if this was a a neural net that was
+
+
+predicting a mean and a variance, the
+
+
+optimal variance for it to predict is
+
+
+zero everywhere because that would give
+
+
+it the highest likelihood. It should
+
+
+predict a variance of zero at all the
+
+
+black dots. It should also predict a
+
+
+variance of zero at that giant peak.
+
+
+But obviously that is not a good gauge
+
+
+of the model's actual uh uh accuracy.
+
+
+So the variance here is zero.
+
+
+The issue is that there's really two
+
+
+types of uncertainty.
+
+
+The first type is sometimes called
+
+
+eliatoric or statistical uncertainty
+
+
+which is basically
+
+
+how random does the model think the data
+
+
+is. So in that in that curve on the
+
+
+right the blue dots uh represent the
+
+
+trading points and a a reasonable
+
+
+hypothesis for what's going on here is
+
+
+that there is a kind of a parabolic
+
+
+curve but the data is distributed
+
+
+according to a mean given by the
+
+
+parabolic curve plus some random noise
+
+
+up and down and this random noise is not
+
+
+it's not a me a matter of confidence
+
+
+it's just the true function is just
+
+
+stochastic like there's just noise added
+
+
+to it so that is a property of the
+
+
+universe it is not a property of how
+
+
+confident your model So that's called
+
+
+aliotauric uncertainty.
+
+
+If you have uh uncertainty about your
+
+
+model, that is sometimes called
+
+
+epistemic uncertainty or model
+
+
+uncertainty. It's not a property of the
+
+
+universe. It's a property of your
+
+
+beliefs. The universe might well be
+
+
+deterministic, but you're just not sure
+
+
+which deterministic universe it is. So
+
+
+basically, the model is certain about
+
+
+the data, but we are not certain about
+
+
+the model. It is a different kind of
+
+
+uncertainty.
+
+
+So what we would like to do is is uh to
+
+
+estimate this kind of model uncertainty
+
+
+and this is actually a kind of a tricky
+
+
+thing to do and of course first in order
+
+
+to do it we have to first define what it
+
+
+even means. So we've got this model that
+
+
+predicts a distribution over the next
+
+
+state and the model has some parameters.
+
+
+So let's say it's a neural network and
+
+
+the par the weights of the neural
+
+
+network are given by uh theta.
+
+
+So usually if we want to train this
+
+
+model what we would do is we would do
+
+
+maximum likelihood estimation. We would
+
+
+find the parameters theta that give the
+
+
+highest log likelihood to the training
+
+
+examples to the states actions and next
+
+
+states. And um if you kind of rewind
+
+
+back to your introductory machine
+
+
+learning class, the way we actually
+
+
+motivate maximum likelihood estimation
+
+
+is we say well we want the most likely
+
+
+parameters given the data. But then we
+
+
+like apply bay rule and we get like the
+
+
+probability of the data given the
+
+
+parameters times a prior on the
+
+
+parameters and you like sweep that under
+
+
+the rug and say your parameter prior is
+
+
+uniform and all you care about is
+
+
+maximizing the likelihood of the data
+
+
+given the parameters. But the way you
+
+
+got there is by saying I want the most
+
+
+likely parameters given my data set and
+
+
+then you inverted using B rule and then
+
+
+you get everybody's favorite cross
+
+
+entropy loss and all that good stuff.
+
+
+But what if instead of learning just a
+
+
+single parameter vector, you could
+
+
+estimate the distribution over
+
+
+parameters.
+
+
+Now that distribution over parameters
+
+
+will capture your model uncertainty,
+
+
+your epistemic uncertainty. If you are
+
+
+certain that you know what the model is,
+
+
+maybe the distribution over parameters
+
+
+is very narrow and there's just one
+
+
+parameter vector that is likely. But if
+
+
+you have if you have no idea what the
+
+
+model is, maybe you have one parameter
+
+
+vector that is the most likely, but many
+
+
+others that are also very likely and
+
+
+that represents your uncertainty about
+
+
+what the model is.
+
+
+So the entropy of the parameter vector,
+
+
+that's what's going to tell you your
+
+
+model uncertainty.
+
+
+And then if you want to make a
+
+
+prediction, maybe you integrate out the
+
+
+model parameters.
+
+
+Okay, this is a somewhat non-trivial
+
+
+idea. So if anyone has any questions
+
+
+about this, yes.
+
+
+Yeah, that's that's one of the things
+
+
+that we'll see in a second. Yeah.
+
+
+Anyone? Yes.
+
+
+So that's what we'll talk about next.
+
+
+Okay, so there's an obvious challenge
+
+
+here. Um, neural nets have a lot of
+
+
+parameters and before we wanted to learn
+
+
+one set of parameters and now we want an
+
+
+entire distribution over parameters and
+
+
+that is quite difficult. Um,
+
+
+so typically people use all sorts of um
+
+
+approximations for this. There is uh
+
+
+there are two very popular
+
+
+approximations, one that is very
+
+
+complicated and one that is very simple.
+
+
+I'm I will very briefly tell you about
+
+
+the complicated one and then I'll
+
+
+actually explain how to use a simple
+
+
+one. So the complicated one uh is to is
+
+
+something called a beijian neural
+
+
+network. A beijian neural network is a
+
+
+neural network where instead of weights
+
+
+for every connection you have a
+
+
+distribution over weights at every
+
+
+connection. So in a regular neural
+
+
+network you have a weight matrix and it
+
+
+has actual numbers in it. In a basian
+
+
+neural network, you have a distribution
+
+
+over all the numbers.
+
+
+So, um, this corresponds to what is
+
+
+called a fully factorized posterior,
+
+
+meaning that you're approximating the
+
+
+distribution over your parameters theta
+
+
+with an independent distribution over
+
+
+each parameter. And typically, this
+
+
+would be done with an independent
+
+
+Gaussian distribution. So, it basically
+
+
+means that for every weight in your
+
+
+neural network, instead of one number,
+
+
+you now store two numbers, a mean and a
+
+
+variance. Now this is not the most
+
+
+powerful distribution you could have
+
+
+because it may be that in the true
+
+
+posterior over parameters there are
+
+
+covariances between different weights.
+
+
+So maybe it's very likely for this
+
+
+weight to be big and this one to be
+
+
+small or for this one to be small but
+
+
+this one to be big but it's very
+
+
+unlikely for them to both be in the
+
+
+middle or something. So this kind of
+
+
+fully factorized posterior does not
+
+
+allow you to represent coariances
+
+
+between parameters but it is very simple
+
+
+because you only have to store two
+
+
+numbers per weight. So you just have
+
+
+double the number of parameters. Double
+
+
+is not that bad.
+
+
+Uh so typically what you would do if you
+
+
+want to use a basher neural network is
+
+
+you just store a mean and a variance
+
+
+over every weight in your network. And
+
+
+that so that's not that bad actually. Um
+
+
+and uh you basically the mean is like
+
+
+the expected value of that weight and
+
+
+the variance is how uncertain you are
+
+
+about that weight. So it has a fairly
+
+
+natural interpretation.
+
+
+Uh now you have to actually train this
+
+
+thing and this is the part that I will
+
+
+not explain to you because I have five
+
+
+minutes left in the lecture. But the
+
+
+short version if you're interested in
+
+
+Beijian neural networks is you train it
+
+
+by using variational inference. So you
+
+
+basically use this distribution as your
+
+
+approximate posterior. write down the
+
+
+evidence lower bound just like we did in
+
+
+the uh amortized vi lectures and train
+
+
+the whole thing and actually it's fairly
+
+
+straightforward to derive if you want to
+
+
+read about this you can check out this
+
+
+uh these two fairly old papers about
+
+
+basian neural nets uh it's not
+
+
+particularly glamorous and it's just
+
+
+derived from vi
+
+
+um
+
+
+what I want to tell you about is a much
+
+
+more practical and really simple way to
+
+
+get uncertainty which is to use
+
+
+bootstrap ensembles
+
+
+Bootstrap ensembles basically are just
+
+
+going to use regular maximum likelihood
+
+
+estimation as a subruine as a function
+
+
+call. And the idea is very simple.
+
+
+You're going to have your neural net
+
+
+that represents the distribution over
+
+
+the next state. Maybe it outputs a mean
+
+
+and a variance or if it's a discrete
+
+
+state it outputs a softmax over the next
+
+
+state. But you're not going to learn one
+
+
+model. You're going to learn
+
+
+lots of models.
+
+
+And what that means is that your
+
+
+distribution over your parameters given
+
+
+your data set is represented by a
+
+
+mixture of delta functions. Basically P
+
+
+of theta given D is represented as a
+
+
+mixture
+
+
+with parameter vectors from all these
+
+
+different models in your ensemble.
+
+
+Now the obvious thing that might jump
+
+
+out at you here from a probabil
+
+
+probability standpoint is this is kind
+
+
+of a terrible way to approximate a
+
+
+distribution. So if you imagine that you
+
+
+have some uh continuous thingy like you
+
+
+have a distribution that looks like
+
+
+this, you're essentially approximating
+
+
+it with three spikes.
+
+
+Okay, that's not a good way to
+
+
+approximate a complicated distribution,
+
+
+but it's a it's a heck of a lot better
+
+
+than one spike. So it's it's it's
+
+
+definitely an improvement over just
+
+
+having one model. And the good thing
+
+
+about this is that it's very easy to do.
+
+
+So, uh, it also has kind of a natural
+
+
+interpretation. Like if you want like a
+
+
+little bit of back of the napkin
+
+
+intuition about it. It's kind of like
+
+
+saying let's train many models and see
+
+
+if they agree. Like if you forget all
+
+
+the probability stuff and just think
+
+
+about that, it kind of makes sense. Like
+
+
+I'm going to train three models or 10
+
+
+models or something and if all 10 models
+
+
+give the same prediction, then probably
+
+
+that prediction is pretty good. But if
+
+
+five of them say one thing and five of
+
+
+them say another thing, then maybe they
+
+
+don't know what they're talking about.
+
+
+So it kind of actually makes sense.
+
+
+Okay, so now of course the question is
+
+
+how do you train it? And this is where
+
+
+the beauty of this idea comes in. This
+
+
+is very very easy to train. There's a
+
+
+theoretical answer that is very simple
+
+
+and there's a practical answer that is
+
+
+even simpler.
+
+
+So the theoretical answer is that you
+
+
+need to generate multiple data sets. If
+
+
+you have three models, you need to
+
+
+generate three data sets that are
+
+
+independent of each other. Now one way
+
+
+you could do this is you can just take
+
+
+your big data set and split into three
+
+
+parts. If you do it randomly that that
+
+
+is good enough but now you have three
+
+
+very small data sets. It turns out that
+
+
+you don't you don't actually need to
+
+
+make them smaller. What you can do is
+
+
+you can resample your data with
+
+
+replacement. So basically you have your
+
+
+big original data set. Maybe it has 100
+
+
+data points. You generate random
+
+
+integers between one and 100 index into
+
+
+that data set and construct a new data
+
+
+set with 100 elements. So you do it with
+
+
+replacement. each of the data sets
+
+
+you're creating is the same size as the
+
+
+original one but it's a little bit mixed
+
+
+up like some of the data points might
+
+
+get sampled multiple times some might
+
+
+get sampled zero times and that is
+
+
+actually enough to give you the
+
+
+statistical property that you want.
+
+
+So you generate let's say you want 10
+
+
+networks generate 10 of these resampled
+
+
+versions of your data set train your 10
+
+
+networks independently of each other and
+
+
+then use them as an approximate
+
+
+posterior over parameters.
+
+
+>> Yes.
+
+
+Yeah, hold that thought.
+
+
+Okay, so this is the theoretical answer
+
+
+in the sense that if you do this then
+
+
+you will get a reasonable approximation
+
+
+uh for this uh distribution over
+
+
+parameters.
+
+
+Um,
+
+
+now it's a crude approximation because
+
+
+the number of models you have is
+
+
+typically pretty small. Like you're not
+
+
+going to use like thousands of models.
+
+
+If you have small models, maybe you
+
+
+might use hundreds, but in reality,
+
+
+you're probably more likely to use like
+
+
+10ish.
+
+
+Also, this thing with resampling from
+
+
+with replacement is unnecessary.
+
+
+Like in theory, it's necessary, but the
+
+
+reason I didn't spend more time on is
+
+
+because in practice, nobody actually
+
+
+ever does it. It's like it's like a
+
+
+virtuous thing to do. like you know it's
+
+
+a very pious thing to engage in but
+
+
+nobody ever bothers to do it and all
+
+
+people actually do is they just use
+
+
+their original data set and just
+
+
+initialize the weights randomly each
+
+
+time that is in principle not good
+
+
+enough but in practice it's definitely
+
+
+good enough so that's what everybody
+
+
+does so all you really do after all this
+
+
+like all this is said and done is you
+
+
+just initialize 10 copies of your
+
+
+weights with your favorite let's say
+
+
+Xavier initialization or something and
+
+
+just train them on the same data and
+
+
+then use that as your ensemble
+
+
+Okay, so that's how you can get a
+
+
+distribution over parameters. And next
+
+
+time we're going to talk about how to
+
+
+actually use it. So um we're going to
+
+
+discuss how we can use uncertainty aware
+
+
+models to deal with distributional
+
+
+shift. And then we're going to talk
+
+
+about the kind of algorithms that we can
+
+
+use. Many of them will be similar to
+
+
+algorithms we've seen, but some of them
+
+
+will be new. All right. So I'll see you
+
+
+for that discussion on Friday.
+
+
+>> Yes.
+
+
+How state of the arts is

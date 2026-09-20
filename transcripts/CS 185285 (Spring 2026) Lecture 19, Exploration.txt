@@ -1,0 +1,4387 @@
+All right. Uh, welcome welcome back
+
+
+everybody. Hope you all had a great
+
+
+spring break. Um, as uh you probably
+
+
+hopefully already know, we do have a
+
+
+midterm exam in this class. Uh it's
+
+
+about two weeks from today and uh we
+
+
+will have some materials for all of you
+
+
+to help you prepare. Uh the materials
+
+
+will probably come out um sometime at
+
+
+the end of today or early tomorrow. And
+
+
+uh we will provide some practice
+
+
+questions. This is the first year that
+
+
+we have an exam in this course. So we
+
+
+don't have a practice exam from previous
+
+
+years because there are no exams in
+
+
+previous years. But we will have
+
+
+practice questions that are you know
+
+
+roughly representative of what you
+
+
+should expect to see on the exam. A list
+
+
+of topics and all that other
+
+
+information. So the uh the TAs will post
+
+
+that on ED either at at the end of the
+
+
+day today or very early tomorrow and
+
+
+that will help you study. Uh and then we
+
+
+will also have
+
+
+multiple uh review sections and lectures
+
+
+next week. So actually both of the
+
+
+lectures next week are going to be
+
+
+review lectures where I will go over
+
+
+material that will be on the exam and
+
+
+the TAs will also organize review
+
+
+sections and they'll post information
+
+
+about that where they'll have different
+
+
+topics in different sections and you can
+
+
+go attend the section to brush up on the
+
+
+materials that will help you prepare for
+
+
+the exam. So the right way to think
+
+
+about the midterm exam in this course is
+
+
+it's really a final exam in disguise
+
+
+that is happening before the final exam
+
+
+week so that you have time to basically
+
+
+work on your final project. Uh so the
+
+
+exam will cover most of the material in
+
+
+the course except for the last few
+
+
+lectures. Um, so hopefully that'll all
+
+
+go smoothly. And uh, this week we'll
+
+
+we'll have the last new material that's
+
+
+actually going to be on the exam, which
+
+
+is exploration uh, and um, RL theory.
+
+
+And then next week is review.
+
+
+All right. So today I'm going to talk
+
+
+about exploration. And the first topic
+
+
+I'll cover for exploration is actually
+
+
+the topic I didn't cover from last week,
+
+
+which has nothing to do with exploration
+
+
+at all. Because if you remember, right
+
+
+before spring break on Friday, I ran out
+
+
+of time a little bit. And there are just
+
+
+a couple of things that I didn't get a
+
+
+chance to finish for offline RL. So I'll
+
+
+actually get through that first and then
+
+
+we'll do the exploration material. Um so
+
+
+rewind back to the Friday before spring
+
+
+break. Uh and we talked about offline
+
+
+reinforcement learning and we discussed
+
+
+methods for model free offline RL IQL
+
+
+CQL policy constraints all that kind of
+
+
+fun stuff. Uh and the part that we
+
+
+didn't get to cover which I'll cover
+
+
+very briefly. I I won't go into deep
+
+
+detail about any of these algorithms,
+
+
+but I do want to give you a sense for
+
+
+how this works is how to do offline RL
+
+
+in the modelbased case. Um the reason
+
+
+that this isn't like a terribly deep
+
+
+topic is because when we talk about
+
+
+modelbased RL, we already discussed
+
+
+distributional shift. So in some sense,
+
+
+the offline case, it doesn't change that
+
+
+much there. It's just the same
+
+
+distributional shift. There's just more
+
+
+of it. Uh so we have to be a little bit
+
+
+more careful with distributional shift
+
+
+in the offline model based RL case, but
+
+
+it's kind of a similar challenge.
+
+
+Okay, so hopefully all of you remember
+
+
+how model based RL works. Uh you have
+
+
+the environment, you collect some data,
+
+
+you use that data to estimate a dynamics
+
+
+model. It could be a stochcastic
+
+
+dynamics model, basically a neural net
+
+
+that predicts a distribution over the
+
+
+next state given the current state and
+
+
+action. And then you use that model in
+
+
+some way to improve your policy and then
+
+
+repeat. And we talked about how a
+
+
+particularly uh appealing way to do this
+
+
+is these dino style algorithms that take
+
+
+states that you encountered in your real
+
+
+world transitions and then make short
+
+
+model-based rollouts starting from those
+
+
+states which are then included in
+
+
+something like a Q-learning or off
+
+
+policy actor method to provide
+
+
+supplemental data. And we discussed how
+
+
+having these short rollouts is good
+
+
+because then the errors in your model
+
+
+don't accumulate for too long of a
+
+
+horizon and starting those short
+
+
+rollouts from the states in your replay
+
+
+buffer is good because then you train on
+
+
+similar state distributions as the ones
+
+
+that you saw in the real world. So this
+
+
+is kind of a a classic model based
+
+
+recipe that we discussed in lecture a
+
+
+while back and the offline methods will
+
+
+build on this recipe. So the model kind
+
+
+of answers these what if questions like
+
+
+what if I took the action that my policy
+
+
+wants to take now but starting from one
+
+
+of the states it visited before and in
+
+
+the offline case we just don't add
+
+
+additional data from the policy and we
+
+
+have to deal with the model that we
+
+
+learned from that single offline data
+
+
+set. So what goes wrong when you can't
+
+
+collect more data? Well, basically if
+
+
+you if your model makes some mistake
+
+
+that seems like a particular action is
+
+
+really good but it really isn't well
+
+
+then you will kind of double down on
+
+
+that and you won't fix that mistake by
+
+
+collecting more data and learning that
+
+
+it was a bad idea. So what that
+
+
+basically means is that you have to be a
+
+
+bit more careful about avoiding uh this
+
+
+model exploitation problem because
+
+
+before we could use some uncertainty
+
+
+estimates to try to mitigate it but we
+
+
+always had this fallback option to go
+
+
+collect more data experience what went
+
+
+wrong and then adjust our model in
+
+
+exactly those places that the policy
+
+
+most wants to visit. Now we no longer
+
+
+have that option.
+
+
+So um basically we want to really make
+
+
+sure that when we make those short model
+
+
+based rollouts that our policy doesn't
+
+
+learn to put us in an out of
+
+
+distribution state where the model might
+
+
+make an erroneously optimistic
+
+
+prediction about the outcome which the
+
+
+policy could then exploit.
+
+
+Okay. Um so this is basically the same
+
+
+kind of overoptimism problem that we
+
+
+dealt with when we talked about CQL and
+
+
+all this other stuff. uh it's just
+
+
+showing up in exploitation of the model
+
+
+rather than just exploitation of the Q
+
+
+function. There are a variety of ways to
+
+
+fix it but they all basically revolve
+
+
+around the same theme which is to
+
+
+somehow punish the policy for going into
+
+
+states where the model might be
+
+
+mistaken.
+
+
+And uh when we discussed uncertainty
+
+
+estimation in the model based RL
+
+
+section, we did things like averaging
+
+
+the reward over under the model's
+
+
+uncertainty. So kind of an an average
+
+
+reward case. In the offline case, we
+
+
+want to be more pessimistic. We want to
+
+
+take some kind of uh uh
+
+
+pessimistic estimate of our value under
+
+
+the uncertainty in our model. And there
+
+
+are a few ways to do this, but one
+
+
+pretty simple and intuitive way to do it
+
+
+is to basically change the reward
+
+
+function to literally punish the policy
+
+
+for entering states where the model
+
+
+might be wrong. There are a few papers
+
+
+that that have done this that some of
+
+
+them are cited here at the bottom of
+
+
+this slide. And
+
+
+the simple summary of this idea is to
+
+
+basically take your reward function when
+
+
+you're doing one of these Dino style RL
+
+
+algorithms and add a little penalty.
+
+
+This is going to uh be kind of the
+
+
+opposite of exploration in some ways.
+
+
+Add a little penalty for model
+
+
+uncertainty. And you can calculate this
+
+
+penalty in a variety of different ways.
+
+
+One of the ways to do it is to literally
+
+
+use the uh bootstrap ensembles that we
+
+
+discussed in the modelbased RL lecture.
+
+
+train multiple dynamics models and look
+
+
+at the disagreement between the ensemble
+
+
+members as a measure of uncertainty. So
+
+
+you need some kind of uncertainty
+
+
+estimation method. You use your favorite
+
+
+uncertainty estimation method and assign
+
+
+a reward penalty based on that. And uh
+
+
+you can actually show that with a large
+
+
+enough weight on that penalty, you will
+
+
+uh avoid model exploitation
+
+
+and then use an existing model based RL
+
+
+algorithm like one of these uh Dino
+
+
+style methods. Um yes.
+
+
+So the question was well but you can
+
+
+still uh exploit the model in states
+
+
+that are not uncertain. Um yes the um
+
+
+the reason that you wouldn't expect that
+
+
+to be a problem is that in states where
+
+
+all of the all of the models in the
+
+
+ensemble agree you would expect that's a
+
+
+state that's well sampled in your data
+
+
+and therefore your model is more likely
+
+
+to be correct there. um it's not
+
+
+bulletproof and in practice you have to
+
+
+select a large enough weight on this and
+
+
+kind of tune it a little bit so that it
+
+
+works but generally that principle holds
+
+
+and notice that the uh penalty here
+
+
+depends on the state and action so you
+
+
+can have unfamiliar actions in familiar
+
+
+states and you do need to be able to
+
+
+account for that
+
+
+um so that's basically the principle I
+
+
+won't go into too much detail about this
+
+
+it's not something that uh you know we
+
+
+want to deeply uh study in this course
+
+
+but it's it's good to know about there's
+
+
+a variant on this idea which we can also
+
+
+do uh which applies a CQL- like
+
+
+principle. So uh I think it's actually
+
+
+simpler to think about just adding a
+
+
+term to the reward but if you really
+
+
+like CQL you can apply the same CQL like
+
+
+principle and instead of minimizing the
+
+
+Q value under the policy you can
+
+
+actually take state action tupils that
+
+
+your model predicts and minimize their
+
+
+value. So basically instead of just
+
+
+maxim minimizing the value of the
+
+
+actions that have high Q value, you can
+
+
+minimize the value of states and actions
+
+
+that are generated by the policy when
+
+
+you send sorry that are generated by the
+
+
+model when you give it actions taken by
+
+
+the policy. So essentially take
+
+
+literally take the states on those
+
+
+little little short red rollouts and
+
+
+push down their their Q value. It's
+
+
+actually a very similar principle
+
+
+because assigning a negative reward
+
+
+versus pushing down the value kind of
+
+
+acts in very similar ways. Um so again I
+
+
+won't go into detail about how exactly
+
+
+uh to implement this but the principle
+
+
+is very similar that uh the if the model
+
+
+produces something that looks clearly
+
+
+different from real data it's easy for
+
+
+the Q function to make that stuff look
+
+
+bad and you just have to tell it that
+
+
+like you know make the the model
+
+
+generations have bad value.
+
+
+Any questions about model based offline
+
+
+RL?
+
+
+Okay.
+
+
+All right, let's get to the main
+
+
+material for today, which is
+
+
+exploration. Exploration is kind it's
+
+
+kind of funny to have exploration
+
+
+following offline RL because in some
+
+
+ways it's it's almost the opposite
+
+
+problem where in offline RL we want to
+
+
+stay very close to the data when we're
+
+
+trying to do exploration. We actually
+
+
+want to go visit new places. So
+
+
+exploration is very much for the online
+
+
+setting. Um what's the problem? Uh okay,
+
+
+so in homework three you guys uh worked
+
+
+on uh you know a number of different
+
+
+benchmarks and one of them was Atari
+
+
+games. Um, the Atari games that you
+
+
+probably did for homework 3 were the
+
+
+easy games. Um, Pong is an easy game.
+
+
+Breakout is an easy game. What makes
+
+
+these games easy is not that it's easy
+
+
+for you to play it with by pushing the
+
+
+buttons with your own hands. What makes
+
+
+them easy is that the rewards are very
+
+
+immediate. So, in Breakout to win the
+
+
+game, you have to break all the bricks
+
+
+and you get a reward every time you
+
+
+break a brick. So, the reward you're
+
+
+getting really provides you with a good
+
+
+hint about how to play the game. you get
+
+
+a reward every time you break a brick
+
+
+and if you break all of them then you
+
+
+win the game. So that's very good but
+
+
+not all RL tasks are like that. In fact,
+
+
+not even all Atari games are like that.
+
+
+So here's another game. Um it's called
+
+
+Montuma's Revenge. And this game is
+
+
+almost impossible. If you were to run
+
+
+your homework 3 uh Q-learning
+
+
+implementation on this game, it would
+
+
+not win the game unless you were much
+
+
+cleverer than any of us anticipated. uh
+
+
+because in this game the reward
+
+
+structure doesn't help you win the game
+
+
+very much. Okay. And this might be a
+
+
+little bit mysterious to us because
+
+
+maybe as a person looking at this
+
+
+actually the game of Breakout is maybe a
+
+
+little bit more abstract. It's like you
+
+
+know bricks and and a paddle like it's
+
+
+not it's not like stuff that you really
+
+
+experience in your everyday life.
+
+
+Whereas the Montuma's revenge has like
+
+
+you know nice visuals. So you can kind
+
+
+of tell that like okay the skull is
+
+
+probably like a bad thing and the key is
+
+
+like a good thing that you want to get
+
+
+like there's more semantics to the task
+
+
+but for the algorithm's revenge is a
+
+
+much harder task. So you get a reward
+
+
+when you pick up the key you get a
+
+
+reward when you open the door
+
+
+um you don't get anything if you get
+
+
+killed by the skull. Um intuitively we
+
+
+might associate skulls with like
+
+
+negative things but in the game there is
+
+
+no negative reward for getting killed by
+
+
+the skull. the number of lives you have
+
+
+decreases, but there's nothing in the
+
+
+reward structure that tells the agent
+
+
+that that's a bad thing. Uh, so in this
+
+
+case, uh, it's very common, for example,
+
+
+to have an agent that finds the
+
+
+following strategy to get high reward.
+
+
+Pick up the key, die, the key appears
+
+
+again, pick up the key, get more reward,
+
+
+die, key appears again, and then you can
+
+
+keep getting reward for picking up the
+
+
+key over and over again until you run
+
+
+out of lives.
+
+
+Now, we know from kind of the semantics
+
+
+of this that that's probably not how
+
+
+you're meant to play the game, but that
+
+
+is a one way to optimize the reward if
+
+
+you as the agent have no idea what's
+
+
+going on.
+
+
+Finishing the game only weekly
+
+
+correlates with rewarding events. So, to
+
+
+finish the game, you have to pick up the
+
+
+key, open the door, go to the next
+
+
+level, and there's like 20 levels down.
+
+
+Um, and each of them has some kind of
+
+
+puzzle like this. And each level is
+
+
+different from every previous level.
+
+
+So, we know what to do in these settings
+
+
+because we understand what all the
+
+
+pictures mean and we have semantics and
+
+
+lots of world knowledge we can bring to
+
+
+bear. But your RL agent does not. And
+
+
+the RL agent really learns the has to
+
+
+figure these these things out entirely
+
+
+through trial and error. Um,
+
+
+there's a fun card game. It's like a
+
+
+party game called Mau. I don't know if
+
+
+any of you know about this party game.
+
+
+Also closely related to a game called
+
+
+Calvin Ball. Okay, maybe this is the
+
+
+maybe this is the wrong generation. Uh
+
+
+but uh the idea in this game uh well
+
+
+it's kind of encapsulated uh by this
+
+
+quote that when you start to play the
+
+
+game you don't know the rules and one of
+
+
+the players is designated as the player
+
+
+that basically makes up the rules but
+
+
+they don't tell the rules to anybody
+
+
+else. They just provide a punishment
+
+
+some kind of a negative point if you
+
+
+violate the rules. So when you play the
+
+
+game you try to play the game you play
+
+
+some cards and then you're told like oh
+
+
+you broke the rule. Calvin Ball has the
+
+
+same principle. So you incur a penalty
+
+
+when you break the rule and you have to
+
+
+figure out what the rules are through
+
+
+trial and error typically by you know
+
+
+losing a lot of points by losing a lot
+
+
+of games. Uh and the rules don't always
+
+
+make sense like they have to be
+
+
+logically coherent. They have to be
+
+
+well- definfined logical programs but
+
+
+they don't they can be arbitrarily
+
+
+complicated and arbitrarily arbitrary.
+
+
+So to the RL agent the entire world
+
+
+looks like this. The entire world has
+
+
+some kind of logical rules. ological
+
+
+means marovian but they are not known to
+
+
+the agent in advance and the agent has
+
+
+to discover those by actually trying
+
+
+things and experiencing the outcomes
+
+
+temporally extended tasks like
+
+
+Montazuma's revenge uh they become
+
+
+increasingly difficult based on how
+
+
+extended the task is basically how long
+
+
+until you actually get some kind of
+
+
+positive or negative reinforcement and
+
+
+how little you know about the rules and
+
+
+generally at the beginning you know very
+
+
+little so some of these RL tasks. It's
+
+
+It's like playing this card game except
+
+
+maybe your goal in life is to win the
+
+
+game like 50 times and nobody tells you
+
+
+in advance that that's what you're
+
+
+supposed to do. So, it really is a very
+
+
+very hard problem and looking at some of
+
+
+these RL tasks, the visuals or the the
+
+
+kind of u appearance that we put on the
+
+
+tasks makes it look easier than it
+
+
+really is because to the agent, it does
+
+
+not have any of that prior knowledge to
+
+
+bring to bear. It's really like playing
+
+
+this crazy card game where the only way
+
+
+to find out what the rules are is by
+
+
+accidentally breaking them.
+
+
+And it's not just for Atari games, you
+
+
+know. Here's another example of a
+
+
+robotic manipulation task, simulated
+
+
+robotic manipulation task where you have
+
+
+to control this multi-fingered hand.
+
+
+Here the reward is plus one if you get
+
+
+the ball inside that yellow circle. But
+
+
+imagine how many degrees of freedom
+
+
+there are. You could wiggle the fingers
+
+
+all day long and unless you accidentally
+
+
+happen to get the ball inside the red
+
+
+circle, you'll have no idea what you're
+
+
+supposed to do. So in the case of this
+
+
+uh demo, this was initialized with some
+
+
+demonstrations from a person which kind
+
+
+of illustrates the task. But if you had
+
+
+to learn it from scratch, it would be
+
+
+very hard to figure out that oh like
+
+
+only once you hammer in the nail do you
+
+
+get a reward and based on that you have
+
+
+to figure out how to pick up the hammer.
+
+
+So real tasks formulated in the kind of
+
+
+native way that we think about RL
+
+
+problems can actually be extremely hard
+
+
+even though they might not seem so hard.
+
+
+Okay, any questions about this?
+
+
+Okay. So,
+
+
+um, at the core of the RL of the
+
+
+exploration problem is the trade-off
+
+
+between exploration and exploitation.
+
+
+So, there are kind of two ways that we
+
+
+can define exploration and they turn out
+
+
+to be basically the same. One way to
+
+
+define it is how can an agent discover
+
+
+high reward strategies that require a
+
+
+temporally extended sequence of complex
+
+
+behaviors which are individually not
+
+
+very rewarding. So it may be that moving
+
+
+those fingers individually is not very
+
+
+rewarding, but you need a complicated
+
+
+sequence of finger motions until you
+
+
+pick up that ball and put it in the
+
+
+yellow circle.
+
+
+The other kind of uh way you can define
+
+
+is how can an agent decide whether to
+
+
+attempt new behaviors to discover ones
+
+
+that have higher reward or to keep doing
+
+
+the best things so far. And they're
+
+
+really kind of the same thing because in
+
+
+that Montuma's revenge example, well,
+
+
+picking up the key was the first
+
+
+rewarding event that the agent found.
+
+
+So, if the agent just wanted to keep
+
+
+getting high reward without trying to
+
+
+find better behaviors, then the right
+
+
+thing to do is to pick up the key, get
+
+
+killed by the skull, pick up the key
+
+
+again, get killed by the skull again,
+
+
+and keep repeating like Groundhog Day.
+
+
+Uh, but of course, that's a bad way to
+
+
+play the game. And if the agent realized
+
+
+this or had some kind of like prior
+
+
+knowledge that this isn't the best way
+
+
+to do it, then they might search around
+
+
+for some better alternative. they would
+
+
+try to figure out a a sequence of
+
+
+temporally extended behaviors that even
+
+
+though though they're individually not
+
+
+so rewarding might lead to a better
+
+
+final outcome like winning the entire
+
+
+game. So really even though these two
+
+
+things seem very different from each
+
+
+other, they're actually kind of the same
+
+
+thing in disguise.
+
+
+Um so exploitation is doing what you
+
+
+know will yield the highest reward. And
+
+
+if you don't know anything, it means
+
+
+just like sitting there and doing
+
+
+nothing. Exploration means doing things
+
+
+that you haven't done before in the
+
+
+hopes of getting an even higher reward.
+
+
+And exploration is pretty tough because
+
+
+you don't know what could yield that
+
+
+higher reward. So kind of in the absence
+
+
+of any knowledge, the only thing you you
+
+
+can really do is something other than
+
+
+what you've done before because you know
+
+
+that the things that you've done before,
+
+
+you kind of already realize how
+
+
+rewarding they are. So really your only
+
+
+recourse is to do something different.
+
+
+So some examples just to make this a
+
+
+little bit more concrete. These are kind
+
+
+of, you know, fairly classical examples
+
+
+to uh for people that want to think
+
+
+about exploration. Something you might
+
+
+have experienced. uh maybe there's a
+
+
+particular place you like to go to eat.
+
+
+So exploitation is you go to your
+
+
+favorite place to eat and exploration is
+
+
+you go somewhere new which might be
+
+
+worse but it might be better. Uh but a
+
+
+more pragmatic example of this and this
+
+
+is something that uh many of you
+
+
+probably interacted with systems that
+
+
+are doing this exploration exploitation
+
+
+trade-off is online ad placement where
+
+
+um you could just show the most
+
+
+successful advertisement to a particular
+
+
+user or you could try out a different
+
+
+advertisement that that user might not
+
+
+like but where you have some chance of
+
+
+discovering an even better uh uh ad or a
+
+
+better match to that particular user.
+
+
+And this is actually a very important
+
+
+problem in in industry because of course
+
+
+if you can do a good job of this then
+
+
+you can make a lot more money from
+
+
+advertising
+
+
+um oil drilling. You know drill at the
+
+
+best known location or find a new
+
+
+location to drill. Again similar
+
+
+trade-off that when you're doing
+
+
+exploration there's a high chance that
+
+
+trying something new will yield a worse
+
+
+outcome but occasionally might yield a
+
+
+much better outcome.
+
+
+Uh and exploration is difficult. Uh it's
+
+
+hard in the computational sense. uh
+
+
+which is to say that finding an optimal
+
+
+strategy for exploration in arbitrarily
+
+
+complex RL problems is a computationally
+
+
+very hard problem.
+
+
+So one question we can ask about
+
+
+exploration is can we derive an optimal
+
+
+exploration strategy and can we even
+
+
+define what optimality means and we'll
+
+
+talk about that in today's lecture. Um
+
+
+so you can define optimality in terms of
+
+
+regret versus a optimal Beijian
+
+
+strategy. A strategy that does the best
+
+
+possible job of quantifying uncertainty.
+
+
+And this is possible in really really
+
+
+simple toy problems and it becomes
+
+
+essentially intractable in realistic
+
+
+problems. So we can typically put RL
+
+
+exploration challenges on a spectrum
+
+
+from the most theoretically tractable to
+
+
+the most theoretically intractable where
+
+
+the most theoretically tractable
+
+
+problems are what are called multi-arm
+
+
+bandits. Um I'll explain what that means
+
+
+in a second, but the the short version
+
+
+is that it's essentially an MDP with one
+
+
+time step where you just take an action,
+
+
+get a reward, and the world ends. It's
+
+
+kind of like a really really toy RL
+
+
+problem. And these are these kinds of
+
+
+toy RL problems are often used to
+
+
+theoretically analyze exploration
+
+
+methods because there you can actually
+
+
+derive theoretically optimal exploration
+
+
+techniques.
+
+
+Then you can look at things like
+
+
+contextual bandits which are basically
+
+
+where you take a different action in in
+
+
+different states. Then you can look at
+
+
+small tabular MDPs, larger MDPs with
+
+
+some kind of known structure all the way
+
+
+to the kind of complicated imagebased
+
+
+tasks that we have in DRL. And as you
+
+
+move to the right on the spectrum
+
+
+towards the more theoretically
+
+
+intractable problems, it becomes
+
+
+essentially impossible to derive optimal
+
+
+exploration strategies. So what people
+
+
+do instead is that they figure out what
+
+
+kind of exploration strategies are
+
+
+theoretically optimal in the easier
+
+
+settings and then heruristically apply
+
+
+them to the more complex settings
+
+
+and that's what we're going to do. So uh
+
+
+what makes an exploration problem
+
+
+tractable? So these kind of uh bandit
+
+
+problems which are basically onestep
+
+
+MDPs uh there you can actually formalize
+
+
+exploration as solving a partially
+
+
+observed MDP. So even though the
+
+
+original problem is one time step you
+
+
+can formulate the exploration problem
+
+
+kind of this higher level thing as a a
+
+
+multi-step problem where each step is a
+
+
+separate interaction with the
+
+
+environment. So it's almost like a a
+
+
+metalarning kind of formulation.
+
+
+uh and uh because these settings are so
+
+
+simple then policy learning is actually
+
+
+very straightforward even in this kind
+
+
+of meta level POMD DP and we can figure
+
+
+out uh what is the optimal strategy and
+
+
+we can figure out various exploration
+
+
+rules that match the performance of the
+
+
+optimal strategy. Then when we go to
+
+
+small tabular MDPs, we can frame
+
+
+exploration as this kind of model uh
+
+
+Beijian model identification thingy uh
+
+
+and we can do all sorts of uh value of
+
+
+information calculations and get
+
+
+reasonable strategies there. And then
+
+
+when we get to large or infinite MDPs
+
+
+like the Atari games, these kind of
+
+
+optimal techniques don't really work.
+
+
+There isn't any method that is
+
+
+guaranteed to give you an optimal
+
+
+exploration method. But you can take
+
+
+inspiration from the things that you
+
+
+figure out in these simpler domains and
+
+
+kind of huristically design your
+
+
+exploration techniques for the complex
+
+
+domains and basically hope for the best.
+
+
+And that's essentially the most you can
+
+
+do here.
+
+
+Okay, any questions here?
+
+
+>> Yeah.
+
+
+Right? So the question is well can we
+
+
+just change the reward uh to make the
+
+
+problem go away? Sometimes you can. So
+
+
+this is what's sometimes referred to as
+
+
+uh reward shaping. Reward shaping refers
+
+
+to changing your your MDP to design a
+
+
+reward function that makes it uh easier
+
+
+uh to figure out the task. Um the degree
+
+
+to which that's applicable really
+
+
+depends on your problem setting. So if
+
+
+you're doing like ad placement, well the
+
+
+whole point is that you don't know what
+
+
+kind of ads different users will be more
+
+
+receptive to. So you kind of have to uh
+
+
+explore. If you're doing robotic control
+
+
+like with that multi-fingered hand, well
+
+
+there maybe you do actually have some
+
+
+amount of domain knowledge that you can
+
+
+use to design a more shaped reward that
+
+
+it will make the exploration problem
+
+
+easier. So it's domain dependent.
+
+
+Okay. Um let's talk about bandits. Um
+
+
+what's a bandit? Um the word bandit
+
+
+actually in RL doesn't refer to this
+
+
+thing. It refers to a very basic toy uh
+
+
+RL problem that we can kind of put in a
+
+
+petri dish and analyze kind of the the
+
+
+Drosophila of exploration problems. And
+
+
+the word bandit actually comes from Las
+
+
+Vegas. Uh it refers to a slot machine
+
+
+sometimes colloquially called in America
+
+
+a one-armed bandit. And uh in um in RL
+
+
+some folks had a sense of humor and they
+
+
+said well instead of studying
+
+
+reinforcement learning with a one-armed
+
+
+bandit because there you really only
+
+
+have one action which is to pull the
+
+
+arm. Um what about a multi-arm bandit?
+
+
+So maybe you have multiple arms that you
+
+
+can pull. Each arm is rewarding to a
+
+
+different degree. So maybe this is a
+
+
+casino where somebody rigged the slot
+
+
+machines and one of the slot machines is
+
+
+really good and the other slot machines
+
+
+are really bad. So, um, if you're a
+
+
+compulsive gambler, I guess what you
+
+
+would do is you would go and pull all
+
+
+the arms on all the slot machines, find
+
+
+the one that has the highest chance of
+
+
+giving you money, and then you would
+
+
+play that slot machine over and over
+
+
+again forever. Um, I'm not sure this is
+
+
+like the most uh, you know, socially
+
+
+appropriate kind of example, but this is
+
+
+how uh, RL theorists at one point
+
+
+formulated this, and it turns out to be
+
+
+a really nice example for getting a
+
+
+handle on the exploration problem. If
+
+
+you want a more um
+
+
+socially conscious way of thinking about
+
+
+it, instead of thinking about as a slot
+
+
+machine, think about it as prescribing a
+
+
+medication to a patient. Actually, kind
+
+
+of the same problem if you didn't go to
+
+
+medical school and you don't know which
+
+
+drugs treat which diseases. Uh each drug
+
+
+has some probability of treating the
+
+
+patient's disease. So, you might that,
+
+
+you know, prescribe them drugs randomly
+
+
+and see what works. Um hopefully your
+
+
+doctor is a little bit more informed
+
+
+than that but uh you can think about it
+
+
+that way as well. All right so uh let's
+
+
+actually set this up and uh uh think
+
+
+about this in a more precise way. So you
+
+
+have a variety of actions
+
+
+playing different uh arms and let's say
+
+
+that each arm has some um reward and the
+
+
+reward is actually probabilistic. So if
+
+
+the slot machine gives you money you get
+
+
+a reward of plus one. If it doesn't give
+
+
+you money, you get a reward of zero. Or
+
+
+if the patient is cured, you get a
+
+
+reward of one. If the patient is not
+
+
+cured, you get a reward of zero. And
+
+
+each arm has a probability of producing
+
+
+a reward of one. And what you really
+
+
+care about is the probabilities because
+
+
+any single episode you might get a one
+
+
+or a zero and it's a result of some
+
+
+random process. So you really need to
+
+
+try multiple times to get confidence
+
+
+about just how likely that arm is to
+
+
+produce a reward. So you have an unknown
+
+
+per action reward distribution.
+
+
+So let's say that the reward is
+
+
+distributed according to uh a Bernoli
+
+
+distribution. So reward is 01 and that
+
+
+Berni distribution has a probability of
+
+
+producing a reward one which is given by
+
+
+theta. So action I has probability theta
+
+
+i of giving reward of one. So these
+
+
+thetas theta 1 theta 2 through theta n
+
+
+fully define this uh bandit problem and
+
+
+each theta is the probability that the
+
+
+corresponding action will give you a
+
+
+reward of one.
+
+
+and a priori when you first start
+
+
+interacting with this multi-armmed
+
+
+bandit you don't know anything about
+
+
+what the thetas are you might have some
+
+
+prior p of theta and maybe that prior is
+
+
+just uniform so every every theta value
+
+
+is just as likely to take on any number
+
+
+between zero and one so you don't know
+
+
+anything and the way you're going to
+
+
+model this is you're going to say at the
+
+
+very beginning
+
+
+theta is drawn from this theta prior p
+
+
+of theta and you don't know what it is
+
+
+and you have to play the different arms
+
+
+and figure out which arm is the most
+
+
+rewarding. Crucially, you do not have to
+
+
+figure out every single value of theta.
+
+
+You just need to find the best arm
+
+
+because once you find the best arm, the
+
+
+one with the highest value of theta,
+
+
+then you can just play that arm forever
+
+
+and that's the way to get the highest
+
+
+reward.
+
+
+So the trick here is that the problem of
+
+
+optimally playing this game, optimally
+
+
+meaning to get the most reward,
+
+
+can itself be viewed as a multi-step RL
+
+
+problem. So the game itself is a
+
+
+singlestep problem. You play an ARM and
+
+
+then everything resets. Then you play
+
+
+another arm, everything resets. But the
+
+
+problem of finding good arms to get the
+
+
+highest reward is a multi-step RL
+
+
+problem because you can keep track of
+
+
+what you've learned so far.
+
+
+Does anybody have any ideas about how to
+
+
+frame this as a multi-step RL problem?
+
+
+Yeah.
+
+
+Yeah. So that's basically the right
+
+
+intuition. So for those of you that
+
+
+didn't hear all of the arms you've
+
+
+pulled in the past that sort of defines
+
+
+your trajectory so far and uh based on
+
+
+that you can kind of figure out what
+
+
+seems to be working and double down on
+
+
+that. So this is actually a partially
+
+
+observed Markov decision process
+
+
+partially observed because you don't
+
+
+know what the thetas are a priori. So
+
+
+the state is actually defined by the
+
+
+thetas.
+
+
+So if you actually knew the
+
+
+probabilities for all of the arms then
+
+
+you would have full state and then the
+
+
+optimal strategy is very easy. Just pull
+
+
+the arm with the highest theta with the
+
+
+highest probability of yielding reward.
+
+
+So in the fully observed case there's no
+
+
+problem. Just always pull the same arm
+
+
+the one that has the highest theta. But
+
+
+in the partially observed case since you
+
+
+don't know which one that is then you
+
+
+need to do something smarter. You need
+
+
+to have an exploration strategy. But if
+
+
+you can find the optimal policy in this
+
+
+partially observed MDP where the state
+
+
+the unknown state is the sequence of
+
+
+thetas and the observations correspond
+
+
+to the rewards that you receive. So they
+
+
+they're both the reward and the
+
+
+observation then that is the optimal
+
+
+exploration strategy. It is the best
+
+
+that you can possibly do in this
+
+
+scenario.
+
+
+So there's all sorts of ways to solve
+
+
+pom dps. We've learned about this
+
+
+before. For example, you can just run
+
+
+policy gradients on this. Um in practice
+
+
+we don't do that as an exploration
+
+
+strategy because of course this is an
+
+
+idealized simple case. In realistic case
+
+
+you can't do that but in this case you
+
+
+could actually literally run policy
+
+
+gradients and find the optimal policy in
+
+
+this pdp and that would be the optimal
+
+
+exploration strategy. Um so uh if you
+
+
+wanted to use a more model based
+
+
+approach you could track the belief
+
+
+state and find the optimal uh policy
+
+
+under that belief state. um and whatever
+
+
+however you solve uh the the partial
+
+
+observed MDP that would yield the
+
+
+optimal exploration strategy. Now this
+
+
+is kind of overkill. It will it will
+
+
+work but it's overkill and there are
+
+
+much easier ways to do this. Uh and you
+
+
+can do very well with much simpler
+
+
+strategies but this kind of overkill
+
+
+method
+
+
+gives us an upper bound on on the best
+
+
+that we could possibly do. Um now in
+
+
+deriving much simpler methods we we do
+
+
+have to like really pin down what it
+
+
+means to have a really good exploration
+
+
+algorithm. So typically we define how
+
+
+good our exploration algorithm is in
+
+
+terms of regret. Regret is basically the
+
+
+same as the total reward that that you
+
+
+receive. Uh but uh it's uh formulated in
+
+
+a slightly different way. So regret uh
+
+
+is defined formally as a function of
+
+
+your of the number of steps for which
+
+
+you want to play the game. So let's say
+
+
+I'm going to play the game for a
+
+
+thousand steps. Regret is just the
+
+
+difference between what would I what
+
+
+would I get if I play the optimal
+
+
+strategy for all those steps and what I
+
+
+actually got when I played my strategy.
+
+
+So the first term here capital H times
+
+
+the expectation value the expectation of
+
+
+R of A star that's the total number of
+
+
+steps times the expected value of
+
+
+playing the best possible action pulling
+
+
+the best possible R.
+
+
+And then you're subtracting from that
+
+
+the sum of rewards that you actually
+
+
+received from playing your strategy. So
+
+
+of course if you somehow magically
+
+
+figured out the optimal arm right in the
+
+
+beginning and always played the optimal
+
+
+arm then your regret would be in
+
+
+expectation zero. But because it takes
+
+
+you some time to find the optimal arm in
+
+
+general you will have non-zero regret.
+
+
+You will do a little bit worse than you
+
+
+would if you had perfect uh omnisient
+
+
+knowledge right from the beginning.
+
+
+So this is the the first term is the
+
+
+expected reward of the best action and
+
+
+the second term is the actual reward
+
+
+that you got from the actions you took
+
+
+while explore and the difference of
+
+
+these is called the regret. But you'll
+
+
+notice that the first term is really a
+
+
+constant and the second term is just the
+
+
+negative of your total reward. So regret
+
+
+is essentially the same as your total
+
+
+reward just with a constant and a
+
+
+negative sign in front.
+
+
+And that's why solving this POM DP is
+
+
+the same as minimizing regret.
+
+
+Okay. So there are a variety yes
+
+
+question
+
+
+the best action in general. So typically
+
+
+you would not know what that is. So it's
+
+
+you're sort of comparing yourself
+
+
+against a an omnipotent agent that knows
+
+
+everything.
+
+
+All right. So there are a variety of
+
+
+strategies that can be proven to
+
+
+asmtoically attain the same regret as
+
+
+this optimal pom dp solver. Uh I won't
+
+
+talk about all the strategies. I'll just
+
+
+talk about one which is probably the
+
+
+most popular one and that's optimistic
+
+
+exploration. Sometimes called optimism
+
+
+in the face of uncertainty.
+
+
+So here's the idea. I I'll describe the
+
+
+procedure and the procedure might seem a
+
+
+little bit arbitrary but then we'll have
+
+
+a little discussion about it.
+
+
+So, we're playing this multi-arm bandit,
+
+
+and what we're going to do is we're
+
+
+going to keep track of the average
+
+
+reward for each action. We're going to
+
+
+call that mu hat a. So, every time we
+
+
+play uh a particular action, we're going
+
+
+to average up the rewards that we've
+
+
+seen for that and keep track of that.
+
+
+So, now if you wanted to have a maximal
+
+
+exploitation strategy, meaning do the
+
+
+best things so far, well then you should
+
+
+pick the action with the highest uh
+
+
+average reward so far. basically play
+
+
+the action for which you've seen the
+
+
+largest average rewards. That's pretty
+
+
+logical. But you don't just want to
+
+
+exploit because if you happen to have
+
+
+played some arm once and you got a
+
+
+reward of zero and just because you got
+
+
+really unlucky and you play some other
+
+
+arm and you got a reward of one and you
+
+
+got lucky, then you'll forever be stuck
+
+
+pulling that arm where you just happen
+
+
+to have gotten a reward of one the first
+
+
+time. So intuitively, what you would
+
+
+like to do is you would like to change
+
+
+your criteria a little bit so that arms
+
+
+that you haven't pulled very much get a
+
+
+little bonus.
+
+
+Basically you you uh the score that
+
+
+you're going to use to pick your arms is
+
+
+the average reward plus a little bonus
+
+
+to account for your ignorance.
+
+
+And uh that's the optimistic estimate.
+
+
+So instead of using mua, we're going to
+
+
+use mua plus some constant c times sigma
+
+
+a. And sigma a is some measure of the
+
+
+variance or uncertainty we have about
+
+
+the value of that arm. Uh and there are
+
+
+a few ways to estimate this thing. So
+
+
+basically the idea is give a little
+
+
+bonus to each arm based on how unsure
+
+
+you are about its reward. And the
+
+
+constant C determines how much you're
+
+
+going to trade off exploration for
+
+
+exploitation. So as C goes to infinity,
+
+
+all you're doing is just pulling the
+
+
+most uncertain arm. As C goes to zero,
+
+
+all you're doing is pulling the arm
+
+
+where you've seen the highest rewards.
+
+
+And for intermediate values of C, you're
+
+
+trading off exploration and exploitation
+
+
+such that if two arms seem sufficiently
+
+
+close together, you'll prioritize the
+
+
+one where you are more uncertain about
+
+
+its reward. So the intuition is
+
+
+basically try each arm until you're sure
+
+
+it's not great. So if if the average
+
+
+value of some arm falls low enough, then
+
+
+even if you're uncertain about it,
+
+
+because the average is so low, you won't
+
+
+pull it anymore.
+
+
+Now there are a variety of ways to
+
+
+select uh sigma a one very classic way
+
+
+of doing it is to use uh a countbased
+
+
+bonus. Uh it's a slightly arbitrary
+
+
+formula but I'll walk you through it. So
+
+
+uh n of a is the number of times you
+
+
+pick this action. H is the total number
+
+
+of steps so far. So if you look at the
+
+
+form of this equation you'd expect that
+
+
+as n gets smaller the bonus gets bigger.
+
+
+and then there's some constants in in
+
+
+the numerator.
+
+
+So that's pretty intuitive like that's
+
+
+saying if you've pulled an arm a lot
+
+
+then it gets a small bonus because
+
+
+you're pretty sure that you know its
+
+
+value quite confidently and if you
+
+
+haven't pulled an arm very much then it
+
+
+gets a big bonus because maybe you
+
+
+haven't uh fully um estimated its uh its
+
+
+value.
+
+
+The place where this equation comes from
+
+
+is basically um uh learning theory. So
+
+
+the one over root n is the way you'd
+
+
+expect error for estimating a value to
+
+
+scale. This comes from basically
+
+
+haftings inequality.
+
+
+Uh and
+
+
+with a a simple multi-arm bandit problem
+
+
+and this kind of optimistic exploration
+
+
+rule it turns out that you actually get
+
+
+a regret that in general scales as o of
+
+
+log h. So it's logarithmic in your
+
+
+horizon. And it turns out that that is
+
+
+asmmpytoically the optimal regret that
+
+
+you can get in the worst case for an
+
+
+arbitrary multi-arm bandit. Which means
+
+
+that even though this selection rule it
+
+
+seems pretty simple and pretty ad hoc in
+
+
+fact it is asmtoically as good up to a
+
+
+constant as the optimal pumpd strategy
+
+
+you can get. Now this is of course in
+
+
+the simplified multi-arm bandit case
+
+
+when we go to like full MDPs, Atari
+
+
+games, images, all that stuff. these
+
+
+kinds of nice clean optimality results
+
+
+go out the window. But we can still take
+
+
+inspiration from this and say like, hey,
+
+
+some kind of optimism based on
+
+
+visitation counts might be a good way to
+
+
+explore to get novelty. And it
+
+
+intuitively makes sense because, you
+
+
+know, once you've pulled all the arms
+
+
+enough, all those end values will be
+
+
+pretty large and you're mostly focusing
+
+
+on exploitation. But if there's some arm
+
+
+that you haven't pulled very much, it'll
+
+
+get a big bonus and then you'll go and
+
+
+try it out a few times until you're sure
+
+
+it's not great.
+
+
+Yes.
+
+
+>> Yeah, you can also put a constant in
+
+
+front of this if you'd like. If you want
+
+
+if you want an explicit trade-off, but
+
+
+um you know this is what what's going to
+
+
+happen is that sometimes the theory
+
+
+papers will just analyze some kind of uh
+
+
+simplified case and then when you
+
+
+implement it you just put a a little
+
+
+constant so you can tune it.
+
+
+Okay. So now let's try to apply this in
+
+
+DRL. Now, obviously in DRL, we don't
+
+
+have a multi-armmed bandit. We have like
+
+
+an Atari game with images and multiple
+
+
+steps and so on. So, we have to somehow
+
+
+adapt this idea to the uh multi-step
+
+
+DPRL case. Um, so we're going to
+
+
+basically figure out an exploration
+
+
+bonus that we can use in DRL that will
+
+
+get things to work that will allow us to
+
+
+solve games. Um
+
+
+now the first thing I'll say is that
+
+
+there are many ways uh to formulate
+
+
+these kinds of bonuses. The ones the one
+
+
+that I showed on the multi-arm bandit
+
+
+slide is just one choice. But basically
+
+
+you want some function that will uh
+
+
+decrease as the visitation count n
+
+
+increases and you can do one over n one
+
+
+over square root of n all sorts of
+
+
+stuff. So how do you use this with mdps?
+
+
+Well with mdps you have states and
+
+
+actions. So you have to account for not
+
+
+just which action you took but also
+
+
+which state that you're in. Um so what
+
+
+you can do is you can formulate an
+
+
+exploration bonus in an MDP. Uh but now
+
+
+you just need to make it depend on
+
+
+state. And you can in general make it
+
+
+depend on state and action. But actually
+
+
+if you're doing something like playing
+
+
+an Atari game, the number of actions is
+
+
+actually very small. It might be like
+
+
+left, right, up and down, but the number
+
+
+of states is very large. So it's
+
+
+actually very common to formulate
+
+
+exploration bonuses in DPRL as a
+
+
+function of only the state rather than
+
+
+the state and the action because just
+
+
+for the simple reason that the number of
+
+
+actions is pretty small and the number
+
+
+of states is very large but in general
+
+
+you can do it as a function of both
+
+
+states and actions. So when this is one
+
+
+of those cases just like with the
+
+
+rewards when we write it in the most
+
+
+general way we write it as a function of
+
+
+state and action but when you implement
+
+
+it oftent times it's a function of only
+
+
+the state
+
+
+and then what we'll do is we'll just
+
+
+take our reward and we'll add a bonus to
+
+
+that reward based on this visitation
+
+
+count
+
+
+and we have to pick a function B to be
+
+
+some function that decreases as N
+
+
+increases. So the more often a state
+
+
+gets visited, the lower its bonus will
+
+
+be. So that when you visit a state for
+
+
+the first time and you don't know if
+
+
+that state is great or not, you might
+
+
+decide you're going to visit visit it a
+
+
+lot more. Once you you visited a state
+
+
+plenty of times, then you're pretty sure
+
+
+that you know exactly how good it is.
+
+
+Okay? So you'll have some bonus that
+
+
+decreases with n. And then we'll just
+
+
+use this R plus the augmented reward in
+
+
+place of the original reward with your
+
+
+favorite RL algorithm like PO or actor
+
+
+or DQN.
+
+
+So it's it's a nice way to do it because
+
+
+it's a simple addition to any RL
+
+
+algorithm although you have to tune the
+
+
+bonus weight and you have to tune the
+
+
+bonus uh the the particular form of the
+
+
+bonus.
+
+
+Okay, there's still a little problem
+
+
+with this though because the way that
+
+
+I've described this so far, you need to
+
+
+actually compute this n of s.
+
+
+But um the whole point of doing drl is
+
+
+that you can have really complicated
+
+
+problems with really complicated states
+
+
+like images.
+
+
+So are we literally going to count how
+
+
+many times we've seen exactly the same
+
+
+image?
+
+
+Well, that seems a little weird because
+
+
+if you're playing like Mont Zoom's
+
+
+Revenge, like the little dude here is
+
+
+walking around and the skull is moving
+
+
+around and the key might appear or
+
+
+disappear. So, if you literally just
+
+
+check for pixel equality in computing
+
+
+your visitation frequency, then probably
+
+
+every image is going to be seen only
+
+
+once because the chances that you've
+
+
+ended end up in exactly the same state
+
+
+where everything is in exactly the same
+
+
+spot uh twice in a row is pretty low.
+
+
+Um, and it's even worse if you consider
+
+
+a continuous task because in a
+
+
+continuous task, uh, chances are that
+
+
+uh, if you're using like floatingoint
+
+
+numbers, you're never going to see
+
+
+exactly the same state twice at all, no
+
+
+matter how precise you are. So that's
+
+
+kind of a problem because if our n of s
+
+
+is counting the number of times you've
+
+
+entered that state, well, the number is
+
+
+pretty much always going to be uh, one.
+
+
+So that's no good.
+
+
+But of course, states have similarity.
+
+
+So you could say, well, if the uh little
+
+
+dude is is in the same spot, but the
+
+
+skull is in a different spot, that's
+
+
+maybe similar. Okay. So what we would
+
+
+like to do is we'd like to take this
+
+
+basic intuition of figuring out how
+
+
+frequently we've seen a particular
+
+
+situation and kind of soften it so that
+
+
+it's not just literally counting the
+
+
+exact number of times we've seen exactly
+
+
+that state, but somehow quantifying the
+
+
+familiarity of that state.
+
+
+And what I'll tell you about first is a
+
+
+a very principled way of doing this and
+
+
+then I'll tell you about the much more
+
+
+heristic ways of doing it that we would
+
+
+use in practice. But the principles I
+
+
+think help us kind of uh think about
+
+
+this. So the idea as many of you might
+
+
+have guessed is that we're going to fit
+
+
+some kind of probability density to the
+
+
+states that we've seen so far. And when
+
+
+we fit a probability density model to
+
+
+states, we would expect that even states
+
+
+that we haven't seen will have a higher
+
+
+density under that probability density
+
+
+model if they are similar to the states
+
+
+that we've seen before. So we're going
+
+
+to use our probability density model to
+
+
+quantify familiarity. States that have a
+
+
+high estimated density will be viewed as
+
+
+familiar. States that have a low density
+
+
+according to our learned probability
+
+
+density model will be seen as
+
+
+unfamiliar. And we'll of course fit this
+
+
+probability density model to our replay
+
+
+buffer. because that's what contains the
+
+
+states that we've seen so far. So P
+
+
+theta of S might be high even for a new
+
+
+state if it's similar to the previously
+
+
+seen states and that's what we're going
+
+
+to use to compute our bonus.
+
+
+Okay, but now our bonuses require these
+
+
+counts. The density model gives us
+
+
+densities. Densities are not the same as
+
+
+counts. So the puzzle we have to solve
+
+
+is how do you use these densities to get
+
+
+a pseudo count something that looks and
+
+
+acts like a count.
+
+
+Okay. Well, fortunately, if you have a
+
+
+probability, not a probability density,
+
+
+but a probability, then you can relate
+
+
+it to account in a very easy way. Like
+
+
+it, you know, just the anytime you want
+
+
+to estimate probabilities of discrete
+
+
+events, the way that you would do it is
+
+
+you would take the number of times
+
+
+you've seen that event and divide it by
+
+
+the number of times that you've seen
+
+
+events in general. And that's your
+
+
+probability. Right? This is kind of, you
+
+
+know, basically stats 101, the most
+
+
+basic probability theory equation. So
+
+
+what we're going to do is we're going to
+
+
+say like okay this is our definition of
+
+
+a pseudo count. It's basically a thing
+
+
+that obeys this kind of equation and
+
+
+we'll just replace the probability with
+
+
+a probability density and use that to
+
+
+solve for counts. That's basically the
+
+
+idea. So the probability density is
+
+
+related to a count by this formula. And
+
+
+if you just experienced a new state, if
+
+
+you just took one time step in your MTP,
+
+
+then you add one to the numerator of
+
+
+this and you add one to the denominator
+
+
+and your new probability after you've
+
+
+experienced that state is given by that
+
+
+equation.
+
+
+Okay. So what we're going to do is we're
+
+
+going to essentially substitute our
+
+
+probability uh density model in place of
+
+
+capital P and and capital P prime and
+
+
+then solve for our counts.
+
+
+So this is described in a paper by Mark
+
+
+Bellir called unifying countbased
+
+
+exploration and it works like this.
+
+
+Fit a density probability density model
+
+
+of your choice to all of the states
+
+
+you've seen so far. Then take a step in
+
+
+your MDP and observe a new state SI
+
+
+and then fit a new model P theta prime
+
+
+to all the data you've seen so far and
+
+
+the new state. So now you have two
+
+
+models, one with the new state and one
+
+
+without it.
+
+
+And then you're going to use these two
+
+
+models to estimate a pseudo count and
+
+
+hat. And then you're going to assign a
+
+
+bonus based on that pseudo count and
+
+
+repeat. Okay, so how do you get the
+
+
+pseudo count? Well, we just plug it into
+
+
+these equations. So we're going to say
+
+
+that the old density is equal to n hat
+
+
+divided by the number the total number
+
+
+of steps and the new density is nhat
+
+
+plus one divided by the number of steps
+
+
+plus one. So now you have two equations
+
+
+and two unknowns right because you know
+
+
+the densities you know the total number
+
+
+of steps and what you don't know is n
+
+
+hat.
+
+
+Um sorry you don't know little n either.
+
+
+So you have two unknowns little n and
+
+
+capital n and you have you have the
+
+
+densities. question.
+
+
+Yeah. Yeah. Sorry. And hat is also
+
+
+unknown. Okay. So, two equations and two
+
+
+unknowns. And then we have to do a bunch
+
+
+of algebra and solve for these things.
+
+
+You can do that algebra at home on a
+
+
+piece of paper. Uh Mark Bellir did it
+
+
+for you. So, I can show you what his
+
+
+what the solution he came up with is. Uh
+
+
+but you can repeat and check his math.
+
+
+And it's an equation expressed in terms
+
+
+of p theta and p theta prime. So if you
+
+
+can get those densities, plug it into
+
+
+these equations, then you can get your
+
+
+capital n uh of s uh and little n uh and
+
+
+you can use your capital n to solve to
+
+
+to solve for your bonus. Yes.
+
+
+>> Um so this is a density model which
+
+
+means that uh it might generalize and it
+
+
+might actually assign a non-zero
+
+
+probability uh even to an unseen state.
+
+
+uh it depends on what density model you
+
+
+use. So uh this is a choice that you
+
+
+have to make for these methods. You have
+
+
+to choose some class of probability
+
+
+density models. Uh it could be uh for
+
+
+example a bound on the on the
+
+
+probability that comes from a VAE and
+
+
+that might generalize over states. uh
+
+
+I'll talk about the particular kind of
+
+
+density model that Mark Belmir used in
+
+
+this paper but it's a little bit
+
+
+antiquated so it might not be as
+
+
+relevant to us today but anything that
+
+
+can produce a probability density over
+
+
+whatever your space of states is would
+
+
+be suitable here okay so what kind of
+
+
+bonus do we use uh there are many
+
+
+different choices in the literature it's
+
+
+a little bit of a heristic choice so
+
+
+anything that decreases as n increases
+
+
+the classic one is 1 over square root of
+
+
+n times some constant
+
+
+You can also do one overn. Okay, it
+
+
+scales a little differently as n
+
+
+increases, but similar principle. Um,
+
+
+Bare used one over root n, but you can
+
+
+do whatever you want as long as it's
+
+
+something that decreases as n increases.
+
+
+Um,
+
+
+it does a lot better on Montuma's
+
+
+revenge. So, if you run regular DQN on
+
+
+Montzuma's revenge, typically what you
+
+
+would see is that it sometimes gets past
+
+
+the first level and very rarely gets
+
+
+past the second level. If you run a good
+
+
+exploration method, then you could get
+
+
+through a lot more levels. If you run a
+
+
+modern exploration method, it'll
+
+
+actually get through all the levels. So,
+
+
+the little visualization at the bottom
+
+
+shows all the levels there. There's a
+
+
+lot of them and uh it helps quite a bit.
+
+
+It also helps quite a bit on lots of
+
+
+other Atari games. In terms of the
+
+
+model, I'm kind of saving this for last
+
+
+because it's not a particularly
+
+
+interesting conclusion. Um, you need
+
+
+some model that will output densities.
+
+
+It doesn't need to produce good samples.
+
+
+It just needs to output good probability
+
+
+densities. um which is very different
+
+
+from the considerations that typical
+
+
+generative models have. So like a GAN
+
+
+for example is good for producing
+
+
+samples but doesn't produce densities.
+
+
+So you need something that will produce
+
+
+densities. The particular model used in
+
+
+the original pseudocounts paper is
+
+
+what's called this uh CTS model which is
+
+
+very antiquated at this point. So I'm a
+
+
+little reluctant to even tell you guys
+
+
+about it but if you really want to know
+
+
+what they do is they take each pixel and
+
+
+they estimate the probability of that
+
+
+pixel as a function of its preceding
+
+
+pixels in a scan line order. So they
+
+
+look at the pixels to the left and
+
+
+above. It's a perfectly valid way to
+
+
+form a uh a factorized probability
+
+
+distribution over your pixels, but it's
+
+
+a little bit antiquated at this point.
+
+
+So I won't go into details about it, but
+
+
+if you want to find out about that
+
+
+thing, you can check out the original
+
+
+paper, but there are lots of other
+
+
+models you could use for this. Anything
+
+
+that will produce probability densities
+
+
+over whatever your state representation
+
+
+is.
+
+
+Okay, so the last thing that I want to
+
+
+talk about is how we can go beyond uh
+
+
+these kinds of uh uh fairly complex
+
+
+methods that require full density
+
+
+estimation and get a much simpler class
+
+
+of methods that's less mo well motivated
+
+
+but actually works very well in
+
+
+practice. The trick here is you don't
+
+
+actually need P theta of S to be a true
+
+
+density model. It just needs to be some
+
+
+kind of function of state that is big
+
+
+for states that are familiar and small
+
+
+for states that are unfamiliar. And
+
+
+there are a variety of ways to formulate
+
+
+these things and they don't necessarily
+
+
+need uh full density estimation. So you
+
+
+just need to be able to tell if a state
+
+
+is novel or not. And here's a fun trick.
+
+
+Let's say that you have some function,
+
+
+any function of state and action. Let's
+
+
+call it far. Any arbitrary function.
+
+
+Here's a function. And then you fit a
+
+
+neural net to f
+
+
+a neural net f theta using only the
+
+
+states and actions in your replay
+
+
+buffer. Okay, so maybe these are the
+
+
+these are the states in your replay
+
+
+buffer. You can use only the states or
+
+
+you can use both the states and the
+
+
+actions. And here's my neural net. Okay,
+
+
+so I would expect that when I fit my
+
+
+neural net on some data points, it'll
+
+
+have low error on those data points.
+
+
+It'll have higher error on other points
+
+
+that I did not train on. And that simple
+
+
+fact can actually be used to derive an
+
+
+exploration bonus. So if you pick some
+
+
+kind of F-star, you can simply use the
+
+
+error between your neural net and F-star
+
+
+as a gauge on how familiar a particular
+
+
+state is. High error means unfamiliar,
+
+
+low error means familiar.
+
+
+And you can have a variety of different
+
+
+choices for F-star. So you can choose uh
+
+
+F-star to be for example the dynamics
+
+
+the next state. So look at the error of
+
+
+your dynamics as a gauge of novelty.
+
+
+Another thing you can choose is you can
+
+
+choose far to be a random neural
+
+
+network. Literally take a neural net
+
+
+initialize it with random weights you
+
+
+get some random function and then fit to
+
+
+that random function with another neural
+
+
+net from a different initialization and
+
+
+use the error between these as a gauge
+
+
+of novelty. This is called R&D uh
+
+
+exploration with random network
+
+
+distillation and this is generally the
+
+
+most widely used deepl exploration
+
+
+method today. So, uh, if you want to
+
+
+just try out an exploration method out
+
+
+of the box, this is a pretty good choice
+
+
+for getting started, but you can use
+
+
+other choices of FAR as well. All right,
+
+
+any questions?
+
+
+Okay, great. Uh, let's adjourn and see
+
+
+you all on Friday.

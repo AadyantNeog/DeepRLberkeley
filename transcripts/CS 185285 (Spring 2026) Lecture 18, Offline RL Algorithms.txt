@@ -1,0 +1,8149 @@
+All right. Uh let's get started. Um
+
+
+thank you all for coming in the for the
+
+
+last day before spring break. Um, and
+
+
+for those of you watching online, you
+
+
+might have noticed that the Wednesday
+
+
+lecture ended on a bit of a cliffhanger
+
+
+because for those that were in the
+
+
+classroom, they saw my explanation about
+
+
+why we want to use the forward and the
+
+
+reverse scale for the online lecture at
+
+
+cutoff right at the moment where I said
+
+
+that I'm about to explain it. So, uh, we
+
+
+will recap that explanation today. Um so
+
+
+to rewind a little bit what we started
+
+
+discussing on Wednesday is offline
+
+
+reinforcement learning algorithms.
+
+
+Offline reinforcement learning
+
+
+algorithms are methods where we do not
+
+
+collect additional data as we train the
+
+
+uh the policy. And as we learned on
+
+
+Wednesday, generally the offline RL
+
+
+methods uh that tend to be most widely
+
+
+used are based on kind of off policy Q
+
+
+functionbased methods. So either
+
+
+Q-learning type methods or Q functionic
+
+
+methods. Uh there's also model based
+
+
+offline RL methods and we'll talk about
+
+
+those at the end of lecture today as
+
+
+well. Uh but generally these kinds of
+
+
+things are preferred because you can use
+
+
+lots of um
+
+
+uh data from other policies to to train.
+
+
+And the issue that we run into is
+
+
+distributional shift and distributional
+
+
+shift shows up in basically all the
+
+
+different types of algorithms that you
+
+
+could use for offline RL. It just shows
+
+
+up in slightly different places. So uh
+
+
+there are many different methods that
+
+
+are effective but similar principles
+
+
+seem to work across the board using some
+
+
+kind of valuebased thing or or models
+
+
+that's okay too. and then somehow fix
+
+
+the distributional shift problem. And
+
+
+we're going to cover three different
+
+
+broad classes of methods for fixing the
+
+
+distributional shift problem. The first
+
+
+one which we started on on Wednesday,
+
+
+which is to use what are called policy
+
+
+constraints. So basically recognize that
+
+
+the issue is that uh the learned policy
+
+
+is different from the behavior policy
+
+
+that can lead to out ofdistribution
+
+
+behaviors which might fool the Q
+
+
+function or the learn model into
+
+
+outputting a nonsensical output that is
+
+
+erroneously optimistic and therefore
+
+
+will be exploited. So correct that by
+
+
+limiting how much the learn policy can
+
+
+deviate from the behavior policy. As a
+
+
+reminder, behavior policy just means
+
+
+whatever unknown policy collected the
+
+
+data. So it's basically another word for
+
+
+data distribution.
+
+
+There are other methods that are based
+
+
+on the principle of pessimism, which
+
+
+basically says, okay, let's not worry
+
+
+about changing the policy. Let's instead
+
+
+change our value function so that for
+
+
+unexpected inputs, it's kind of
+
+
+regularized to produce
+
+
+uh low values. Basically, you can't get
+
+
+the correct answer for unseen inputs,
+
+
+but you can at least train it so that if
+
+
+it gets something unseen, it'll produce
+
+
+a low value. And that's the principle of
+
+
+pessimism. And then there are other more
+
+
+exotic methods uh that try to avoid out
+
+
+of distribution actions altogether by
+
+
+structuring the algorithm in some really
+
+
+clever way. And we'll talk about that as
+
+
+well. Okay, but let's uh first wrap up
+
+
+our discussion of policy constraints
+
+
+from Wednesday. Okay, so where we left
+
+
+off on Wednesday is we said okay if we
+
+
+want to turn a let's say a Q function
+
+
+actor method into a method with policy
+
+
+constraints all you do is you take your
+
+
+actor objective which is to maximize
+
+
+maximize the expected value of Q under
+
+
+pi theta like this is what we saw with
+
+
+like soft actor critic and basically
+
+
+every other actor critic algorithm and
+
+
+add an additional constraint that says
+
+
+that you want to maximize that
+
+
+expectation subject to the constraint
+
+
+that some kind of divergence
+
+
+between the learned policy and the
+
+
+behavior policy is bounded by uh epsilon
+
+
+and epsilon is a parameter that you
+
+
+choose and essentially epsilon is how
+
+
+much distributional shift you're willing
+
+
+to tolerate and in this example I have a
+
+
+uh a particular kind of kale divergence
+
+
+really quick kind of wakeup quiz for all
+
+
+of you is this a reverse kale or forward
+
+
+kale who thinks it's reverse kale raise
+
+
+your hand
+
+
+who thinks it's forward kale
+
+
+Okay,
+
+
+so it's with respect to pi theta. It's
+
+
+actually reverse scale.
+
+
+So I know it's kind of funny because you
+
+
+think first argument forward, second
+
+
+argument reverse. Uh the reason that um
+
+
+it's called forward kale when pi theta
+
+
+is the second argument is because if you
+
+
+expand out the kale divergence, you
+
+
+basically get log likelihood like
+
+
+regular supervised learning. So that's
+
+
+like the default and it's called
+
+
+forward. If pi theta is the first
+
+
+argument, that's actually called reverse
+
+
+scale because if you expand it out, it
+
+
+doesn't look like uh standard log
+
+
+likelihood. It actually looks a little
+
+
+bit more like the RL objective plus an
+
+
+entropy term. So this is uh reverse
+
+
+scale. If you flip them around, you get
+
+
+forward KL. It's a little bit kind of
+
+
+the opposite of what what one might
+
+
+expect.
+
+
+Uh okay. So uh again the intuition for
+
+
+this this is the same picture I drew on
+
+
+Wednesday but just to remind everybody
+
+
+if this represents our behavior policy
+
+
+and my data is somewhere over here and
+
+
+if I were to fit the Q function to it it
+
+
+would look like this. Okay. So now you
+
+
+see the Q function is pretty accurate
+
+
+close to the data but away from the data
+
+
+like who knows uh and it might
+
+
+extrapolate into some unreliable and
+
+
+erroneously large out of distribution
+
+
+values. Well if I were to naively fit a
+
+
+policy to maximize the skew function
+
+
+where would it go? It would go to the
+
+
+right side to those unreliable out of
+
+
+distribution values. But if I were to
+
+
+constrain it to stay close to pi beta,
+
+
+then perhaps it'll pick this uh leftmost
+
+
+peak which is within the data
+
+
+distribution. So that's kind of what I
+
+
+would like to see. Um so that's maybe
+
+
+the best solution with the policy
+
+
+constraint.
+
+
+Okay. So uh we have forward kale. That's
+
+
+one way to write this constraint. And
+
+
+the forward kale divergence uh as a
+
+
+reminder this is basically the same as
+
+
+um log likelihood. So you basically
+
+
+sample from pi beta and you maximize the
+
+
+log probability of samples from pi beta
+
+
+and that is the forward kl up to a
+
+
+constant. And if our pi beta
+
+
+distribution is pretty complicated like
+
+
+it has these two peaks typically doing
+
+
+forward kl will try to fit everything.
+
+
+It'll try to cover all of the peaks even
+
+
+if it means putting some probability
+
+
+mass on actions that have a low
+
+
+probability under the the behavior
+
+
+policy. Reverse scale is kind of the
+
+
+opposite. It will try to find modes. So
+
+
+if pi beta has multiple modes and it
+
+
+can't fit all of them, then it will try
+
+
+to put as much probability mass as
+
+
+possible around the biggest mode. Of
+
+
+course, if uh pi theta can fit
+
+
+everything, it'll match the distribution
+
+
+perfectly. So this kind of picture only
+
+
+applies if you cannot fit everything
+
+
+accurately.
+
+
+Okay. So we'll we'll dig into this a
+
+
+little bit more next. So what kind of
+
+
+constraint do we use? Well, we have to
+
+
+first understand the behavior of forward
+
+
+and reverse scale. So, as I mentioned
+
+
+forward kale, this is the mode covering
+
+
+thing. And the reason it's mode covering
+
+
+is because if you write it out, you'll
+
+
+see that it is the log probability under
+
+
+pi theta of all the samples that come
+
+
+from pi beta. Which means that if some
+
+
+action is produced by pi beta and pi
+
+
+theta assigns it a probability of zero,
+
+
+then what will the loss be? You guys can
+
+
+shout it out.
+
+
+There's a sample there and pi theta is
+
+
+equal to zero. What is the loss?
+
+
+Infinity. Yeah, because the log of zero
+
+
+is infinity. So it is very very bad when
+
+
+using the forward kl for pi theta to
+
+
+assign a very low probability to a
+
+
+sample from pi beta. It wants all the
+
+
+samples to have at least some
+
+
+probability which means that it wants to
+
+
+cover everything that pi beta can
+
+
+produce.
+
+
+Reverse scale is the other way around.
+
+
+Reverse scale is the log probability
+
+
+under pi beta of samples from pi theta.
+
+
+So uh plus the entropy. So that makes it
+
+
+so that pi theta really wants to pick up
+
+
+on the high probability actions the
+
+
+actions for which the data distribution
+
+
+has a high probability. So that makes it
+
+
+uh mode uh seeking mo rather than mode
+
+
+covering. So it gets a huge penalty for
+
+
+assigning a nonzero probability uh to
+
+
+any sample where pi beta is zero because
+
+
+if pi beta is zero for some sample then
+
+
+the log of zero is negative infinity and
+
+
+pi theta now pays a really heavy price
+
+
+for for picking that sample. Of course
+
+
+in reality you don't you don't see those
+
+
+samples in your data set. If you have a
+
+
+finite sample size but you would you
+
+
+know fit some model of pi beta and use
+
+
+that as your reward.
+
+
+Okay.
+
+
+So there's an interesting trade-off
+
+
+depending on which of these we want to
+
+
+use. Uh and
+
+
+maybe to kind of uh rewind a little bit
+
+
+to Wednesday, a question I would ask all
+
+
+of you to think about for 30 seconds is
+
+
+if the challenge that we're faced with
+
+
+in offline RL is that we would like to
+
+
+avoid actions for which our model or Q
+
+
+function will make an unreliable
+
+
+prediction.
+
+
+So we want to avoid actions that are too
+
+
+different than things that our uh value
+
+
+function was trained on. Which of these
+
+
+two kale divergence constraints do you
+
+
+think we would prefer?
+
+
+Yeah.
+
+
+Right. Yeah. So it it on the surface it
+
+
+seems like reverse scale would be
+
+
+preferred because hey the whole point of
+
+
+reverse scale is that it will never pick
+
+
+something for which pi beta assigns a
+
+
+probability of zero because that has a
+
+
+loss of infinity. And that's a very
+
+
+reasonable answer. Like even looking at
+
+
+the picture, it kind of seems like, hey,
+
+
+uh what I want is I want to find
+
+
+something inside of my behavior policy
+
+
+distribution that still gets high value.
+
+
+The reason that people might prefer
+
+
+forward KL is that while it is often not
+
+
+quite what we want, it can be a lot
+
+
+easier to code it up. In fact, it's
+
+
+basically a oneline change, perhaps a
+
+
+halfline change depending on how you
+
+
+code up softitic to your actual loss.
+
+
+So
+
+
+uh forward kale is easy. You don't need
+
+
+to know what pi beta is. You just need
+
+
+samples and all you have to do is add
+
+
+the log probability of those samples to
+
+
+your actor loss. So it's it's good if
+
+
+you don't want to lose modes. Also
+
+
+sometimes there's some exotic cases like
+
+
+for example using LLMs where you
+
+
+actually do want to cover all the modes.
+
+
+You want to cover you know you don't
+
+
+want mode collapse. But oftentimes the
+
+
+big benefit is the simplicity. The
+
+
+reverse scale is good if you want the
+
+
+best thing inside the data. Uh if you're
+
+
+already using a maximum entropy RL
+
+
+algorithm like soft critic, it's pretty
+
+
+easy. You just have to add log pi beta
+
+
+to your reward. Uh but you'd have to
+
+
+actually estimate pi beta somehow. So
+
+
+you have to figure out how to compute
+
+
+this term. And we'll talk about some
+
+
+ways to do that.
+
+
+Before we get into the practical
+
+
+algorithms, just one kind of uh
+
+
+footnote, which is that so far we only
+
+
+talked about policy constraints that
+
+
+take the form of a kale divergence. Uh,
+
+
+of course there's nobody that says that
+
+
+you have to use a kale divergence. You
+
+
+can use some other measure of how
+
+
+similar the distributions are. And kind
+
+
+of an interesting thought exercise to
+
+
+say, well, what might be the ideal
+
+
+constraint? Um,
+
+
+so reverse scale kind of seemed
+
+
+appealing because hey, you don't have to
+
+
+keep all the modes. But you could take
+
+
+that idea even further. You could say,
+
+
+well, who says that for the best mode,
+
+
+you should fully cover it? Maybe you
+
+
+don't want to maximize the entropy? You
+
+
+don't want to like uh have your learned
+
+
+policy take all of the actions that are
+
+
+probable around that mode. It's okay to
+
+
+just pick a very narrow range of actions
+
+
+as long as they're inside the data
+
+
+because you know who says that you need
+
+
+to have a high entropy solution. So
+
+
+another way to do this uh and don't pay
+
+
+too much attention to the equation here.
+
+
+I'll explain what this means in a
+
+
+second. Another way to do this is to
+
+
+formulate some kind of constraint that
+
+
+really captures the notion that any pi
+
+
+theta is okay as long as it is inside of
+
+
+the support of the behavior policy.
+
+
+Meaning that the learned policy can take
+
+
+any actions it wants as long as those
+
+
+actions have a high enough probability
+
+
+under the behavior policy. And as long
+
+
+as that is true, as long as you're only
+
+
+taking actions that have a reasonable
+
+
+probability under the behavior policy,
+
+
+it doesn't matter if you take a lot of
+
+
+them or a few of them. It doesn't matter
+
+
+if you capture the entire mode or have
+
+
+like a a spike that's very very narrow.
+
+
+Uh as long as it's only taking those
+
+
+actions that were uh in the support of
+
+
+the behavior policy.
+
+
+Um and if you want to know how that
+
+
+equation works out, it basically just
+
+
+says you only pay a penalty for those
+
+
+things that have zero probability under
+
+
+pi beta. Uh now in reality this has huge
+
+
+practical challenges. Of course, you
+
+
+don't actually want to use zero as your
+
+
+uh measure of support because you're not
+
+
+going to estimate pi beta accurately
+
+
+enough to do that. So, typically you
+
+
+would say, "Oh, I only want those
+
+
+actions where the probability under pi
+
+
+beta is higher than some threshold." And
+
+
+picking that threshold is very tough.
+
+
+And in practice, support constraints are
+
+
+quite hard to implement from a practical
+
+
+standpoint, especially for continuous
+
+
+actions because for continuous actions,
+
+
+these are all probability densities. So
+
+
+this is not the most practical thing to
+
+
+use, but it's worth kind of thinking
+
+
+about because the fact is that we don't
+
+
+really want forward scale and we don't
+
+
+really want reverse scale. What we want
+
+
+is the best policy that exists that is
+
+
+constrained to only take those actions
+
+
+that have a reasonable probability under
+
+
+the behavior policy.
+
+
+Okay. Um any questions about this? Yes.
+
+
+Yeah. Yeah. So the question was well
+
+
+maybe like this multimodal stuff comes
+
+
+up a lot in more complex problems. Um
+
+
+we'll talk about this more towards the
+
+
+end of the lecture when we discuss using
+
+
+uh diffusion models for RL. It is
+
+
+actually an issue and basically the
+
+
+spoiler is that to make policy
+
+
+constraints work really really well.
+
+
+Turns out that one of the really good
+
+
+ideas is to not use a simple Gaussian
+
+
+policy like we used in homework three
+
+
+and homework two but to use a more
+
+
+powerful policy more like that flow
+
+
+matching model that we used in homework
+
+
+one.
+
+
+Okay. So let's talk about some actual
+
+
+algorithms based on policy constraints.
+
+
+And these things will look more or less
+
+
+exactly how you expect. There isn't
+
+
+anything terribly clever here. Um so the
+
+
+most obvious way to implement a policy
+
+
+constraint is to modify the actor
+
+
+objective. So this is the standard
+
+
+objective that we use for Q function
+
+
+actor critic. So if you implement like
+
+
+soft actor critic or DDPG or something
+
+
+like that it's some variant of this
+
+
+objective basically and maybe you do
+
+
+this using reparameterization trick or
+
+
+using policy gradient or whatever but
+
+
+this is basically what you're doing. And
+
+
+now let's say that we want to do reverse
+
+
+scale. Okay, so uh reverse scale is the
+
+
+uh expectation under pi theta of log pi
+
+
+theta minus log pi beta and that's
+
+
+basically like the entropy and using log
+
+
+pi beta as a kind of reward. So I can
+
+
+write it like this and remember I want
+
+
+to minimize this. So I would flip the
+
+
+sign when I put it into the actor
+
+
+objective because the actor objective is
+
+
+maximized whereas this thing I want to
+
+
+minimize. So it has a negative sign in
+
+
+front. When it goes into the actor
+
+
+objective it'll be flipped around. It'll
+
+
+be a positive sign.
+
+
+So this is reverse scale. Let's put that
+
+
+in. And I'm going to put a multiplier on
+
+
+it, lambda. So then I have two terms.
+
+
+One of them goes inside the expectation.
+
+
+So that's the log pi beta term. And it
+
+
+has a lambda in front because I want to
+
+
+put a weight on it. That's basically my
+
+
+uh lrange multiplier. And then I have
+
+
+the entropy term. And see there are plus
+
+
+signs now instead of minus signs because
+
+
+I'm maximizing this. Okay. So looking at
+
+
+this thing maybe the obvious uh idea
+
+
+that pops out is that well that log pi
+
+
+beta looks a little bit like a reward
+
+
+like basically I'm already maximizing
+
+
+the expectation of something if I want
+
+
+to maximize the expectation of something
+
+
+else nothing really changes I just have
+
+
+to add that thing to my Q function and
+
+
+the entropy term well we already used an
+
+
+entropy term in soft critic this is
+
+
+basically exactly that thing we learned
+
+
+about it in the controls inference
+
+
+lectures so we can call this uh one a
+
+
+Um
+
+
+if you want to do uh reverse kale or
+
+
+sorry if you want to do forward kale
+
+
+that's this one then in some ways it's
+
+
+actually even easier because forward
+
+
+kale is just the expected value under pi
+
+
+beta of log pi theta plus a constant and
+
+
+again we remove the negative sign
+
+
+because you want to minimize it and your
+
+
+objective is maximized. So that just
+
+
+means you add lambda* log pi theta of
+
+
+the samples from your data set to your
+
+
+actor objective. So that's even simpler
+
+
+and you don't need to know what log pi
+
+
+beta is in this case.
+
+
+And this is we can call this 1b
+
+
+uh for this uh forward kale version.
+
+
+Sometimes people call this whatever your
+
+
+method name is plus bc because it's
+
+
+exactly the bc loss uh just added to the
+
+
+actor loss. So if you're using soft
+
+
+actor critic you would call it sac plus
+
+
+bc. If you're using DDPG, you would call
+
+
+it DDPG plus BC. And that's a very very
+
+
+simple way to get something uh that you
+
+
+know roughly works as an offline RL
+
+
+method.
+
+
+Generally, the forward KL thing is like
+
+
+it's not usually the best way to fix the
+
+
+problem, but it works well if done
+
+
+right, especially if you tune that
+
+
+multiplier carefully. The reverse KL
+
+
+one, as many of you probably expect, can
+
+
+work a bit better, but it's a little bit
+
+
+more complicated because you need to get
+
+
+that log pi beta from somewhere.
+
+
+Typically, you would do this by fitting
+
+
+another model and using uh densities
+
+
+from that model. Although we'll see that
+
+
+there are a few tricks you can play to
+
+
+get around that.
+
+
+Okay. Um now there is another way to do
+
+
+to to add these constraints. So so far
+
+
+we've been adding this to the actor
+
+
+objective and that's pretty easy to do.
+
+
+You can also add it to the reward
+
+
+function. And um the rationale here is
+
+
+if you look at the reverse scale, well,
+
+
+we're just adding this thing to Q uh and
+
+
+Q is the reward plus the next value. So
+
+
+what if we add it to the reward or
+
+
+rather subtracted because you maximize
+
+
+the reward and you want to minimize uh
+
+
+your divergence.
+
+
+So typically this would be done with a
+
+
+reverse scale because of course it's
+
+
+just the expectation of log pi beta. Um
+
+
+and in that case
+
+
+you get an interesting effect which is
+
+
+the reward is maximized by the actor
+
+
+over the long term. So the actor
+
+
+optimizes not just the current reward
+
+
+but the sum of all future rewards. So
+
+
+when you add your divergence to the
+
+
+reward
+
+
+it actually accounts for future
+
+
+divergences.
+
+
+So what that means is that you're
+
+
+telling the actor don't take actions now
+
+
+that are too different from what the
+
+
+behavior policy would do. And also don't
+
+
+go to other places where you will want
+
+
+to take actions that are too different
+
+
+from what the behavior policy might do.
+
+
+And that kind of makes sense because you
+
+
+might be in you might get into a
+
+
+situation where you think that some
+
+
+action has a high Q value
+
+
+but when you actually go there the thing
+
+
+that you actually really want to do in
+
+
+that in that uh in that new situation
+
+
+that new state is take an action that is
+
+
+too different from the behavior policy.
+
+
+So you actually can't take it. So this
+
+
+kind of thing can be a little bit better
+
+
+in that case.
+
+
+Um,
+
+
+why might we not prefer this? Well, the
+
+
+forward KL thing is super convenient
+
+
+because it doesn't require calculating
+
+
+log pi beta. But for this, you really do
+
+
+need to actually estimate that pi beta
+
+
+somehow in order to get that uh
+
+
+divergence added to your reward.
+
+
+Okay, so these are the basic uh
+
+
+principles and now we can actually put
+
+
+them all together into specific
+
+
+algorithms that are going to going to
+
+
+look like the off policy Q function
+
+
+actor critic methods that we saw before.
+
+
+So mentally you rewind back to the actor
+
+
+critic and policy gradient lectures. We
+
+
+had these methods that had like a replay
+
+
+buffer and so on. Now it's not a replay
+
+
+buffer, it's just a data set because we
+
+
+just we're just given the data set. We
+
+
+don't collect it ourselves. There's no
+
+
+more step one. There's no more
+
+
+exploration step. So all we do is we
+
+
+take our data set and we sample a batch
+
+
+from it. But then the rest of the
+
+
+algorithms looks very similar to the Q
+
+
+function actor critic algorithms from
+
+
+before. So we evaluate our target
+
+
+values. And in this case we're going to
+
+
+do that uh uh reward augmentation trick.
+
+
+So our target values are going to be the
+
+
+reward plus the expected value over the
+
+
+Q function at the next step. And we make
+
+
+a little modification to the Q function
+
+
+which is we subtract lambda times our
+
+
+divergence. And typically this would be
+
+
+done in a classic uh algorithm of the
+
+
+sort with reverse scale. And reverse
+
+
+scale means that that's just going to be
+
+
+the log probability of pi beta plus uh
+
+
+or yeah the the log probability of pi
+
+
+beta plus the entropy.
+
+
+Um so for example we could use reverse
+
+
+q. Then we update our Q function
+
+
+parameters by minimizing the difference
+
+
+to the target values.
+
+
+And then we would
+
+
+compute the the actor objective which is
+
+
+the expected value of Q with this
+
+
+additional
+
+
+divergence same divergence as in the
+
+
+target values
+
+
+and we would update the actor parameters
+
+
+and repeat.
+
+
+So uh this this is closest to this
+
+
+algorithm introduced in the in the paper
+
+
+by Wood cited here at the bottom. Uh one
+
+
+little uh kind of thought exercise for
+
+
+everybody. You will have noticed looking
+
+
+at this at these equations that there's
+
+
+something a little peculiar going on
+
+
+because instead of subtracting lambda
+
+
+times the divergence from the reward,
+
+
+I'm subtracting it from the target value
+
+
+and from the actor objective.
+
+
+Why did I do it that way?
+
+
+Why not just subtract it from the
+
+
+reward?
+
+
+>> Yeah.
+
+
+Yeah.
+
+
+So if we look at the objectives, they're
+
+
+basically the same as changing the
+
+
+reward function. The main difference is
+
+
+uh just that the um
+
+
+uh there's often some simplifications
+
+
+that happen. And if for example you have
+
+
+Gaussian policies that make that uh that
+
+
+term in the actor objective easier to
+
+
+differentiate but conceptually you can
+
+
+think of this as basically exactly the
+
+
+same as subtracting from the reward.
+
+
+It's purely kind of a computational
+
+
+trick.
+
+
+Okay. Uh now let's talk about an example
+
+
+algorithm from the other category from
+
+
+the something plus BC category. Let's
+
+
+say that's called actor critic plus BC.
+
+
+Uh so again you have your data set you
+
+
+sample many batches from your data set
+
+
+um just like before you evaluate your
+
+
+target values and now there's no fancy
+
+
+trick in the target value. This is
+
+
+exactly the target value calculation we
+
+
+had for off policy actor critic. You
+
+
+update your Q function and now your
+
+
+actor objective just has this additional
+
+
+term
+
+
+lambda* log pi theta ai given si and
+
+
+remember si and ai are samples from our
+
+
+data set which means they are samples
+
+
+from the behavior policy. So all we're
+
+
+doing now is in this version of the of
+
+
+the method is adding the log likelihood
+
+
+of our data to our actor objective. And
+
+
+as written here, this is actor critic
+
+
+plus BC. If you add an entropy term, it
+
+
+becomes SACE plus BC. If you use a
+
+
+deterministic policy, it becomes DDPG
+
+
+plus BC.
+
+
+Any questions about these two
+
+
+algorithms?
+
+
+After this explanation, do all of you
+
+
+feel confident that you could implement
+
+
+either of these two algorithms? if asked
+
+
+to do so.
+
+
+If the answer is maybe no, then this is
+
+
+a good time to ask a question.
+
+
+Okay. All right. So, these are kind of
+
+
+the easy ones. Um, now there is another
+
+
+kind of clever method that can allow us
+
+
+to implement a policy constraint
+
+
+that I'll cover and this is called
+
+
+advantage weighted regression. This one
+
+
+is it's actually going to lead to
+
+
+another very very simple method but the
+
+
+derivation for this approach is a little
+
+
+bit more involved. So the idea with
+
+
+advantage weighted regression is to use
+
+
+uh what's sometimes referred to as an
+
+
+implicit policy constraint meaning that
+
+
+instead of explicitly adding a
+
+
+regularizer to the policy like getting
+
+
+it to maximize the log likelihood of
+
+
+samples from the data set we're going to
+
+
+do something implicit that results in a
+
+
+policy that kind of by construction has
+
+
+to satisfy the constraint. So here's
+
+
+what we're going to do. We we will look
+
+
+at this constrained actor objective and
+
+
+I'm intentionally writing it in terms of
+
+
+an arbitrary policy pi instead of pi
+
+
+theta because I'm going to actually
+
+
+solve for the optimal policy pi enclosed
+
+
+form separately from any
+
+
+parameterization. So there's no theta
+
+
+anymore. And notice that I'm using the
+
+
+reverse scale here. And that's very
+
+
+important.
+
+
+So something that you could do at home
+
+
+as an exercise, but I'll just give you
+
+
+the answer is you could solve for the
+
+
+optimal theta. Okay, so the way you
+
+
+solve for the optimal theta is like this
+
+
+is kind of convex optimization 101. You
+
+
+write the lrangeian, you set the
+
+
+derivative to zero and then you solve
+
+
+for what theta is. And you can go
+
+
+through that whole exercise. It takes a
+
+
+little bit of time because theta is a
+
+
+probability distribution. So there's an
+
+
+additional constraint that it like
+
+
+everything is greater than zero and sums
+
+
+to one and all that stuff. But if you're
+
+
+like really uh you know sharp on your
+
+
+convex optimization, you can write down
+
+
+the lrangeian, set the derivatives to
+
+
+zero, crunch through that whole thing
+
+
+and you can actually arrive at the
+
+
+solution to this optimization problem.
+
+
+It's not a very practical thing to do in
+
+
+reality because you're going to express
+
+
+it as a function of the probabilities of
+
+
+all the actions whereas in practice you
+
+
+want a parameterized policy. But you can
+
+
+do it and you can derive what is the uh
+
+
+optimal policy under this constraint and
+
+
+this is the answer.
+
+
+So the answer is that the optimal policy
+
+
+is proportional to pi beta times the
+
+
+exponential of the advantage divided by
+
+
+the lrange multiplier lambda. And to um
+
+
+kind of give you a little tool for your
+
+
+toolkit that you can use uh um kind of
+
+
+uh more broadly anytime you see an
+
+
+objective for any kind of distribution
+
+
+which is the expectation of some
+
+
+function subject to kale divergence
+
+
+constraint the solution always takes
+
+
+that form. It's kind of a a fun little
+
+
+trick. Basically the reason it takes
+
+
+that form is because whenever you're
+
+
+maximizing the expected value of some
+
+
+function under distribution as well as
+
+
+the entropy of that function you always
+
+
+get what's called a Boltzman
+
+
+distribution which is this exponential
+
+
+of whatever that function is. So uh I'm
+
+
+not going to prove that in this lecture
+
+
+but uh if you want to derive this start
+
+
+with that optimization at the top write
+
+
+down the lrangeian the full lrangeian
+
+
+with all the you know probability
+
+
+constraints and so on set its
+
+
+derivatives to zero solve for it and you
+
+
+will eventually get that answer.
+
+
+Okay so it's straightforward to show via
+
+
+duality.
+
+
+Uh and this is you know this has been
+
+
+studied in lots of previous papers. It's
+
+
+kind of a well-known result uh in this
+
+
+area. Now this by itself is not that
+
+
+useful because like well how do we
+
+
+sample from this distribution which is
+
+
+given by the exponential of the
+
+
+advantage. The advantage is Q minus V
+
+
+and we don't have a normalized
+
+
+distribution like this that we can
+
+
+sample from. So the idea is
+
+
+to train a policy that tries to match
+
+
+that pi star as closely as possible. And
+
+
+the way that we're going to do that is
+
+
+by using a trick that we already learned
+
+
+about. We have samples from pi beta. We
+
+
+do not have samples from pi star. So
+
+
+what we'll do is we will take our
+
+
+samples from pi beta and we will rewe
+
+
+them using importance weights so that we
+
+
+are instead uh approximating samples
+
+
+from pi star. And then we will train our
+
+
+policy pi theta our actual parameterized
+
+
+policy with supervised learning
+
+
+essentially with behavioral cloning to
+
+
+copy this uh pi star using an important
+
+
+sampled objective. Yes.
+
+
+Z is a proportionality constant.
+
+
+Uh so basically everything else in that
+
+
+equation
+
+
+uh that's pi star up to some normalizing
+
+
+constant. Z is just to take care of the
+
+
+normalizing constant. So z would just be
+
+
+defined literally as uh the integral of
+
+
+all the other stuff of pi beta a given s
+
+
+e to the 1 / lambda a s a da.
+
+
+So I I literally just took everything
+
+
+else and integrated it. It's just
+
+
+because probability distributions have
+
+
+to sum to one. So yeah
+
+
+absolutely not. So that's why uh that's
+
+
+why we we can't actually use that pi
+
+
+star. This is absolutely intractable.
+
+
+But what we can do is we can get samples
+
+
+from pi uh beta and rewe them to look
+
+
+like samples from this.
+
+
+When you're doing importance weights,
+
+
+you don't need to uh you don't need to
+
+
+know the partition uh function because
+
+
+you're just going to normalize your
+
+
+weights.
+
+
+Okay. So we're going to approximate it
+
+
+by a ma weighted max likelihood weighted
+
+
+by the importance weights. And this is
+
+
+what the weighted max likelihood looks
+
+
+like. Uh the the Z thing uh doesn't
+
+
+matter here. So all you're really doing
+
+
+is you're taking your samples in your
+
+
+data set and you're just weighting them
+
+
+by the exponential of one over lambda
+
+
+times the advantage.
+
+
+That's actually pretty intuitive. It's
+
+
+saying let's take all of my samples and
+
+
+let's weight them by the exponential of
+
+
+how good they are and then just do
+
+
+weighted behavior cloning. Essentially
+
+
+imitate the good stuff in your data set.
+
+
+good as determined by your advantage
+
+
+function.
+
+
+Okay,
+
+
+so this is a fairly involved derivation,
+
+
+but all you're ending up with is a
+
+
+behavior clotting objective with some
+
+
+weights derived from your value function
+
+
+and uh that makes it a very simple
+
+
+method to implement in practice.
+
+
+So you know this is kind of the theory.
+
+
+The theory is a bit involved and it
+
+
+requires the grunch duality and all that
+
+
+business. But if we work through the
+
+
+actual algorithm, uh this is a specific
+
+
+instance of this called AWAC advantage
+
+
+weighted actor. There are many other
+
+
+algorithms based on this principle, but
+
+
+this is one of them. And here's how it
+
+
+works. Start with your data set, load a
+
+
+batch,
+
+
+compute your target values. Exactly the
+
+
+same as before, exactly the same as
+
+
+classic actor critic. Update your Q
+
+
+function. Again, exactly the same as
+
+
+before.
+
+
+Now, you also need a value function. And
+
+
+there are two ways to get it. One way to
+
+
+get it is to actually train the value
+
+
+function by regressing onto your Q
+
+
+values in expectation under your policy.
+
+
+So you can train a second network to be
+
+
+the value function. You can also
+
+
+actually skip this step and I'll tell
+
+
+you how in a second. But in the classic
+
+
+version of this algorithm, you would
+
+
+train a separate value function
+
+
+and then you would compute uh your actor
+
+
+objective and your actor objective now
+
+
+is different from before. The actor
+
+
+objective is the log probabilities of
+
+
+your samples in your data set weighted
+
+
+by the exponential of q minus v. Uh in
+
+
+general you would um divide that
+
+
+exponent by some uh some constant. I
+
+
+don't have it in the slide but you would
+
+
+do something like this. You would do
+
+
+exponential of 1 over lambda if you want
+
+
+a particular weight on this of q
+
+
+minus v.
+
+
+and then you take a a gradient step.
+
+
+So the actor objective looks a lot like
+
+
+behavioral cloning but with a weight
+
+
+determined by the exponential of the
+
+
+advantage. And if you don't want to
+
+
+train the separate network for the V,
+
+
+you could also just approximate the V to
+
+
+be the Q value of the action that the
+
+
+policy would have taken. So basically
+
+
+substitute the targets from step three
+
+
+into step four. That's higher variance
+
+
+because of course you would need to use
+
+
+samples to estimate that and maybe if
+
+
+you use only one sample it's not so
+
+
+accurate but it can be simpler to to
+
+
+code up. So you can either have train a
+
+
+V function in step three and then use it
+
+
+in step four or you can directly plug in
+
+
+a single sample estimate of the expected
+
+
+value of Q into step four in place of V
+
+
+and that's fine also.
+
+
+Okay. Um and of course you repeat this.
+
+
+Uh any questions about this?
+
+
+Yeah.
+
+
+>> So notice that in step four the Q
+
+
+function argument is SI comma AI and AI
+
+
+is the action of the behavior policy. So
+
+
+basically the the intuition is that if
+
+
+you were to plug in the single sample
+
+
+estimate of Q, it would be the
+
+
+difference of the Q values between the Q
+
+
+value of the action in the data set
+
+
+minus the Q value of the action from the
+
+
+policy. And that actually makes sense.
+
+
+It's like that's literally just how much
+
+
+better is the data set action than the
+
+
+data than the action your policy wants
+
+
+to take. If it's a lot better, then you
+
+
+increase its probability. And if it's
+
+
+worse, then it gets a really really low
+
+
+weight and you ignore it.
+
+
+Um okay so what are the advantages of
+
+
+this approach? That one is pretty easy.
+
+
+The advantage is that it is quite
+
+
+simple. Uh supervised learning behavior
+
+
+cloning is really easy and this is just
+
+
+weighted behavior cloning. Um what are
+
+
+some of the problems with this approach?
+
+
+Any ideas?
+
+
+Yeah.
+
+
+Yeah. So, we need to tune the some of
+
+
+the parameters like we need to tune the
+
+
+temperature and all that stuff. That's
+
+
+definitely true.
+
+
+>> Yeah.
+
+
+Why is that?
+
+
+>> You're on the right track.
+
+
+>> Okay. Yeah. Yeah. So, the answer for
+
+
+those of you that didn't hear uh hear
+
+
+was that well maybe this is like uh not
+
+
+so good for finding better actions
+
+
+because you're kind of just like limited
+
+
+to copy the literally the samples that
+
+
+you saw in your data set. That's kind of
+
+
+kind of the right intuition. Basically,
+
+
+here's here's one way you can think
+
+
+about the problem. If you have a really
+
+
+good action that is much better than the
+
+
+one your policy wants to take, it gets a
+
+
+big weight. Okay? And you're going to
+
+
+want to copy that good action. That
+
+
+that's desirable. That's a good thing.
+
+
+But now, what if you have some really
+
+
+bad action? Just a really, really awful
+
+
+action. An action so awful that you
+
+
+would never ever want to take it. What
+
+
+weight is it going to have?
+
+
+It's going to have a weight close to
+
+
+zero.
+
+
+Well, that's that's not that bad. Like
+
+
+you wouldn't you wouldn't be copying
+
+
+that action, but it means that like as
+
+
+far as the objective is concerned, it's
+
+
+like that action doesn't exist. That's
+
+
+not what you want. You want to avoid the
+
+
+action, but instead it kind of
+
+
+disappears from your objective.
+
+
+Now in the limit when you have infinite
+
+
+samples it's okay when you have infinite
+
+
+samples and sufficient expressive policy
+
+
+it'll still end up doing the right thing
+
+
+but in practice uh when you have limited
+
+
+samples or a policy with limited
+
+
+expressivity this thing will not be
+
+
+quite as good at avoiding the bad
+
+
+actions and in practice that means that
+
+
+it will actually it ends up learning
+
+
+kind of slowly. So it's it's a very
+
+
+stable objective. it ends up matching
+
+
+the behavior cloning solution just
+
+
+copying the behavior policy very easily
+
+
+but then it can sometimes struggle to
+
+
+improve over that
+
+
+and there's also just to kind of get
+
+
+into the gory details there was a little
+
+
+bit of a trick that I swept under the
+
+
+rug when I derived this objective
+
+
+because originally the the pi star is
+
+
+derived under a reverse scale objective
+
+
+but then when we're copying pi star down
+
+
+there that's of course the forward kale
+
+
+so it's kind of a a bizarre thing to do
+
+
+it's a forward KL fit to a reverse scale
+
+
+constraint policy. So while the reverse
+
+
+scale constraint at the top leads to a
+
+
+mode seeking solution, you are then
+
+
+copying that mode seeking solution into
+
+
+pi uh theta here with a mode covering
+
+
+objective.
+
+
+So it's kind of like a weird middle
+
+
+ground between the two and that's
+
+
+basically why the bad actions get zero
+
+
+weight. So it's not trying to avoid the
+
+
+bad actions.
+
+
+So if you want kind of the really short
+
+
+version that basically means that in
+
+
+practice this kind of objective easy to
+
+
+implement very stable easy to get it to
+
+
+work but uh can learn pretty slowly and
+
+
+struggle to improve over the behavior
+
+
+policy. That's kind of the trade-off you
+
+
+get and in practice people use this
+
+
+thing if they want essentially imitation
+
+
+learning plus like a slightly improved
+
+
+version of imitation learning.
+
+
+Okay so that's policy constraints.
+
+
+Uh now I want to talk about some other
+
+
+classes of offline RL algorithms that
+
+
+are not based on policy constraints at
+
+
+least not explicitly so and uh I'll talk
+
+
+about the pessimistic stuff after the
+
+
+intermission but before that I want to
+
+
+talk about this third exotic category of
+
+
+methods. When I was making this lecture
+
+
+I kind of I thought about some clever
+
+
+names to give to this but I honestly
+
+
+couldn't think of it. So I just call it
+
+
+like all the you know the exotic weird
+
+
+stuff. But it it's it can actually be
+
+
+very effective. So here's the idea. Can
+
+
+we just somehow like modify the
+
+
+equations for actor critic methods so
+
+
+that actions that were not in the data
+
+
+set just never show up in the algorithm.
+
+
+This kind of seems like a weird thing to
+
+
+do because the whole point of RL is that
+
+
+you want to take actions that are better
+
+
+than the things you saw in your data. So
+
+
+it might seem very paradoxical to expect
+
+
+to be able to derive an algorithm like
+
+
+this. And the key idea is that neural
+
+
+networks generalize.
+
+
+How do neural networks generalize? Well,
+
+
+let's say that you um uh train a Q
+
+
+function on a data set where in some
+
+
+states you take good actions and in
+
+
+other states you take bad actions. Well,
+
+
+that Q function will hopefully figure
+
+
+out roughly what good actions look like
+
+
+and roughly what bad actions look like.
+
+
+So that even in the states where you
+
+
+took bad actions, it might still predict
+
+
+a high value for the good actions. And
+
+
+that's because neural nets generalize.
+
+
+And neural nets generalize even when
+
+
+they're only trained on the examples in
+
+
+in the training set, of course. So we
+
+
+want to exploit this and kind of
+
+
+leverage the generalization power of
+
+
+neural nets to get a kind of implicit
+
+
+maximization effect in a Q function
+
+
+active critic algorithm without having
+
+
+to explicitly enumerate different
+
+
+actions that were not seen in the data.
+
+
+That might sound kind of magical, but
+
+
+I'll I'll I'll tell you about a trick to
+
+
+do this. And part of why I want to tell
+
+
+you about this is because this is a
+
+
+pretty useful method to use. But the
+
+
+other part of why I want to tell you
+
+
+about this because the principle
+
+
+underlying this method is a very good
+
+
+principle to know for understanding
+
+
+reinforcement learning.
+
+
+Okay, let's say that your data set has
+
+
+two trajectories. So these are just two
+
+
+trajectories that happen to be in your
+
+
+data set. And I drew these trajectories
+
+
+in a kind of a special way because over
+
+
+here they visit two states that are
+
+
+pretty similar but then afterwards they
+
+
+go to two very different places.
+
+
+So if I just told you that like this one
+
+
+is a minus 10 and this one is a plus 10
+
+
+and those two states with the green
+
+
+circles are very similar to each other
+
+
+probably the conclusion you would draw
+
+
+is that hey from that green circle I can
+
+
+get either a good outcome or a bad
+
+
+outcome. And assuming this is a marovian
+
+
+state then pretty reasonable to deduce
+
+
+that hey that's where I need to take a
+
+
+really good action because if I take the
+
+
+wrong action at that green circle I'll
+
+
+get the minus 10. So somehow in that min
+
+
+in that in that green circle the value
+
+
+of the optimal policy maybe is like
+
+
+closer to plus 10. Uh but a bad policy
+
+
+might get a minus 10. And therefore I
+
+
+should have like different Q values for
+
+
+different actions over there. Okay
+
+
+that's the intuition. So maybe there's
+
+
+some action whatever I took over here
+
+
+that has a Q value closer to minus 10
+
+
+and something over here that has a Q
+
+
+value closer to plus 10.
+
+
+All right.
+
+
+If we were to um just implement
+
+
+not um the Q function actor critic but
+
+
+uh this is an instance of something
+
+
+called Sarsa. What is SARSA? SARS is
+
+
+just uh a degenerate version of actor
+
+
+critic where instead of regressing onto
+
+
+the target values computed from your
+
+
+policy, you regress onto target values
+
+
+computed from the behavior policy.
+
+
+Basically figure out the Q function of
+
+
+the behavior policy. Um that's a very
+
+
+easy thing to do because of course your
+
+
+actions came from the behavior policy.
+
+
+So here you don't try to maximize over
+
+
+the next action. You literally just plug
+
+
+in the action in the data set. Okay. So
+
+
+if you were to do this, you're basically
+
+
+just computing what is the average value
+
+
+of my behavior policy. And if half the
+
+
+time you go left and half the time you
+
+
+go right, you would expect the value uh
+
+
+at that state to be to be what?
+
+
+You guys can shout it out. Zero. Yeah,
+
+
+it would be the average of these two,
+
+
+which would be zero. So if I were to use
+
+
+this this kind of naive method just mean
+
+
+squared error regression onto exactly
+
+
+the target value from the action in the
+
+
+data set forget about learning a better
+
+
+policy just estimate the Q function of
+
+
+the behavior policy I should expect to
+
+
+see zero
+
+
+um but underneath that zero there's kind
+
+
+of a distribution over targets right so
+
+
+for states that look like that green
+
+
+circle I actually have two modes I have
+
+
+for the for the
+
+
+Half the time my target has a minus 10.
+
+
+Half the time it gets it gets plus 10.
+
+
+And when I'm doing mean squared error
+
+
+regression, what I'm really finding is
+
+
+the mean, right? And the mean between
+
+
+minus 10 and plus 10 is zero. There's
+
+
+actually no action that gives me zero.
+
+
+It's just the average of the different
+
+
+outcomes I could expect.
+
+
+And now here's the idea.
+
+
+The targets for V have a distribution
+
+
+because V is is mean squared uh error
+
+
+expected mean squared error. It finds
+
+
+the mean uh which is kind of the middle
+
+
+of that distribution. But can I instead
+
+
+change the loss? So instead of finding
+
+
+the mean, I'm finding an upper quantile
+
+
+of that distribution.
+
+
+So I don't really care about what action
+
+
+produces which value. All I all I'm
+
+
+going to say is I have a distribution
+
+
+over targets for that V regression and I
+
+
+want the upper end of that distribution.
+
+
+And it turns out that this is actually
+
+
+very easy to do. All you have to do is
+
+
+change your loss.
+
+
+So the mean squared error loss is a
+
+
+parabola. The new loss is a kind of
+
+
+weird skewed asymmetric parabola.
+
+
+And this weird skewed asymmetric
+
+
+parabola says if V overestimates
+
+
+Q, you pay a little price. If it
+
+
+underestimates Q, you pay a big price.
+
+
+It's literally just a parabola where the
+
+
+left side has a multiplier on it.
+
+
+So now you pay a higher price for uh
+
+
+underestimating than overestimating. Sov
+
+
+will tend to prefer hitting the higher
+
+
+targets rather than the lower targets,
+
+
+which means it'll get you something
+
+
+closer to an upper quantile.
+
+
+Mathematically, it's actually something
+
+
+called an expectile rather than a
+
+
+quantile. But that's a small detail.
+
+
+It's basically the difference between
+
+
+squared error versus absolute error.
+
+
+And like looking at the picture of that
+
+
+loss function kind of makes sense this
+
+
+would happen because if V for for for
+
+
+those samples where V is smaller than Q,
+
+
+it pays a big price and has a big
+
+
+gradient. For the ones where the V is
+
+
+larger than Q, it pays a small price as
+
+
+a smaller gradient. So it tends to move
+
+
+towards the larger targets.
+
+
+Yeah.
+
+
+Yeah. This is a good question. So the
+
+
+question was, well, hang on a second.
+
+
+You talked to us before about how you
+
+
+get this over optimism problem without a
+
+
+distribution actions. Doesn't that make
+
+
+it worse? And I'll come back to that.
+
+
+That's a a valid criticism. I'll explain
+
+
+why that's not a problem actually with
+
+
+this method.
+
+
+So if you do this uh you're not going to
+
+
+get V equals + 10 because those uh those
+
+
+bad samples are still playing some part.
+
+
+They just have a much lower weight. So
+
+
+maybe you'll get like a 9.7.
+
+
+Okay? So you'll kind of tilt the V's
+
+
+towards the higher values that you've
+
+
+seen.
+
+
+So what this is really doing is it's
+
+
+doing it's implementing a kind of
+
+
+implicit maximization by using the
+
+
+generalization power of the neural
+
+
+network that because the neural network
+
+
+has to generalize the values across
+
+
+these different states where it has
+
+
+different actions. Uh it's going to
+
+
+figure out uh what is the upper uh
+
+
+expectile for for the different uh q
+
+
+values that you've seen at that state.
+
+
+The reason this is not optimistic is
+
+
+that notice that we're only using this
+
+
+uh asymmetric loss in the V regression
+
+
+and V is regressing on to Q. Q still
+
+
+uses the standard mean squared error to
+
+
+model the effective dynamics. So Q is
+
+
+still estimating the expected value uh
+
+
+of the value function at the next state
+
+
+plus the reward. V is now trying to find
+
+
+the maximum over the different Q values
+
+
+that it can get at that state. But the
+
+
+different Q values only differ by the
+
+
+action. So it's essentially it's like
+
+
+being optimistic with respect to the
+
+
+action but uh risk neutral with respect
+
+
+to the transitions. And that's exactly
+
+
+what you want because in RL you want to
+
+
+take the expected value over transitions
+
+
+and the maximum over the actions. And
+
+
+we're only considering those actions
+
+
+that are in the data set because the
+
+
+regression for V is summed over the
+
+
+states and actions in the data. So you
+
+
+never actually see any actions that were
+
+
+not in the data set. So it turns out
+
+
+perhaps surprisingly that this there's
+
+
+no erroneous optimism here. Uh in fact,
+
+
+if anything, this slightly
+
+
+underestimates the max because you uh
+
+
+still get some influence from the bad
+
+
+actions.
+
+
+Okay, so just to walk through what this
+
+
+looks like,
+
+
+um the Q function is going to regress
+
+
+onto target values that are just the uh
+
+
+expected value uh of the next state. So
+
+
+VS prime and we're going to have another
+
+
+neural network to represent VS prime.
+
+
+And V is going to be trained with this
+
+
+uh funny loss function. So we could use
+
+
+MSSE if we just want the average, but
+
+
+we're not going to use MSSE. So we want
+
+
+the upper end of that expect of that
+
+
+expectation. So MSSE gives us the mean.
+
+
+We want an upper u quantile or
+
+
+expectile. Uh this is the actual
+
+
+equation for this. So the uh the
+
+
+equation is what is 1 - toao * x^2 for
+
+
+positive x's and toao x^2 for everything
+
+
+else. So if you if you choose to be a
+
+
+number larger than 0.5 then you get uh
+
+
+this a symmetric thing. Okay. Very very
+
+
+easy to implement. uh and only uses the
+
+
+actions in the data set.
+
+
+>> Yes.
+
+
+>> Yeah. So the question is why don't we
+
+
+actually just uh do regular Q-learning
+
+
+and take the max over the actions. The
+
+
+whole point of this exercise is to write
+
+
+down an algorithm where actions that
+
+
+were not in the data set are never input
+
+
+into the Q function. So if we never
+
+
+input any action that was not in the
+
+
+data set into the Q function, we kind of
+
+
+don't have to worry about other out of
+
+
+distribution actions. They literally
+
+
+don't show up anywhere in the algorithm.
+
+
+Um if you want to kind of get a better
+
+
+understanding for what this is actually
+
+
+implementing, of course the fact that
+
+
+you only ever input actions in your data
+
+
+set into the Q function means that you
+
+
+are implicitly constraining the
+
+
+maximization over values. The way in
+
+
+which you're constraining it is you are
+
+
+only optimizing over those actions that
+
+
+have a non-trivial probability under
+
+
+your data distribution. So if you had
+
+
+some other action for which the Q
+
+
+function is much larger but it it never
+
+
+has a chance of being sampled then it
+
+
+wouldn't show up in that regression. So
+
+
+it's kind of like saying that you have a
+
+
+constrained maximization in Q-learning
+
+
+instead of an unconstrained
+
+
+optimization. And um what you could show
+
+
+with some admittedly very strong
+
+
+assumptions is that this is the same as
+
+
+a kind of modified Q-learning where V of
+
+
+S is not the max over all the actions
+
+
+for Q but the max over those actions
+
+
+that are in the set of actions with
+
+
+non-trivial probability. And that is
+
+
+actually pretty reasonable. That's uh
+
+
+very much what you would want from an
+
+
+offline RL algorithm. Maximize over
+
+
+actions that are within the support of
+
+
+the data. Now something that's a little
+
+
+bit peculiar here is everything here is
+
+
+actually separate from any actor.
+
+
+So uh in fact the actor there's no actor
+
+
+that ever shows up in the Q function
+
+
+updates. You're essentially getting a Q
+
+
+function but then you're left to your
+
+
+own devices to figure out what actor
+
+
+actually corresponds to that Q function.
+
+
+And typically when people implement this
+
+
+algorithm they actually do it in two
+
+
+stages. They first learn the Q function
+
+
+and then they have some separate phase
+
+
+to extract the policy for that Q
+
+
+function. And that could be done for
+
+
+example with that advantage weighted
+
+
+regression method or some other method.
+
+
+And the extraction is actually delicate
+
+
+because during extraction you also want
+
+
+to make sure you somehow avoid out of
+
+
+distribution actions. So this avoids out
+
+
+of distribution actions when training
+
+
+the Q function. But then you still have
+
+
+to avoid it again when you want to turn
+
+
+that Q function into a policy because if
+
+
+you maximize the Q function with respect
+
+
+to the actions during policy extraction,
+
+
+well then you're just creating the same
+
+
+problem all over again. So classically
+
+
+the way that this would be used is first
+
+
+train the Q function with this method
+
+
+and then train the actor using advantage
+
+
+weighted regression
+
+
+which of course has those issues that
+
+
+advance weighted regression has. Okay.
+
+
+So uh
+
+
+if we were to uh walk through this uh a
+
+
+bit uh here is your your Q function
+
+
+update. It's basically saying that the Q
+
+
+function is the reward plus the max over
+
+
+the next Q. And the only difference from
+
+
+Q-learning it now is that max is under
+
+
+the set of actions that are in that set
+
+
+omega which is the set of actions that
+
+
+has a non-trivial probability under pi
+
+
+beta. Uh and then ideally the kind of
+
+
+implicit uh policy you would recover
+
+
+from this is the arg max over that set
+
+
+omega. Uh that's unfortunately pretty
+
+
+hard to do. So in practice you need some
+
+
+other kind of clever method to extract
+
+
+the policy and AWR is a good choice.
+
+
+Okay. So here is the complete method. Um
+
+
+start with your data set just like
+
+
+before sample your batch evaluate your
+
+
+target value. And here you really should
+
+
+use two neural networks. You should use
+
+
+a V network and a Q network. You can't
+
+
+get away with just uh using Q. So your
+
+
+target value is the reward plus gamma
+
+
+time V evaluated at S prime.
+
+
+Then you update your Q function. And the
+
+
+Q function update is just like before,
+
+
+just mean squared error regression.
+
+
+And then the V update, that's the clever
+
+
+one. The the V the the V function update
+
+
+is using this uh asymmetric loss
+
+
+L towel uh to find the upper expectile
+
+
+of the distribution of Q's. So that's
+
+
+that's the line three is the one that's
+
+
+different. And then for policy
+
+
+extraction, there are a few different
+
+
+options, but if you want a simple
+
+
+default, use the advantage weighted
+
+
+regression just like before and then
+
+
+take your gradient on your policy
+
+
+parameters
+
+
+and then repeat. So something
+
+
+interesting about this algorithm, there
+
+
+are no expectations under pi theta
+
+
+anywhere. The only place where pi theta
+
+
+shows up is in line four. And that's
+
+
+just a weighted max likelihood. And uh
+
+
+the critic is also completely
+
+
+independent of the actor. So I wrote it
+
+
+as kind of an alternating algorithm just
+
+
+to make it look like standard actor
+
+
+critic but you could implement this
+
+
+totally separately where you first train
+
+
+the entire Q function stop and then
+
+
+train the entire actor and that's
+
+
+basically equivalent to this.
+
+
+So that's why it's actually called
+
+
+implicit qlearning rather than implicit
+
+
+actor critic because it's actually just
+
+
+learning the Q function and then you can
+
+
+get your actor however you want.
+
+
+So this method is um
+
+
+this is a nice method to use in the
+
+
+sense that it's kind of hard to make it
+
+
+go horribly wrong because the implicit Q
+
+
+function updates are very stable because
+
+
+there is no expectation under some actor
+
+
+that you're learning. Um
+
+
+there are some challenges with this
+
+
+approach. Most of the challenges
+
+
+actually center around the policy
+
+
+extraction step. So it's there's like a
+
+
+very nice story about how it this allows
+
+
+you to learn Q functions without ever
+
+
+having to deal with auto distribution
+
+
+actions. But then that nice story sort
+
+
+of falls apart a little bit in step four
+
+
+because you still need to extract your
+
+
+actor. AWR is one of the few ways to do
+
+
+that without ever querying out of
+
+
+distribution actions. But uh AWR as we
+
+
+discussed before has its own set of
+
+
+shortcomings like it you know if you
+
+
+have a really bad action it doesn't have
+
+
+any kind of negative gradient for that
+
+
+bad action. So, in so far as there's
+
+
+sort of like room for lots of
+
+
+improvement, it's probably having to do
+
+
+with step four in this method. But it's
+
+
+a it's a very simple method to
+
+
+stabilize. Any questions about this?
+
+
+Yeah.
+
+
+Mhm.
+
+
+So, how would you use that in step four?
+
+
+Oh, I see. You could definitely do that.
+
+
+uh the main challenge you'll face is
+
+
+that if you use something like an SACE
+
+
+actor objective in step four uh without
+
+
+any kind of constraint then it can still
+
+
+get the policy to take very unexpected
+
+
+actions and exploit that Q function. So
+
+
+one thing you could do is you could
+
+
+replace step four with uh basically that
+
+
+actor critic plus BC objective. So then
+
+
+you're using a policy constraint for
+
+
+extraction but you're still using the
+
+
+the simplicit method for Q-learning and
+
+
+that's a very valid way to do it. Uh, of
+
+
+course then you have to tune the
+
+
+hyperparameter for that. Uh, but you can
+
+
+do it that way.
+
+
+Okay, let's take an intermission and
+
+
+come back at 9:10 and then we will
+
+
+continue with pessimism.
+
+
+All right, let's uh let's get back uh to
+
+
+lecture. And in part three of today's
+
+
+lecture, I'm going to talk about the
+
+
+last remaining class of offline RL
+
+
+methods. I mean, that's maybe a little
+
+
+bit bit of an exaggeration. There's also
+
+
+all the other methods that I didn't
+
+
+cover, but uh at least the last of the
+
+
+ones that I previewed at the beginning.
+
+
+So if you remember we talked about
+
+
+policy constraints, pessimistic methods
+
+
+and these kind of implicit exotic
+
+
+things. So we've covered two out of
+
+
+those three. Let's talk about the
+
+
+pessimism. And I I saved this for last
+
+
+because it's maybe uh merits a little
+
+
+bit of discussion. So I'm going to start
+
+
+by describing a very particular instance
+
+
+of a pessimistic method called
+
+
+conservative Q-learning. And uh to set
+
+
+the context for this a little bit,
+
+
+the um methods based on pessimism, one
+
+
+of the things that's really appealing
+
+
+about them is that uh for those of you
+
+
+that want to go much deeper into this,
+
+
+deeper than we cover in this course, uh
+
+
+pessimistic offline RL algorithms are
+
+
+probably some of the most um um
+
+
+theoretically convenient methods in the
+
+
+sense that for anybody that wants to
+
+
+prove properties of offline RL methods,
+
+
+prove that they get a bounded regret,
+
+
+for example, under a finite set of
+
+
+samples, pessimistic methods are some of
+
+
+the most convenient to analyze uh in the
+
+
+sense that they have very elegant
+
+
+theoretical properties. They're not
+
+
+always the most convenient methods to
+
+
+implement. So if you really want like an
+
+
+easy method to implement uh if if you
+
+
+just came to me and said like hey I have
+
+
+a let's say a continuous action problem
+
+
+and I want to implement a convenient
+
+
+offline RL method I would probably say
+
+
+like try the implicit Q-learning because
+
+
+it's pretty easy to code up. uh but the
+
+
+but if you came to me and said I want to
+
+
+prove a bound on uh the sample
+
+
+complexity of an offline RL method then
+
+
+maybe pessimism is really good for un to
+
+
+understand and of course you can derive
+
+
+practically useful methods from it but
+
+
+they can be a little more complex to
+
+
+code on
+
+
+okay so let's rewind a little bit to
+
+
+something that we discussed on Wednesday
+
+
+we talked about this problem that uh
+
+
+when you maximize the Q values in the in
+
+
+the usual way like in the way that you
+
+
+did in homework three
+
+
+and you do not get to collect any more
+
+
+data. One of the problems is that your
+
+
+policy might select actions for which
+
+
+the predicted Q values are erroneously
+
+
+too high. And when that happens, of
+
+
+course, the you back up those values,
+
+
+your entire Q function becomes too high
+
+
+and then you repeat the process and you
+
+
+back it up again and again and again and
+
+
+your Q values get out of control. And we
+
+
+saw this picture with a little
+
+
+experiment where the uh policy is
+
+
+actually getting a reward of -250 but
+
+
+the Q function thinks it's going to get
+
+
+10^ the 20th power which is quite a bit
+
+
+larger than -250.
+
+
+So uh one of the things we could do is
+
+
+we could say like this looks a little
+
+
+bit like adversarial examples.
+
+
+Adversarial examples are when you
+
+
+optimize the inputs into a neural net to
+
+
+fool that network into producing a
+
+
+particular output. And in this case, the
+
+
+policy optimizes the actions into the Q
+
+
+function to fool the Q function into
+
+
+outputting a large number. So what if we
+
+
+use a method that is kind of inspired by
+
+
+adversarial training. So adversarial
+
+
+training is when you have your function,
+
+
+your function is wrong somewhere and you
+
+
+want to find the places where it's wrong
+
+
+and correct them. So here uh that little
+
+
+peak there, that's probably the max that
+
+
+you would pick up on. So you would pick
+
+
+that max and you would somehow repair
+
+
+it.
+
+
+Okay, so here is a a first stab at this
+
+
+idea. We're going to set up our Q
+
+
+function training as a minmax problem.
+
+
+So we're going to minimize over Q and
+
+
+maximize over some action distribution
+
+
+mu. So mu is kind of like a policy, but
+
+
+for the purpose of this uh objective, we
+
+
+don't really care about mu being a good
+
+
+policy. Mu is just there to be like an
+
+
+adversary to repair Q. Okay, it happens
+
+
+to have the form of a policy, but don't
+
+
+get too distracted by that. So the
+
+
+objective here on the second line, this
+
+
+is just the regular uh off policy actor
+
+
+objective. So it's Q value minus target
+
+
+value squared. Exactly what we've seen
+
+
+in every other algorithm so far. And the
+
+
+only thing that's different now is this
+
+
+first line. So on this first line, mu is
+
+
+being an adversary. Mu is trying to find
+
+
+actions that have a high Q value because
+
+
+it's a max over mu. and Q is trying to
+
+
+minimize the value of those actions. So,
+
+
+Mu is going to go around and find all
+
+
+those peaks and tell Q like, hey, make
+
+
+those peaks smaller. So, it'll pick up
+
+
+on this thing and try to basically push
+
+
+it down.
+
+
+And this is very similar to how
+
+
+adversarial training works. So, in
+
+
+adversarial training, what you would do
+
+
+is you would take your input, you would
+
+
+perturb it a little bit uh in an
+
+
+adversarial way and tell your model to
+
+
+assign that adversarial example the
+
+
+correct label. Now here we don't know
+
+
+what the correct label is. So we're
+
+
+applying the principle of pessimism and
+
+
+saying if you don't know what the value
+
+
+is make that value be small.
+
+
+Okay. Um so this is kind of a
+
+
+interesting idea. It turns out and I
+
+
+again I won't prove this on this slide
+
+
+but uh strange but true that if you use
+
+
+a large enough coefficient on that term
+
+
+that alpha that's just a weight then you
+
+
+can actually prove that the Q function
+
+
+you learn will be a lower bound on the
+
+
+true Q function. This is not as profound
+
+
+of a statement as it might seem because
+
+
+of course if you take alpha to infinity
+
+
+you will make the Q function tiny
+
+
+everywhere. So it's not terribly
+
+
+difficult to get a lower bound by doing
+
+
+this. But you know it's a good
+
+
+comforting fact that this is the case.
+
+
+Um so question for you guys. What kind
+
+
+of problem would you expect to see with
+
+
+this method?
+
+
+There are many problems. Yes.
+
+
+Yeah. So uh one problem you might expect
+
+
+to see is perhaps you're going to
+
+
+underestimate.
+
+
+So if the adversarial examples, if these
+
+
+erroneously high Q value actions are far
+
+
+from your data, then that regularizer
+
+
+will do exactly what you want. It'll
+
+
+take those actions that are far from the
+
+
+data and get the Q function to assign
+
+
+them low values. That's good. You would
+
+
+like the Q function not to have spurious
+
+
+peaks far from the data. But once you've
+
+
+eliminated all of those overestimated
+
+
+actions far from the data, all that
+
+
+remains are the actions close to the
+
+
+data and mu isn't going to give up. It's
+
+
+going to keep going. It's going to keep
+
+
+finding those actions with high Q values
+
+
+even if they're close to the data and
+
+
+keep telling your Q function to assign
+
+
+them low values uh until you strike some
+
+
+uneasy truce between the first term and
+
+
+the second term which means that you
+
+
+will basically systematically
+
+
+uh underestimate the values. Of course,
+
+
+the second term is squared. The first
+
+
+term is not squared. So, they'll hit
+
+
+some equilibrium somewhere, but the
+
+
+equilibrium will be systematically below
+
+
+where it should be.
+
+
+Now, that's a lot better than the crazy
+
+
+graph that I have here at the top. So,
+
+
+you will repair your problem to some
+
+
+extent, but perhaps the medicine is uh
+
+
+worse than the disease in this case.
+
+
+Okay. So there is a a little
+
+
+modification that you can do which will
+
+
+also allow you to derive a bound on the
+
+
+true Q function and a much nicer bound a
+
+
+much tighter bound and that will be to
+
+
+take this term and augment it with a
+
+
+second term. So this term always pushes
+
+
+the Q values down. We're going to add
+
+
+another term that pushes the Q values up
+
+
+on all of the actions in the data set.
+
+
+So this this expected value is under the
+
+
+behavior policy.
+
+
+So now this is actually getting pretty
+
+
+interesting. Now your regularizer picks
+
+
+out those adversarial actions and tells
+
+
+the Q function to reduce their value.
+
+
+And then it takes the actions in the
+
+
+data set and tells it to increase their
+
+
+value with the same weight.
+
+
+Which means that if mu picks an action
+
+
+very similar to something in the data
+
+
+set, then these two terms cancel out.
+
+
+you're pushing it down and you're
+
+
+pushing it up. Both have a weight of
+
+
+alpha. So roughly speaking, it's going
+
+
+nowhere. But if mu picks an action very
+
+
+different from the data, then it's going
+
+
+to reduce the value of those weird
+
+
+actions and increase the value of
+
+
+actions somewhere else close to the
+
+
+data.
+
+
+So then it will push all the good values
+
+
+towards the data set. And once they're
+
+
+all close to the data set, then those
+
+
+two terms at the top should balance each
+
+
+other out. and for those actions close
+
+
+to the data basically they should be
+
+
+unaffected.
+
+
+So this is a much better way to do this.
+
+
+It turns out that for this uh and this
+
+
+is a much less trivial fact you can also
+
+
+drive um a bound. So you can also show
+
+
+that uh even though the Q values are not
+
+
+guaranteed to be lower bounds for every
+
+
+action the values the expected value of
+
+
+the Q under the policy is actually still
+
+
+guaranteed to be a lower bound um if you
+
+
+choose the alpha carefully. So that's
+
+
+actually very nice. That means that if
+
+
+you choose alpha carefully, you should
+
+
+not be overestimating the value of your
+
+
+policy and that's what you ultimately
+
+
+care about.
+
+
+Uh so this is uh the conservative
+
+
+Q-learning objective. There are other
+
+
+ways to formulate these objectives, but
+
+
+they all kind of have the same basic uh
+
+
+principle which is try to get out of
+
+
+distribution actions to have low Q
+
+
+values without unduly distorting the
+
+
+values of indistribution actions.
+
+
+And just to give you a little bit of a
+
+
+preview for other ways that people have
+
+
+done this, other ways you could do it is
+
+
+you can use some sort of uncertainty
+
+
+estimator and basically uh assign uh low
+
+
+values based on an uncertainty
+
+
+estimator. Uh you can actually take a
+
+
+lot of ideas inspired by like
+
+
+exploration but inverted like
+
+
+exploration seek seeks out uh actions
+
+
+optimistically. This thing seeks them
+
+
+out pessimistically. So it can be viewed
+
+
+as the opposite of exploration. But this
+
+
+kind of scheme is uh you know fairly
+
+
+reasonable and can lead to a practically
+
+
+useful algorithm.
+
+
+Any questions about this?
+
+
+Okay. So now to sketch out uh the um the
+
+
+method
+
+
+you can update your Q function using
+
+
+this CQL objective this one here. Uh
+
+
+then update the policy and uh repeat.
+
+
+And uh if the actions are discrete then
+
+
+you can your policy can be just like in
+
+
+regular Qarning can be an implicit
+
+
+policy you can literally be the argmax
+
+
+and it's okay to do the argmax at this
+
+
+point because for any action that is not
+
+
+in the data set it should have a low
+
+
+value so it should not be selected using
+
+
+the argmax uh or if the actions are
+
+
+continuous you can use your standard
+
+
+actor uh actor objective and again this
+
+
+should be okay if everything works
+
+
+correctly because the Q function should
+
+
+not be assigning high values to out of
+
+
+distribution actions.
+
+
+Um
+
+
+now in practice there's we still need to
+
+
+figure out how to get this mu thingy to
+
+
+work. Uh and there and this is where
+
+
+there are like a few practical tricks.
+
+
+Uh one practical trick that is uh
+
+
+actually pretty important for this thing
+
+
+to work correctly is to add a little
+
+
+regularizer to mu because naively mu
+
+
+will just uh put all the probability
+
+
+mass on the single highest Q value
+
+
+action. it'll become basically a low
+
+
+entropy distribution and that's kind of
+
+
+okay in the limit but in practice you
+
+
+would like mu to be a little wider so it
+
+
+pushes down a distribution of different
+
+
+actions that all have high values so
+
+
+typically we add some kind of
+
+
+regularizer and a very common
+
+
+regularizer to use is the entropy so
+
+
+basically find a high entropy mu uh that
+
+
+uh maximizes q values
+
+
+uh and in that case mu becomes the
+
+
+proportional to exponential q that's
+
+
+kind of the result from before. Uh, and
+
+
+that makes a lot of sense. So, you're
+
+
+basically sampling, you're trying to
+
+
+sample actions from the exponential Q
+
+
+distribution, reduce their value, and
+
+
+then sample actions from the data set
+
+
+and increase their value.
+
+
+Um, when you go to implement this, one
+
+
+way to implement it is to literally have
+
+
+a separate policy representing mu. Uh,
+
+
+and that actually works in principle. In
+
+
+practice, a slightly better choice u and
+
+
+this is much more of a kind of an
+
+
+empirical observation is to not have mu
+
+
+be an explicit policy, but instead work
+
+
+through the math a little bit more. Uh
+
+
+it turns out that the expected value
+
+
+under mu of q is the log sum of the of
+
+
+the exponentials of q. Uh this is
+
+
+something you can derive on a piece of
+
+
+paper. It's uh not a terribly
+
+
+complicated fact, but it's good to know.
+
+
+And this actually is a pretty nice
+
+
+quantity to implement. So if you have
+
+
+discrete actions, you can literally
+
+
+calculate exactly this value and just
+
+
+add it as a regularizer. And now there's
+
+
+no explicit mu at all. And that's very
+
+
+convenient. So for discrete action
+
+
+problems, this is pretty easy to do.
+
+
+It's essentially a penalty on your Q
+
+
+values. Um for continuous actions one of
+
+
+the things you could do is you can
+
+
+sample the actions from somewhere let's
+
+
+say from your policy from your actor and
+
+
+then weight them uh with importance
+
+
+weights to estimate the expectation
+
+
+under mu weighting them by their
+
+
+importance weights means just waiting
+
+
+them by exponential Q. So like sample
+
+
+from your actor uh weight by the
+
+
+exponential of the Q value of those
+
+
+actions and then reduce their value. So
+
+
+that's a fairly common way to implement
+
+
+this for continuous actions and for
+
+
+discrete actions just do the log subx.
+
+
+So that's just an implementation detail.
+
+
+Yes.
+
+
+Yeah. Um let me think about how to
+
+
+explain this. So if you didn't have this
+
+
+then the optimal solution from mu is to
+
+
+assign a probability of 1.0 to the
+
+
+highest Q value action.
+
+
+And that's not that bad. It just the
+
+
+um it's just that that action will
+
+
+change drastically every single gradient
+
+
+step. So if you change the Q, let's say
+
+
+that you have two peaks in your Q
+
+
+function and one is a little taller than
+
+
+the other. So now you push down on the
+
+
+taller peak and the other one becomes
+
+
+the max. So it keeps flip-flopping back
+
+
+and forth. Whereas if you have some kind
+
+
+of regularization, then hopefully mu
+
+
+will assign some probability mass to a
+
+
+distribution of good actions and
+
+
+stabilize this whole process.
+
+
+Um, for those of you that are familiar
+
+
+with GANs, of course, you might
+
+
+recognize that that equation up at the
+
+
+top is very similar to a GAN. And in a
+
+
+GAN, a good regularization is very
+
+
+important for stability. Yes.
+
+
+Um,
+
+
+so mu is a distribution over actions
+
+
+just like a policy. In fact, it's it is
+
+
+effectively a policy. We just don't use
+
+
+it as such. So the same way that you can
+
+
+compute the entropy of your policy with
+
+
+that equation, the
+
+
+this equation
+
+
+then you can you can also use that same
+
+
+exact equation to compute the entropy of
+
+
+mu. And what that accomplishes in
+
+
+practice is that it gets mu to um
+
+
+have uh as broad of a distribution as
+
+
+possible while still uh maximizing the
+
+
+expected value of the q values.
+
+
+So it works the same way as max RL. It's
+
+
+just we don't use mu as a policy. We
+
+
+just use it to find those high Q value
+
+
+actions.
+
+
+What do you mean by decrease?
+
+
+Um yeah. So so that that's the objective
+
+
+there. So, so it's just the it it is
+
+
+trying to decrease the q values of the
+
+
+uh actions in expectation under mu
+
+
+and the log sumx equation there that
+
+
+that maybe gives you a little bit of
+
+
+intuition for how this actually works.
+
+
+If you actually take that expectation
+
+
+you and you work out what that term
+
+
+becomes when the entropy of mu is
+
+
+maximized the solution turns out to be
+
+
+to set mu to be proportional to the
+
+
+exponential of q. And when you plug that
+
+
+into the expectation and you do a little
+
+
+bit of algebra, then that entire uh term
+
+
+reduces to the log of the sum of the
+
+
+actions of the exponential of the Q
+
+
+value of those actions.
+
+
+So that kind of makes sense because the
+
+
+log of the sum of exponentials is like a
+
+
+soft max. So it's trying to minimize the
+
+
+soft maximum of the Q values.
+
+
+Yes.
+
+
+Well, so in both of the versions that I
+
+
+described here, mu is not actually
+
+
+represented explicitly. So if you have
+
+
+discrete actions and you just code up
+
+
+that log sumx, mu doesn't actually
+
+
+appear in your code. We're just saying
+
+
+like, okay, let's start with that
+
+
+equation and derive what that loss would
+
+
+be if we were to analytically solve for
+
+
+mu and we get the log sumx. And in the
+
+
+continuous case, if we use importance
+
+
+sampling, it's kind of the same idea.
+
+
+We're analytically deriving what the mu
+
+
+should be and then using importance
+
+
+sampling to estimate its expectation.
+
+
+And that's pretty nice because if we if
+
+
+you can avoid having an explicit mew
+
+
+then you avoid some of the nasty
+
+
+learning dynamics when you have this
+
+
+kind of uh generator discriminator thing
+
+
+going on.
+
+
+Okay, let's talk about the next stage
+
+
+which is going from pure offline RL
+
+
+training to online fine-tuning. Okay, so
+
+
+so far we've just talked about pure
+
+
+offline RL methods, methods that train
+
+
+on offline data and hopefully get the
+
+
+best possible policy. But we discussed
+
+
+in the beginning on Wednesday that what
+
+
+we might really want is to take a large
+
+
+data set, train on it with offline RL
+
+
+and then if we want to get a really
+
+
+really good policy, use that offline RL
+
+
+phase as kind of initialization for uh a
+
+
+very efficient and very effective online
+
+
+RL procedure. Now, this is kind of the
+
+
+dream and I'll tell you right now that
+
+
+at this point in the lecture, we're
+
+
+getting well into the territory of sort
+
+
+of cutting edge research. So, there's no
+
+
+single good solution to this problem.
+
+
+This is a this is basically an open
+
+
+problem at this stage. So, I'll tell you
+
+
+about some methods that we could use,
+
+
+but keep in mind that at this stage,
+
+
+we're sort of past the point where we
+
+
+have known effective kind of textbook
+
+
+methods and we're into the territory of
+
+
+kind of this is the best that we've got
+
+
+so far. And I want to tell you about the
+
+
+best that we've got so far just so you
+
+
+have a feel for it. But keep in mind,
+
+
+you know, uh this comes without a
+
+
+warranty. So if you go and try to use it
+
+
+and it doesn't quite do its job for you,
+
+
+well uh you can complain to like Sahong,
+
+
+for example, who does research on this
+
+
+stuff. All right. So we can start with
+
+
+something fairly uh natural. We can say,
+
+
+okay, we've got these offline RL
+
+
+methods. Let's train with offline RL and
+
+
+then just like run online RL starting
+
+
+from that same point. the if you use
+
+
+like an actor critic algorithm, they
+
+
+already look very similar between the
+
+
+offline versions and the online
+
+
+versions. So why not just add back in
+
+
+that exploration step to your favorite
+
+
+offline RL method after a little bit of
+
+
+pre-training.
+
+
+Um that's a very reasonable idea and
+
+
+when you go and try to do that something
+
+
+goes horribly wrong. So here is a
+
+
+learning curve.
+
+
+This is actually using a conservative
+
+
+Q-learning CQL but similar things would
+
+
+happen with many other algorithms.
+
+
+The first uh 50,000 steps are offline
+
+
+and then after 50,000 steps it switches
+
+
+to online mode and you can probably
+
+
+guess where the switch to online mode
+
+
+happened. It's highlighted in red and it
+
+
+looks really bad. So the offline phase
+
+
+is doing pretty well. It kind of gets to
+
+
+about like 0.5 success rate and it
+
+
+plateaus there because you know that's
+
+
+kind of as good as well as you can do
+
+
+with your offline data. and then you
+
+
+switch to online mode and the first
+
+
+thing that happens is performance tanks
+
+
+and then it gradually builds back up and
+
+
+eventually it gets to a really good
+
+
+point because of of eventually it's just
+
+
+doing like pure online RL and it should
+
+
+be able to find the optimal solution. So
+
+
+that red thing is rather objectionable
+
+
+and
+
+
+it can be very very objectionable. In
+
+
+fact, like if this was an autonomous
+
+
+car, okay, maybe you train your car with
+
+
+offline data and it gets to kind of
+
+
+reasonable performance and then you
+
+
+actually put it on the road and get it
+
+
+to fine-tune with online RL and the
+
+
+first thing it does is crash. So that's
+
+
+not good. Um,
+
+
+if we try to understand what's going on
+
+
+here, um, you can uh also look at the
+
+
+average Q values that are predicted.
+
+
+This is a pessimistic method. So it
+
+
+makes sense that the average Q values
+
+
+are actually underestimating a little
+
+
+bit. So they're getting lower and lower
+
+
+and lower. And when it switches to
+
+
+online mode, they shoot up uh when it
+
+
+experiences those unseen actions and
+
+
+realizes that they are not as low as the
+
+
+pessimistic regularizer would have
+
+
+suggested. Um, so that kind of makes
+
+
+sense that uh you're wasting a lot of
+
+
+effort rec-alibrating the value function
+
+
+after you've realized that it's not as
+
+
+pessimistic as you think, which is kind
+
+
+of like an ironic issue because
+
+
+pessimism is causing you to
+
+
+underestimate the value of auto
+
+
+distribution actions because that's what
+
+
+pessimism is supposed to do. But of
+
+
+course, when you go and get to explore
+
+
+now, you're sort of proven to be too
+
+
+pessimistic and the first thing that
+
+
+happens is you screw up your whole Q
+
+
+function trying to correct it. Uh now
+
+
+this this is for a pessimistic method.
+
+
+Other versions of this problem happen
+
+
+with other methods too. So it's not like
+
+
+a a problem that's unique to pessimism.
+
+
+Some version of this again occurs for uh
+
+
+all sorts of different offline RL
+
+
+methods. And
+
+
+um it's a pretty hard problem to fix
+
+
+completely.
+
+
+So ideally we would find some way to
+
+
+develop kind of a uh the ultimate
+
+
+algorithm that wouldn't have this
+
+
+problem that could be used in both
+
+
+offline and online mode and work really
+
+
+great in both modes without us having to
+
+
+like change anything. So uh in but the
+
+
+problem is that the two modes the
+
+
+offline mode and the online mode have
+
+
+fundamentally different requirements. In
+
+
+the offline mode, you want to kind of
+
+
+stay close to pi beta and maybe be
+
+
+pessimistic. Uh take lots of gradient
+
+
+steps on the same day and all that
+
+
+stuff. Like basically the thing to do in
+
+
+the offline mode is to avoid out of
+
+
+distribution actions at all costs. And
+
+
+then in the online phase, you want to
+
+
+improve as much as possible over pi
+
+
+beta. You might prefer optimistic
+
+
+estimates so that you drive exploration.
+
+
+Um and uh you want to learn as quickly
+
+
+as possible. You you actually care about
+
+
+how quickly your uh policy is improving.
+
+
+So it's very hard to figure out one
+
+
+algorithm that satisfies both
+
+
+requirements for both of these modes. Uh
+
+
+pessimism is a tough principle to apply.
+
+
+Implicit Q-learning can sort of work but
+
+
+implicit Q-learning runs into a problem
+
+
+with policy extraction and then the
+
+
+policy constraints suffer from the fact
+
+
+that you need to like estimate the
+
+
+constraint very accurately. So this has
+
+
+been a big problem for a long time. In
+
+
+fact, there's a kind of a a method that
+
+
+has been embarrassingly effective for
+
+
+solving this offline to online problem
+
+
+that isn't based on offline RL at all.
+
+
+It's based on much simpler principles uh
+
+
+that has outperformed many uh offline RL
+
+
+methods for many years. The way that
+
+
+this uh embarrassingly simple and
+
+
+effective baseline works is it doesn't
+
+
+actually pre-train at all. It just runs
+
+
+online RL but with two uh buffers. one
+
+
+buffer that contains your your prior
+
+
+offline data and one buffer that is your
+
+
+classic replay buffer. So you have your
+
+
+two buffers. You're going to run regular
+
+
+online soft actor critic just like in
+
+
+homework 3. And the only difference is
+
+
+that every time you sample a batch
+
+
+uh you uh will sample half the batch
+
+
+from your online replay buffer and half
+
+
+the batch from your prior data.
+
+
+And that's it. That's the only
+
+
+difference. No pre-training. And for the
+
+
+longest time, this method was more
+
+
+effective than many of the best offline
+
+
+to online methods that actually use
+
+
+offline pre-training. Um, these are some
+
+
+curves to to prove that. Uh, I think
+
+
+that the uh
+
+
+uh the blue curve is the at the time
+
+
+that this was written the best uh
+
+
+existing offline to online RL method.
+
+
+And this was very deeply unsatisfying
+
+
+because of course this method doesn't
+
+
+pre-train anything. So, it's kind of
+
+
+like saying that pre-training with
+
+
+offline RL, while nice in principle, in
+
+
+practice is actually kind of a net
+
+
+negative where if you just start
+
+
+everything from scratch and just uh load
+
+
+from these two buffers, you'll do even
+
+
+better. Um, and the reason that we don't
+
+
+like this, of course, is that this kind
+
+
+of method is fine if you have a small
+
+
+data set, but if you have a huge data
+
+
+set, trying to uh train with it entirely
+
+
+online is difficult. Yes.
+
+
+Yeah. So the question is okay if we're
+
+
+using a thing like this why does the
+
+
+offline data even help? One classic uh
+
+
+kind of situation where this is a really
+
+
+good idea is if your off offline data
+
+
+illustrates how to succeed at the task.
+
+
+So let's say that you have a task with
+
+
+very delayed rewards. Maybe you have to
+
+
+perform a sequence of complicated steps
+
+
+like playing Montazuma's Revenge uh the
+
+
+video game and you only get reward at
+
+
+the end. Well, maybe your offline data
+
+
+has a few trajectories that actually
+
+
+succeed and get non-zero rewards. Your
+
+
+initial policy will get zero reward. So
+
+
+now that offline data source serves to
+
+
+anchor it to like, okay, this is it's
+
+
+possible to succeed. This is the kind of
+
+
+reward you should expect to get and now
+
+
+figure out how you get the policy to
+
+
+match that.
+
+
+>> Yeah.
+
+
+Okay, good question. So the question
+
+
+was, well, why don't we just use like
+
+
+behavior cloning to pre-train? Okay, so
+
+
+a few clarifications. This is not a
+
+
+pre-training strategy. So this is a
+
+
+purely online RL method. it. The way
+
+
+that you implement this is exactly how
+
+
+you implemented SACE in homework 3
+
+
+except that every time you sample a
+
+
+batch, half that batch comes from the
+
+
+offline data, which means that the
+
+
+number of gradient steps that you're
+
+
+taking on your actor and critic is still
+
+
+pegged to the amount of data that you're
+
+
+collecting. It's just that half that
+
+
+data comes from a different source. Uh
+
+
+if you were to pre-train with behavioral
+
+
+cloning, and this is something that a
+
+
+lot of people tried early on, the
+
+
+problem is think about how your actor
+
+
+critic implementation worked. You have
+
+
+your actor and you have your Q function.
+
+
+The actor is maximizing the Q function.
+
+
+The actor might be pre-trained, but when
+
+
+you start running your actor critic
+
+
+algorithm, that pre-training is quickly
+
+
+going to get annihilated because what
+
+
+it's doing is maximizing the Q function.
+
+
+So, you need to pre-train both the actor
+
+
+and the critic. And while BC offers a
+
+
+great way to pre-train your actor, it
+
+
+doesn't tell you anything about how you
+
+
+should pre-train your critic. So, and
+
+
+this is really what's going on. Like,
+
+
+the way to think about offline RL in
+
+
+this case is it's really a way to
+
+
+pre-train your critic.
+
+
+Yeah.
+
+
+Yeah. So the question very reasonable
+
+
+question is okay why don't we just
+
+
+pre-train with offline data and then run
+
+
+this method. Uh you can do that. What
+
+
+tends to happen uh if you pre-train with
+
+
+offline data using one of the methods
+
+
+that doesn't work so well is that that
+
+
+pre-training phase doesn't offer you any
+
+
+benefit.
+
+
+It doesn't break anything. It's just
+
+
+that uh if the offline pre-training
+
+
+wasn't done very carefully, then doing
+
+
+this from scratch versus doing this from
+
+
+initialization just won't be any
+
+
+different.
+
+
+Okay. So
+
+
+the um maybe slightly disappointing
+
+
+thing that I want to tell you is I don't
+
+
+know exactly how to fix it. And this is
+
+
+a place where I don't think I there's
+
+
+like you know really excellent
+
+
+principles where I could I could like
+
+
+you know show you like the ultimate
+
+
+theorem of how offline to online RL
+
+
+should work. What I can tell you about
+
+
+is an empirical observation about what
+
+
+seems to have worked really well in the
+
+
+past couple of years. Let's say really
+
+
+the past year and a half. uh and what
+
+
+happened in the past couple of years or
+
+
+the past year and a half is that there
+
+
+have been a number of methods developed
+
+
+that can solve the offline to online RL
+
+
+problem significantly better than this
+
+
+uh embarrassing thing and the principle
+
+
+they're based on is at least to me a
+
+
+little bit unexpected. So for some
+
+
+reason, and I'll try to speculate a
+
+
+little bit about the reason, but the
+
+
+truth is that I don't know. For some
+
+
+reason, algorithms that use diffusion
+
+
+models or flow matching to represent the
+
+
+actor tend to work better, and they tend
+
+
+to actually produce methods that do
+
+
+improve over that embarrassing thingy.
+
+
+Um,
+
+
+they're basically methods that are based
+
+
+on some variant of policy constraints.
+
+
+uh and
+
+
+uh I don't exactly know why they work so
+
+
+well but I can get tell you some
+
+
+possibilities. So
+
+
+um in the uh online case the optimal
+
+
+policy pi theta a given s should be
+
+
+deterministic. This is kind of a basic
+
+
+fact in RL that uh if you have a fully
+
+
+observed environment a marovian state
+
+
+all that good stuff then there should
+
+
+exist a deterministic policy that is
+
+
+optimal.
+
+
+Okay, so in the online RL case, we
+
+
+generally don't have to worry about
+
+
+actors that have very complex
+
+
+distributions. That's why in homework
+
+
+three uh for the continuous stuff, your
+
+
+actor was Gaussian. In homework one, uh
+
+
+we asked you to experiment with a flow
+
+
+matching policy because for imitation
+
+
+learning, you do actually want to match
+
+
+some complex distribution. for RL
+
+
+conventional wisdom says you do not need
+
+
+a complex distribution because there
+
+
+should exist a deterministic policy that
+
+
+is optimal. So therefore at convergence
+
+
+all that variance is going to reduce
+
+
+anyway. So who cares about what kind of
+
+
+distribution class you have? Just use a
+
+
+Gaussian.
+
+
+But in the offline case um well
+
+
+conventionally people would have thought
+
+
+that capturing the best mode in the data
+
+
+is pretty good. So maybe you don't need
+
+
+a highly expressive policy anyway. Um
+
+
+but perhaps if you can represent
+
+
+multiple modes, maybe it's easier to
+
+
+handle policy constraints.
+
+
+Remember this picture, right? We talked
+
+
+about forward kale, reverse scale, all
+
+
+that kind of stuff. And they each have
+
+
+to make some sacrifice. The forward kale
+
+
+would smear the probability mass across
+
+
+all the modes. The reverse kale would
+
+
+lose some of the modes. So perhaps in
+
+
+the offline case it is actually a good
+
+
+idea to represent very complex
+
+
+distributions at least if you're using
+
+
+policy constraints because your data
+
+
+distribution is complicated and if you
+
+
+have a very expressive distribution
+
+
+actually doesn't matter what divergence
+
+
+you're using because you can match the
+
+
+uh behavior uh distribution exactly. So
+
+
+maybe, and this is speculation on my
+
+
+part, for offline to online, it really
+
+
+helps to track all the modes in the
+
+
+offline phase and then in the online
+
+
+phase kind of zero in on the best thing.
+
+
+Okay? And then double down on the best
+
+
+thing in online mode.
+
+
+This is a guess. I don't know if this is
+
+
+true, but empirically what uh people
+
+
+have observed pretty consistently is
+
+
+that much more expressive policies based
+
+
+on diffusion of flow matching seem to
+
+
+work a lot better in this mode. Um
+
+
+and um
+
+
+uh perhaps surprisingly uh some of the
+
+
+really effective offline to online RL
+
+
+methods including the ones that I'll
+
+
+discuss here uh they actually only train
+
+
+diffusion or flow matching with regular
+
+
+supervised learning essentially with BC
+
+
+and then use that as a model of the
+
+
+behavior policy in uh uh when they do
+
+
+offline to online error and I'll tell
+
+
+you how to do that in a second. Um,
+
+
+as an aside before we get into the
+
+
+actual methods, uh, one question I want
+
+
+to raise is, well, why is it actually
+
+
+difficult to use diffusion to train the
+
+
+actor in RL? So, we'll have some fancy
+
+
+methods that are different from methods
+
+
+you've seen before. Why can't we just
+
+
+take like um, one of the policy
+
+
+constraint methods from the beginning of
+
+
+this lecture and just plug in a
+
+
+diffusion model in place of the actor?
+
+
+So, the reason is that the actor is
+
+
+typically trained to maximize the
+
+
+expected value of the Q function.
+
+
+And that's quite straightforward if you
+
+
+can sample from your actor easily and
+
+
+quickly and you can optimize that
+
+
+expectation easily and quickly. For
+
+
+example, using reparameterization or
+
+
+using policy gradient. But with uh
+
+
+diffusion or flow matching as you you
+
+
+discovered in homework one, you don't
+
+
+actually train the model directly to
+
+
+produce high likelihood samples. You
+
+
+train it to have each step of diffusion
+
+
+uh minimize that diffusion loss. And if
+
+
+you wanted to maximize the expected
+
+
+value of some function under a let's say
+
+
+flow matching actor naively you would
+
+
+have to back propagate through the
+
+
+entire flow process which of course you
+
+
+don't actually do when you train the
+
+
+model normally just to produce good
+
+
+samples. So because we use this kind of
+
+
+funny loss function for flow matching or
+
+
+diffusion the the loss function that you
+
+
+all implemented in homework one
+
+
+computing expected values of Q functions
+
+
+under that uh policy is uh quite
+
+
+non-trivial.
+
+
+So you either need the gradient of the
+
+
+log probability if you want to use
+
+
+policy gradient which you do not have or
+
+
+you need to use reparameterization which
+
+
+requires back propagation through the
+
+
+entire sampling process of flow matching
+
+
+which is very unstable and
+
+
+computationally expensive. So these
+
+
+naive solutions are very hard to use.
+
+
+They're not impossible to use and there
+
+
+are actually papers that have done this
+
+
+and these are uh uh some examples that
+
+
+do the the grad log pi thing but it's
+
+
+quite non-trivial.
+
+
+So if we actually want to use uh uh
+
+
+diffusion for actor methods we need
+
+
+something a little more clever. Uh and
+
+
+in fact maybe avoiding this kind of uh
+
+
+back propagation through time kind of
+
+
+thing is exactly why diffusion works
+
+
+well in the first place. So uh we kind
+
+
+of don't want to uh sort of torture it
+
+
+so that we can use these uh uh
+
+
+conventional methods.
+
+
+Okay. So I'll tell you about a few ways
+
+
+to use uh uh diffusion or flow matching.
+
+
+They're interchangeable for the purpose
+
+
+of this discussion uh in RL. Uh again
+
+
+this is a place where there isn't one
+
+
+great solution, but I'll tell you about
+
+
+actually three possible solutions that
+
+
+are all kind of viable and they all have
+
+
+different trade-offs.
+
+
+So one really simple way to do it uh and
+
+
+uh to my knowledge it was introduced in
+
+
+this paper but uh it's not a
+
+
+particularly sophisticated idea and it's
+
+
+very possible that it was introduced
+
+
+elsewhere is to not bother training the
+
+
+diffusion model with the RL objective at
+
+
+all and instead uh use a kind of
+
+
+rejection sampling approach. So here
+
+
+here's how this works. First train your
+
+
+Q function and uh somehow you have to
+
+
+train your Q function without needing to
+
+
+have your your diffusion actor. One way
+
+
+to do it is with IQL. There are a few
+
+
+other solutions but basically train your
+
+
+your Q function somehow on your offline
+
+
+data.
+
+
+So this these are the IQL equations if
+
+
+you want to do that. Number two, train
+
+
+your policy with behavioral cloning.
+
+
+Okay, that's not going to be a very good
+
+
+policy. But if you use flow matching
+
+
+from homework one, then your policy will
+
+
+be a very good fit to the data
+
+
+distribution.
+
+
+Okay, so your policy is approximately pi
+
+
+beta.
+
+
+And then at test time, if you want to
+
+
+find a good action, sample a bunch of
+
+
+actions from your policy and take the
+
+
+one with the highest Q value.
+
+
+And the reason that this works is
+
+
+because if your policy is very powerful,
+
+
+if it learns the behavior policy very
+
+
+accurately, then when you sample from
+
+
+it, you should not be getting any out of
+
+
+distribution actions.
+
+
+Now this would not necessarily be true
+
+
+if you for example used a Gaussian
+
+
+policy because the Gaussian policy will
+
+
+cover all the modes and it might put
+
+
+some probability mass on low probability
+
+
+actions. But if you use a very powerful
+
+
+distribution class like diffusion or
+
+
+flow matching, then if you sample from
+
+
+that thing and put those samples through
+
+
+your Q function, if you trained
+
+
+everything correctly, you should not be
+
+
+getting out of distribution actions. And
+
+
+this should actually be okay to do. And
+
+
+then you take the highest Q value action
+
+
+among those. So no OD actions because
+
+
+your pi theta is approximately pi beta.
+
+
+Now, of course, this is um this might
+
+
+seem a little bit objectionable because
+
+
+what we're really doing here is we're
+
+
+running a little optimization. This if
+
+
+if you remember the model based RL
+
+
+discussion, this is essentially that
+
+
+that simple uh sampling based
+
+
+optimization procedure, the guess and
+
+
+check method uh over the current action.
+
+
+And guess and check is not a very
+
+
+powerful optimizer. So, you might miss
+
+
+the very best action.
+
+
+But if your behavior policy is not too
+
+
+broad, it's actually pretty okay. And in
+
+
+practice, this is a surprisingly
+
+
+difficult method to beat. So it's a
+
+
+method that actually works surprisingly
+
+
+well.
+
+
+So why is this good? Well, it's very
+
+
+simple. You don't actually need to train
+
+
+your actor with your Q function at all.
+
+
+Uh why is this bad? Well, because it's
+
+
+guess and check. And guess and check, we
+
+
+know, doesn't scale that well with
+
+
+dimensionality. So the worst case for
+
+
+this would be if your behavior policy is
+
+
+perfectly uniform over the entire space
+
+
+of actions and your action space is very
+
+
+high dimensional.
+
+
+But that often doesn't happen because if
+
+
+you have offline data, well your offline
+
+
+data probably is like you know kind of
+
+
+at least decent data. So hopefully it's
+
+
+not fully uniform over the entire action
+
+
+space in which case this might actually
+
+
+work very well.
+
+
+This method uh goes under many different
+
+
+names. Sometimes it's called rejection
+
+
+sampling. Sometimes it it's called best
+
+
+of n. Sometimes it's called uh guess and
+
+
+check. Sometimes it's called sample and
+
+
+rank. Those are all the same thing more
+
+
+or less. Any questions about this?
+
+
+Okay. And if you're wondering how to how
+
+
+you would actually implement this, well,
+
+
+if you implement IQL, you can literally
+
+
+just take your homework one flow
+
+
+matching implementation and plug it into
+
+
+this thing.
+
+
+So, it's very easy to implement.
+
+
+Okay. Uh some fancier stuff. So if you
+
+
+really don't like this uh guess and
+
+
+check thingy, you can actually try to
+
+
+get uh an actor. And one thing you could
+
+
+try to do to avoid needing to train the
+
+
+full diffusion model with the actor
+
+
+objective is you can have your diffusion
+
+
+model and you can have an actor. And
+
+
+your actor can be a simple Gaussian
+
+
+actor, but it can somehow leverage the
+
+
+diffusion model to be better.
+
+
+So here's what we're going to do. We're
+
+
+going to train our flow model or
+
+
+diffusion model or whatever and we're
+
+
+going to train it with again with just
+
+
+imitation learning. We're going to train
+
+
+it to match the behavior policy. And I'm
+
+
+going to explicitly write the uh the
+
+
+flow model as a given s comma z where z
+
+
+represents the noise that goes into the
+
+
+bottom of the uh of the flow matching
+
+
+process. Okay. And this is going to be
+
+
+important in a second. So we'll just
+
+
+train it with supervised learning so
+
+
+that the marginal over z uh pi flow a
+
+
+given s is as close as possible to the
+
+
+behavior policy
+
+
+and then we're going to run actor critic
+
+
+with a gaussian actor
+
+
+where the actor gets a special kind of
+
+
+regularizer. We're going to do basically
+
+
+actor critic BC but not BC against the
+
+
+data but BC against the flow model and
+
+
+we're going to feed Z as input into our
+
+
+actor. So our actor is going to be a
+
+
+Gaussian actor. The actor is not doing
+
+
+flow matching, but the actor gets Z as
+
+
+an input.
+
+
+And we're going to regularize the actor
+
+
+so that for a given Z, it produces an
+
+
+action that is as close as possible to
+
+
+the action that PI flow would have
+
+
+produced for that same Z. So it's almost
+
+
+like distilling the flow model. So the
+
+
+actor is not a diffusion model. It's not
+
+
+a flow model. It's just a regular
+
+
+Gaussian actor that takes Z as an
+
+
+additional input.
+
+
+And this is the objective for the actor.
+
+
+So to unpack this a little bit, the
+
+
+first term is just regular uh actor
+
+
+critic objective. Maximize the expected
+
+
+value of Q. There's an expectation on
+
+
+the outside over Z. And the second term
+
+
+is saying for that Z run your flow
+
+
+matching process forward and get the
+
+
+corresponding action and get your
+
+
+Gaussian actor to maximize the log
+
+
+probability of the action that flow
+
+
+matching would have produced for that Z.
+
+
+So essentially your flow matching
+
+
+process
+
+
+it gets Z,
+
+
+it gets S
+
+
+and it runs many steps of integration to
+
+
+produce A
+
+
+with S going in at each step. And your
+
+
+actor,
+
+
+the lazy actor that it is, just tries to
+
+
+shortcut it and produce the same A in
+
+
+one step. but not exactly the same A
+
+
+because there's also that first term. So
+
+
+it's going to take this thing and shift
+
+
+it towards the actions that have a high
+
+
+Q.
+
+
+So it's essentially cloning the action
+
+
+from PI flow uh that P flow would take
+
+
+for that value of Z.
+
+
+So the reason this is good is that now
+
+
+you're taking this really powerful flow
+
+
+model and you're kind of almost like
+
+
+distilling it into your simple Gaussian
+
+
+actor. And because your Gaussian actor
+
+
+is so simple, you can add the expected Q
+
+
+using the same reporterization trick
+
+
+that we used in SACE to its objective
+
+
+which whereas this would be very hard to
+
+
+do if pi theta was a full flow model. So
+
+
+it's kind of like a compromise like pi
+
+
+theta inherits a lot of the uh kind of
+
+
+capabilities of the flow model from that
+
+
+second term but it still retains the
+
+
+convenient Gaussian structure which
+
+
+makes it possible to maximize Q.
+
+
+Yes.
+
+
+>> Yeah. So the question was why not just
+
+
+train a VA? You could do that. So you
+
+
+could in fact people have actually
+
+
+proposed to do that as well. So you
+
+
+could uh you could train a VAE actor.
+
+
+The this is where we sort of get into
+
+
+the more empirical question of like what
+
+
+works well. A VAE is much better than a
+
+
+Gaussian actor for capturing complex
+
+
+distributions, but flow matching is even
+
+
+better. Uh and at least in experiments
+
+
+on benchmarks, the flow matching version
+
+
+works better. That's not to say that the
+
+
+VA would never work better. Like maybe
+
+
+if you tune your V carefully or you
+
+
+implement a really good VA, perhaps
+
+
+it'll be good, too.
+
+
+All right, any questions about this?
+
+
+So for for those of you that opted to do
+
+
+the offline to online RL final project,
+
+
+this is actually one of the methods uh
+
+
+uh that could be considered for that
+
+
+final project. Uh yeah, question
+
+
+because uh sorry the Gaussian actor
+
+
+doesn't make the Q function easier to
+
+
+train. It's easier to maximize the Q
+
+
+function with a Gaussian actor because
+
+
+with a Gaussian actor you can use a
+
+
+reparameterization trick just like uh we
+
+
+discussed before.
+
+
+Okay, so there's one last offline to
+
+
+online method that I want to talk about
+
+
+and this one is kind of a weird one. Um,
+
+
+it's a pretty simple method and actually
+
+
+works pretty well, but it's kind of it's
+
+
+based on some peculiar uh principles and
+
+
+I I want to tell you about it just
+
+
+because I think that the idea is perhaps
+
+
+quite kind of a nice idea for when you
+
+
+have latent variable models. Okay, so
+
+
+this is a method called diffusion
+
+
+steering. And the idea is again we're
+
+
+going to uh uh fit our data with uh our
+
+
+diffusion model with just running
+
+
+behavioral cloning and then we'll
+
+
+exploit it somehow to do RL. So if we
+
+
+were to do RL naively on our entire data
+
+
+set, like let's say that we forget all
+
+
+the offline RL stuff and we just ran our
+
+
+favorite fast online RL method on our
+
+
+data set, then the problem is that we
+
+
+get these out of distribution actions,
+
+
+right? That's that's what we we've been
+
+
+talking about uh for this entire
+
+
+lecture. And the place where that really
+
+
+hurts us is that is when we go to
+
+
+maximize the expected Q under our policy
+
+
+because not all the actions that our
+
+
+policy might select are in distribution
+
+
+uh
+
+
+uh for the Q function.
+
+
+So so far we've tried to address it by
+
+
+either making the Q function really
+
+
+robust to out of distribution actions or
+
+
+changing the policy to avoid out of
+
+
+distribution actions. But what if we
+
+
+change the action space itself so that
+
+
+there are no outer distribution actions?
+
+
+That might seem like a really strange
+
+
+thing to do, but in fact a diffusion
+
+
+model does exactly that because for a
+
+
+diffusion model or flow matching model,
+
+
+this right here is coming from a very
+
+
+simple and known distribution. Maybe a
+
+
+zero mean unit variance Gaussian. So you
+
+
+know that everything with a small norm
+
+
+like basically everything inside the
+
+
+unit ball is an in distribution Z. And
+
+
+it turns these things into actions if
+
+
+it's trained with behavioral cloning
+
+
+into actions that match your data
+
+
+distribution. So diffusion model
+
+
+actually gives you an action space where
+
+
+everything is is in distribution at
+
+
+least everything in a unit ball. So
+
+
+let's actually exploit that. Um okay
+
+
+let's train a diffusion model on our
+
+
+data set and then let's run RL where the
+
+
+action space sorry the here instead of Z
+
+
+the slide uses W. So this is W.
+
+
+Um let's train our actor
+
+
+so that it is not doing this. Our actor
+
+
+is going to directly produce W and
+
+
+that'll go in here.
+
+
+And this might seem like kind of a
+
+
+strange thing to do because of course uh
+
+
+in in flow matching or diffusion the
+
+
+latent space is the same size as the
+
+
+action space. But crucially the latent
+
+
+space is set up in such a way that
+
+
+anything that is uh not too extreme will
+
+
+map to a valid action. So in fact all of
+
+
+these W's are going to be in
+
+
+distribution.
+
+
+So that's what we're going to do. We're
+
+
+going to basically run regular online RL
+
+
+algorithms like soft actor critic from
+
+
+homework 3 on the latent space of the uh
+
+
+diffusion level. So every noise sample
+
+
+is in distribution which means that we
+
+
+can safely use our offline data without
+
+
+worrying about out of distribution
+
+
+actions because there aren't any. So the
+
+
+key idea is run the most efficient and
+
+
+uh effective online RL online off policy
+
+
+RL method that you've got uh in the
+
+
+latent space of the diffusion model
+
+
+which could be you know DDIM or flow
+
+
+matching or whatever kind of diffusion
+
+
+model you like most and that's basically
+
+
+it. So it's almost like kind of like a
+
+
+meta algorithm in that it doesn't really
+
+
+care how your diffusion model is
+
+
+produced. In fact doesn't even care that
+
+
+it is a diffusion model. All it care is
+
+
+that it's some model that maps a
+
+
+wellbehaved latent space to your
+
+
+ill-behaved actions. Um, this is a
+
+
+diagram of that method uh taken from the
+
+
+paper, but this is a maybe a slightly
+
+
+complicated diagram, but essentially all
+
+
+it's saying is you are training your
+
+
+actor to produce these noise samples
+
+
+that then go into diffusion. Yes.
+
+
+Um because you can think of the the that
+
+
+noise sample as determining the action
+
+
+that the diffusion model will produce.
+
+
+So by changing the noise here, it's
+
+
+steering the action up here.
+
+
+Yeah. So in fact, uh this method,
+
+
+there's nothing actually specific to
+
+
+diffusion in this method. It could use
+
+
+any latent variable model, including a
+
+
+VAE. Uh in fact, people had actually
+
+
+tried this with VAEs long before they
+
+
+tried it with diffusion. For some
+
+
+reason, with VA, it didn't work so well.
+
+
+And I think the reason is that with VAE,
+
+
+um, you can train a VAE so that it does
+
+
+a good job of reconstructing samples or
+
+
+a good job of sampling, but it's pretty
+
+
+hard to train it so that there aren't
+
+
+like adversarial noise samples. And the
+
+
+actor is very good at finding those, but
+
+
+that's just a guess. I don't really know
+
+
+truly why the VA version of this never
+
+
+worked so well.
+
+
+Okay, any more questions about this?
+
+
+Okay, so the one remaining topic uh
+
+
+which I think we will do after spring
+
+
+break is model based offline RL. Um this
+
+
+is a pretty short thing. So I'll cover
+
+
+model based offline RL afterwards. Uh, I
+
+
+wish you all a very good spring break
+
+
+and uh, see you Wednesday after next.

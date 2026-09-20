@@ -1,0 +1,16 @@
+[project]
+name = "edu-rl"
+version = "0.1.0"
+description = "Readable implementations accompanying Berkeley deep-RL lectures 1-25"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "torch",
+    "gymnasium[classic-control]",
+    "matplotlib",
+    "tensorboard",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

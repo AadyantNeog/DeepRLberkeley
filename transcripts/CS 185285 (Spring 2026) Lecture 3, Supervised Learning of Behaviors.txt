@@ -1,0 +1,1652 @@
+[laughter]
+>> All right. Welcome everybody. Uh please
+find a seat.
+Today I I neglected to get my coffee.
+So, if you were concerned that the
+lecture went too fast before, it's going
+to go slower now.
+We're going to talk about
+supervised learning of behaviors,
+imitation learning today. Uh and this is
+the the second imitation learning
+lecture. And today we're going to talk
+about some of the more practical aspects
+of getting imitation learning to
+actually work.
+So, to recap where we were
+last time,
+we talked about how
+in theory,
+imitation learning, at least by a naive
+behavioral cloning, is not actually
+guaranteed to work. And we can construct
+some difficult examples like like the
+tightrope walker, where you can show
+that like the worst-case result is quite
+bad. It scales quadratically with the
+horizon of the problem.
+And the underlying reason for that is
+distributional shift, which means that
+when your policy runs in the
+environment, it because it makes small
+mistakes, it'll end up seeing things
+that are different than what what it was
+trained on. And when that happens, it'll
+make even bigger mistakes. So, in
+principle, this is quite a dire problem.
+Uh one of the things we could do to
+provably address it is to use a
+different algorithm like Dagger, which
+makes a stronger assumption. It assumes
+that you can gather additional data from
+your policy and label it.
+But in practice, we would really like to
+use standard naive behavioral cloning
+because it's very simple and very
+scalable.
+So, what we'll talk about today is some
+of the things that we can do that do not
+provably fix the theoretical problem
+with imitation learning, but they do in
+practice greatly mitigate that problem
+so that we can get something that's
+actually quite useful in practice.
+So, we'll talk about um
+mainly the kinds of models that we use
+to make imitation learning work,
+including some models that you will
+actually implement in your homework, and
+then we'll talk about some more
+exotic ideas like being really smart
+about collecting and augmenting data and
+some multi-task scoring ideas. But, the
+core of this lecture is really about the
+kinds of models that can make behavior
+cloning work pretty well.
+All right. So,
+the reason that we're concerned about
+models is that
+remember that worst-case result is
+epsilon h squared. So, the horizon
+squared times the
+in-distribution error.
+So, of course, one way to deal with that
+is to have really, really small
+in-distribution error. If you have a
+really, really good model so that
+epsilon is tiny, then it's still
+quadratic cuz this is the worst-case is
+still bad, but it's multiplied by a
+really tiny number and maybe that's
+okay. So, the way to do that is to get a
+really good model and also to do your
+basic machine learning stuff right, like
+check if you're over fitting or under
+fitting and adjust accordingly.
+So,
+why might you fail to fit the expert?
+Why might you have high epsilon, high
+in-distribution generalization error?
+Well, there are a number of things that
+experts can do that might violate the
+assumptions that your
+uh method makes.
+One of the things they can do is they
+can exhibit non-Markovian behavior.
+Okay. Um
+Does anybody remember what the Markov
+property is? And uh yeah.
+Right. So, the the answer for those who
+didn't hear is uh Markovian means that
+it only depends on the current state.
+And that's like a pretty reasonable
+thing to do because if you believe that
+you have the cur- you have a reasonable
+state meaning that it obeys the Markov
+property, in principle the optimal
+action at the current time should not
+depend on past states. It should only
+depend on the current state because that
+is sufficient to act optimally.
+But in practice,
+humans don't always do this.
+Uh one reason is that humans are not
+always rational. Uh but the other
+reason, and this is maybe the more uh
+generous reason, is that humans have um
+bounded rationality. Your brain can only
+process so much at any given time. So,
+when you are, for example, driving a
+car, you are making the inference about
+the current action to take based on
+things you saw in the past because if if
+you had to like reboot your brain every
+single time step and recompute the
+action from the current image, you
+probably it would probably take you too
+long to pick a good action. So, in
+reality, you're maintaining some state
+in your brain, processing information as
+it comes in, and taking the current
+action based on what you saw before. So,
+if like somebody on the highway cuts you
+off and now they're like right in front
+of you, maybe you'll swerve a little bit
+even though literally from the current
+observation now that they're already in
+front of you, you shouldn't do that.
+Like everything is fine. Right? So,
+people are affected by what happened
+before.
+The other thing that um the expert might
+do is exhibit behavior with multiple uh
+modes.
+Uh so,
+if you have if you're observing the true
+state of the environment,
+it turns out, we'll learn about this
+later, there always exists a Markovian
+deterministic policy that is optimal.
+But again, humans might not exhibit a
+Markovian deterministic policy. They
+might exhibit a policy that is
+non-Markovian or policy that is
+stochastic.
+Maybe if you need to drive the car
+around a tree, sometimes you go left and
+sometimes you go right. And maybe you
+choose more or less randomly because
+they're both about equally good.
+It would be just as optimal if you
+always went left, but you're not
+perfectly consistent.
+Um there are other issues, but these are
+kind of the big ones. So, uh let's talk
+about these in a bit more detail. Uh
+non-Markovian behavior. So, uh we
+discussed policies of this form uh
+pi theta uh
+is a distribution over AT given OT.
+And that's a Markovian policy. It
+depends only on the current observation
+or on the current state if the state is
+equivalent to the observation. And that
+just means that if you see the same
+thing twice, you will do the same thing
+twice regardless of what happened
+before.
+Uh and this is
+hard for humans to do.
+So, in reality, you might like a policy
+that depends on
+a history of observations.
+It might depend on all the past
+behaviors.
+Now, this isn't actually that difficult
+to implement because fortunately for us,
+the last uh 5-10 years have seen
+tremendous developments in sequence
+modeling, and sequence modeling
+techniques can be really helpful at
+integrating a sequence of past
+observations. So, if for example, your
+observations are images, uh then
+the way that uh you might do this is
+instead of having uh just one image
+going into your uh neural network and
+producing an action, you might have many
+images.
+And you wouldn't do this naively by just
+like feeding them all into the same
+vision encoder. What you would probably
+do is you would replicate your image
+encoder many times, once for each frame
+of history, and then you would feed the
+embeddings from those image encoders
+into some kind of sequence model,
+typically a transformer. So, if you want
+kind of a a classic modern instantiation
+of this, you would use a a VIT to encode
+your images into tokens, concatenate all
+those tokens into a big long sequence,
+feed that into a transformer, and at the
+end you'd have a readout token that
+produces the actions. So, this would be
+a modern uh architecture for reading in
+image histories.
+Now, not all imitation learning problems
+use images. Uh, probably the best known
+imitation learning system today that
+uses histories is a language model. In a
+language model, one time step is one
+token. One token does not contain very
+much information, so trying to select
+the next token based on only the current
+token, that's what we'd call a an n-gram
+model or one-gram model technically. Uh,
+that would be quite bad. So, of course,
+language models use history. Uh, they
+don't use image encoders because they're
+not operating on images, they're
+operating on tokens, but it's very much
+an example of this kind of approach.
+Now, uh, I'll tell you next about why
+things aren't really that simple, but
+before I do that, does anyone have any
+questions about
+histories and sequences?
+Yes.
+>> I'm just saying like theoretically,
+like, uh, if you have Markovian
+behavior, it's easier to model, easier
+to, you know, fit.
+But, is it then a better choice to
+do like a non-Markovian like behavior?
+If you really see someone cutting you
+like randomly, you still want to like
+get away from him. I know like, ideally,
+if everyone's auto driving, it's like
+>> Right. And and you're asking in terms of
+like what's optimal rather than what
+Okay. So, the question for those of you
+who didn't hear is like, okay, could a
+non-Markovian policy, uh,
+be optimal? So, the technical answer is
+this.
+If you have observations rather than
+states, and those observations uh, are
+not sufficient to infer the full state
+perfectly, then in general, you may need
+a history of observations to get the
+optimal policy.
+If your observations are states, or
+there's a uh,
+a bijection between observations and
+states, uh, then
+there exists a policy that is optimal
+that does not use history. That does not
+mean that every optimal policy doesn't
+use history. So, there may also exist a
+policy that uses history that is
+optimal, but the guarantee is that there
+exists a policy that is optimal, meaning
+it is as good as any other policy that
+does not require history.
+Yes.
+>> Does the asymptotic error change if you
+have
+a bunch of history?
+>> So, this is actually a very complex
+question. Um
+for the kind of
+simple analysis that we did last week,
+uh everything basically stays the same.
+So, that that stuff doesn't care about
+It actually doesn't care at all about
+what the input is into the uh policy is
+because all of that was abstracted
+inside epsilon, right? Like the starting
+assumption for all the analysis we had
+last week was that your in-distribution
+generalization error is epsilon. How you
+got that by Did you get that by using
+history? Did you get that by doing
+something else? The analysis doesn't
+care. Now, there's a more fine-grained
+analysis that actually that you can do
+that actually takes into account
+what the
+um size of the input is. And generally,
+this kind of analysis will show you that
+using history is typically worse if you
+can fit your data to the
+just as well with history as as without
+history.
+So, using history might allow you to fit
+your data better, in which case epsilon
+is lower, but in general, if if the size
+of the input gets bigger, you're
+actually more vulnerable to
+distributional shift problems.
+But again, like take that with a like a
+huge grain of salt because all this
+analysis is like worst case and it
+typically doesn't capture patterns that
+are present in real-world problems.
+Yes.
+>> Um when you said earlier an assertion
+you made about uh
+that if you can observe the state, there
+exists an optimal
+policy.
+Um
+does that assume like that you can have
+any possible variable you want in the
+state
+representation? [snorts]
+Like the driver in front of me
+historically is kind of like erratic.
+>> So, in order for the state to be a valid
+Markovian state,
+um it needs to
+satisfy the Markov property, which means
+that the future state is independent of
+the past state given the present. It
+also needs to be um
+adequate in the sense that the reward
+depends only on the state.
+So, if those properties are obeyed,
+then every then everything follows. You
+might be missing something. Like, for
+example, you could say like, "Okay, the
+state is just like zero everywhere."
+Like, zero definitely obeys the Markov
+property because a future zero is
+independent of a past zero given a
+present zero, but it's not adequate for
+your control problem because presumably
+what you want to accomplish depends on
+things other than the number zero.
+So, if if it's sufficient and obeys the
+Markov property, then it's guaranteed
+that there exists an optimal policy
+based only on that. But, again,
+important caveat, it
+that does not mean that imitation
+learning will get you that policy. It
+just means that it exists.
+Okay.
+So, um
+as a little aside,
+why might uh including history in your
+policy actually make the policy worse?
+And uh I'm going to
+start by asking you guys this question.
+If anybody like peeked ahead and looked
+at the slides, please don't uh give the
+ground truth answer. But, if you have a
+guess as to why including history might
+make your imitation learning policy
+worse, I would love to hear your guess.
+Yes.
+>> I'm thinking of the analogy to humans.
+Sometimes having access to more
+information results in a worse decision.
+>> Yeah, that's a very good that's a very
+good observation. And this is, by the
+way, true not just for history. So, for
+those of you who didn't hear, sometimes
+having access to more information can
+result in a worse decision. And this is
+true actually like even outside of
+imitation learning, just even in
+supervised learning. The if you give
+unnecessary information to your model,
+basically every bit of unnecessary
+information is one more potential
+spurious correlation that the model can
+pick up on. Uh so, giving more
+information that is not necessary can
+lead to mistakes, yes.
+>> What was your thing?
+Another good answer is over fitting. So
+again, not necessarily related to
+imitation learning, but if you have a
+bigger model with more inputs, then you
+have more ways to over fit.
+Any other guesses?
+Uh yes.
+So you're on the right track. And uh for
+those of you that didn't hear is like,
+okay, maybe you can accumulate more uh
+error over time because you have like
+more stuff in your history. One way that
+I could kind of interpret this is I
+could say, well,
+the problem with imitation learning was
+distributional shift. Distributional
+shift means that you made a mistake and
+now the distribution of inputs going
+into your policy is different than what
+it saw during training.
+Now, how much you suffer from
+distributional shift depends on what
+your input is. If you just close your
+eyes and you don't look at anything,
+you're not going to have distributional
+shift because all you're seeing is a
+blank image. So no matter what kind of
+mistake you make, you're still seeing a
+blank image. So
+technically the distributional shift
+problem goes away. Of course, you have a
+new problem, which is you're not looking
+at the road, but at least you're not
+suffering from distributional shift. So
+in general, the more you see, the more
+there are the more ways there are for
+things to change in unexpected ways. And
+history especially is kind of a nasty
+instance of this because
+without history,
+just the current image needs to be in
+distribution. But with history, the
+entire
+uh sequence of images in the past needs
+to be in distribution. So maybe you made
+a little mistake and then you corrected
+and now you're back in familiar
+territory and you're fine. You're in
+distribution. But if you're keeping
+track of history, that little mistake
+and correction is still sitting there in
+the past and you're still paying
+attention to it with your transformer.
+So you keep paying the price even though
+you've already fixed the problem.
+So in general, history exacerbates
+distributional shift essentially because
+there are a lot more ways to have an
+unexpected history than there are to
+have an unexpected image, because the
+history is all those past images.
+There is a a very vivid example of this
+that I want to describe, which is really
+just a special case of distributional
+shift, uh
+but uh it has a special name, causal
+confusion, because it's a particularly
+common issue that imitation learning
+encounters.
+So,
+let's imagine that you have a a very
+strange kind of car where there's a
+light on the dashboard that lights up
+whenever you step on the brake.
+Okay? Not unreasonable, you can
+have that on your dashboard. Uh and your
+policy look is looking through a camera
+and it sees the light and it sees the
+road. Now,
+the light turning on is a consequence of
+pushing the brake. So, your policy
+really should not be paying attention to
+it. Like, it's literally caused by the
+thing the policy did at the previous
+time step. What it should be doing is it
+should be looking at the road and it
+should be paying attention, like, is
+there a person standing in the road and
+hit the brakes when there's a person.
+But, in the training data, almost
+always, if you stepped on the brake in
+the previous time step, you'll probably
+step on the brake again now, right?
+Like, if you're stopping the car, maybe
+you step on the brake for like 50 time
+steps. So, 49 times out of 50, if you
+step on the brake now, it's because you
+were stepping on the brake in the
+previous time step. And that light tells
+you if you did that.
+So, the light turning on on the
+dashboard is a much stronger cue of
+whether you should step on the brake
+than whatever's happening on the road.
+So, you And th- this is this is why this
+is referred to as causal confusion, is
+because you're mixing up causality.
+Like, the cue that you're paying
+attention to was caused by what you did
+before, but
+there's nothing in these models that
+deals with what causes what. They're
+just purely statistical engines. So, the
+correlation between that spurious cue
+and your action is very high.
+And in general, there are all sorts of
+cues like this that that happen in the
+world that you can have in your history
+that are very strongly correlated with
+future actions.
+Um the
+In reality, this actually does happen in
+autonomous driving, not because there's
+a light on the dashboard, but because in
+a real vehicle, when you push on the
+brakes, the front of the car tilts down
+a little bit just because of how a car
+works physically. So, a very common
+mistake that actually happens when
+people use history for imitation
+learning in autonomous driving is they
+do get a hood tilting detector that
+essentially learns to step on the brakes
+if it sees the hood tilting down.
+So, this is actually a real thing. It's
+not made up. Well, the light thing is
+made up, but the issue is not. So, then
+you get into this paradoxical situation
+where if you just hide that piece of
+information somehow from the model, the
+model actually gets better.
+Yes.
+>> Is there any like given the situation
+more about distribution shift, do you
+think there's any way we can do some
+sort of dimension reduction
+from the history and where we're still
+extracting at any time like ignoring um
+those type
+>> Yeah. Yep. So, the question was, can we
+do some kind of like
+uh dimensionality reduction on the
+history to basically extract the useful
+cues and like throw out the spurious
+correlates? And the answer is that
+people have definitely studied this. So,
+there are all sorts of techniques to try
+to compress information. So, the one of
+the most classic one is called the
+variational information bottleneck.
+We'll actually learn about that when we
+talk about VAEs later in the course.
+People have tried those kinds of things.
+They can help.
+There is though a fundamental challenge
+that's very hard to address, which is
+anything that starts from the same data
+um you can kind of mitigate the problem,
+but you can't ultimately completely
+eliminate it because
+without being able to actually take on
+policy rollouts, you'll never fully get
+rid of this distributional shift issue.
+So, there are all sorts of techniques to
+mitigate it, but they don't like fully
+solve it.
+And in general, it's actually kind of an
+open problem in imitation learning how
+to get um history uh, to work very well
+without suffering from problems like
+this. That's not to say that every time
+you try to use history you'll definitely
+hit this problem. Sometimes it'll
+actually just work fine and sometimes
+you can be kind of smart like maybe you
+use history but you like sub sample it
+in time so that real so that images that
+are too close to your current time step
+aren't used and it only uses things like
+1 second ago whatever. So there's all
+sorts of tricks that'll make this less
+bad but in general you should not be
+surprised if you add history to your
+imitation learning policy and then get a
+worse result because of these kind of
+spurious correlations.
+Yes.
+>> Um,
+in in practice do you like usually just
+have to fix this with like human
+intervention?
+>> In practice do you have to fix this with
+human intervention? Um,
+it depends on what you're practicing.
+So, uh,
+sometimes you can fix this by getting
+additional data, sometimes you can fix
+this by being really smart about what
+information you let into your model,
+sometimes you can really you can fix it
+by being really smart about the model
+itself like the earlier question about
+adding some kind of like compression
+information bottleneck. So,
+unfortunately as is often the case in
+deep learning the answer is like it
+depends and if you try enough tricks
+maybe you get something to work.
+Yes.
+>> Um,
+would you not have this problem if
+like even if you didn't have like a
+history?
+>> Correct. The the the spurious
+correlation problem is not unique to
+history. You can definitely get this
+even without history. Uh, it's just that
+history often makes this much worse. So,
+most commonly in practice people hit
+this problem when they start adding
+history. But it's not it's not a history
+specific problem.
+Yes.
+>> Are there cases where history will make
+your model much better like in the case
+of games with imperfect information?
+>> Yeah, so the question was are there
+cases where history will make your model
+better? There's one case where it'll
+definitely make your model much much
+better and that's language models.
+Because if you try to implement a
+language model without history meaning
+predict the next token based on the
+current token it'll be a terrible
+language model. And language SFT for
+language models is essentially imitation
+learning. So, you can think of language
+models as models with history trained
+with behavioral cloning.
+Um there are many other cases as well.
+Yes.
+>> If spurious correlations are key issue
+with causal causality learning, but
+that's difficult.
+>> Um so, people have looked into methods
+uh from the causal inference literature
+to address this. There's a lot of
+research on this. Um it's typically hard
+to make this work very well in practice
+in general because it's hard to make
+causal inference methods very scalable.
+Um but yes, there is research on that
+and if you're interested, I can I can
+point you to some things afterwards.
+Um one question for all of you guys uh
+as a little thought exercise is you can
+almost imagine that maybe this is like a
+an example potential exam question. For
+this kind of issue, would dagger fix it?
+Is it Are there any brave souls that
+want to volunteer an answer and an
+explanation?
+Yes.
+>> No, because when the the human
+intervenes to obtain like the augmented
+data set, presumably they're going to
+perform the same action as
+um well at least in the case of like the
+the brake. I mean, the person is still
+there whether or not the light is on
+like the the brake is still going to be
+pressed. So, actually this is not being
+solved in the data at all, I forgot
+that.
+>> Okay. So, the the the answer is that
+maybe the human wouldn't fix it because
+they would just demonstrate the same
+action?
+Any any other answers? Yes.
+>> I I disagree.
+>> Okay, go ahead.
+>> when you're a human, you see the light,
+you then may like still do the brake,
+but since like you know that the light
+itself has no causal relationship
+between whether you should press the
+brake or not.
+So, in this case, when you have
+augmented data, you have different
+action um
+you know, based on the information,
+based on you saw the person in front of
+the car, you press the brake. So, in
+this case like
+yeah, that's why I think that you would
+suffer more.
+>> So, the the answer in in principle is
+that Dagger would fix this problem for
+the simple reason that like the problem
+is caused by distributional shift, and
+Dagger eliminates distributional shift
+asymptotically. The reason that it might
+kind of seem like
+it wouldn't, and this is like a kind of
+a legitimate criticism, is that
+in some cases, it would fix it very,
+very slowly. So, if the problem is that
+you have too many time steps where the
+brake light is on and you're supposed to
+be pushing the brake, essentially, you'd
+have to keep adding Dagger data until
+the the balance shifts and the spurious
+correlation is no longer the most
+reliable, and you might need to to get
+lots of Dagger data. In practice, it
+actually tends to fix it very quickly,
+but the the really pathological cases,
+the reason they kind of look like they
+it wouldn't fix is because it would sort
+of like chip away at that problem one
+time step at a time until it's fully
+gone. But, in principle, it will always
+fix it eventually because, for the very
+simple reason that it eliminates
+distributional shift. And when
+distributional shift is eliminated, then
+this should not be a problem.
+Okay.
+Um
+let's talk about the other one, the
+multimodal behavior. And we're actually
+going to spend more time on this just
+because this is where a lot of the
+interesting modeling decisions come in.
+Just to illustrate this
+concisely, the problem with multimodal
+behavior, multimodal refers to multiple
+modes. Sometimes people use multimodal
+to mean multiple modalities. It's
+They just happen to be the same word,
+they mean totally different things.
+Multiple modes means that
+there are states where the human expert
+might do two different things,
+and they're both reasonable,
+and your model might struggle with that.
+So, if you have a tree, you can go
+around the tree left or right.
+Uh you
+really don't want to average those two
+things. You really want to go either
+left or right.
+>> [laughter]
+>> Um
+and
+if you have a standard um
+discrete output like a categorical
+variable output for your neural network
+like a soft max over three answers left
+right or straight, there's actually no
+problem, right? Like a standard soft max
+can happily tell you 50% left, 50%
+right, and 0% straight.
+But if you have continuous actions, then
+maybe you're using one of those uh
+Gaussian distributions that we talked
+about last week,
+uh then you have a bit of a problem
+because the Gaussian is unimodal. So, at
+that point where you have equal
+probability left or right, it would have
+literally averaged those things and you
+would get this. Um so,
+generally if you have continuous
+actions, this becomes a problem and you
+need to think a little bit carefully
+about the right way to
+um
+to model things.
+So, you can have more expressive
+continuous distributions or you can try
+to use discretization for your
+continuous actions so that you can use
+that soft max.
+And we'll talk about Yes.
+>> Does like most more expre- expressive
+continuous distribution just mean we
+literally just use like multi- modal
+like
+distribution or
+>> Yeah, I'll talk about a few of those.
+But let's start with discretization. So,
+I mentioned that
+if you have discrete actions like left,
+right, and straight, there's no problem
+because a soft max will happily give you
+half 50% probability left, 50%
+probability right, and 0% probability
+straight. So, can we just discretize our
+our continuous action spaces? Like why
+do we even need to worry about
+continuous actions?
+Any ideas why we can just always
+discretize everything?
+Yeah.
+Yeah, so if you if you if your actions
+have many dimensions, then discretizing
+is pretty rough. Like discretizing a
+one-dimensional action, pretty easy.
+Just chop it up into bins. Discretizing
+two-dimensionally, you get a grid.
+Discretizing three-dimensional, you get
+this kind of cube-shaped thing. And in
+general, the number of discrete bins you
+need scales exponentially with the
+dimensionality of your action space. So
+if you have a humanoid with
+56-dimensional actions, discretizing
+that is going to be pretty rough.
+Um but
+if you are lucky enough to have a
+low-dimensional action space, then it's
+actually quite straightforward to
+naively discretize it. And it's quite a
+good solution. For a 1D action space,
+just discretize it. Like it it's just so
+easy. It's definitely going to work.
+Uh yes?
+Do you have a question?
+>> I feel like even in the case of the
+high-dimensional action space, most of
+it is pretty sparse.
+So it would be okay to discretize it?
+>> So yes, if you can figure out which
+which things to keep. Um
+But let me let me tell you about a
+better way to do it, so that we don't
+have to worry about it.
+Uh so there is a way to discretize
+even for a very high dimen- Oh,
+question?
+>> Can you just explain why it's hard to
+discretize high-dimensional space?
+>> Uh okay. Uh so the short version of it
+is that if you um
+I can actually draw it on the board.
+So if you have a a one-dimensional
+space,
+chop it into boxes.
+Discretizing 10 bins, you have 10
+answers. If you have two-dimensional,
+you get a grid.
+So 10 boxes for each dimension,
+how many cells in total?
+100. And if you have three dimensions,
+okay, you get the idea. Now it's 1,000.
+And if you have 56 dimensions, it's 10
+to the 56th power.
+And that's very big, and then you're out
+of memory, and then
+uh the TAs have to figure out how to
+increase the uh the the GPUs you guys
+can use. Yes?
+>> Does the faster optimizer suffer the
+same problem?
+Uh that's a very advanced question. Uh
+but the answer is yes, it does. So, that
+it's addressing the time dimension
+rather than the space dimension.
+But I don't want to elaborate on this
+because I have to explain what the fast
+tokenizer is to the entire class.
+All right.
+So, let's proceed. So, there's a cool
+trick that you can use. Um it's actually
+good that that uh that I that you guys
+asked me to draw this out because the
+cool trick is basically going to be
+like, "Well,
+can I instead of doing this like
+two-dimensional thing with 100 bins, can
+I just discretize like one dimension to
+10 bins, and then discretize another
+dimension to 10 bins, and somehow still
+make it work?" And the answer weirdly
+enough is yes.
+Okay.
+So,
+the problem is that uh this is great for
+1D actions, but at higher dimensions
+discretizing this full space is
+impractical. So, the solution is going
+to be discretize one dimension at a
+time.
+Now,
+this one might take a little bit of
+thought, and I think it's worth thinking
+through this.
+If you just have, you know, your 56
+dimensions, and you separately
+discretize each one into bins,
+now it's not exponential anymore. Like,
+if you have 10 bins, now it's 10 * 56,
+not 10 to the 56th power. So, you have
+essentially 56 outputs from your
+network.
+Why is that not good enough?
+So, basically the way I'm going to
+structure my network is I'm going to
+have
+image going into model, and out comes 56
+separate soft maxes.
+What's the problem with this? Yeah, back
+there.
+Right. So, the different action
+dimensions covary with each other.
+So, uh
+a nice example of this is, um
+you know, if you're driving on the
+highway, uh there's a slow there's a
+fast lane on your left and a slow lane
+on your right, so you could merge into
+the slow lane and slow down, or you can
+merge into the fast lane and speed up.
+But, if your brake is independent of
+your steering, now you're going to
+sample randomly and you might choose to
+go
+uh you can't actually co-vary those two
+things. You can't say I want right and
+slow and left and fast. You're going to
+independently sample left or right and
+independently sample fast or slow. And
+that's not good. So, the dimensions are
+not statistically independent, therefore
+they cannot be discretized independently
+of each other.
+So, what you can do is something called
+auto-regressive discretization, where
+you discretize one dimension at a time,
+but in sequence rather than
+independently.
+So,
+let's say I have a three-dimensional
+action, uh and I'm going to call the
+dimensions AT0, AT1, and AT2. What I can
+do is
+uh I can have a little
+sequence model block at the top of my
+model,
+uh like a transformer,
+and
+at the first time step of that readout
+sequence is going to output a
+discretization over AT0.
+And then, at the next time step, it's
+going to output AT1 conditioned on both
+the original input and AT0.
+And then it's going to output AT2 given
+all the past, meaning
+the original input, AT0, and AT1.
+And by the chain rule of probability,
+that of course captures a full uh joint
+distribution over all three dimensions.
+And typically these days you would do
+this literally with a transformer, where
+the first time step takes in the
+um
+observation
+and outputs AT0, the second time step
+takes in AT0 and outputs AT1, and so on
+and so on.
+So, this is called auto-regressive
+discretization because you're
+discretizing one dimension at a time and
+then decoding auto-regressively.
+>> [snorts]
+>> So, at inference time, of course, you
+would sample AT0 first, feed in that
+sample into the second time step, uh
+then sample AT1, feed that into the
+third time step, and then sample AT2.
+Okay. So, why does this work? Well, the
+first step is basically modeling the
+probability of AT0 given ST. The second
+time step is modeling AT1 given ST AT0,
+and the third time step is modeling AT2
+given all the past. So, by chain rule of
+probability, this is representing the
+full joint distribution over all
+dimensions.
+Okay.
+That's chain rule of probability.
+So, uh yes.
+>> In practice, how large can your
+dimension get before you have like
+forgetting issues, or
+>> The question was how large can uh the
+dimensionality get before you get uh
+forgetting issues? The answer is it can
+actually be extremely large because
+transformers are perfectly happy to
+attend to things as far in the past as
+you want.
+So, I obviously if you have a 10 million
+dimensional action, you need to somehow
+have your sequence model with uh fit in
+the memory with 10 million steps. But,
+you know, these days we're very good at
+fit at fitting large sequences into
+memory.
+Yes.
+>> Is the choice of order arbitrary?
+>> Is the choice of order arbitrary? Yes.
+Yes, it is.
+>> Why wouldn't your multi-head
+architecture be able to learn the
+covariances
+well enough?
+>> Yeah. So, the question is why wouldn't
+that multi-head thing learn the
+covariances? Because
+imagine that you're sampling from this
+thing.
+At at the point where you sample, you
+have you have probabilities here over
+left or right, probabilities here over
+slow down and speed up, but this thing
+doesn't know what you actually end up
+sampling from here.
+So, in order for it to take into account
+whether you're going left or right to
+decide whether to speed up or slow down,
+it doesn't just need to know what the
+probabilities were, it needs to know
+what sample you generated from those
+probabilities. And that's essentially
+exactly what the auto regressive
+architecture is doing. It's saying, let
+me take the sample and then pipe it in
+here.
+Yes.
+>> Is there any guarantee about the axis of
+these actions aligning with principal
+components?
+>> Is there any guarantee about the the
+dimensions the axes aligning with
+principal components? Uh no.
+I'm sure that there's like some smart
+thing you could do to like basically
+transform your action space to make that
+thing work better. Uh but that's as far
+as I know at the bleeding edge of
+current research and not something I
+have an answer to. So, what people
+typically do is they just naively say
+like here's my action space, I'll just
+do the dimensions.
+Yes, back there.
+>> Um would this thing
+make the whole system slower?
+>> Would this make the whole thing slower?
+Well, yeah, it would make it slower
+because it's transformer and auto
+aggressive decoding does take a little
+bit of time. So, computationally like
+this is probably not what you want to do
+if you're like flying a quadcopter and
+controlling it at like a you know 1 kHz.
+Yeah.
+>> In this case like why does it have three
+dimensional prediction? Like how many
+action depends on which how many
+dimension you have or
+>> Yeah, this is so in in this example I'm
+literally just assuming that your your
+MDP has a three dimensional continuous
+action.
+It's it's not a design choice. It's like
+literally what the problem gives me.
+>> depends on like the problem like on how
+many like dimension you have in the
+>> Yeah. Yeah.
+>> But then it also be like really hard to
+model the conditional distribution being
+>> [clears throat]
+>> Um it's not that hard, right? Um
+in terms of the actual model it's just a
+transformer with three time steps.
+>> So, it's like it it has like the same
+number of inputs as like the joint.
+>> Um
+it has
+well, it has more inputs than just the
+image, yes.
+Um
+maybe if you can you explain a little
+bit why it might be hard? Maybe that
+would help me address it.
+>> Cuz
+uh like I think what's hard about
+modeling the the joint distribution of
+AT0, AT1, and AT2 given ST is that,
+like,
+um each of those, like,
+uh
+like, elements has, like, uh
+like, its own dimension.
+>> Oh, I I think I see what you're saying.
+So,
+uh if you were to model the joint
+directly by discretizing the full 3D
+space, then you have a lot of bins.
+And the trick here is just you still
+need to discretize, but you discretize
+one dimension at a time. So, that means
+that each of those time steps has only
+10 bins instead of 1,000.
+Basically, it turns it from being
+exponential to being linear. So, instead
+of 10 to the power of three, it's 10 *
+3.
+Uh so, it's a computational trick. It's
+not like you're representing the same
+object, and what you're relying on is
+that the neural network internally will
+process samples from the earlier
+dimensions to have a uh a better
+distribution over the later dimensions.
+So, in this like in the highway
+left-right example, it would mean that
+you first decide whether you're going to
+go left or right, and then based on that
+decide if you're going to slow down or
+speed up.
+Uh uh yes, back there.
+You pass in a sample. Yeah, this is very
+important. So, uh the question was when
+you pass in uh AT0 to get AT1, are you
+just passing in the probabilities or are
+you passing in the sample? You are
+passing in the sample, and that is very,
+very important because the probabilities
+actually carry no additional
+information. The model shows the
+probability, so it it knows what
+probability it's outputting. What it
+didn't know is what was sampled.
+Yes.
+They are very useful,
+but
+I would I will not talk about it right
+now because I covered VAEs later in the
+course.
+Yes.
+>> Is there a problem that the model
+actually explore last for A 1 and A 2
+compared with A 0 because you default A
+0 first? It's like a problem with this
+conditional A 0.
+>> Generally, that's not a problem because
+the distribution you're representing is
+you're still representing the same
+distribution. It's just a
+This is a
+It's a modeling choice. So, if the model
+is good and you're not overfitting and
+you're not underfitting, it should still
+converge to the right answer.
+All right. Let's continue.
+So,
+Now, maybe you really don't like
+discretization.
+You don't want to deal with this
+transformer business and you just really
+want to keep the original continuous
+action space.
+You can do that.
+Generally, there are many many ways to
+model continuous multimodal
+distributions, but
+the most widely used methods all kind of
+have a similar flavor. And the flavor is
+this, that
+it's very very convenient to just output
+one mode.
+It's very inconvenient to have to output
+many modes. But, maybe what we can do is
+we can add an additional input to the
+model,
+not additional output, additional input
+that tells it which mode it should take.
+So, basically, instead of changing the
+output to output many things, we're
+going to change the input. Maybe we're
+going to feed the model a a little
+random number,
+and that random number will determine
+which of the different modes it'll
+select.
+So, in the in that example of driving
+left right left or right around the
+tree, maybe we can get a model that
+takes in a binary random number, and if
+that number is zero, it should go left,
+and if that number is one, it should go
+right. That way we can have a model that
+only outputs one Gaussian mode, but it
+can still represent a distribution with
+multiple modes.
+That's the I know it sounds a little
+weird, but that's kind of the the gist
+of the principle behind the most widely
+used methods for modeling continuous
+distributions.
+So,
+we feed in some number and for if the
+random number in this case it's a
+continuous three-dimensional number for
+a continuous latent variable model, if
+we feed in this number we get this mode,
+if we feed in that number we get that
+mode. That's kind of the idea.
+Now, the trouble with this is
+the random noise has to actually be used
+by the model such that the different
+noise samples actually map to different
+action modes. And if we just naively
+take a regular
+model that outputs to Gaussian
+distribution and we feed it in random
+noise, it has absolutely no reason to
+use that random noise for anything.
+So, in order to make these kinds of
+models work, we need to somehow teach
+the model to associate different samples
+of that input noise with different
+modes.
+And usually that means changing the
+training in some way.
+So, there are different kinds of models
+for doing this, variational autoencoders
+which we'll learn about later in the
+course, normalizing flows, diffusion and
+flow matching, and so on. And they all
+basically have this flavor that we're
+going to give the model something random
+and based on that random thing, it
+should choose different modes for
+different random inputs.
+And the one that we'll talk about today
+is
+flow matching.
+Uh because that's what you guys have to
+implement in your homework. So, I
+figured you might appreciate it if I
+talk about it a little bit.
+So, um flow matching is a kind of a
+modernized version of diffusion.
+Diffusion models are things that
+many of you are have probably seen even
+if you might not realize it. Chances are
+if you see an AI generated image, an AI
+generated video, or even
+usually an AI AI generated speech,
+uh it was generated by a diffusion
+model. So, diffusion models are by far
+the most popular method for generating
+high-dimensional continuous data
+as opposed to language models which
+generate
+uh discrete text data.
+The basic principle in a diffusion
+model,
+and this is not a technical explanation,
+this is just kind of an intuitive
+explanation, the The principle is that
+if you want to turn noise into
+dogs, that's a hard problem. If you want
+to turn dogs into noise, that's a very
+easy problem. So, taking a picture of a
+dog and turning into noise, you can do
+that very easily just by adding more and
+more noise. If you add noise to a
+picture of a dog, eventually you just
+get all noise.
+So, here's the idea.
+Take pictures of dogs,
+add noise to them,
+and then train them all to go the other
+way to turn the noise back into the dog
+that it came from.
+That's quite easy, right? Because it's
+very easy to turn dogs into noise to
+varying amounts, like add varying
+amounts of noise, and then train your
+model to go back and turn the noise back
+into dogs.
+And that is literally the entire
+principle. Now, actually implementing
+this requires lots of tricks, and the
+flow matching method that I'm going to
+talk about today is basically a more
+modern version that requires less
+tricks. Flow matching isn't actually
+better than diffusion models, it's just
+a lot simpler in the sense that for
+diffusion models you write like this
+much code, and for flow matching you
+write like this much code. So, I figure
+you guys would appreciate the one with a
+little bit less code. Um
+but the intuition is essentially
+identical.
+So,
+another way that we can draw this, uh if
+we uh want to think about
+low-dimensional distribution, let's say
+one-dimensional distributions, is that
+you're going to start at the bottom with
+random noise, uh sample from some
+distribution, let's say uh a unimodal
+zero-mean univariate Gaussian, and
+you're going to gradually trans you're
+going to train a model that gradually
+transforms a sample from the bottom
+distribution into a sample from the
+distribution you want at the top.
+So, you can kind of imagine that maybe
+like the left side of that uh of that
+noise distribution will go further to
+the left and become the left mode, the
+middle part will become the middle mode,
+and so on.
+So, the main idea in flow matching is to
+model the data distribution, which may
+be pretty complicated,
+uh by learning a vector field
+that transforms the base distribution at
+the bottom into the desired distribution
+at the top. So, the vector field
+basically tells you
+at each point in the this process, where
+should each piece of probability go? So,
+I'm going to talk about time here, but
+keep in mind this is not time in the RL
+sense. This is actually time within each
+generation step. So, every single step
+of physical time, you're going to run
+this whole process from noise to
+samples, and that's a different time
+axis. So, I'm going to use the word
+time, but remember this is not physical
+time. This is like time inside the
+model, and it's replicated every single
+physical time step.
+Okay. So, we're going to learn this
+vector field so that you can sample from
+uh this base distribution at the bottom
+uh
+and then integrate the vector field
+going up to get the sample distribution
+you want. Question back there?
+>> Um
+wouldn't you like if you're trying to
+replicate the data distribution,
+wouldn't you end up with like a mean
+version of whatever that is?
+>> So, the question was uh wouldn't you
+like always produce the average dog
+instead of a particular dog? The answer
+is you'll get a different dog every time
+depending on which noise you started
+from.
+So, uh the model will will undo the
+noise differently depending on what the
+noise is.
+And and we'll see how that works in a
+second.
+Okay. So,
+let's dig into this a little bit more.
+This is kind of the high-level outline,
+but we we don't yet understand how we
+can train this thing to do this. So,
+this is just what happens when you want
+to generate a sample.
+So, let's just go through the sampling
+process again, and then we'll talk about
+the training process.
+Uh let me explain this animation here.
+This animation is basically the same
+thing as on a previous slide, but just
+turned 90 degrees. So, that orange thing
+on the left, that's the noise
+distribution you're starting from. In
+this case, it's one-dimensional, and
+it's a Gaussian. That blue thing on the
+right is the distribution you would
+like, and what you're seeing in the
+animation in the middle is the path that
+a sample takes. So, it starts off on the
+left sample from the orange Gaussian and
+then it is gradually
+modified by the vector field. So, every
+step of time, and remember this is not
+physical time, every step of time you
+apply a little change to it based on the
+vector field at that time step until you
+get to a sample from your model.
+So, so you start by sampling from the
+space distribution and it could actually
+be anything. For convenience, let's use
+a zero mean universe Gaussian and then
+you integrate, which means that for all
+the time steps 0, delta T, 2 delta T, 3
+delta T, etc. Maybe you you pick 0.1.
+So, you go 0, 0.1, 0.2, 0.3, 0.4, 0.5,
+etc.
+You set the new X to be the old X plus
+your learned vector field times the size
+of the time step. This is a forward
+Euler integrator.
+So, delta T let's say is 0.1. So, the
+new X is the old X plus your velocity
+times 0.1 and you do this 10 times.
+And then you return the place where you
+landed. That's how you sample.
+So, now let's talk about how you train
+it.
+The problem with training this is that
+you don't know a priori which noise goes
+with which sample. So, all you have in
+your data set of samples, you don't know
+what noise to start from, so it's a
+little hard to train this vector field.
+So, there's a trick and it's not at all
+obvious why the trick works, but I'm
+going to explain the trick first and
+then maybe I'll give you a little bit of
+intuition for why it works.
+So, the trick during training is for
+every data point in your batch, you're
+going to sample some noise randomly.
+Okay?
+So, you sample the your noise, you
+sample your data point
+and then you're going to sample a time
+step at which to train your vector
+field. And you can just do this
+uniformly. So, you pick a random number
+between 0 and 1.
+And then you supervise your vector field
+by taking the
+the noise that's the that's the the
+point on the left, taking your data
+point, that's the point on the right,
+interpolating between them to get the
+point in the middle that you would get
+if you were on a straight line path at
+time step t,
+and then
+uh
+compute your you compute that position,
+and then you figure out the velocity you
+just take from that position to reach
+your sample.
+So,
+the position that you would be at at
+that time step if you were to take it a
+straight line path, that's just given by
+linear interpolation, that's step number
+four over there.
+And then the direction you want to go,
+if you want to go from xt to
+uh to to the
+uh the sample, is just
+the the difference between
+the point on the right and the point on
+the left. So, it's just x1 - x0 divided
+by the amount of time between them,
+which is one, so it's like x1 - x0 / 1,
+which is just x1 - x0, and that's your
+your supervision target. So, you're
+basically training your vector field so
+that if it finds itself in that middle
+point, the one with the red equation, it
+will go to x1.
+Okay. Now, this is a little bit weird.
+Um
+that's your target velocity. This is a
+little bit weird because
+x0 was not chosen in a smart way. It was
+chosen entirely at random. Uh and it's
+and that's why it's not entirely obvious
+why this should work.
+So, to kind of make this a little bit
+more explicit,
+I'm just reproducing that picture. So,
+here is my oops.
+Here are my two modes. So, that's the
+blue thing. This is the orange thing.
+And when I train, I pick a data point
+here from my data set, I pick a random
+noise, I draw the line, I supervise my
+vector field here so that it goes there.
+The trouble is that this point was
+chosen completely randomly. So, if I
+sample a data point again, I might also
+do this, and I might supervise this data
+point to go here.
+So, I'm I'm seemingly supervising
+everything to go to my data point.
+And then maybe I have a different data
+point over here,
+and that one also gets a bunch of
+different random noise.
+And they're also trained to go
+there.
+Okay. Now, the obvious thing that that
+might occur to you is that this is
+contradictory. Like, you can't train
+your vector field to go here and here at
+the same time.
+So, here's the here's why this the the
+the kind of
+vague explanation for why you might
+expect this to work.
+At these intermediate time steps, the
+points that go here
+are different than the points that go
+there. Like, if you think of this whole
+cone,
+these points in general will be
+supervised to go here, and these points
+in general will be supervised to go
+here. They do overlap, so you get
+contradictory supervision in the middle.
+But, as you get closer to this end,
+they actually tend to break apart.
+You will not get straight lines uh when
+you at convergence for this. Basically,
+somewhere here it'll average out and
+it'll say, "Well, you want me to go here
+and here, so I'll go straight."
+But, they will eventually
+break apart such that
+once you've trained this thing, the
+actual paths you get when you integrate
+your vector field are not straight,
+they're curvy.
+So, this Gaussian, it will maybe first
+go straight and then sometimes it'll go
+here and then it's a little bit down,
+it'll go there.
+So, it'll average out this contradictory
+supervision
+contradictory straight vector field into
+a single curved vector field, and that
+will actually work.
+Uh it this can actually be proven. Uh
+the proof is quite complex, so I'm not
+going to go through it, but essentially
+by supervising with these contradictory
+straight-line vector fields, you get one
+curvy vector field that does the job.
+Yes.
+>> So, basically, the initialization of the
+vector field matters here. You're giving
+you're updating it based on the
+gradient.
+>> The initialization does not matter. So,
+you initialize randomly, you know, you
+use your standard Xavier initialization
+with small biases at the top.
+Okay.
+Any questions about this? Because this
+is this is part of homework one and you
+will have to implement or yeah, you'll
+have to implement it.
+Yes.
+>> I know this I know this is dumb, but if
+you
+if you had these as images, let's say,
+so let's say multi-dimensional
+Gaussian
+>> Mhm.
+>> Um
+how do you why do we choose like the
+same dimension
+uh for the noise distribution and the
+target?
+>> Yeah, so the question is like in higher
+dimensions, why do we have the same
+dimensionality noise as targets? Well,
+it's because you have to continuously
+transform that noise sample into your
+image. So, if the dimensionality changed
+somewhere in the middle, I wouldn't know
+how to like add a velocity of one
+dimension to a a data point of a
+different dimension.
+>> Right.
+Is there any sensitivity issue there
+because
+the target distribution
+Well, well, just because like the
+underlying latent distribution is
+probably way lower than
+>> Right. So,
+I think what you're touching on is
+one of the issues with diffusion and
+flow matching, which is that
+the number of degrees of variation for
+like a dog is probably lower than the
+number of pixels. So, like, you know,
+the dog has long ears, short ears,
+whatever. So, diffusion models are not
+great when it comes to representational
+learning. Like this noise doesn't really
+represent the underlying factors of
+variation in the data, but they are very
+good at generation.
+Okay.
+So,
+let me just briefly run through this
+slide and then we'll we'll adjourn. So,
+the implementation for flow matching in
+a policy requires a little bit more care
+because now the policy takes in
+uh
+images. It takes the time step that goes
+into flow matching, which I'm going to
+call tau, and it takes this this noise
+sample
+and then it produces the velocity. So,
+now you're you're taking in three
+things. You're taking in your
+observation, the the diffusion time
+step, and the
+previous
+the result of the previous integration
+step. And that's your velocity field.
+So,
+that's what you would actually train in
+homework one. So, you construct your
+mini batch for each element in the batch
+J, you
+sample the observation on the ground
+truth action from the data set, you
+sample

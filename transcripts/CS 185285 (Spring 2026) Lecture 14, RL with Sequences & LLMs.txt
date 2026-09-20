@@ -1,0 +1,7768 @@
+All right. Uh well, uh that was a
+
+
+refreshing morning outside. Uh so
+
+
+hopefully all of you uh enjoyed our, you
+
+
+know, universitymandated outdoor time
+
+
+today. Um the sunshine and so on is good
+
+
+for you. It helps uh establish a good
+
+
+circadian rhythm. Uh but now let's get
+
+
+back to uh deep reinforcement learning.
+
+
+And today I'm going to talk about uh the
+
+
+conclusion of our discussion of inverse
+
+
+RL from before as well as some uh new
+
+
+material about partial observability and
+
+
+language models which you will be uh
+
+
+working with in homework 4. But first
+
+
+let's resume the discussion from
+
+
+Wednesday. So on Wednesday we we talked
+
+
+about how I there's this other problem
+
+
+statement called inverse RL which refers
+
+
+to the case where you have data of
+
+
+behavior typically human behavior that
+
+
+you believe is close to optimal uh in
+
+
+that probabilistic sense like the monkey
+
+
+where you would like to use that data to
+
+
+not just do behavioral cloning but
+
+
+actually infer the reward function. And
+
+
+the reason this might be useful is of
+
+
+course if you can refer if you can infer
+
+
+somebody's reward function then you can
+
+
+imitate them much more effectively by
+
+
+using RL rather than just blindly
+
+
+copying their actions. So in tasks like
+
+
+Atari games where you you're just given
+
+
+a score as a reward function maybe you
+
+
+don't worry about this but lots of real
+
+
+world tasks like for example autonomous
+
+
+driving make it very non-obvious what
+
+
+the reward function should be. Okay. So
+
+
+uh what we saw on Wednesday is that you
+
+
+could take that probabistic model with
+
+
+the um
+
+
+the the soft optimality kind of notion
+
+
+where you have a distribution of
+
+
+behaviors that are all consistent with a
+
+
+particular reward and essentially do
+
+
+maximum likelihood learning in that
+
+
+model. So you can parameterize the
+
+
+reward with some parameter SI. You can
+
+
+express the probability of the observed
+
+
+trajectories uh as a distribution
+
+
+determined by SI and that's just a
+
+
+regular controls inference framework and
+
+
+then you can have an algorithm where
+
+
+you're given some trajectories from your
+
+
+human expert and then you perform
+
+
+maximum likelihood learning and of
+
+
+course there are latent variables here
+
+
+uh because uh you don't know which
+
+
+distribution over states and actions is
+
+
+optimal.
+
+
+Okay, so we saw that if we were to
+
+
+actually write this out, the objective
+
+
+uh works out to maximizing the sum of
+
+
+rewards of the demonstrations minus the
+
+
+normalizer, right? Because this is an
+
+
+unnormalized probability distribution.
+
+
+So it has this normalizer Z. And if you
+
+
+take the log, you get minus log Z. And
+
+
+it's really that Z that's the biggest
+
+
+problem. So Z is basically the integral
+
+
+over all possible trajectories of the
+
+
+probability of that trajectory with
+
+
+respect to the dynamics times the
+
+
+exponential reward. And it makes sense
+
+
+that you need this normalizer because if
+
+
+you imagine just like take all the
+
+
+rewards and add like a thousand to them,
+
+
+right? That doesn't really change
+
+
+anything about the optimal policy, but
+
+
+clearly it'll change the sum of rewards.
+
+
+So essentially this normalizer accounts
+
+
+for the fact that uh you want
+
+
+probability distributions rather than
+
+
+just uh arbitrary unnormalized rewards.
+
+
+So this normalizer term is pretty
+
+
+complicated. But if you take the log of
+
+
+of that term just using formulas from
+
+
+standard calculus, it actually ends up
+
+
+with kind of an interesting uh
+
+
+expression because the log of it is just
+
+
+the expected value under the optimal
+
+
+trajectory distribution with respect to
+
+
+the current reward of the gradient of
+
+
+the reward. So if we write out which
+
+
+expectations this corresponds to, you
+
+
+get this very natural objective where
+
+
+you're maximizing the expect the uh the
+
+
+grade the expected rewards under the
+
+
+experts distribution and minimizing them
+
+
+pushing them down uh under the
+
+
+distribution of trajectories that are
+
+
+optimal with respect to your current
+
+
+reward. And that actually kind of makes
+
+
+sense like uh we want to make the the
+
+
+examples more rewarding and whatever you
+
+
+would do for the current reward less
+
+
+rewarding so that the current policy
+
+
+moves towards the examples.
+
+
+Okay. And this suggests uh and this is
+
+
+where we left off on Wednesday, a simple
+
+
+but relatively uh expensive algorithm
+
+
+where
+
+
+you can learn the distribution over
+
+
+trajectories given the current reward
+
+
+using your favorite RL algorithm. like
+
+
+literally just take RSI and run policy
+
+
+gradient with that entropy uh
+
+
+regularizer and that way you get samples
+
+
+from the current uh trajectory posterior
+
+
+and then you just take the gradient on
+
+
+the demos and you move in the direction
+
+
+of that gradient and you take the
+
+
+gradient on the samples from your latest
+
+
+policy and you push away from that and
+
+
+this is like a valid algorithm. will
+
+
+actually be a correct way to learn a
+
+
+reward, but it's very very expensive
+
+
+because essentially now every time you
+
+
+take a gradient step on the reward
+
+
+parameters, you are running RL in the
+
+
+inner loop of that. So unless you have a
+
+
+really really small problem where you
+
+
+can run RL very quickly, this is
+
+
+probably too expensive for you. But it
+
+
+is correct.
+
+
+Okay, so this was a recap of Wednesday.
+
+
+Any questions here?
+
+
+Yeah, back there.
+
+
+Yeah, this is a good question. So, the
+
+
+question was why would it be better to
+
+
+learn the reward function than to just
+
+
+directly copy the experts actions? So,
+
+
+there are a few uh one big one is that
+
+
+when you're copying the actions
+
+
+directly, you suffer from that um
+
+
+compounding errors problem. In this
+
+
+case, you do not because you're actually
+
+
+running RL to explore the environment
+
+
+and find the consequences of those
+
+
+actions. So, this is a much more complex
+
+
+procedure, but it is in general uh
+
+
+better from the standpoint of converging
+
+
+to the correct distribution. Um the
+
+
+other answer, and this one is a little
+
+
+bit more subtle, is that the reward
+
+
+function can often be simpler and
+
+
+therefore more generalizable. So, uh,
+
+
+perhaps if you figure out in the
+
+
+autonomous driving case that it's a good
+
+
+idea to keep plenty of clearance from
+
+
+pedestrians, then you can figure out on
+
+
+your own how to keep plenty of clearance
+
+
+from pedestrians in lots of different
+
+
+situations without necessarily having
+
+
+seen demos in all those cases. This
+
+
+argument is a little subtle because of
+
+
+course you still need data to learn the
+
+
+rewards and you need to learn the
+
+
+rewards without overfitting. So, you
+
+
+kind of have to like pick your poison to
+
+
+some extent. Uh, but it can be more
+
+
+transferable.
+
+
+>> Yes.
+
+
+Yeah. So I'll actually get to that on
+
+
+the next slide. Uh so in practice we
+
+
+wouldn't actually do this. There is a
+
+
+much cheaper way to do this. Yes.
+
+
+So the inner loop is in computing that
+
+
+second term because to compute that
+
+
+second term the one that says sum over
+
+
+policy samples we need to take the
+
+
+current reward righ learn the optimal
+
+
+policy for it by running the max rl the
+
+
+policy gradient with the entropy
+
+
+regularizer sample from it and then take
+
+
+one gradient step. So this is like kind
+
+
+of a crazy algorithm like if you use
+
+
+policy gradients then you have the big
+
+
+outer loop over rewards then the policy
+
+
+gradient loop and then within that you
+
+
+have even more sampling. So it's very
+
+
+extravagant.
+
+
+Okay. So here is a much more practical
+
+
+way to do this and this way of doing it
+
+
+actually works. Um instead of learning
+
+
+with any maxentl algorithm and then
+
+
+using that policy uh to generate samples
+
+
+what if we're a little more lazy? What
+
+
+if instead of learning the optimal
+
+
+policy for RSI, we simply improve the
+
+
+policy to be a little bit better with
+
+
+respect to RSI
+
+
+and by improve I mean like take one
+
+
+policy gradient step or take like you
+
+
+know a few off policy actor steps
+
+
+something like that. So don't don't
+
+
+don't train it all the way to
+
+
+convergence but just take like one step.
+
+
+Okay, that is much much cheaper. One
+
+
+step of policy gradient. I mean policy
+
+
+gradient is already taking one gradient
+
+
+step on the policy during one update. So
+
+
+you might as well take one step on the
+
+
+reward function. The problem with this
+
+
+is that it's not correct.
+
+
+Okay. So here's a question for you guys
+
+
+and this is going to test our thinking
+
+
+this morning.
+
+
+We have samples in that second sum. We
+
+
+would like those samples to come from
+
+
+the optimal policy with respect to our
+
+
+current reward. Instead, we've got
+
+
+samples from another policy that was
+
+
+only optimized for one step on our
+
+
+reward. That is incorrect. How do we fix
+
+
+it?
+
+
+Okay, there's an answer in the front.
+
+
+Some of you might have heard. Any
+
+
+anybody else want to offer an answer?
+
+
+Yeah.
+
+
+Okay. One answer is we don't we can just
+
+
+let it go. Weirdly enough, that answer
+
+
+is actually correct. So, I'm going to
+
+
+tell you how to actually fix it, but
+
+
+you're right that you could also not fix
+
+
+it, and that actually will work most of
+
+
+the time. Uh, any other answer?
+
+
+Okay, so for those of you that didn't
+
+
+hear the answer in the front, it was
+
+
+important sampling. Important sampling
+
+
+is how we fix the problem when we have
+
+
+samples from one distribution and we'd
+
+
+like samples from another distribution.
+
+
+The other answer in the back was don't
+
+
+worry about it. don't worry about it is
+
+
+actually also a valid answer oddly
+
+
+enough, but let's go with a more correct
+
+
+one and then I'll tell you later how we
+
+
+can not worry about it.
+
+
+Um, so
+
+
+when we use important sampling, we're
+
+
+just going to stick these weights W in
+
+
+front of all the samples in that second
+
+
+sum to account for the fact that we
+
+
+would like samples from our optimal
+
+
+policy and we've got samples from a
+
+
+sub-optimal policy. And these importance
+
+
+weights are actually going to have a
+
+
+very convenient form. So basically in
+
+
+the numerator we have the distribution
+
+
+over um uh you know from our probabistic
+
+
+model and we don't have to normalize
+
+
+that distribution in the numerator
+
+
+because the weights the importance
+
+
+weights themselves are normalized. So
+
+
+we're going to divide the whole thing by
+
+
+one over some j wj. So it's okay if the
+
+
+weights are unnormalized. So then we
+
+
+just need p of tow times exponential of
+
+
+r s of toao. And in the denominator we
+
+
+have pi of tao which is whatever policy
+
+
+we use to sample these things. And now
+
+
+we can expand these just like we did in
+
+
+the um policy gradient important
+
+
+sampling lecture. So the denominator is
+
+
+just the the product over the initial
+
+
+state the dynamics and the policy action
+
+
+probabilities. The numerator we're just
+
+
+going to plug in all the uh conditional
+
+
+probability distributions from our
+
+
+baset. And surprise surprise it's the
+
+
+initial state probability the transition
+
+
+probabilities and then these optimality
+
+
+variables. So just like with the off
+
+
+policy policy gradients, most of these
+
+
+things cancel out and you get actually
+
+
+something pretty interesting which is
+
+
+the exponential of the sum of rewards
+
+
+along that trajectory divided by the
+
+
+product of the action probabilities. And
+
+
+I think this actually makes sense. This
+
+
+is basically saying, hey, if you've got
+
+
+samples from a sub-optimal policy, just
+
+
+weight those samples by their reward so
+
+
+that higher reward samples get higher
+
+
+weight, lower reward samples get lower
+
+
+weight.
+
+
+And furthermore, each policy update
+
+
+brings um the policy closer to the
+
+
+optimal policy. So as you update pi,
+
+
+these weights should become closer and
+
+
+closer to one.
+
+
+Like they'll they'll be 1.0 when the
+
+
+policy is the optimal policy. So
+
+
+actually those gradient steps are
+
+
+actually on the policy are helping you
+
+
+make your importance weights closer to
+
+
+one, which is very good. Now there is
+
+
+some bad news here, which is those
+
+
+importance weights do have a product
+
+
+over all the time steps. So if your
+
+
+policy is very suboptimal, the
+
+
+importance weights can be uh very ill
+
+
+behaved. It might be a very high
+
+
+variance estimator. But fortunately,
+
+
+updating your policy literally lowers
+
+
+the variance of the estimator. So if
+
+
+you're not happy with how high variance
+
+
+your second term is, then just train
+
+
+your policy some more. And then I'll
+
+
+I'll sort of give away the punchline.
+
+
+You could also simply omit these
+
+
+importance weights entirely. And that
+
+
+will also work for a reason that I will
+
+
+describe shortly. But before I get to
+
+
+that, any questions about this? Yes.
+
+
+>> Yeah. So the question is what's the
+
+
+difference between P and pi? So I'm
+
+
+using pi here to denote the policy that
+
+
+you are sampling from. So that's
+
+
+literally like a neural net uh that
+
+
+produces actions that you can run and
+
+
+get trajectories. P is the distribution
+
+
+from that baset. So in general, we we're
+
+
+not we don't actually know uh P. We
+
+
+don't know the initial state
+
+
+distribution. We don't know the
+
+
+transition probabilities. We do know the
+
+
+reward because that's literally what
+
+
+we're learning.
+
+
+Yes.
+
+
+What what you're changing is the reward
+
+
+RSI and the policy pi.
+
+
+Exactly. So if you want to imagine this
+
+
+in the context of an algorithm just
+
+
+think of like policy gradient except
+
+
+that you have one more line at the end
+
+
+which is update sigh using that
+
+
+gradient.
+
+
+Yes.
+
+
+So in that equation in the top left, the
+
+
+way we got that equation was by taking
+
+
+this
+
+
+which has the expectation under uh
+
+
+whoops sorry uh this thing at the top
+
+
+which has the expectation under the uh
+
+
+optimal policy on the left side that's
+
+
+the expert demonstrations and then the
+
+
+expectation under the posterior over
+
+
+trajectories given the current reward in
+
+
+the second expectation and that second
+
+
+expectation the posterior over
+
+
+trajectories is literally the optimal
+
+
+policy. for your current reward r. So we
+
+
+took this equation and we generated
+
+
+samples to estimate both expectations
+
+
+and then we're trying to estimate that
+
+
+sample based thingy. So sum over expert
+
+
+samples minus sum over policy samples.
+
+
+Yeah, good question.
+
+
+Okay, so
+
+
+this is the method basically and now
+
+
+let's try to interpret what this method
+
+
+is doing a little bit more. One fun
+
+
+thing about this method is that it it
+
+
+looks a little bit like an adversarial
+
+
+game. So it's a game between the policy
+
+
+and the um reward function. So you have
+
+
+your current policy over trajectories.
+
+
+You have the human demonstrations which
+
+
+uh come from some unknown distribution
+
+
+pi star. And then you're going to change
+
+
+the reward function to increase the
+
+
+reward on the human demonstrations and
+
+
+decrease the reward on the samples from
+
+
+your current policy. and your policy
+
+
+will then change uh to increase the
+
+
+reward under the current policy. So it's
+
+
+like the policy and the reward are
+
+
+competing with each other where the
+
+
+policy is trying to find high reward uh
+
+
+trajectories and the reward function is
+
+
+trying to give it give that policy lower
+
+
+reward and give higher reward to the
+
+
+human. And this is in fact an
+
+
+adversarial two-player game between the
+
+
+policy and the reward function. And the
+
+
+equilibrium of this game is one where
+
+
+the policy matches the human
+
+
+distribution because at that point it's
+
+
+impossible for the reward function to
+
+
+give more reward to the human than to
+
+
+the policy.
+
+
+So in fact it is an equ uh a two-player
+
+
+game where the equilibrium has the
+
+
+policy matching the human. So it is
+
+
+truly an imitation learning method. Yes.
+
+
+Yeah. because the the human's policy pi
+
+
+star is not being changed. So it's not a
+
+
+player in the game. It's not it's not
+
+
+adapting in any way. The reward is
+
+
+adapting in response to changes to your
+
+
+policy pi theta. And the way the reward
+
+
+is adapting is according to that
+
+
+gradient which is raise the reward for
+
+
+the human lower the reward for the
+
+
+policy. And the policy is saying hey can
+
+
+I just like find some trajectories for
+
+
+which the reward wouldn't be able to
+
+
+give me lower lower reward values. The
+
+
+only way to do that is to make my
+
+
+trajectories indistinguishable from the
+
+
+human because if they're
+
+
+indistinguishable from the human, the
+
+
+reward function can't figure out how to
+
+
+lower my reward and raise the human's
+
+
+reward.
+
+
+So, it's a game where the only way for
+
+
+the policy to win is to imitate.
+
+
+Okay? And those of you that are kind of
+
+
+familiar with the history of deep
+
+
+learning might recognize that this isn't
+
+
+the first place where we've seen this.
+
+
+There's a class of generative models
+
+
+called generative of adversarial
+
+
+networks that have nothing to do with
+
+
+reinforcement learning at least on the
+
+
+surface that work on exactly this
+
+
+principle. So you can use generative
+
+
+adversarial networks you know in in the
+
+
+age before uh diffusion models to
+
+
+generate you know lovely pictures of
+
+
+horses turning into zebras and faces and
+
+
+uh turn lines into cats and all sorts of
+
+
+other cool stuff. That's a very flexible
+
+
+class of generative models that works on
+
+
+exactly this principle. There is a
+
+
+generator network that produces images
+
+
+given some u input noise z uh and we
+
+
+would call that p theta. Now it's p
+
+
+instead of pi. Uh and there's some data
+
+
+of ground truth images. Uh and we're
+
+
+going to call that those samples from
+
+
+the distribution p star of x which we
+
+
+don't know. And we train a
+
+
+discriminator, a binary classifier that
+
+
+tries to classify whether an image is
+
+
+coming from your network or from your
+
+
+data set. And then your um model, your
+
+
+generative model is going to be changed
+
+
+to fool this classifier. So the
+
+
+generator is trying to produce images
+
+
+that fool the classifier into thinking
+
+
+that they're real and the classifier is
+
+
+trying to classify the images to guess
+
+
+whether they're real or fake. This is
+
+
+exactly the same thing. It's just that
+
+
+in inverse RL the reward was uh a
+
+
+different way to parameterize a
+
+
+discriminator that works over
+
+
+trajectories where you have the
+
+
+sequential process. in GANs is just a
+
+
+straight up binary classifier.
+
+
+And in fact, you can actually use this
+
+
+kind of framework in place of inverse
+
+
+RL. You can literally implement a GAN
+
+
+over uh trajectories and it's a slightly
+
+
+different algorithm. So I'll sketch that
+
+
+out first and then I'll tell you the
+
+
+difference between inverse RL and this
+
+
+kind of GAN based approach. It's very
+
+
+similar but there's a slight difference.
+
+
+So if we literally uh yes question.
+
+
+Yeah.
+
+
+Uh yes.
+
+
+Um so the gradient with respect to s is
+
+
+technically the gradient of the log
+
+
+likelihood of your example trajectories
+
+
+based on the current reward. The
+
+
+gradient with respect to theta is just
+
+
+the policy gradient for the current
+
+
+reward.
+
+
+Um
+
+
+not necessarily. So uh you you can work
+
+
+so there's um basically if you work out
+
+
+the algebra you can actually get this to
+
+
+work out so that they're both optimizing
+
+
+the same objective. They're just likely
+
+
+some constant terms that are missing on
+
+
+the left because obviously when you
+
+
+differentiate with respect to theta you
+
+
+don't care about the reward of the
+
+
+expert demonstrations. So if you were to
+
+
+massage this you can get it to be the
+
+
+same objective but as written it is not.
+
+
+Okay. So
+
+
+um okay so let's go back and try to
+
+
+apply this GAN framework much more
+
+
+literally to RL and we get a very
+
+
+similar but slightly different
+
+
+algorithm. So again we have our our
+
+
+policy and we have our demonstrations
+
+
+and now instead of training a reward
+
+
+function we will literally train a
+
+
+classifier that looks at the trajectory
+
+
+and outputs a classification. Now the
+
+
+way that you uh classify this trajectory
+
+
+probably what you actually want to do is
+
+
+you you want to have a classifier that
+
+
+looks at each time step individually so
+
+
+that you get a marovian reward out of it
+
+
+so you can actually optimize with RL. So
+
+
+when I when I write d of toao what I
+
+
+really mean is uh you would sum over the
+
+
+log probabilities of d s of s over all
+
+
+the time steps
+
+
+but you can choose whatever classifier
+
+
+form you want and then you would train
+
+
+your policy just to maximize dai of tao
+
+
+and again if if di of tao factorizes
+
+
+over the states then you would have a
+
+
+reward at every state
+
+
+okay
+
+
+uh and this is a valid way to do
+
+
+imitation learning. There are some pros
+
+
+and cons to this relative to the inverse
+
+
+RL method that I showed before. So
+
+
+they're very similar, but they're not
+
+
+exactly the same. The way you can think
+
+
+of inverse RL is it's a different way to
+
+
+parameterize the classifier such that
+
+
+you get an actual reward function out of
+
+
+it. So the benefit of doing it this way
+
+
+is that you often get uh it's often
+
+
+simpler to set up the optimization.
+
+
+There's kind of fewer moving parts and a
+
+
+bit less complexity. The problem is that
+
+
+at convergence, when this process
+
+
+converges to the equilibrium, the
+
+
+classifier can't distinguish samples
+
+
+from the policy versus samples from the
+
+
+expert demonstrations. At which point,
+
+
+the classifier will output 0.5
+
+
+everywhere because it thinks that every
+
+
+example is 50/50 uh uh an example from
+
+
+the expert versus from the policy. So
+
+
+that means that at convergence, the
+
+
+discriminator doesn't really know
+
+
+anything about what's going on, but it's
+
+
+a simpler framework to set up. Yes.
+
+
+Yeah.
+
+
+So it depends on whether your classifier
+
+
+overfits or not. If uh because the
+
+
+policy is trying to produce trajectories
+
+
+that look as close as possible uh to the
+
+
+demo distribution. So if you have a
+
+
+small number of demonstrations and a
+
+
+very powerful classifier, it's easy to
+
+
+overfit and to tell those apart. But in
+
+
+general, if your policy is doing a good
+
+
+job and the classifier is not
+
+
+overfitting, then it is actually
+
+
+possible to find a solution where it's
+
+
+very hard to distinguish. Now uh one
+
+
+kind of practical tip is that if you're
+
+
+using methods like this in practice both
+
+
+inverse RL and this kind of GAN-based
+
+
+method oftentimes a very important
+
+
+design decision is to regularize your
+
+
+model carefully so that it doesn't
+
+
+overfit because in general um the game
+
+
+is sort of stacked in favor of the
+
+
+discriminator because the policy has to
+
+
+actually go out and act in the world
+
+
+like the policy has to actually do stuff
+
+
+whereas the discriminator just has to
+
+
+look at it and judge it. It's easier to
+
+
+judge than it is to actually do it. So
+
+
+you have to kind of uh usually
+
+
+regularize the uh discriminator more to
+
+
+make this work well and give the policy
+
+
+a little bit of an advantage. But in
+
+
+principle if it's a fair game uh and
+
+
+they reach an equilibrium then it will
+
+
+work. Yes.
+
+
+>> Yeah. Uh so the question is wouldn't the
+
+
+policy just copy a single trajectory
+
+
+from the expert? Um in the in the world
+
+
+of uh GANs this is often referred to as
+
+
+mode collapse and it it's definitely a
+
+
+problem. It's another manifestation of
+
+
+overfitting because if the discriminator
+
+
+doesn't overfit and it really represents
+
+
+the difference between the distributions
+
+
+properly in principle that shouldn't
+
+
+happen if you have enough data but if
+
+
+you have very little data then you can
+
+
+overfitit and get exactly this.
+
+
+Okay. So just to put these things side
+
+
+by side the inverse RL approach it's
+
+
+trying to lower the reward of the uh
+
+
+policy attempts the whatever you know if
+
+
+you have if you have a robot like the
+
+
+attempts from the robot and maximize the
+
+
+reward of the human demonstrator
+
+
+uh and the GAN type approach is just
+
+
+trying to output true or false and then
+
+
+the log probability of true is your uh
+
+
+reward. So they're not the same but
+
+
+they're very different. Uh they're very
+
+
+similar. uh the advantage uh so they're
+
+
+mathematically kind of the same thing
+
+
+and in fact the way that you would put
+
+
+them into equivalence is if you choose
+
+
+your discriminator to have a particular
+
+
+form uh the ratio between the
+
+
+exponentiated rewards and the policy
+
+
+probability
+
+
+that then the method on the left ends up
+
+
+being the method on the right so you can
+
+
+think of inverse RL as again GAN with a
+
+
+very special form of the discriminator I
+
+
+won't work this out um on the slide uh
+
+
+but this is kind of a a fun exercise
+
+
+that I would encourage you to do at home
+
+
+where you can take the GAN formulation
+
+
+and try to figure out how to make it
+
+
+equivalent and the punch line is you
+
+
+make it equivalent by choosing this form
+
+
+for the discriminator. Yes.
+
+
+Um, generally getting these kinds of
+
+
+approaches to work suffers from many of
+
+
+the same challenges as GANs. And it also
+
+
+means that often similar solutions work.
+
+
+So a lot of the methods that people use
+
+
+to stabilize GANs have to do with clever
+
+
+regularization of the discriminator,
+
+
+things like spectral norm or gradient
+
+
+penalty. And a lot of those ideas are
+
+
+also useful for this stuff.
+
+
+Um so these kinds of ideas have actually
+
+
+been very uh widely used uh particularly
+
+
+in the uh computer graphics literature
+
+
+because these kinds of uh techniques can
+
+
+be very effective for imitating uh data
+
+
+sets of human motion to get virtual
+
+
+characters to behave similarly to human
+
+
+motion capture. So this kind of
+
+
+adversarial imitation either with the
+
+
+GAN approach or the reward learning
+
+
+approach can be a really powerful way to
+
+
+get virtual characters and these days
+
+
+also humanoid robots to imitate the
+
+
+behavior of humans.
+
+
+Okay, so
+
+
+that's inverse RL and you might wonder
+
+
+why I put this in the same lecture as
+
+
+language models. The answer is because I
+
+
+ran late on Wednesday. But there's also
+
+
+a deeper reason which is that uh with
+
+
+language models we sometimes do want to
+
+
+do reinforcement learning in a way as to
+
+
+uh either reflect human behavior or
+
+
+optimize human preferences. So in the
+
+
+the rest of today's lecture I'll talk
+
+
+about language models and then at the
+
+
+end assuming we get that far I'll also
+
+
+talk about another way to learn rewards
+
+
+from human preferences that is very
+
+
+widely used with language models. Okay,
+
+
+that's that's my attempt at a smooth
+
+
+transition, but the real answer is I ran
+
+
+late on Wednesday, so that's why it's
+
+
+happening here. Uh, all right, let's
+
+
+talk about LMS. Uh, and this is
+
+
+important for us to talk about because
+
+
+all of you have a homework on LMS and
+
+
+also because increasingly this is
+
+
+becoming one of the uh most important
+
+
+application areas of reinforcement
+
+
+learning in uh modern uh ML practice.
+
+
+Okay, language models. What are language
+
+
+models? Uh hopefully all of you have at
+
+
+least some inkling of what a language
+
+
+model is. very high chance uh that
+
+
+you're going to use one over the course
+
+
+of your day-to-day. Uh maybe if you're
+
+
+writing code, chances are there's some
+
+
+language model involved in there.
+
+
+Hopefully not for this class. Um but uh
+
+
+you know at at the at their fundamental
+
+
+level, the reason that actually LLMs
+
+
+work so well is because they are so
+
+
+simple. Uh they're so simple that I can
+
+
+very briefly summarize a basic LLM just
+
+
+on this slide. So if you have a sequence
+
+
+of tokens, what are tokens? Well, tokens
+
+
+are really just uh compressed versions
+
+
+of uh characters. But if you want a very
+
+
+crude analogy, you can think of tokens
+
+
+roughly as words. They're not really
+
+
+words. Like you can think of them as
+
+
+commonly occurring uh combinations of
+
+
+letters, but basically words. Um
+
+
+you uh take your uh tokens, you combine
+
+
+them with a little piece of information
+
+
+that indicates their position in a uh in
+
+
+your string, basically an index 0 1 2 3
+
+
+etc. embed them in some uh space with a
+
+
+linear embedding and then pass them into
+
+
+something called self attention. Self
+
+
+attention is basically a way to get a
+
+
+model to take in a sequence. So, uh it
+
+
+uses an attention mechanism which you
+
+
+hopefully learn about in CS182 or 282 uh
+
+
+to allow the nth position to determine
+
+
+an output based on all the positions up
+
+
+to M. And then you alternate these mass
+
+
+self attention layers with regular
+
+
+position-wise nonlinear networks.
+
+
+Basically little MLPS at every position.
+
+
+Repeat this n times and then feed it
+
+
+into a softmax and output a next token
+
+
+at every position. And what the language
+
+
+model is trained to do is read in all
+
+
+the tokens up until the current time
+
+
+step and then output the token at the
+
+
+current time step. So it's essentially
+
+
+learning to complete a sentence
+
+
+using multiple layers of this self
+
+
+attention transformer. Um so I'm not
+
+
+going to go into too much detail about
+
+
+the architecture like this is stuff that
+
+
+would be covered in an LP course or in
+
+
+CS182.
+
+
+What we're going to talk about is how to
+
+
+train these things with RL. And for the
+
+
+purpose of training these things with
+
+
+RL, all we really have to understand is
+
+
+that the transformer represents the
+
+
+distribution over uh let's say xhat 4
+
+
+given x0 1 2 and 3 and the distribution
+
+
+over xhat 3 given x0 1 and 2.
+
+
+Okay.
+
+
+So uh that's basically sentence
+
+
+completion. So uh if you have uh tokens
+
+
+at the bottom like I like pom dps then
+
+
+it's just trying to predict or I like
+
+
+pumpp solver sorry it's trying to
+
+
+predict the next token and then you
+
+
+always end with an end of string token.
+
+
+So we can simplify it and just draw it
+
+
+like this and uh this is basically what
+
+
+like chat GPD does. Uh language models
+
+
+are often trained with supervised
+
+
+learning. uh but we can also train them
+
+
+with RL if you want to uh maximize some
+
+
+reward rather than just representing the
+
+
+data distribution. And that actually
+
+
+makes a lot of sense because if you want
+
+
+to train language models with supervised
+
+
+learning, then you need training
+
+
+examples that show the model exactly how
+
+
+you want it to behave. But if you train
+
+
+it with RL, then you can simply tell it
+
+
+via the reward function the kind of
+
+
+results that you'd like to see.
+
+
+Okay. So uh in order to train this thing
+
+
+with RL, the first thing we have to do
+
+
+is define an MDP or in general a
+
+
+partially observed MDP, a POM DP uh that
+
+
+would um represent the language
+
+
+generation problem. And there's actually
+
+
+a couple of ways to do this. We have to
+
+
+define the reward function and then we
+
+
+have to pick an algorithm. So that's
+
+
+what we're going to try to do today. And
+
+
+we have a few choices to make.
+
+
+Okay. So before we start making those
+
+
+choices, let's get a little bit more
+
+
+background on kind of the anatomy of LM
+
+
+training. This is not necessarily all
+
+
+that related to RL, but it's good to
+
+
+understand because we're going to put RL
+
+
+in the context of some kind of
+
+
+framework. So let's understand what that
+
+
+framework is. So we start if we want to
+
+
+start entirely from scratch with what's
+
+
+called pre-training. Pre-training is
+
+
+when you scrape large amounts of very
+
+
+diverse data, typically from the web,
+
+
+and use it to train your language model
+
+
+to predict the next token given all the
+
+
+past tokens.
+
+
+Pre-training is not a particularly
+
+
+sophisticated procedure. Uh most of the
+
+
+challenge in pre-training is actually in
+
+
+the systems aspects of making training
+
+
+fast and efficient. From the standpoint
+
+
+of um kind of the ML algorithms that we
+
+
+talk about, the algorithm for
+
+
+pre-training is extremely simple. So
+
+
+most of the challenge comes in
+
+
+implementing it so that it's fast and
+
+
+efficient so that you can cram more data
+
+
+into it. The answer to what data you use
+
+
+in pre-training is all of it.
+
+
+The complicated part from an algorithm
+
+
+standpoint at least is what happens
+
+
+after that. So if you pre-train an LLM
+
+
+on let's say all the data from the web
+
+
+um what is that LLM going to do? Well uh
+
+
+you can give it some text and what it's
+
+
+really trying to figure out is given
+
+
+that text what is a completion that is
+
+
+mostly like most likely to occur on the
+
+
+internet.
+
+
+Okay. Now, uh, some of you, those of you
+
+
+that know what the internet is might
+
+
+worry at this point, uh, because trying
+
+
+to figure out what the internet will say
+
+
+about something is, uh, you know, maybe
+
+
+not the most pleasant, uh, thought. Uh,
+
+
+so pre-training is not actually a very
+
+
+good way to get a model that does useful
+
+
+stuff. It's a good way to get a model
+
+
+that does like really horrible things.
+
+
+Uh, but it's going to know a lot, maybe
+
+
+much more than you would care to know.
+
+
+Uh, it's going to know lots of facts.
+
+
+It's going to know lots of memes. It's
+
+
+going to know everything basically
+
+
+because we put everything on the
+
+
+internet. Um, and after pre-training,
+
+
+the next thing you want to do is you
+
+
+want to tell your model, okay, now that
+
+
+you've seen all of this stuff, some of
+
+
+it good, some of it bad. Uh, let me tell
+
+
+you now what you should do with all that
+
+
+knowledge. And what I would like you to
+
+
+do that with all that knowledge is
+
+
+something useful. I would like you to
+
+
+follow instructions. Pre-training does
+
+
+not lead to a model that follows
+
+
+instructions. If you take a raw
+
+
+pre-trained model and you tell it uh
+
+
+explain to me how to do X, uh it might
+
+
+respond in some snarky way based on
+
+
+something that might look like a forum
+
+
+post or something, right? So, it's not
+
+
+necessarily trying to follow any
+
+
+instruction. It's just trying to predict
+
+
+the most likely future u tokens. In post
+
+
+trading, you might produce some
+
+
+highquality data that shows the model
+
+
+good examples of following instructions,
+
+
+good examples of writing code, good
+
+
+examples of answering questions.
+
+
+And this is a very laborious process.
+
+
+It's sometimes called instruction
+
+
+fine-tuning.
+
+
+And then of course the other thing you
+
+
+could do is you can construct some RL
+
+
+tasks for the model to solve and do
+
+
+post- training with RL for rewards. And
+
+
+sometimes people do both of these
+
+
+things. Sometimes they will first train
+
+
+the model for instruction following with
+
+
+supervised training and then train it
+
+
+some more with RL to get really good at
+
+
+solving some problems.
+
+
+Okay. So classic nonrl LLM post training
+
+
+um
+
+
+is uh uh is sometimes referred to as
+
+
+instruction fine-tuning. So a raw
+
+
+pre-trained LLM without before post-
+
+
+trainining um you know it's just trying
+
+
+to complete text and one way to give you
+
+
+an example this is from a paper by Jacob
+
+
+Andreas uh here there's there's a nice
+
+
+example where uh that kind of just makes
+
+
+the point about what completing text
+
+
+really entails. If you uh change the
+
+
+last sentence in the prompt, you get a
+
+
+different solution. So you say, "Pat
+
+
+watches a demonstration of a bowling
+
+
+ball and a leaf being dropped uh at the
+
+
+same time in a vacuum chamber. Pat, who
+
+
+is a physicist predicts that the bowling
+
+
+ball and the leaf will fall at the same
+
+
+time." You change it and you say, "Pat,
+
+
+who has never seen this demonstration
+
+
+before, predicts that the bowling ball
+
+
+will fall to the ground first. This is
+
+
+incorrect." In a vacuum chamber, blah
+
+
+blah blah blah blah. Okay, so what's the
+
+
+point? Well, this is not really a model
+
+
+that's solving any problem, but it does
+
+
+know a lot of stuff like this this
+
+
+inference that because uh Pat is a is a
+
+
+physicist, he'll understand this thing
+
+
+and if Pat has never seen it before,
+
+
+he'll make a mistake. Like this is some
+
+
+sophisticated knowledge about the world
+
+
+and about people and all that stuff. So
+
+
+the models know a lot of stuff. They
+
+
+just don't yet know how to use it. Okay,
+
+
+so post- training will tell the model
+
+
+how to use it.
+
+
+Um so a very classical way to do this is
+
+
+called instruction tuning. Instruction
+
+
+tuning is just a fancy way of saying
+
+
+let's get some examples
+
+
+of instructions and correct answers
+
+
+given those instructions.
+
+
+Pick those examples in lots of different
+
+
+domains and run supervised training
+
+
+essentially imitation learning on these
+
+
+instructions. And because the model
+
+
+already knows lots of stuff, then by
+
+
+training on lots of very diverse
+
+
+instructions, instead of just copying
+
+
+those instructions, it'll actually learn
+
+
+the general idea of what it means to
+
+
+follow instructions.
+
+
+Okay, so instruction tuning is basically
+
+
+imitation learning
+
+
+and in the olden days this was kind of
+
+
+the main way that L and post training
+
+
+was done and in fact even now it's kind
+
+
+of the the bedrock of L and post
+
+
+training. Um it's typically very labor
+
+
+intensive because just like in imitation
+
+
+learning that we talked about in the
+
+
+beginning of this course, someone has to
+
+
+produce those demonstrations and that's
+
+
+a lot of work. Um, and it's especially
+
+
+costly for tasks that are very highly
+
+
+skilled. So, instruction tuning for
+
+
+like, you know, having a nice
+
+
+conversation, telling the model like if
+
+
+I say hello, then it should respond with
+
+
+how are you doing instead of get lost.
+
+
+Like, that's a pretty easy thing to do.
+
+
+Like, anybody could write those kinds of
+
+
+things. But if you want an instruction
+
+
+like write me a highly optimized
+
+
+implementation of quicksort. Okay, like
+
+
+someone needs to actually know how to do
+
+
+that task in order to produce the
+
+
+demonstration because this is imitation
+
+
+learning. So the more complex the tasks
+
+
+get, the more costly it is to do
+
+
+instruction tuning to optimize the model
+
+
+for those tasks.
+
+
+And there's all sorts of other things
+
+
+that could go wrong, right? Like uh the
+
+
+model is trying to generalize from these
+
+
+instructions, but it's it doesn't
+
+
+actually understand that it's supposed
+
+
+to achieve the task. All it's trying to
+
+
+do is uh imitate the demonstrations.
+
+
+So there are a few ways that we can do
+
+
+RL with LLMs. Uh and broadly speaking,
+
+
+they fall into two categories. Learning
+
+
+to produce responses that people like
+
+
+and learning to produce responses that
+
+
+are correct.
+
+
+And these two things both have their
+
+
+strengths and weaknesses. So producing
+
+
+responses that people like is very
+
+
+general because you can train for
+
+
+responses that people like for lots of
+
+
+different prompts from coding to uh
+
+
+question answering to composing uh you
+
+
+know essays to solving homework in a
+
+
+class, right? Like these are all things
+
+
+where you can optimize for how much you
+
+
+will like your answer. And this is
+
+
+called RL from preferences. And RL from
+
+
+preferences actually uses a learned
+
+
+reward function. a learned reward
+
+
+function that is learned from human
+
+
+labels of which responses they like more
+
+
+or less.
+
+
+Rurl from preference is also dangerous
+
+
+because it's very easy to get your model
+
+
+to just try to flatter you or to respond
+
+
+in some way that makes you think that it
+
+
+did your task instead of actually doing
+
+
+it.
+
+
+So it this was kind of the original way
+
+
+of training um AI assistance with RL,
+
+
+but it's generally not enough if you
+
+
+want a very high performance model
+
+
+because you're kind of optimizing for
+
+
+the model that just like the IRL example
+
+
+will sort of fool you into thinking that
+
+
+it's doing the right thing. But it can
+
+
+be a very effective way to um reduce
+
+
+unwanted behaviors and it's very very
+
+
+general.
+
+
+Okay. And we'll talk about actual
+
+
+algorithms for this. So uh we'll we'll
+
+
+have more detail and more opportunities
+
+
+for you to ask questions about this
+
+
+later. The other big category of RL
+
+
+methods for LLMs is learning based on
+
+
+whether the task is correct or not. This
+
+
+is sometimes called RL from verifiers.
+
+
+This is an example of um uh a math
+
+
+problem being solved uh by an LLM and
+
+
+this LM was trained to produce correct
+
+
+answers to math problems.
+
+
+So here the reward indicates whether the
+
+
+answer is correct. uh and the model is
+
+
+trained to typically these are used with
+
+
+thinking models. So if you've used like
+
+
+chatgbt or gemini and you see that
+
+
+there's thinking mode what that's really
+
+
+referring to is that the model was
+
+
+trained to produce intermediate steps on
+
+
+the way to solving a problem and
+
+
+oftentimes that it's trained with RL to
+
+
+produce thoughts that lead to correct
+
+
+answers.
+
+
+Now this kind of method is very good
+
+
+because it will actually train the model
+
+
+to do the task correctly. But it's a bit
+
+
+more limiting because it's not as
+
+
+general. You have to actually have a way
+
+
+to check the answer. And sometimes you
+
+
+can check the answer objectively like if
+
+
+you're answering a math problem, maybe
+
+
+you know the ground truth answer. And
+
+
+sometimes you can actually learn another
+
+
+model that will tell you whether the
+
+
+answer is correct or not. You can learn
+
+
+a judge model. And that's also a common
+
+
+class of approaches. And then sometimes
+
+
+if you're doing something really fancy
+
+
+like training like coding agents like
+
+
+claw code, then maybe you have some
+
+
+sophisticated framework where you
+
+
+actually run the code and test if it's
+
+
+correct and so on almost like kind of a
+
+
+simulator. Sometimes it's referred to as
+
+
+a sandbox to basically check if your
+
+
+model is doing the right thing. So
+
+
+generally for these kinds of methods,
+
+
+they are less general and require some
+
+
+work to set up essentially the MDP, but
+
+
+they can be more powerful in actually
+
+
+optimizing for good solutions.
+
+
+Okay, so that's the background. Uh it's
+
+
+9:00 a.m. So uh let's adjourn for three
+
+
+minutes. We'll come back at 9:06 and
+
+
+then we'll talk about actual algorithms
+
+
+for this.
+
+
+Okay.
+
+
+>> Is it useful to think about language
+
+
+model?
+
+
+>> Yeah, I'll actually talk about that a
+
+
+little bit here if I don't run out of
+
+
+time. Uh but basically the way to think
+
+
+about it is that at each time step
+
+
+you're getting a um one token, right? So
+
+
+if you think of that one token as an
+
+
+observation, it's a very very limited
+
+
+observation just from seeing like the
+
+
+word hello, it's probably not really
+
+
+possible to figure out what the problem
+
+
+is. But if you look at the whole history
+
+
+of tokens now, you can probably actually
+
+
+figure out a decent action. So if you
+
+
+think about the tokens as observations
+
+
+then this is a partially observed
+
+
+problem and you need to somehow account
+
+
+for the partial observability.
+
+
+>> Okay why
+
+
+>> it's it's really kind of a so the short
+
+
+answer is you can uh but it's really a
+
+
+matter of formalism. So um one of the
+
+
+ways that people actually solve pom dps
+
+
+is by doing exactly this. So the and in
+
+
+fact there's actually um it's actually
+
+
+possible to show that if you take a
+
+
+partially observed MDP and you take the
+
+
+entire history of observations up to the
+
+
+current time that actually is a marovian
+
+
+state representation. It's not at least
+
+
+to me it's not like immediately
+
+
+obviously trivial but is true.
+
+
+>> I suppose that would be like a
+
+
+language.
+
+
+Well, I mean, even in language, I don't
+
+
+think it's like 100% obvious because if
+
+
+someone asks you um an ambiguous
+
+
+question, right? They uh have some kind
+
+
+of question in mind and they're
+
+
+expressing it through language. The
+
+
+expression of that question through
+
+
+language is an observation of their
+
+
+underlying mental state.
+
+
+>> But again, this is like it's almost like
+
+
+more about formalism than it is about
+
+
+actual methods. It's like sort of how
+
+
+how you conceptualize the problem. Is
+
+
+there ever a case where you would want
+
+
+to do additional representation learning
+
+
+on top of the context?
+
+
+>> So the most common case where you'd want
+
+
+to do additional representation learning
+
+
+is if you have an extremely long
+
+
+context. Uh and this is where people do
+
+
+things like summarization. In fact, this
+
+
+I think that the one of the final
+
+
+project options is actually going to be
+
+
+like this where if you have a lot of
+
+
+stuff in context, then you might not
+
+
+need you might not want to feed all of
+
+
+that into your model, but you might want
+
+
+to somehow summarize it in a more
+
+
+concise way that is actually optimized
+
+
+to capture all the relevant bits.
+
+
+>> Is that the furthest you can go with
+
+
+language tests?
+
+
+>> What do you mean by furthest?
+
+
+>> Oh, I see. Um
+
+
+I'm sure there's research on that. It's
+
+
+hard it's hard to do because um
+
+
+kind of transformers are already very
+
+
+powerful and they kind of like the
+
+
+reason the transformers are so powerful
+
+
+is because they don't have to summarize
+
+
+everything in a in a concise vector.
+
+
+People have looked at kind of hybrids of
+
+
+RNNs and transformers that do have
+
+
+something that looks more like uh a
+
+
+latent state. Um but to my knowledge
+
+
+this kind of stuff hasn't like been as
+
+
+effective as the kind of brute force
+
+
+approach.
+
+
+I should uh get started. Uh all right
+
+
+everybody uh please find a seat and we
+
+
+will resume
+
+
+and let's actually now start working
+
+
+through some uh formulations of how we
+
+
+can cram LLMs into RL. So
+
+
+let's say that I have some question what
+
+
+is the capital of France? Uh we refer to
+
+
+this sometimes as a context a prompt or
+
+
+a prefix. uh these things are basically
+
+
+synonyms for the purpose of post
+
+
+training
+
+
+and
+
+
+the goal of course is to produce the
+
+
+answer and the uh end of sequence token.
+
+
+Okay, so in general the an the response
+
+
+to the prompt will consist of multiple
+
+
+tokens. So here this is maybe not a
+
+
+great example but there's two tokens
+
+
+Paris and EOS. Uh but it could be like
+
+
+you know the city of Paris EOS. multiple
+
+
+tokens. Uh and uh that's the completion
+
+
+or the suffix
+
+
+and you can sort of think of the com the
+
+
+completion as the action a and you can
+
+
+think of the context or prompt as a
+
+
+state s and that's a perfectly valid way
+
+
+to think of this as an mdp. Uh this
+
+
+makes it a very simple mdp. It's
+
+
+actually a one-time step mdp.
+
+
+So P of A given S is the probability of
+
+
+the suffix given the prefix or the
+
+
+probability of the answer given the
+
+
+prompt. And because the action here
+
+
+consists of multiple tokens then P of A
+
+
+given S actually factorizes via the
+
+
+chain rule of probability into the
+
+
+probability of the first token which is
+
+
+Paris given the prompt times the
+
+
+probability of the second token EOS
+
+
+given the prompt and the first token.
+
+
+And in general, if you have n tokens,
+
+
+then you would multiply them all
+
+
+together and that's your p of a given s.
+
+
+Okay, so it's conditioned on the prompt.
+
+
+Uh and this is basically your policy. So
+
+
+in this case, you have a onetime step
+
+
+mdp and uh you can maximize the expected
+
+
+value of the reward under your policy uh
+
+
+using some RL method.
+
+
+So this is one way to define an MDP for
+
+
+RL with LLMs. There is a different way
+
+
+to do it which is equivalent as far as
+
+
+MDPs are concerned but maybe suggests
+
+
+something a little different about how
+
+
+to implement this in an algorithm. So a
+
+
+different way of doing it which you
+
+
+might already be expecting is to say
+
+
+well maybe every token in your output is
+
+
+a separate time step. So now it's not a
+
+
+onestep MDP anymore in this case because
+
+
+there's two tokens it's a two timestep
+
+
+MDP and the state now consists of the
+
+
+prompt and all of the tokens that you've
+
+
+already generated. And your transition
+
+
+probabilities here are trivial. The
+
+
+transition probability is that you have
+
+
+a probability of one of transitioning to
+
+
+the state where you simply take your
+
+
+current action and append it to your uh
+
+
+sequence so far. So this is now a
+
+
+multi-step MDP. You have a trajectory
+
+
+distribution. The trajectory is your
+
+
+suffix. And again you can do RL. Yes.
+
+
+uh to the right side of the conditioning
+
+
+bar.
+
+
+So at every time step, the transformer
+
+
+takes in all the tokens so far and
+
+
+produces the next token. So when you're
+
+
+sampling from it, you would just do
+
+
+ancestral sampling. You would just take
+
+
+the generated token at time step five
+
+
+and then feed it in at time step six.
+
+
+Correct? So this is just like in a if
+
+
+you run a policy, right? like you have
+
+
+to choose the first action before you
+
+
+can choose a second one because the
+
+
+second one is conditioned on the state
+
+
+which is a result of the first action.
+
+
+Uh all right so this is basically
+
+
+equivalent as far as all the
+
+
+probabilities are concerned but this
+
+
+perspective actually makes more sense if
+
+
+you want to use intermediate rewards uh
+
+
+or if you want to use value functions uh
+
+
+as baselines in a policy gradient method
+
+
+because your value functions might be
+
+
+expressed per token.
+
+
+So there are some methods where we
+
+
+actually don't care whether we do this
+
+
+or the onestep MDP but there are some
+
+
+methods where this kind of perspective
+
+
+will make more sense and both
+
+
+perspectives are correct.
+
+
+>> Any questions about the MDP formulation?
+
+
+Yes.
+
+
+>> Correct. If you think about it as a
+
+
+onestep MTP then of course your action
+
+
+space is the set of all strings of
+
+
+different lengths. If you think about it
+
+
+as a multi-step MDP, then your action
+
+
+space is just your vocabulary of tokens,
+
+
+but you have more time steps.
+
+
+Yes.
+
+
+Yeah. I I'll talk about that a little
+
+
+bit more later, but basically
+
+
+intermediate rewards sometimes refer to
+
+
+as process rewards. U these will be
+
+
+things like, okay, if you're solving a
+
+
+math problem, you might assign a little
+
+
+reward for the correctness of each step
+
+
+in uh your math solution. Or if you're
+
+
+writing code, you might assign
+
+
+intermediate rewards for like syntax
+
+
+mistakes.
+
+
+>> What do you mean?
+
+
+>> So, uh the the way that this works is it
+
+
+it's still all just uh sequence uh
+
+
+generation. So when when when the LM is
+
+
+producing intermediate thoughts, it's
+
+
+just like this uh answer paris and of
+
+
+sequence just with many more tokens. Uh
+
+
+typically the way that modern l like AI
+
+
+system tools do this is they will be
+
+
+asked to produce a special uh tag like a
+
+
+special string that indicates the
+
+
+beginning of a of a thought chunk and
+
+
+then another special thing at the end to
+
+
+indicate that it's over. And if you use
+
+
+like an online tool, it'll hide that
+
+
+part just because it's uh pattern
+
+
+mashing for the the tag. But that's
+
+
+purely like a a front-end UI thing. All
+
+
+all the model is doing under the hood is
+
+
+just generating a big long sequence.
+
+
+Yes.
+
+
+Yes. Yep. That's exactly right. Okay. So
+
+
+now let's uh let's try to put together a
+
+
+basic algorithm for training an LLM with
+
+
+RL. Uh let's try to use policy gradients
+
+
+because that's pretty simple. Um so we
+
+
+want to maximize the expected value of
+
+
+the reward. And let's start with the
+
+
+onestep formulation because that's a
+
+
+little easier to write out. So you want
+
+
+the gradient of that. That's pretty
+
+
+straightforward. So the gradient is just
+
+
+the expected value over all the actions
+
+
+which is all the answers sampled from
+
+
+your model given the state which is the
+
+
+prompt of grad log pi times the reward.
+
+
+Okay. And what is log pi? Well log pi is
+
+
+just the sum over all of your tokens of
+
+
+the log probability of producing that
+
+
+token. So grad log pi is just the
+
+
+gradient of the log probabilities of all
+
+
+the tokens in your sample. That's very
+
+
+straightforward. This is literally just
+
+
+the gradient of the cross entropy loss.
+
+
+So if you want to approximate this
+
+
+gradient, generate samples from your
+
+
+current model, which means like ask your
+
+
+model to answer the question and then
+
+
+take the cross entropy loss
+
+
+over your tokens, multiply by the reward
+
+
+and take the gradient. So it's very
+
+
+straightforward uh very similar to how
+
+
+you would implement supervised learning
+
+
+except now you have to generate these
+
+
+samples and feed them back in. Yes.
+
+
+discount.
+
+
+>> Yeah. So the question was well why don't
+
+
+we use discounting because you can
+
+
+generate really long sequences. Um you
+
+
+can do that. You can also assign a a
+
+
+lower reward to longer sequences. So
+
+
+there's all sorts of tricks that you can
+
+
+do like that.
+
+
+Uh and of course the other thing you can
+
+
+do is you can use an important sample
+
+
+policy gradient. Uh again just the same
+
+
+as before. uh you have your your samples
+
+
+from some sampling distribution pi bar
+
+
+maybe your previous policy and then you
+
+
+weight them by the importance weights
+
+
+just like we did in PO also a very valid
+
+
+thing to do yes
+
+
+it's exactly the same as policy
+
+
+gradients so uh at every iteration of
+
+
+the policy gradient algorithm you sample
+
+
+your completions your answers from your
+
+
+current LL LM that's your current policy
+
+
+pi bar and then for each of those
+
+
+samples compute this gradient and this
+
+
+gradient requires grad log pi and that's
+
+
+just given by the formula at the top. So
+
+
+this is this isn't actually different
+
+
+from policy gradient. This is just like
+
+
+how do you instantiate policy gradients
+
+
+with lms.
+
+
+So the context here is just s uh so the
+
+
+context is always being fed into the
+
+
+model and however long it is the
+
+
+algorithm kind of doesn't care.
+
+
+Okay. So
+
+
+the this line here this is the the
+
+
+reinforce style estimator and that's a
+
+
+perfectly valid estimator to use. Uh
+
+
+this is actually one of the things
+
+
+you'll be implementing on the homework
+
+
+and the bottom one is the simplified
+
+
+version of a PO style importance
+
+
+weighted estimator and that's maybe the
+
+
+the more practical one that you would
+
+
+use in practice. In practice you for
+
+
+larger LLMs you really want to use the
+
+
+importance weighted objective because
+
+
+you'd like to take multiple gradient
+
+
+steps on each set of samples.
+
+
+Okay.
+
+
+So to kind of to write out what this
+
+
+actually looks like and again this is
+
+
+nothing surprising here. This is regular
+
+
+policy gradient just instantiated with
+
+
+LMS. I'm going to use this symbol uh
+
+
+grad hat to represent just a a shorthand
+
+
+notation for this gradient estimator. Uh
+
+
+so the way that you train it, you sample
+
+
+a batch uh of uh answers, a batch of
+
+
+completions. You evaluate the reward for
+
+
+those answers and hopefully you you you
+
+
+have some reward function. Either it's a
+
+
+learn model that outputs the reward or
+
+
+it's something that just like checks the
+
+
+answer to a math problem. So now you get
+
+
+a reward for each of your completions.
+
+
+You set pi bar to be whatever policy you
+
+
+use to sample that. And then you have an
+
+
+inner loop where you sample a mini
+
+
+batch. Take a gradient step on that mini
+
+
+batch plugging in pi bar into the
+
+
+importance weights. Repeat this k times
+
+
+maybe 10 times. Take 10 gradient steps
+
+
+and then generate more samples. So uh
+
+
+this is basically just po. Um
+
+
+there's a choice to be made in terms of
+
+
+what you use for the reward function. uh
+
+
+and we'll need to talk about that and of
+
+
+course there's a few details to actually
+
+
+implement PO in practice. Obviously this
+
+
+thing up there is not the real PO
+
+
+gradient. There's all this like clipping
+
+
+and all this business. So we'll need to
+
+
+talk about that. Okay. So let let's talk
+
+
+about that now.
+
+
+Um there are a few choices we have to
+
+
+make to make this really practical. We
+
+
+have to smartly choose a baseline.
+
+
+Notice that this is not a baseline
+
+
+gradient estimator. So if we want the
+
+
+variance to be practically low, we need
+
+
+a baseline. We also need to choose a
+
+
+regularizer. This is a little bit
+
+
+subtle, but typically in RL, you don't u
+
+
+have a reward function for LLMs that
+
+
+fully captures everything you want. Like
+
+
+you want the LM to solve the math
+
+
+problem. You also want to answer in
+
+
+English. You also want to not like I
+
+
+don't know, you don't want to like
+
+
+randomly swear. You don't want to do a
+
+
+bunch of other irre irrelevant
+
+
+extraneous things. So you probably also
+
+
+want some additional regularizer that
+
+
+tells it like solve the math problem,
+
+
+but all else being equal, try to behave
+
+
+like a good model.
+
+
+So there's an additional term that we
+
+
+can add separately from the RL objective
+
+
+that just generally tells it to like be
+
+
+a reasonable model. Uh and typically
+
+
+that means don't stray too far from some
+
+
+prior model that speaks in English and
+
+
+doesn't say offensive things all the
+
+
+time. Um and then uh you also have to
+
+
+obviously choose your reward function.
+
+
+And sometimes that's pretty
+
+
+straightforward like if your reward is
+
+
+just like did you give the correct math
+
+
+answer you you you presumably know the
+
+
+correct answer at training time. So you
+
+
+just compare the two. But sometimes the
+
+
+reward is highly non-trivial like if you
+
+
+want to optimize preferences. So there's
+
+
+a choice to be made there as well.
+
+
+Okay.
+
+
+So we'll first talk about how to choose
+
+
+the baseline. Then we'll talk about the
+
+
+regularizer. And then we'll talk about
+
+
+the reward.
+
+
+All right. So what do we do for
+
+
+baselines? Well, uh when we learn about
+
+
+PO, we learn about GAE. Okay. So GA is
+
+
+this kind of slightly counterintuitive
+
+
+thing where your advantage estimator is
+
+
+a sum of these gamma lambda to the power
+
+
+blah blah blah times delta t prime. You
+
+
+can go back to the J uh lecture the the
+
+
+the policy gradient lecture to find out
+
+
+about this. But basically it's kind of
+
+
+like a sum of these temporal differences
+
+
+a sum of the uh differences between
+
+
+values of successive steps and it's a
+
+
+way to estimate advantages that is
+
+
+fairly robust to uh horizons and things
+
+
+like that. Yes.
+
+
+Yeah. So, interesting question. The
+
+
+question for those that didn't hear is
+
+
+well given that sampling from an LLM is
+
+
+pretty expensive, wouldn't we prefer to
+
+
+use an off policy algorithm? And this is
+
+
+a subtle question because for trading
+
+
+LLMs, there's a subtle balance to be
+
+
+struck between two considerations. One
+
+
+consideration is that you don't want to
+
+
+generate more samples than you have to
+
+
+because sampling from an LLM is
+
+
+expensive. On the other hand, training
+
+
+the LM is pretty expensive too. So you
+
+
+also don't want an algorithm that trades
+
+
+that reduces the number of samples at
+
+
+the cost of greater computational
+
+
+burden. So there are different ways to
+
+
+strike that balance. But it turns out
+
+
+that the most efficient algorithms like
+
+
+the uh Q function actoric methods they
+
+
+tend to be actually less widely less
+
+
+popular for LLMs because even though
+
+
+they are the most efficient they tend to
+
+
+be more computationally expensive. So
+
+
+because of that it turns out that kind
+
+
+of the sweet spot at least with current
+
+
+algorithms uh to strike that balance is
+
+
+something like importance weighted
+
+
+policy gradient which is a little bit
+
+
+off policy but strikes a good balance
+
+
+between the computational cost of
+
+
+learning and the computational cost of
+
+
+sampling as opposed to like robotic
+
+
+control where samples are really
+
+
+expensive. So you want like Q function
+
+
+actor critic or uh on the other extreme
+
+
+like alpho where samples are trivially
+
+
+cheap and you want like you know the
+
+
+most on policy thing you can get. Yeah
+
+
+good question. Okay so uh if you want to
+
+
+implement GE you have to train this uh
+
+
+value function uh to plug into your GE
+
+
+estimator and the value function
+
+
+typically would be trained by minimizing
+
+
+squared error against your target values
+
+
+and the target values can actually come
+
+
+from the GE estimator itself. So if you
+
+
+want to do PO with GA for LLMs, what you
+
+
+would actually do is you would estimate
+
+
+your GE targets and the way that you
+
+
+would classically compute target values
+
+
+is you would just take the GE estimator
+
+
+and add the initial state value and that
+
+
+gives you a value estimate. So it's a GA
+
+
+based value estimate for that step. This
+
+
+is just a little detail and you can do
+
+
+it in other ways too, but this is one of
+
+
+the more widely used techniques. And
+
+
+then of course you need to represent
+
+
+this value function somehow and there
+
+
+you also have a choice to make. You
+
+
+could either take a your entire language
+
+
+model make a copy of it and then take
+
+
+that copy and use it to output values
+
+
+instead of token probabilities or you
+
+
+can add a second head at every time step
+
+
+to your uh language model which is to
+
+
+say just take that last linear layer
+
+
+that outputs the logits and add a second
+
+
+last linear layer that outputs the
+
+
+values or maybe even a little MLP. So
+
+
+all of those have been used in the past.
+
+
+If you want like a really simple uh
+
+
+example, you can think of adding a
+
+
+second head. Um so you either add a new
+
+
+head or you make an entire copy of the
+
+
+entire network to serve as your uh value
+
+
+function.
+
+
+And this is just your previous value
+
+
+function. So uh if you're training a new
+
+
+parameter vector fi, the old is just the
+
+
+phi that you start with.
+
+
+Yes.
+
+
+>> Uh that's right. Typically you would
+
+
+have pretty good representations in the
+
+
+network. So this wouldn't be like a huge
+
+
+problem but potentially yes. So often
+
+
+it's simpler but more expensive to just
+
+
+make a copy of the of the model. Uh it's
+
+
+just if you're training a 500 billion
+
+
+parameter model that's probably like not
+
+
+a great choice.
+
+
+Um the other thing is uh you typically
+
+
+don't train the value function on the
+
+
+prompt. You only train on the suffix
+
+
+because you don't need to know the value
+
+
+of the prompt. The prompt is uh uh just
+
+
+the thing you're conditioning on. So you
+
+
+can remove all this stuff and just train
+
+
+just just put the value loss for the
+
+
+time steps where um it's a suffix.
+
+
+Okay. Now there's another way to compute
+
+
+a baseline. uh if you want to simplify
+
+
+things a little bit and you don't want
+
+
+to have a separate value network or a
+
+
+separate value head uh and that's using
+
+
+a little property that we have with LLMs
+
+
+that we don't actually have in general
+
+
+in RL which is with LLMs it's very easy
+
+
+if you have a trajectory in a particular
+
+
+state to teleport back to that state and
+
+
+generate multiple trajectories from the
+
+
+same state you you can't really do this
+
+
+if you have like an autonomous car
+
+
+driving on the road because you can't
+
+
+just teleport back to a state that you
+
+
+saw before with an LLM it's very easy to
+
+
+teleport back to a previous partially
+
+
+completed string and generate another
+
+
+roll out from that starting point. And
+
+
+because of that, you actually have
+
+
+another option available to you which
+
+
+you don't in general RL
+
+
+uh which is to estimate your baseline
+
+
+just using average reward. So you can
+
+
+generate multiple samples from your LM
+
+
+and then just set the advantage to be
+
+
+the reward of of that particular sample
+
+
+minus the average reward over all the
+
+
+samples you generated for that prompt.
+
+
+So you're essentially teleporting back
+
+
+in time uh to the uh to the same prefix
+
+
+but generating a new suffix. And this is
+
+
+much more powerful than the naive
+
+
+average reward baseline from before
+
+
+because notice this is the average over
+
+
+the rewards from the same state from the
+
+
+same prefix.
+
+
+So this is actually an unbiased estimate
+
+
+of the value of that prefix. So this is
+
+
+a very good value estimate and it
+
+
+doesn't require training a separate
+
+
+network.
+
+
+So then you would use this advantage
+
+
+estimator which is basically the reward
+
+
+along that trajectory minus the average
+
+
+over the rewards for all of the
+
+
+completions you generated for that
+
+
+prefix
+
+
+and then you just plug that in into your
+
+
+gradient estimator and this is called
+
+
+GRPO. So if you if you see the term GRPO
+
+
+it's just PO but without a value
+
+
+function but rather using this kind of
+
+
+advantage estimator.
+
+
+Yes.
+
+
+So for a naive average reward baseline,
+
+
+you would average over the reward of all
+
+
+of the trajectories, but the different
+
+
+trajectories start in different states.
+
+
+Whereas here, you're only averaging over
+
+
+the trajectories for that prompt. So if
+
+
+you have like a 100 prompts in your data
+
+
+set, you would generate multiple
+
+
+rollouts for each one and only average
+
+
+within each uh prompt.
+
+
+Okay, so it's really just a little trick
+
+
+that can avoid the need for a value
+
+
+function in this special case where you
+
+
+can generate multiple samples from the
+
+
+same state and that makes it quite
+
+
+simple. So we can avoid having to train
+
+
+that that value function. Um there's a
+
+
+bit of debate as to whether this is like
+
+
+better or worse than PO with value
+
+
+functions, but it's certainly easier to
+
+
+code up.
+
+
+All right, so that's the baseline. Now,
+
+
+one more piece we need is that
+
+
+regularizer. Remember that if we just
+
+
+train the model with RL giving it a
+
+
+reward to uh you know based on like some
+
+
+outcome like did it give the correct
+
+
+answer there's nothing preventing it
+
+
+from just deciding to do like really
+
+
+weird stuff like start speaking a
+
+
+different language or things like that.
+
+
+So we'd like to kind of somehow tell the
+
+
+model that you should maximize the
+
+
+reward but all else being equal try to
+
+
+remain a good language model try to not
+
+
+forget your your your origins so to
+
+
+speak. Um, so the way we do this is we
+
+
+tell it not to drift too far from some
+
+
+reference model. And that reference
+
+
+model typically is just the model we
+
+
+started with before we ran RL.
+
+
+Yeah, that's right. So we're going to
+
+
+we're going to use exactly what we
+
+
+learned about before, which is KL
+
+
+divergence. Uh, so uh we want to avoid
+
+
+producing nonsense. We also want to
+
+
+avoid overoptimizing the reward. Like if
+
+
+we use a learned reward, it's very easy
+
+
+if you're allowed to deviate arbitrarily
+
+
+far from your starting point to actually
+
+
+produce like gibberish text that just
+
+
+fools your reward model into thinking
+
+
+that you did something good because your
+
+
+reward model is if it's another learn
+
+
+model perhaps it gives reasonable
+
+
+rewards for sensible
+
+
+language, but it might give nonsense
+
+
+outputs when you give it nonsense
+
+
+inputs. So if you don't constrain the
+
+
+model in some way, it's actually pretty
+
+
+easy to fool learn rewards into thinking
+
+
+that you're doing something good. So
+
+
+we're going to add a constraint term. So
+
+
+we're going to do gradient ascent not
+
+
+just on the expected reward but also on
+
+
+the kale divergence between the model
+
+
+you're training and your reference
+
+
+model.
+
+
+So one of the ways you could do this is
+
+
+you could just uh subtract some
+
+
+multiplier beta times the kale
+
+
+divergence from your rewards and you get
+
+
+these modifi modified rewards r bar.
+
+
+Okay. So now if we put it all together
+
+
+uh we've got our model where we're now
+
+
+we're going to add values to it. This is
+
+
+the PO version. If you have the GRPO
+
+
+version then don't worry about the
+
+
+values. Uh we've got our probability of
+
+
+action given state.
+
+
+We're going to sample from our LLM for
+
+
+each prompt in our data set. We're going
+
+
+to compute this reward with the addition
+
+
+of the reference model.
+
+
+We're going to evaluate
+
+
+these uh delta uh terms for the g
+
+
+estimator over all the time steps.
+
+
+So then we get a ge estimate of the
+
+
+advantage at every step. And then we get
+
+
+our target values and remember the
+
+
+targets are just the g estimator plus
+
+
+the value at that step.
+
+
+So now we can fit our value function. we
+
+
+can set theta prime to be theta and then
+
+
+we have this inner loop where we do
+
+
+gradient ascent where the gradient is
+
+
+given by the clipped uh po objective. So
+
+
+that's this that complicated equation at
+
+
+the bottom is literally just copy and
+
+
+pasted from the previous clip PO slides.
+
+
+So we do gradient ascent on this and
+
+
+then we repeat. So this is basically
+
+
+just PO from before. Uh the only things
+
+
+I the only thing I really change is I
+
+
+added the uh the reference model to the
+
+
+reward that's the RB bar and I'm
+
+
+implementing all of this with LM
+
+
+transformers.
+
+
+And then if you want to use GRPO then
+
+
+you would skip the value function step
+
+
+and you would have a different advantage
+
+
+estimator. Yes. Back there.
+
+
+That's right. Yeah. So you basically
+
+
+take your current value function
+
+
+whatever it was compute the target
+
+
+values stop gradient and then regress.
+
+
+>> Yes.
+
+
+Um yes, but one one way I would
+
+
+interpret it is here's how you can
+
+
+interpret this thing. So the kale
+
+
+divergence if you actually approximate
+
+
+this with samples is basically just the
+
+
+log probability of your action under the
+
+
+reference model. So another way to think
+
+
+about what this is doing is it's saying
+
+
+you get a reward for getting the right
+
+
+answer and you also get a negative
+
+
+reward if what you produce is very
+
+
+unlikely under the reference model. The
+
+
+reference model typically will be you
+
+
+know fairly general. So it'll say, "Oh,
+
+
+lots of things are probable, but
+
+
+outputting like HH HHJ is very
+
+
+improbable, right? So mostly this is
+
+
+just there to make the really improbable
+
+
+stuff have a very negative reward.
+
+
+Yes.
+
+
+So typically you would just choose the
+
+
+reference model to be your current model
+
+
+before you start running RL. So if you
+
+
+want to think about this in a in a
+
+
+complete pipeline, you would first do
+
+
+pre-training, then maybe you would do
+
+
+instruction fine-tuning and then now
+
+
+that's your reference model and then you
+
+
+make a copy of it and then train that
+
+
+copy with RL using the instruction tune
+
+
+model as your reference.
+
+
+Okay. Um now let's talk a little bit
+
+
+about the reward function.
+
+
+So what if you don't know the reward?
+
+
+Okay. So if you know the reward
+
+
+function, it's pretty clear what you do.
+
+
+you just kind of modify the
+
+
+probabilities until the higherly
+
+
+rewarding thing is higher probability.
+
+
+But if you don't know the reward,
+
+
+you can learn it from preferences.
+
+
+And this is uh one of the most popular
+
+
+ways to do RL training of language
+
+
+models and it uses something called the
+
+
+Bradley Terry algorithm or uh maybe the
+
+
+more memorable name is the optometrist
+
+
+algorithm. So, uh, those of you like me
+
+
+that, uh, have, uh, some vision
+
+
+problems, sometimes you go to the eye
+
+
+doctor, and the eye doctor, what's what
+
+
+are they going to do? Well, they put
+
+
+some lenses in front of your eyes and
+
+
+they show you two different lenses and
+
+
+they ask, "Is A better than B?" And then
+
+
+you say like, "Oh, I have no idea.
+
+
+They're both blurry." But usually you
+
+
+would say like, "Oh, A is better." So
+
+
+then they're like, "Okay, is C better
+
+
+than D?" You say, "Oh, it's D." And then
+
+
+gradually they kind of dial in the right
+
+
+lenses. for those of you that don't but
+
+
+aren't fortunate enough to to wear
+
+
+glasses have no idea what I'm talking
+
+
+about but uh for the rest of you
+
+
+hopefully you understand what I mean. So
+
+
+that's basically the method in a
+
+
+nutshell uh learning from human
+
+
+preference is basically the optometrist
+
+
+algorithm.
+
+
+Uh so here's how it works. You take your
+
+
+current model pi theta and you sample
+
+
+two or more trajectories. You would like
+
+
+to do this for the same prompt ideally.
+
+
+And then you ask a person which one is
+
+
+more blurry. Is A better than B? Uh so
+
+
+ask a person to express a preference
+
+
+over your samples.
+
+
+So I'm going to use this symbol. So it
+
+
+looks a little bit like a greater than
+
+
+sign. So when you see that toao I is
+
+
+greater than to J that means I like I
+
+
+more than J. It means that I is less
+
+
+blurry than J.
+
+
+And then you're going to somehow use
+
+
+these preferences to train your reward R
+
+
+SI so that the preferred stuff has
+
+
+higher reward than the unpreferred
+
+
+stuff.
+
+
+And then you would train your policy
+
+
+using RSI as your reward. So that's the
+
+
+the the in a nutshell what RL from human
+
+
+preferences looks like.
+
+
+Okay. So now we have to of course
+
+
+figure out how we're actually going to
+
+
+train RI using those preferences. But
+
+
+this is the structure of the method. Any
+
+
+questions about this?
+
+
+>> Yes.
+
+
+Um,
+
+
+yeah. So, the question was, is there
+
+
+anything in between like preferences and
+
+
+getting a full verifier? Maybe one thing
+
+
+that could be seen as an intermediate is
+
+
+using a language model as a judge. So,
+
+
+there might be some problems where you
+
+
+don't necessarily want to just like
+
+
+optimize for preferences, but you're
+
+
+also not lucky enough to have like a
+
+
+handprogrammed verifier. So there you
+
+
+would train a model to predict whether
+
+
+an answer is correct. Uh and there's all
+
+
+sorts of kind of middle grounds there
+
+
+particularly in the agent literature. If
+
+
+you want an agent that will like use
+
+
+coding tools and stuff like that, then
+
+
+there's some complicated thing that you
+
+
+would typically train. Uh but you
+
+
+wouldn't train on preferences. You would
+
+
+train it on like correctness labels.
+
+
+>> Yeah.
+
+
+>> It's it's not a full rank. So it's a
+
+
+pair-wise ranking. uh or in the other
+
+
+thing that sometimes happens is if you
+
+
+sample more than two trajectories, you
+
+
+could actually ask for all pairs. Uh
+
+
+sometimes you can ask for full rankings
+
+
+within that set, but that's harder for
+
+
+humans to do. It's easier for humans to
+
+
+compare A to B. That's why the
+
+
+optometrist doesn't tell you A, B, C, or
+
+
+D, which one do you like better? They
+
+
+always tell you, is A blurriier than B?
+
+
+Okay. So, how do we train our SI? One of
+
+
+the things we have to keep in mind is
+
+
+that people are not very consistent. So
+
+
+you show the same set of uh generations
+
+
+to like 10 people and maybe seven out of
+
+
+the 10 will say I prefer A and three out
+
+
+of the 10 will say I prefer B.
+
+
+What does that mean? Is A better better
+
+
+or is B better?
+
+
+Any ideas? Seven out of seven out of 10
+
+
+dentists prefer A over B. What does that
+
+
+tell you?
+
+
+Okay, maybe you go with a majority.
+
+
+That's one possibility. Any other
+
+
+conclusions we could draw from that?
+
+
+Yeah, maybe maybe you have to wait them
+
+
+a little bit. Maybe what it really tells
+
+
+you is you're not sure. Like maybe A or
+
+
+and B are both actually pretty good. Now
+
+
+perhaps it's more likely that A is
+
+
+better. But if like nine out of 10
+
+
+dentists prefer A, then probably A
+
+
+really is better. So you want to account
+
+
+for the fact that these preferences are
+
+
+a bit stochastic and you want to use
+
+
+that stochasticity to your advantage.
+
+
+You want to figure out that as your
+
+
+model gets really really good, you have
+
+
+less certainty over which answer is
+
+
+better. So you want to take that uh
+
+
+noise into account. So you want a
+
+
+probabistic model.
+
+
+So here's a probabistic model we can
+
+
+use. And this model actually makes a lot
+
+
+of sense. Even though here it looks like
+
+
+a big wall of math. If uh to i is
+
+
+preferred over to J in one of the
+
+
+samples, what we're going to write down
+
+
+is the probability that a reasonable
+
+
+person would express this preference.
+
+
+And our model is that the probability
+
+
+and this is a Bernoli random variable.
+
+
+Probability that I is preferred over J.
+
+
+They're forced to choose. They can't say
+
+
+they're equal. So the probability that I
+
+
+is preferred over J is going to be
+
+
+proportional to the reward of I.
+
+
+And since there's only two choices, the
+
+
+denominator is just the um the
+
+
+exponential of the reward of I. The
+
+
+denominator is just the the sum of the
+
+
+of the two possible numerators. So that
+
+
+actually kind of makes sense because if
+
+
+sample TOA I has a much higher reward
+
+
+the exponential of its reward will be
+
+
+enormous relative to the exponential of
+
+
+the reward of J. So the probability is
+
+
+almost one. If I has almost the same
+
+
+reward as to J then this will be 50%.
+
+
+So very much inspired by the controls
+
+
+inference stuff that I talked about
+
+
+before. This is saying that uh better
+
+
+trajectories are exponentially more
+
+
+likely to be chosen based on their
+
+
+reward. But if you have two trajectories
+
+
+with truly equal reward, then they're
+
+
+equally likely to be preferred one over
+
+
+the other. And what that will do is
+
+
+it'll say that in the case where you
+
+
+know seven out of 10 people prefer this,
+
+
+you'll probably give these things pretty
+
+
+similar rewards.
+
+
+Okay? And um there's a for shorthand
+
+
+notation, there's a sigmoid function.
+
+
+You can look up the sigmoid function on
+
+
+Wikipedia. And the sigmoid function is
+
+
+basically this function. So if you see
+
+
+me write sigma of r i minus r t to j,
+
+
+that's basically exactly this equation.
+
+
+And uh a fun exercise for you to do at
+
+
+home is to look up the sigmoid function
+
+
+on Wikipedia. It look it looks a little
+
+
+different than this. So try to do a
+
+
+little bit of algebra to manipulate one
+
+
+into the other and you'll see how
+
+
+they're equivalent. So the log
+
+
+probability that I is preferred over to
+
+
+J is the log of the sigmoid function of
+
+
+R of T I minus R of TOA J.
+
+
+Okay. Um, and if toao r of t to i is
+
+
+bigger than r of t to j, this will be
+
+
+the sigmoid of a positive number. If
+
+
+it's smaller, then it'll be the sigmoid
+
+
+of a negative number.
+
+
+Uh, and interestingly, this is also
+
+
+exactly the same as ELO scores in chess.
+
+
+So, those of you that are avid chess
+
+
+players, uh, ELO score is just exactly
+
+
+this model. So if uh r to i and r to j
+
+
+are the elo scores of the two
+
+
+trajectories basically the same the same
+
+
+thing basically elo score is a
+
+
+prediction of whether one player will
+
+
+beat another player in a head-to-head
+
+
+game and this is a prediction of whether
+
+
+one trajectory will beat another
+
+
+trajectory in a head-to-head preference.
+
+
+Okay. So now this gives us a method for
+
+
+training s. You simply take this log
+
+
+probability which is the log of the
+
+
+sigmoid and you maximize it with respect
+
+
+to the parameters of your reward which
+
+
+typically would be another language
+
+
+model that takes in those answers and
+
+
+predicts a binary classification uh
+
+
+dependent to tell you what's preferred
+
+
+or sorry no not that predicts a scalar
+
+
+value to tell you the reward.
+
+
+>> Yes.
+
+
+um it's supervised learning where each
+
+
+data point is one preference.
+
+
+>> So if you have a hundred people each
+
+
+express a preference that's 100 data
+
+
+points. So you're maximizing the
+
+
+probability of every single preference
+
+
+label that was given to you.
+
+
+>> So you might have the same trajectories
+
+
+participate in multiple different games
+
+
+in which case they might show up in the
+
+
+sum multiple times. So the sum is over
+
+
+preferences that were expressed by
+
+
+people not overt trajectories.
+
+
+Okay. So here is the full RL from human
+
+
+feedback algorithm. Uh sample two or
+
+
+more trajectories by running your LLM.
+
+
+Basically uh answer the same question a
+
+
+couple of times. Ask a person to express
+
+
+a preference.
+
+
+Uh so a preference to i is better than
+
+
+to j means I like i more than j. Train
+
+
+your reward model by maximizing the log
+
+
+probability of all the preferences and
+
+
+that's just the log of the sigmoid of
+
+
+the reward of to i minus the reward of j
+
+
+and then train your policy with that
+
+
+reward. And then optionally you can
+
+
+repeat this a few times. it might make
+
+
+sense to repeat this because after you
+
+
+train your policy based on those
+
+
+preferences,
+
+
+your policy might have gotten better. So
+
+
+now you want to sample from it again.
+
+
+Remember, the optometrist doesn't just
+
+
+tell you A or B and then give you your
+
+
+glasses. They'll ask you, do you prefer
+
+
+A or B? And then they'll ask you, do you
+
+
+prefer C or D? What they're doing is
+
+
+they're refining their policy. They're
+
+
+running RL from your preferences. So you
+
+
+want you might want to do this a couple
+
+
+of times to really dial it in. Um and
+
+
+and that's the method. So this thing
+
+
+looks a lot like logistic regression to
+
+
+basically uh uh try to figure out which
+
+
+trajectories are better and this you
+
+
+don't have to actually train your policy
+
+
+to convergence. You can train it for
+
+
+like I don't know 50 PO steps or
+
+
+something.
+
+
+Um so this is often used for post
+
+
+training with LLMs.
+
+
+Typically actually this is only used for
+
+
+a few iterations maybe even as little as
+
+
+one because uh pretty quickly your
+
+
+preferences become kind of hard to
+
+
+distinguish like once the model is
+
+
+pretty good then it's always like seven
+
+
+out of 10. Um so sometimes you can even
+
+
+do this with one iteration and there's
+
+
+even standard data sets of preferences
+
+
+that are produced by some reference
+
+
+policy that you can use as a benchmark
+
+
+but in a production system you might do
+
+
+a few iterations but not too many like
+
+
+think like two or three not like 200.
+
+
+Okay. Um, yeah. Any questions about
+
+
+this?
+
+
+Yeah. Go ahead. No, go ahead.
+
+
+Yeah. So, if you want, this is kind of a
+
+
+subtlety, but generally, if you want
+
+
+your human raiders to give you accurate
+
+
+labels, you will want multiple suffixes
+
+
+for the same prefix. Technically, you
+
+
+could use the Bradley Terry algorithm.
+
+
+uh kind of at a population level to com
+
+
+to compare samples for different states,
+
+
+but it's really really messy. And
+
+
+typically when people actually use this,
+
+
+they will generate multiple answers to
+
+
+the same exact question and they will
+
+
+not do preferences across uh prefixes.
+
+
+Question back there.
+
+
+Number three is optimizing the
+
+
+parameters of your reward model to make
+
+
+the preferences very likely with respect
+
+
+to those rewards.
+
+
+And this is summed over all of the data
+
+
+points. So you might uh so the way the
+
+
+way that you would do this is you have a
+
+
+data set of prefixes. Maybe you have
+
+
+like a thousand questions. For each of
+
+
+those questions, you generate some
+
+
+number of suffixes. Those suffixes uh
+
+
+the answers you're going to show them to
+
+
+one or more human raiders. And those
+
+
+human raiders are produced preferences.
+
+
+And what you're summing over in number
+
+
+three is all the preferences over all
+
+
+the prefixes and over all the raiders.
+
+
+You will generally have many questions
+
+
+and for each question you might also
+
+
+have multiple ratings.
+
+
+Yes.
+
+
+Yeah. So, so the question for those of
+
+
+you that didn't hear is like, okay,
+
+
+well, if you really want to like get a
+
+
+very fine grain reward, maybe if seven
+
+
+out of 10 people prefer A over B, maybe
+
+
+you don't know which one is better, but
+
+
+if you like 7,000 people prefer A over
+
+
+B, then there must be some like
+
+
+citically significant uh improvement.
+
+
+Um, I think that's true. I I'm not sure
+
+
+if like this is something people take
+
+
+into account. Like it would intuitively
+
+
+would make sense to me that you would
+
+
+want to generate more preferences for
+
+
+the same uh prompt as you get more and
+
+
+more optimal, but I don't really know if
+
+
+that's a thing that people do. Yeah.
+
+
+Um yeah. Are there any sampling
+
+
+strategies that make this more
+
+
+effective? There are a lot of things
+
+
+that people experiment with here. Like
+
+
+for example um in the more kind of
+
+
+production systems people will sometimes
+
+
+sample more than two answers and then
+
+
+there's a choice to be made like do you
+
+
+compare all pairs or do you give people
+
+
+a set and ask them to choose out of that
+
+
+set. Um this is unfortunately not
+
+
+something I'm that familiar with because
+
+
+like like the the whole human factors
+
+
+aspect of it like what what are humans
+
+
+better at answering? I don't know. Like
+
+
+I've seen papers that do either one of
+
+
+those things and there's all sorts of
+
+
+games people play to to like kind of
+
+
+curate that sample set. But this is
+
+
+unfortunately beyond my expertise.
+
+
+Yeah.
+
+
+What's the downside of this? Well, one
+
+
+downside is that asking people what they
+
+
+prefer isn't necessarily the same as as
+
+
+uh determining the best solution. So you
+
+
+you're kind of you know that one of the
+
+
+downsides with this approach is that if
+
+
+you use this reward, you're kind of only
+
+
+as good as your uh human labelers. So
+
+
+your human labelers have to express
+
+
+preferences in a way that actually
+
+
+accords with the optimality of those
+
+
+trajectories.
+
+
+If your human labelers are perfect
+
+
+according to this model, meaning that
+
+
+the human labelers essentially know the
+
+
+true reward and they generate their
+
+
+labels according to this probability,
+
+
+then this algorithm is correct. There's
+
+
+no problem with it. But typically humans
+
+
+are not quite so uh perfect.
+
+
+Okay. So
+
+
+uh if we wanted to do this with uh
+
+
+language models all we have to do is we
+
+
+have to plug in that learned reward into
+
+
+into the step and that that's basically
+
+
+it. So in a complete
+
+
+RL from human preferences framework uh
+
+
+you would sample your trajectories ask
+
+
+the person for preferences train your
+
+
+reward train the policy and so on and
+
+
+then with LLMs you have one model that
+
+
+is representing your rewards. So this
+
+
+would typically what you would do is you
+
+
+would take your reference model, make a
+
+
+copy of it and then train it to output
+
+
+scalar values for the rewards at the
+
+
+end. Uh
+
+
+and you would collect preferences over
+
+
+uh multiple on policy responses for the
+
+
+same prompt so that humans can easily
+
+
+compare them. Uh and you would typically
+
+
+assign the reward at the last step. So
+
+
+if you want to kind of summarize this um
+
+
+you would have your policy, your value
+
+
+function and your reward model which
+
+
+could actually be three separate LLMs or
+
+
+you could share the backbone across
+
+
+them. You could even share the backbone
+
+
+and have one model with logits values
+
+
+and rewards. That's a little bit less
+
+
+common. Most often people will make a
+
+
+separate reward model but that's an
+
+
+option. Okay. Um now there's other ways
+
+
+you can get rewards. Uh I won't go into
+
+
+this in too much detail, but you can get
+
+
+rewards from a verifier. Uh you can get
+
+
+a model that evaluates the answer and
+
+
+indicates if it's correct or not.
+
+
+Sometimes you can just directly pattern
+
+
+match and use a ground truth answer, but
+
+
+often you would actually train another
+
+
+model to basically classify the answer
+
+
+as right or wrong. You can also use
+
+
+what's called process rewards. So these
+
+
+are kind of dense rewards for RL with
+
+
+LLMs. Uh for example, if you're solving
+
+
+math problems, you could have a model
+
+
+that looks at each step of the solution
+
+
+and tries to grade each step as being
+
+
+right or wrong. And while it is not the
+
+
+same as the final answer that you want,
+
+
+it can provide more informative rewards
+
+
+to help the optimization process. So if
+
+
+you want to solve a really really hard
+
+
+math problem, uh and the only thing you
+
+
+see is whether you got it right or wrong
+
+
+at the end, that might be really tough.
+
+
+But if you also get some intermediate
+
+
+rewards to tell you if each step is
+
+
+right or wrong, that might guide you a
+
+
+little bit towards getting a better
+
+
+solution. So I won't go into these
+
+
+things too much because you know in some
+
+
+ways this is kind of simpler, closer to
+
+
+normal RL. Uh but keep in mind that this
+
+
+is also a thing that people do. Yes.
+
+
+>> So is there any benefit to having a
+
+
+dense reward versus reward at the end?
+
+
+Um what this often comes down to is
+
+
+exploration. So if you have a really
+
+
+tough math problem and your reference
+
+
+model basically never solves that math
+
+
+problem correctly and you only get a
+
+
+reward at the end if you get the right
+
+
+answer, you might not make any progress
+
+
+whatsoever.
+
+
+But if you get some rewards for correct
+
+
+steps, even ones leading to an incorrect
+
+
+answer, that might still not solve your
+
+
+problem, but at least it gives you
+
+
+something to learn in the meantime and
+
+
+maybe makes it slightly more likely, at
+
+
+least heristically, that you'll get it
+
+
+right. Typically, the trade-off between
+
+
+more informative rewards and less
+
+
+informative rewards is that more
+
+
+informative rewards lead to an easier RL
+
+
+process and an easier exploration
+
+
+problem, but a less optimal final
+
+
+solution.
+
+
+Why a less optimal final solution? Well,
+
+
+because you're busy collecting all those
+
+
+rewards for correct intermediate steps,
+
+
+and that can detract from actually
+
+
+getting the right answer at the end.
+
+
+Like, this is this is why partial credit
+
+
+on exams is such a fraud proposition. Uh
+
+
+and presumably when you're using chat
+
+
+GPT, you really want to solve your
+
+
+problem, not just to have virtuous
+
+
+intermediate thoughts.
+
+
+All right. Any more? Uh yes.
+
+
+Yeah. So the question was, can you like
+
+
+switch from the the version with
+
+
+intermediate rewards as good for
+
+
+exploration to the version with final
+
+
+rewards? Uh that's a good idea. Maybe
+
+
+it's a good idea to try on the final
+
+
+project. Uh it it seems like like
+
+
+something that could help.
+
+
+>> [laughter]
+
+
+>> since it's a good idea for the final
+
+
+project. The the the idea was uh can you
+
+
+start off training the model with
+
+
+process rewards and then once it gets
+
+
+pretty good at uh once it gets non zero
+
+
+uh success at solving the problem then
+
+
+switch over to the sparse rewards.
+
+
+>> Yeah.
+
+
+uh and you're training with final
+
+
+answers at the end after you've already
+
+
+trained up with process rewards to get
+
+
+the unbiased optimal solution.
+
+
+And to be clear, I don't I haven't seen
+
+
+like papers that do this, but it seems
+
+
+like a very sensible idea to me.
+
+
+Go for it.
+
+
+All right. So now that we've covered the
+
+
+important things that we need for
+
+
+homework 4, I want to uh in the last 10
+
+
+minutes do a little bonus discussion
+
+
+about RL under partial observability. Um
+
+
+this is not stuff that you need for
+
+
+homework for, but I think it's kind of
+
+
+fun and it's kind of you know coming
+
+
+back to some of these theoretical
+
+
+things. Uh so LLMs are a classic example
+
+
+of a partially observed system. We kind
+
+
+of sweep it under the rug when we say
+
+
+like oh we're going to just like feed
+
+
+the entire prefix into the model. But
+
+
+every single token is an observation. If
+
+
+you use that second formulation where uh
+
+
+you have multiple steps, every single
+
+
+token is an observation and a single
+
+
+observation isn't really enough to solve
+
+
+the problem. So you really need to look
+
+
+at the full history. And this maybe gets
+
+
+us thinking what happens under partial
+
+
+observability and are there interesting
+
+
+ways in which partially observed MDPs
+
+
+are different from fully observed MDPs.
+
+
+Okay, so this is a a baset of a
+
+
+partially observed MDP. One of the first
+
+
+things you will notice here is that if
+
+
+you observe the state S2, then S3 is
+
+
+conditionally independent of S1. If you
+
+
+observe the observation O2, then O3 is
+
+
+not conditionally independent of O1,
+
+
+which means that past observations give
+
+
+you more information if you have the
+
+
+current observation, but past states do
+
+
+not give you more information if you
+
+
+know the current state. And that's a big
+
+
+difference. So the observations do not
+
+
+obey the Markoff property. And this has
+
+
+some really interesting implications. So
+
+
+uh obviously the partially observed case
+
+
+is more general. Any fully observed
+
+
+problem can be treated as being
+
+
+partially observed without loss of
+
+
+generality. And the partially observed
+
+
+case is really very common. Like if
+
+
+you're driving a car and the car has a
+
+
+camera on it, that observation is a
+
+
+partial observation. Why? Well, because
+
+
+there might be someone in your blind
+
+
+spot. So if you're driving this orange
+
+
+car, then this blue car over here might
+
+
+not be seen from your camera. If you
+
+
+have only a forward- facing camera, but
+
+
+it's still there and it still affects
+
+
+what you should do. Uh that's why you
+
+
+put many cameras on your cars. uh most g
+
+
+you know video games partial
+
+
+observability if you're playing
+
+
+Minecraft popular RL benchmark partially
+
+
+observed there's things in the world
+
+
+that you don't see uh if you're talking
+
+
+to a person that is a partially observed
+
+
+problem the person has thoughts in their
+
+
+brain that you do not get to see it's a
+
+
+partially observed problem if you have a
+
+
+chatbot it's a partially observed
+
+
+problem so most problems in the real
+
+
+world really are partially observed for
+
+
+a very simple reason which is that the
+
+
+universe is very complicated and you
+
+
+don't get to see all of it
+
+
+And partially observed MDPs can be
+
+
+really, really weird. Um, there are a
+
+
+few weird things that happen in
+
+
+partially observed MDPs that do not
+
+
+happen in normal MDPs. One of them is
+
+
+information gathering actions.
+
+
+Information gathering actions are
+
+
+actions that you would never do if you
+
+
+have full observability. Basically, they
+
+
+are actions that you would never take in
+
+
+a normal MDP, but that might be
+
+
+extremely important to take in a partial
+
+
+observed MDP. Let's say that you're
+
+
+going through a maze.
+
+
+Okay. uh if you treat this as as an MDP
+
+
+where uh you uh know which state you're
+
+
+in, you just run RL, all that is good.
+
+
+But if you want a policy that will solve
+
+
+any maze, well, maybe you need to like
+
+
+peek over the edge of the maze and look
+
+
+around to make a map,
+
+
+right? Like this maybe is thinking a
+
+
+little bit outside the box, but if there
+
+
+is some action that you can take, you
+
+
+know, in general, you know, you're
+
+
+navigating through the forest, you might
+
+
+climb a hill to to get a better look.
+
+
+That's not something you would ever do
+
+
+if you know everything about the world.
+
+
+That's not something you would ever do
+
+
+under full observability, but it might
+
+
+be extremely important under partial
+
+
+observability. And that's really
+
+
+important because if you try to treat a
+
+
+partially observed problem as though it
+
+
+was a fully observed problem, then you
+
+
+would never get information gathering
+
+
+actions. But they might be extremely
+
+
+important to get good results.
+
+
+Another interesting setting in fully
+
+
+observed MDPs there always exists a
+
+
+deterministic policy that is optimal. In
+
+
+partially observed MDPs, you can set
+
+
+them up so that there is no optimal
+
+
+deterministic policy that the optimal
+
+
+policy is actually stocastic. There's a
+
+
+really simple example I can use to
+
+
+illustrate this and it's not as
+
+
+contrived as it might seem. Uh let's say
+
+
+that you have a an MDP with three states
+
+
+uh A, B, and C. And now when we
+
+
+construct a partially observed MDP, the
+
+
+observation contains nothing. So the
+
+
+observation is an empty set. That's a
+
+
+perfectly valid POM DP.
+
+
+And your goal is to get to the middle.
+
+
+Your goal is to get to state B. And you
+
+
+can go left or right. And you will
+
+
+randomly start in A or C.
+
+
+Okay, that's my PUM DP. The observation
+
+
+contains nothing. So now if you take a
+
+
+deterministic policy like always go left
+
+
+or always go right, then half the time
+
+
+you will not reach the goal. If you take
+
+
+a stochcastic policy, go left or right
+
+
+half the time, then you'll eventually
+
+
+always reach the goal.
+
+
+So the difference in regret between a
+
+
+stochcastic policy and any deterministic
+
+
+policy in this case is infinite.
+
+
+Which is all to say that making the same
+
+
+mistake over and over again forever is a
+
+
+really bad idea. Yes.
+
+
+>> Okay. So the question was how are
+
+
+information gathering actions different
+
+
+from exploration? Exploration is
+
+
+something we do during training. So ex
+
+
+so once you've learned the policy you're
+
+
+done with exploration just run the
+
+
+policy. But an information gathering
+
+
+action is something that the policy
+
+
+might actually do even once training is
+
+
+fully finished.
+
+
+Okay. Any questions about these
+
+
+examples?
+
+
+Okay. So um
+
+
+which methods handle partial
+
+
+observability? I have only a few minutes
+
+
+left. So I'll go through this pretty
+
+
+quickly. Ordinarily we would have would
+
+
+play a fun game here where you guys
+
+
+would guess which methods work under
+
+
+partial observability but with four
+
+
+minutes I should probably tell you uh
+
+
+policy gradients
+
+
+it depends. So policy gradients
+
+
+generally handle partial observability
+
+
+just fine. So if you condition the
+
+
+policy on the observation rather than on
+
+
+the state
+
+
+in vanilla policy gradients that's
+
+
+perfectly reasonable because regular
+
+
+policy gradients actually do not assume
+
+
+the markoff property. Strange but true.
+
+
+Nowhere when we worked out policy
+
+
+gradients we never made the assumption
+
+
+that the markoff property holds. But
+
+
+there is a little detail that's very
+
+
+important to keep in mind which is the
+
+
+advantage estimator because the
+
+
+advantage estimator sometimes has a
+
+
+value function lurking inside of it and
+
+
+that thing often does assume the markoff
+
+
+property. So policy gradients generally
+
+
+are totally okay under partial
+
+
+observability if you are careful in how
+
+
+you estimate advantages
+
+
+value based methods like Q-learning are
+
+
+not okay and there's a very very simple
+
+
+counter example that stochcastic setting
+
+
+from before the stochastic setting from
+
+
+the previous slide there I already told
+
+
+you that a stochcastic policy is better
+
+
+than any deterministic policy Q-learning
+
+
+always yields a deterministic policy. So
+
+
+that alone should already tell you that
+
+
+Q-learning will not find the best policy
+
+
+in that observation space because it is
+
+
+incapable of giving you a stochastic
+
+
+policy.
+
+
+There's of course a more general
+
+
+explanation for this, but generally
+
+
+valuebased methods which assume that you
+
+
+can express the value as a function of
+
+
+the current state will not work if you
+
+
+naively replace the state with an
+
+
+observation.
+
+
+um modelbased methods we'll talk about
+
+
+later.
+
+
+Um and then the detail to remember about
+
+
+policy gradients is that the advantage
+
+
+function takes some care. So if you have
+
+
+a value function inside of your
+
+
+advantage that will get you in trouble
+
+
+because the value function assumes that
+
+
+the markoff property holds. Okay. Um
+
+
+I'll skip through this part and I want
+
+
+to tell you a little bit about
+
+
+um
+
+
+one more detail.
+
+
+Okay. So this is the kind of the last
+
+
+thing that I want to tell you about for
+
+
+um partial observability and that's
+
+
+history states. So what we did with LLMs
+
+
+like in the LLM section we didn't worry
+
+
+about observations. Why? because we
+
+
+always feed the entire history of
+
+
+observations into the model. And one
+
+
+important thing to remember is that if
+
+
+you have observations and uh you can
+
+
+don't don't worry about this stuff and
+
+
+you can concatenate all of your
+
+
+observations and feed them into your
+
+
+model. So you take 01 through OT and
+
+
+just set that to be ST.
+
+
+This is okay.
+
+
+So you can always take a partial
+
+
+observed MDP concatenate all of your
+
+
+observations and treat that as a
+
+
+marovian state and it's very easy to see
+
+
+why this is okay. So the question is
+
+
+does it work? Well remember a state
+
+
+representation is a valid state if it
+
+
+obeys the markoff property. So if we
+
+
+want to use a history of observations
+
+
+the only question we need to ask is does
+
+
+a history of observations obey the
+
+
+markoff property.
+
+
+So this is the markoff property. It just
+
+
+says ST+1 is independent of ST minus one
+
+
+given ST. Okay. Is the history up to
+
+
+state t + one independent of the history
+
+
+up to state t minus one given state
+
+
+given the history at time step t. This
+
+
+is actually a very easy question uh
+
+
+because
+
+
+two things are conditionally independent
+
+
+given something if that something tells
+
+
+you all you need to know about a without
+
+
+knowing b. Okay. So do you know do you
+
+
+have everything you need to know about
+
+
+the history at time step t plus one from
+
+
+the history at time step t that you
+
+
+would get from t minus one. Well the
+
+
+answer is yes because the history at
+
+
+time step t contains the history of step
+
+
+at step t minus one. So once you know
+
+
+the history at time step t the history
+
+
+at t minus one tells you nothing new
+
+
+whatsoever. It's literally a subset.
+
+
+So that immediately tells you that the
+
+
+that ST plus one is independent of ST
+
+
+minus one given ST if the S's are
+
+
+histories.
+
+
+So now this by itself we're not always
+
+
+satisfied with this because maybe our
+
+
+history is extremely long. So you might
+
+
+still want to worry about partial
+
+
+observability. But if you have a setting
+
+
+where you can read in the full history,
+
+
+this gives you license to just forget
+
+
+about partial observability and user
+
+
+histories.
+
+
+>> Yes.
+
+
+Yeah. So the question was well what's up
+
+
+with this? It doesn't fully describe the
+
+
+system. Uh that is true. So your
+
+
+transition probabilities are still
+
+
+stochcastic but it is valid in the sense
+
+
+that it obeys the Markoff property which
+
+
+means that all those methods that ex
+
+
+that expect a marovian state are going
+
+
+to be correct when you give them this.
+
+
+Correct in the sense that they will work
+
+
+as expected.
+
+
+All right. Now it's 10 a.m. Let's
+
+
+adjourn and I'll see you all next week.

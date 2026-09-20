@@ -1,0 +1,3934 @@
+[snorts]
+
+
+All right, welcome everybody. Let's uh
+
+
+get started. So today uh we are going to
+
+
+uh shift to the second half of the
+
+
+course. So the in the first half of the
+
+
+class we learned about the fundamental
+
+
+model free reinforcement learning
+
+
+algorithms and in the second half of the
+
+
+course we're going to learn about a
+
+
+number of advanced topics. So um
+
+
+everything up until now has been kind of
+
+
+the the basics that build up to
+
+
+algorithms that you might actually want
+
+
+to use. And then everything from here on
+
+
+out is um well hopefully still
+
+
+algorithms that you want to use but kind
+
+
+of more advanced algorithms that you
+
+
+might use uh under special circumstances
+
+
+let's say. Uh and uh today's lecture is
+
+
+actually a little bit unusual because
+
+
+today we're not going to talk about any
+
+
+kind of algorithm for reinforcement
+
+
+learning or imitation learning or
+
+
+anything like that. We're actually going
+
+
+to uh discuss a generally very useful
+
+
+tool in machine learning which we will
+
+
+then use in many other cases and and the
+
+
+tool is variational inference. So this
+
+
+is almost like one of these little
+
+
+digression lectures where uh what you'll
+
+
+learn about is uh not quite immediately
+
+
+obviously directly relevant to the
+
+
+class. But you'll actually see that it
+
+
+will show up in all sorts of interesting
+
+
+ways in various reinforcement learning
+
+
+methods that we'll talk about after this
+
+
+including model based reinforcement
+
+
+learning and uh actually deriving the
+
+
+theoretical foundations of soft vector
+
+
+critic which will be kind of fun. So the
+
+
+tool is variational inference and
+
+
+variational inference is basically an
+
+
+optimizationbased framework for training
+
+
+models with latent variables. Uh that
+
+
+might seem like kind of a mouthful but
+
+
+basically it means any kind of machine
+
+
+learning problem where not all of the
+
+
+variables that you care about are given
+
+
+to you in your data. Okay. And we will
+
+
+shortly find out what that is. So let's
+
+
+talk about latent variable models. Uh
+
+
+this is again this is a digression. This
+
+
+is not a reinforcement learning method.
+
+
+This is just kind of a general ML thing
+
+
+that is very healthy and virtuous for us
+
+
+to know about. So let's start with basic
+
+
+probabistic models.
+
+
+A very very basic probabistic model is a
+
+
+model of a distribution P of X. Okay. So
+
+
+let's say that my X's are points in 2D
+
+
+and this is my data set. My data set
+
+
+contains four points and I believe that
+
+
+the underlying distribution is a uh
+
+
+Gaussian distribution with two
+
+
+variables.
+
+
+Then I might fit a Gaussian
+
+
+distributionist by estimating the mean
+
+
+and the coariance matrix for these four
+
+
+points. That's like a kind of a standard
+
+
+stats thing that hopefully you learned
+
+
+about in your introductory stats course.
+
+
+And you know, if I were to draw that
+
+
+Gaussian as a as an ellipse representing
+
+
+the one standard deviation interval, it
+
+
+might look something like that. Okay, so
+
+
+that's a very very basic probabistic
+
+
+model. It's fully defined by a mean and
+
+
+a 2x2 coariance matrix. And you know,
+
+
+hopefully everybody knows how to
+
+
+estimate one of these things. Uh more
+
+
+interesting, we sometimes want
+
+
+conditional probability distributions.
+
+
+And that's kind of a much more relevant
+
+
+object in machine learning like a y
+
+
+given x. But this is still a probabistic
+
+
+model. So even if you're doing like
+
+
+linear regression, linear regression is
+
+
+actually a probabistic model where the
+
+
+distribution over y given x is a uh
+
+
+normal distribution with the mean given
+
+
+by some function of x and the variance
+
+
+being either fixed or also given by some
+
+
+function of x. So typically we don't
+
+
+think of linear regression in quite this
+
+
+way but it's a perfectly valid way to
+
+
+think of linear regression as estimating
+
+
+a conditional probability distribution.
+
+
+Okay. And of course there is our
+
+
+favorite class of uh conditional
+
+
+distributions which is a policy uh where
+
+
+you have a distribution over actions
+
+
+given states but it's really just like a
+
+
+really fancy version of that linear
+
+
+regression thingy. It's just a
+
+
+conditional distribution and maybe it's
+
+
+a very elaborate conditional
+
+
+distribution. Maybe it's not linear
+
+
+regression anymore, but it's nonlinear
+
+
+regression with a neural network, but
+
+
+still a probabilistic model. Okay, so
+
+
+these are all fairly simple
+
+
+probabilistic models because the only
+
+
+variables are X and Y. And if we were to
+
+
+do like regular supervised learning, our
+
+
+data set will contain X's and Y's and we
+
+
+would estimate the distribution over Y's
+
+
+from the X's and everything is like
+
+
+pretty reasonable and straightforward.
+
+
+But if you have more complex
+
+
+distributions, then it might really help
+
+
+to pretend like there are other
+
+
+variables in your problem besides the
+
+
+ones that are given to you. So maybe
+
+
+instead of the those four normally
+
+
+distributed points that I had before,
+
+
+maybe my data set in 2D looks like this.
+
+
+Okay. Uh and this data set maybe would
+
+
+not be very well approximated by one
+
+
+Gaussian distribution. And perhaps
+
+
+instead if I wanted to get an accurate
+
+
+probability density for this kind of
+
+
+data, perhaps it's better approximated
+
+
+by a mixture of three Gaussian
+
+
+distributions.
+
+
+The color coding is just for for your
+
+
+reference. The data set is just just
+
+
+consists of 2D points.
+
+
+So if I wanted to represent my
+
+
+probabistic model as a mixture of three
+
+
+Gaussian distributions, then perhaps P
+
+
+of X is given by a sum over some other
+
+
+variable Z. In this case, the Z is a
+
+
+categorical variable that takes on three
+
+
+values, one for each mixture element.
+
+
+And then for each of those mixture
+
+
+elements, I have a separate Gaussian P
+
+
+of X given Z. And each mixture element
+
+
+has some weight on it, P of Z. So P of Z
+
+
+is just a distribution over our categor
+
+
+categorical variable that takes on three
+
+
+values. Okay. So this is a very simple
+
+
+mixture of Gaussian's model and you can
+
+
+see that you know the mixture of
+
+
+Gaussian model can represent much more
+
+
+complex distributions than the single
+
+
+Gaussian.
+
+
+The trouble is that in my training set
+
+
+my data points are not labeled with Z.
+
+
+They're only labeled with X. So Z is a
+
+
+latent variable meaning that it is not a
+
+
+variable that is given to me in my
+
+
+training set. I have to figure it out on
+
+
+my own. So I do not know which Z is
+
+
+associated with each data point. I mean
+
+
+in this case it's kind of obvious
+
+
+because they're like really clumpy but
+
+
+in general you don't know what it is.
+
+
+And again the same exact thing can
+
+
+happen in the conditional case. So you
+
+
+can so your P of Y given X can be given
+
+
+by a mixture of multiple elements each
+
+
+of which is a P of Y given X comma Z and
+
+
+has some weight P of Z on it.
+
+
+So, one example of a situation where we
+
+
+might really like this is that uh
+
+
+multimodal imitation learning setting
+
+
+that we talked about before. If
+
+
+sometimes you go around the tree to the
+
+
+left and sometimes you go around the
+
+
+tree to the right, well, the state that
+
+
+you saw when you're in front of the tree
+
+
+is the same. So, there is some
+
+
+unobserved latent variable Z, which in
+
+
+this case indicates which of the two
+
+
+modes, left or right, was actually taken
+
+
+in the data.
+
+
+>> Yes.
+
+
+Yeah.
+
+
+Yeah. So the difference is that uh the
+
+
+mean and variance were parameters of the
+
+
+model. So there's it's just a it's a
+
+
+variable that you store in the computer.
+
+
+There's only one of them for the model.
+
+
+Z is different for every data point.
+
+
+So the the red thinks of one Z, the pink
+
+
+thinks of a different Z, and the green
+
+
+thinks of yet another Z.
+
+
+Yep.
+
+
+So if this was a policy, then X would be
+
+
+your current state and Y would be your
+
+
+current action.
+
+
+Z represents the unobserved intent of
+
+
+the person creating the demonstration to
+
+
+go either left or right around the tree.
+
+
+So Z is basically an unobserved variable
+
+
+that affects the distribution over Y.
+
+
+Yes.
+
+
+Right. So uh one thing that's a little
+
+
+bit funky here is that P of Z the way I
+
+
+wrote it doesn't depend on X. It could.
+
+
+So you could have a P of Z given X as
+
+
+well.
+
+
+And of course we saw an example of such
+
+
+a model before. Uh the flow matching
+
+
+models that we talked about and that you
+
+
+actually implement in homework one can
+
+
+be can be thought of as a kind of latent
+
+
+variable model because the noise that
+
+
+you feed into your flow matching model
+
+
+will determine the action that comes
+
+
+out. So whereas a regular Gaussian
+
+
+imitation learning policy just takes in
+
+
+the state and outputs the action, your
+
+
+flow matching policy in homework one
+
+
+takes in the state and noise and
+
+
+produces an action that depends on that
+
+
+noise. So it can be thought of as a kind
+
+
+of latent variable model.
+
+
+And this is kind of funky, right?
+
+
+Because the latent variable model that I
+
+
+have here at the top, the latent
+
+
+variable is just a categorical with
+
+
+three values. So it's just an index for
+
+
+which of the three clusters you're in.
+
+
+In flow matching, the latent variable is
+
+
+this like big random vector. So it's a
+
+
+much more complex space but still it's
+
+
+the same principle.
+
+
+Okay. So
+
+
+in general we can think of a continuous
+
+
+laten variable model like this that
+
+
+there is some like really complicated
+
+
+distribution that you'd like to model
+
+
+and we'll stick to the unconditional
+
+
+case for now but the conditional case is
+
+
+the same. You just change to be y given
+
+
+x. So there's some complicated
+
+
+distribution you want and
+
+
+you have your latent variable Z which
+
+
+has some simple distribution. Maybe it's
+
+
+just a Gaussian distribution
+
+
+and then you have your conditional
+
+
+distribution X given Z which is also
+
+
+simple.
+
+
+So maybe X given Z is also a Gaussian
+
+
+distribution over X but the mean and
+
+
+variance of it is a nonlinear function
+
+
+of Z. So basically you have a simple
+
+
+distribution over Z, a complicated
+
+
+deterministic transformation of that
+
+
+that spits out the parameters of another
+
+
+simple distribution over X. And when you
+
+
+compose these, you can represent
+
+
+extremely complex distributions.
+
+
+If if this concept is unintuitive to
+
+
+you, think about a computer program that
+
+
+takes in a random seed, right? Like the
+
+
+random seed is simple. the computer
+
+
+program is deterministic but if you feed
+
+
+a random seed into a deterministic
+
+
+computer program you can represent
+
+
+basically any probability distribution.
+
+
+So this is an example of how you can
+
+
+have two simple distributions in the
+
+
+case of a computer program random seed
+
+
+and deterministic but with a nonlinear
+
+
+transformation between them and that can
+
+
+represent basically anything. So in this
+
+
+case you can think of like P of X given
+
+
+Z as your quoteunquote computer program
+
+
+P of Z as your random seed and the the Z
+
+
+distribution is simple the X given Z is
+
+
+a simple distribution formed by
+
+
+nonlinear transformation of Z and
+
+
+composing them together you can
+
+
+represent basically anything.
+
+
+So in this case like P of X could be the
+
+
+distribution of all natural images and P
+
+
+of X given Z might be a large neural
+
+
+network that transforms your Gaussian
+
+
+random numbers into random images.
+
+
+Okay, so this is actually a very
+
+
+powerful thing. Now the trouble of
+
+
+course now is that P of X uh now is
+
+
+given by an integral over all possible
+
+
+Z's of P of Z * P of X given Z.
+
+
+So calculating this integral if you want
+
+
+to actually figure out how likely a
+
+
+given x is is quite hard. Uh in fact
+
+
+it's intractable.
+
+
+But the individual constituent parts the
+
+
+things inside the integral are both
+
+
+relatively simple. There's an easy
+
+
+distribution over z and an easy
+
+
+distribution over x given z.
+
+
+So what does this tell us? This tells us
+
+
+that latent variable models are actually
+
+
+very attractive because if you can train
+
+
+them, then generating these X's is
+
+
+actually very easy because it's easy to
+
+
+sample from P of Z because it's just a
+
+
+Gaussian and it's easy to sample from P
+
+
+of X given Z because you just run that Z
+
+
+through your neural network, get a mean
+
+
+and a variance and then sample from
+
+
+that. But training it is hard yes
+
+
+to evaluate the integral because it's an
+
+
+integral over lots of numbers. So you
+
+
+have so if you wanted to do this like
+
+
+using numerical methods you'd have to do
+
+
+some kind of quadrure thing and that's
+
+
+really complicated and Z might be like a
+
+
+thousand dimensional uh so in general I
+
+
+don't know how to exactly evaluate an
+
+
+integral like that
+
+
+okay all right so um just as an aside
+
+
+where does this come up in RL um well uh
+
+
+conditional latent variable models could
+
+
+be used to represent multimmodal
+
+
+policies and we actually already saw a
+
+
+version of this in homework one Um,
+
+
+we can also use latent variable models
+
+
+in modelbased RL. We'll talk about this
+
+
+in a few weeks, but in modelbased RL,
+
+
+you're actually directly modeling the
+
+
+MDP. And if you have, for example, a
+
+
+partially observed MDP where you have
+
+
+images and actions and you want to
+
+
+figure out the underlying states without
+
+
+having them given to you in the data
+
+
+set, like for example, maybe you're
+
+
+learning to drive a car from images and
+
+
+you believe there's some underlying
+
+
+state, which is the configuration of the
+
+
+vehicles on the road. Well, the state is
+
+
+actually a latent variable. So in uh in
+
+
+model based RL, you have your
+
+
+observations P of O given S. That's just
+
+
+like P of X given Z. So S is the latent
+
+
+variable. Uh and you might have a very
+
+
+structured prior on P of S. So it's no
+
+
+longer just like one Gaussian over an
+
+
+entire trajectory of states. It actually
+
+
+has like dynamics inside of it. So the
+
+
+latent variable model for model based RL
+
+
+might actually model the internal
+
+
+dynamics of that state, but it's not
+
+
+given the state as input. but it's just
+
+
+given images and has to figure out a
+
+
+state representation and the dynamics to
+
+
+model it. So that's that's pretty cool.
+
+
+That's like learning the entire POM DP
+
+
+model. Uh and the laten space has a
+
+
+temporal structure. So we'll learn about
+
+
+that uh uh in a few weeks.
+
+
+Uh there are other places where latent
+
+
+variables come uh come up in RL. Like
+
+
+one of the places they'll they'll also
+
+
+come up is if you want to um model human
+
+
+behavior or human preferences where it's
+
+
+actually the reward that will be the
+
+
+latent variable.
+
+
+Okay, so how do we train uh latent
+
+
+variable models?
+
+
+So we have our model P theta of X and
+
+
+I'll define that in a second. We have
+
+
+our data. Our data consists of a bunch
+
+
+of X's
+
+
+and ordinarily if we want to estimate P
+
+
+theta of X using a bunch of data, what
+
+
+we would do is maximum likelihood
+
+
+estimation. So maximum likelihood
+
+
+estimation is estimating the parameters
+
+
+theta to maximize the sum of log
+
+
+probabilities of all your data points.
+
+
+So this is like you know basic machine
+
+
+learning.
+
+
+And now our p of x is given by that
+
+
+nasty intractable integral. So what I
+
+
+can do is I can just plug in that
+
+
+integral for p of x and this is my
+
+
+formula for training my latent variable
+
+
+model.
+
+
+And this is very very bad. Um so uh here
+
+
+I have to estimate this integral for
+
+
+every data point. I have to take the log
+
+
+of it and then I have to differentiate
+
+
+it with respect to theta. And that will
+
+
+be rather challenging to put it mildly.
+
+
+And oftentimes when we see um a sum or
+
+
+an integral over a bunch of points in
+
+
+machine learning, we're very tempted to
+
+
+estimate it with samples, which you can
+
+
+often do, but not in this case because
+
+
+notice that there's a log outside of the
+
+
+integral. So this the usual linearity of
+
+
+expectations thing doesn't apply because
+
+
+log is a nonlinear function. So you
+
+
+can't actually estimate that integral
+
+
+with samples uh naively and have that be
+
+
+an unbiased estimator of the likelihood.
+
+
+So, we're kind of in a lot of trouble
+
+
+with this.
+
+
+Any questions about this? Yeah.
+
+
+>> Yeah. Um, so we can do something a
+
+
+little different which I'll talk about
+
+
+on the next slide. Uh, you have to have
+
+
+a likelihood of some sort, but maybe not
+
+
+that one.
+
+
+Okay. So the alternative that we use
+
+
+which I'm I'm going to basically like
+
+
+state this alternative kind of by
+
+
+assertion and then I will actually
+
+
+justify it later. So this will be
+
+
+justified but for now just kind of like
+
+
+suspend your disbelief and take my word
+
+
+for it that this is a reasonable thing
+
+
+to do. Um so the alternative we can do
+
+
+is what's called expected log likelihood
+
+
+where instead of
+
+
+integrating over all possible values of
+
+
+Z, we're going to kind of guess the Z
+
+
+for each data point. Basically the logic
+
+
+here is if you had X's and Z's in your
+
+
+data set, if someone tells you like,
+
+
+hey, this is the mixture element that
+
+
+each of my X's came from or this is the
+
+
+latent variable that went with each X,
+
+
+then everything would be easy. So you
+
+
+can kind of guess the Z that goes with
+
+
+each with each X and then maximize the
+
+
+likelihood of that.
+
+
+And since in general you don't know
+
+
+which Z goes with which X, you can guess
+
+
+a distribution over likely Z's, sample
+
+
+from that distribution and then maximize
+
+
+the likelihood of that sample.
+
+
+That's kind of like a a reasonable thing
+
+
+like um maybe uh I have uh uh some
+
+
+population. Let's say that I'm looking
+
+
+at cars on the road and I believe that
+
+
+the size of the cars
+
+
+uh can fall into one of two mixture
+
+
+elements maybe trucks and regular cars
+
+
+and trucks are big and regular cars are
+
+
+small and within each of those there's
+
+
+some normal distribution. So if I could
+
+
+first guess which thing is a car or a
+
+
+truck and then uh label them with that
+
+
+corresponding Z and then just maximize
+
+
+the log likelihood of length comma car
+
+
+or truck that would be easier than
+
+
+trying to estimate the the whole uh
+
+
+integral.
+
+
+Okay, so the intuition is you guess the
+
+
+most likely Z given X I pretend that you
+
+
+guessed correctly and then maximize its
+
+
+likelihood except that there are many
+
+
+possible values of Z. So instead of
+
+
+guessing a single ZV value for each X,
+
+
+you actually guess a distribution over
+
+
+Z's. Sample from that distribution and
+
+
+thereby maximize the expected value of
+
+
+the log likelihood. So that's why it's
+
+
+called the expected log likelihood.
+
+
+Okay, so now we're left with one problem
+
+
+which is to actually calculate Z given
+
+
+XI. And this is sometimes called the
+
+
+posterior. So P of Z is the prior.
+
+
+That's your distribution over Z if you
+
+
+didn't know anything. And P of Z given X
+
+
+is your posterior. It's your
+
+
+distribution over Z's given a particular
+
+
+X.
+
+
+So if you could somehow calculate this
+
+
+posterior Z given X, you could sample
+
+
+the Z from the posterior for each X and
+
+
+then maximize the log likelihood of X
+
+
+comma Z.
+
+
+Okay. So the problem of uh estimating
+
+
+this posterior basically means that I
+
+
+have a particular X and I want to find
+
+
+the distribution of Z's that would
+
+
+result in that X essentially.
+
+
+And the trouble of course is that
+
+
+because everything here is
+
+
+probabilistic, the distribution over Z
+
+
+given X might be actually very complex.
+
+
+So there might be multiple different
+
+
+latent variables that could all produce
+
+
+the same X and I have to produce the
+
+
+this entire distribution over Z given X.
+
+
+So the problem of calculating Z given X
+
+
+is called probabistic inference. It's
+
+
+inferring the distribution of the
+
+
+unknown variable Z given the evidence X.
+
+
+And in general, it's a very hard problem
+
+
+because the posterior might be extremely
+
+
+complicated.
+
+
+Okay.
+
+
+Uh and uh probistic inference by the way
+
+
+is a very fundamental problem in machine
+
+
+learning. So this this problem of taking
+
+
+a particular model and essentially
+
+
+inverting it to figure out the
+
+
+distribution over the variable that you
+
+
+want comes up all the time in lots and
+
+
+lots of places. Um,
+
+
+if you want to use uh RL or opt or
+
+
+optimal control to estimate human
+
+
+behavior, like for example, you'd like
+
+
+to predict how somebody will act based
+
+
+on your guess about their objective. Uh,
+
+
+that's actually a probabistic inference
+
+
+problem. It can be used to study human
+
+
+motor control. It can be used to predict
+
+
+the behavior of taxi cab drivers in
+
+
+Pittsburgh. Uh we'll talk about this in
+
+
+the inverse RL lecture later, but
+
+
+proistic inference combined with RL is
+
+
+actually potentially a pretty powerful
+
+
+tool for modeling human behavior if you
+
+
+believe that humans are mostly rational
+
+
+goal pursuing agents. Um you can use uh
+
+
+generative models and variational
+
+
+inference for exploration. If you can
+
+
+model the distribution of states, then
+
+
+you can try to expand that distribution
+
+
+by going to rarely visited states. And
+
+
+that's actually that can also be framed
+
+
+as a proistic inference problem and uh
+
+
+learning from human feedback. So, RHF is
+
+
+actually a probabistic inference
+
+
+problem. It's the problem where you
+
+
+you're trying to infer uh somebody's
+
+
+rewards or uh based on preferences they
+
+
+express over different outcomes. So,
+
+
+these things actually happen in many
+
+
+many different places. But today, we're
+
+
+not going to talk about these particular
+
+
+use cases. We're just going to focus on
+
+
+the fundamental uh problem of
+
+
+probabilistic variational inference and
+
+
+latent variable models. Okay? But to
+
+
+preview it like it does actually come up
+
+
+in lots of very RL relevant situations.
+
+
+Okay. All right. So
+
+
+doing this exactly is very hard but
+
+
+doing it approximately can actually be
+
+
+very straightforward. So uh what I'll
+
+
+talk about next is a technique called
+
+
+variational inference which can be used
+
+
+to make it much more practical to
+
+
+approximately train these latent
+
+
+variable models.
+
+
+So we've got this problem that our
+
+
+posterior Z given X which we need for
+
+
+our expected log likelihood is a
+
+
+complicated monster and not only is it
+
+
+hard to estimate it's hard to even
+
+
+represent like how how the heck do I uh
+
+
+represent this kind of crazy
+
+
+distribution with a neural network or
+
+
+with anything else for that matter. So
+
+
+let's uh let's give up on that. Let's
+
+
+pretend as though my posterior was
+
+
+really really simple. So let's pretend
+
+
+as though the posterior for Xi, P of Z
+
+
+given X I could be modeled with some
+
+
+Gaussian distribution with mean mui and
+
+
+variance sigma I. This assumption is
+
+
+incorrect. This is a wrong assumption,
+
+
+but I'm going to make it anyway and hope
+
+
+for the best. And we'll actually see
+
+
+towards the end of the lecture that
+
+
+while it is incorrect, we can quantify
+
+
+how incorrect it is. And that can give
+
+
+us like a little bit of confidence that
+
+
+if we do everything right, maybe it's
+
+
+not too incorrect and we'll still be
+
+
+okay. But for now, let's not care about
+
+
+how incorrect it is. Let's just make it
+
+
+tractable. So force it to be tractable
+
+
+even if it means making a mistake. Yes.
+
+
+>> Yeah. So we'll actually do that. So
+
+
+eventually these will be neural
+
+
+networks, but for now let's not worry
+
+
+about neural nets because that will have
+
+
+lots of parameter vectors and all that
+
+
+stuff. So let's just say that for every
+
+
+single data point we're literally going
+
+
+to store in the computer a mean and and
+
+
+a variance.
+
+
+So this is assuming that for every XI
+
+
+the posterior Z given XI can be
+
+
+approximated with a Gaussian with mean
+
+
+mui and variance sigma. If it was
+
+
+multi-dimensional I could have a coarian
+
+
+matrix there that up to you but the
+
+
+point is that it's some very simple
+
+
+tractable distribution. You don't have
+
+
+to use a Gaussian like if you want you
+
+
+can use like a beta distribution or
+
+
+something. something where you can where
+
+
+you have a really concise
+
+
+parameterization that you can store in a
+
+
+computer and if you want like a mental
+
+
+model of what's going on here then for
+
+
+every xi I'm going to literally store a
+
+
+mui and a sigma i for it
+
+
+okay so that basically amounts to
+
+
+assuming that instead of like this
+
+
+complicated distribution my posterior is
+
+
+just one gaussian so I'm going from this
+
+
+to this and clearly these things don't
+
+
+look the same right look at them they're
+
+
+very different but I'm just going to
+
+
+ignore that and pretend that it's all
+
+
+good and just proceed ahead and see what
+
+
+happens. So this is incorrect, but it's
+
+
+very very convenient because now I'm
+
+
+representing my complicated posterior
+
+
+with a really simple distribution. It's
+
+
+easy to sample from. If if I have if I
+
+
+somehow get mui and sigma i, I can
+
+
+sample from that and use that to compute
+
+
+my expected log likelihood and
+
+
+everything will be all fine.
+
+
+And the key idea that makes this
+
+
+variational inference stuff actually
+
+
+useful is that even though you're
+
+
+approximating your posterior with a
+
+
+wildly incorrect distribution,
+
+
+you can construct a bound that shows
+
+
+that if you use that incorrect
+
+
+distribution in place of the correct
+
+
+one,
+
+
+it represents a lower bound on the log
+
+
+probability of X.
+
+
+And the spoiler here, which we'll see by
+
+
+the end of the lecture, is that the more
+
+
+accurate your posterior is, the tighter
+
+
+that lower bound is, which means the
+
+
+closer that lower bound is to the true
+
+
+value of log P of X. So let let's work
+
+
+on this a little bit. So remember log P
+
+
+of X is the log of the integral of P of
+
+
+X given Z * P of Z. Right? That's just
+
+
+my the definition of my latent variable
+
+
+model. And now I'm going to multiply the
+
+
+quantity inside the integral
+
+
+by one. And the particular choice of one
+
+
+that I'm going to use is Q over Z is Q
+
+
+of Z over Q of Z, right? Q of Z over Q
+
+
+of Z is one. So I can just stick that in
+
+
+there.
+
+
+And now, okay, where am I going with all
+
+
+this? Well, I'm I want to get to an
+
+
+expected log likelihood. Expected log
+
+
+likelihood in expectation under my
+
+
+approximate posterior.
+
+
+What is my approximate posterior?
+
+
+You guys can shout it out.
+
+
+What's the letter? Q. Right? Right? So
+
+
+my approximate posterior is Q of Z. So I
+
+
+want to somehow get massage I want to
+
+
+massage this formula into an expected
+
+
+log likelihood where the expectation is
+
+
+taken under Q of Z. So the reason that I
+
+
+stuck that Q of Z over Q of Z in there
+
+
+is that I eventually want the Q of Z to
+
+
+be on the outside so that it's an
+
+
+integral of Q of Z times a bunch of
+
+
+stuff so that I can express it as an
+
+
+expected value under Q of Z. And I have
+
+
+a Q of Z in the numerator. So I'm well
+
+
+on my way there. So let's stick that Q
+
+
+of Z on the outside and take everything
+
+
+else and put it inside the expectation.
+
+
+So this integral can be written as the
+
+
+log of the expectation under Q of Z of
+
+
+everything else. P of X given Z uh time
+
+
+P of Z divided by Q of Z.
+
+
+Okay, so I just took that integral. I
+
+
+recognize that it's an integral of Q of
+
+
+Z times a bunch of stuff and rewrote it
+
+
+as an expectation under Q of Z.
+
+
+Now, I'm not done yet because the
+
+
+expected log likelihood is the
+
+
+expectation of the log of a bunch of
+
+
+stuff and I still have the log of an
+
+
+expectation. So, it's kind of backwards.
+
+
+I'm not there yet, but I'm getting
+
+
+there. So,
+
+
+uh I'm not going to have equality. The
+
+
+best I can hope for here is a bound. So,
+
+
+I need to somehow turn that equal sign
+
+
+into a greater than or equal sign. And
+
+
+the one bit of cleverness I need here is
+
+
+uh something I can look up on Wikipedia
+
+
+which is Yensen's inequality which says
+
+
+that for a concave function such as a
+
+
+logarithm the log of the expectation is
+
+
+greater than or equal to the expectation
+
+
+of a log. And uh if you want to convince
+
+
+yourself of this just uh you know pull
+
+
+pull up like uh a graphing calculator
+
+
+and plot the log of a sum of a bunch of
+
+
+terms and then plot the sum of the log
+
+
+of a bunch of terms and you'll see that
+
+
+one of them bounds the other. So it's uh
+
+
+it's basically a geometric fact. If you
+
+
+have a concave function like a log, then
+
+
+the log of a sum of stuff uh is a uh
+
+
+greater than or equal to the sum of of
+
+
+the logs.
+
+
+And where do we need this? Well, we've
+
+
+got a log of the expectation here. So
+
+
+I'm going to say that that's greater
+
+
+than or equal to the expectation of the
+
+
+log. So I'm literally just applying that
+
+
+identity in the blue square to my log of
+
+
+the expectation under Q.
+
+
+And now I'm getting to something that
+
+
+starts looking an awful lot like an
+
+
+expected log likelihood because I have
+
+
+an expectation over Q of Z of the log of
+
+
+a bunch of stuff that is very likelihood
+
+
+shaped roughly.
+
+
+So there's one more property that I need
+
+
+to use to kind of pull apart the stuff
+
+
+inside the expectation which is that the
+
+
+product u the log of of a product is the
+
+
+sum of logs. So if I have log of x * y
+
+
+that is equal to log of x plus log of y.
+
+
+Okay. So I can pull apart the stuff uh
+
+
+inside the log and write it out as the
+
+
+expected value under q of z of the the
+
+
+logs the sum of the logs of the
+
+
+numerator. So log of p of uh p of x
+
+
+given z plus log of p of z. So that's
+
+
+just I just took the numerator took the
+
+
+log of both terms and added them up. And
+
+
+then I have for the denominator that's a
+
+
+minus. So I have minus expectation under
+
+
+q of z of log of q of z.
+
+
+So when you have a denominator that's
+
+
+the same as uh putting it in the
+
+
+numerator and raising it to the power of
+
+
+minus one. Right? So uh if you pull that
+
+
+apart then this is what you get.
+
+
+Any
+
+
+questions about this derivation?
+
+
+Yeah.
+
+
+Yeah, that's right. So by linearity of
+
+
+expectation, I could also uh have three
+
+
+expectation terms instead of two. That's
+
+
+right.
+
+
+Yeah. Yeah. So the reason that I wanted
+
+
+to write it out as two is because if you
+
+
+look at that first term, the expectation
+
+
+under Q of Z of log P of X given Z plus
+
+
+log P of Z, that thing is exactly my
+
+
+expected log likelihood because uh P of
+
+
+X given Z * P of Z is P of X comma Z.
+
+
+There's by definition of conditional
+
+
+probability. So the first term is
+
+
+exactly my expected log likelihood.
+
+
+The second term doesn't depend on P.
+
+
+So I'm nearly there. Remember my goal
+
+
+was to express
+
+
+the expected log likelihood under my
+
+
+incorrect posterior my under my
+
+
+approximate posterior Q of Z as a lower
+
+
+bound on
+
+
+my training objective log P of X.
+
+
+And I'm nearly there. I just have this
+
+
+like extra term hanging out the minus
+
+
+expectation under Q of Z of log Q of Z.
+
+
+That's actually the definition of uh
+
+
+entropy. So this is basically the
+
+
+entropy of Q. So that the if you look up
+
+
+entropy on Wikipedia, I promise you
+
+
+it'll be exactly this equation. So uh
+
+
+without changing anything, I can replace
+
+
+it with the letter H.
+
+
+Yes.
+
+
+>> Yes, I will do that shortly.
+
+
+Okay. So what this basically tells us is
+
+
+if we maximize this thing with respect
+
+
+to P, I can maximize my expected log
+
+
+likelihood under my approximate
+
+
+posterior. And because this is a lower
+
+
+bound on log of P of X
+
+
+if that bound is tight enough,
+
+
+eventually I'll start increasing log P
+
+
+of X. So you can basically think of my
+
+
+log P of X is up here. My lower bound is
+
+
+down here. If I push up and up and up
+
+
+and up up, eventually I'm going to start
+
+
+pushing up on that log likelihood. Now
+
+
+maybe it's just a little bit lower.
+
+
+Maybe it's way lower. So I still need to
+
+
+quantify how big that gap is. Ideally, I
+
+
+would like it to be only a tiny bit
+
+
+lower so that as soon as I start pushing
+
+
+up on it, my log probability goes up.
+
+
+Yes,
+
+
+you can use anything you want.
+
+
+So Q. So this this derivation holds for
+
+
+literally any Q, which already should be
+
+
+raising some red flags for some of you
+
+
+because clearly if I pick Q to be like,
+
+
+you know, a Gaussian with random numbers
+
+
+for its mean, it's still a bound, but
+
+
+it's probably a pretty terrible bound.
+
+
+So we're not fully done yet because we
+
+
+need to convince ourselves that this
+
+
+bound is not complete garbage, right?
+
+
+Because the bound could be like way down
+
+
+here. So you can be pushing up on this
+
+
+all day long and you never raise the
+
+
+value you actually care about.
+
+
+>> Yes.
+
+
+We will get to that. Yes.
+
+
+Okay. So, uh before we get to the fun
+
+
+part of quantifying how good or bad the
+
+
+bound is, let's elaborate a little bit
+
+
+more on this entropy concept. Okay. So,
+
+
+entropy uh h of p is defined as the
+
+
+negative expectation under p of x of log
+
+
+p of x. And uh if I were to plot entropy
+
+
+for like a Bernoli random variable. So
+
+
+here the x- axis is the probability of a
+
+
+bernoli random variable. Basically the
+
+
+probability the coin comes up heads. The
+
+
+y-axis it's entropy. Basically the way
+
+
+what entropy does it quantifies how
+
+
+random a random variable is. So for a
+
+
+berni random variable if it's a fair
+
+
+50-50 coin that has the highest entropy.
+
+
+If the coin is guaranteed to land heads
+
+
+or guaranteed to land tails that's the
+
+
+zero or one point of that curve then the
+
+
+entropy is uh minimal. it's zero. So the
+
+
+highest entropy is when the var when the
+
+
+random variable is maximally random
+
+
+for a Gaussian. That means that the
+
+
+higher the variance of your Gaussian is,
+
+
+the more random it is, the higher your
+
+
+entropy is. If you have a very small
+
+
+variance, then it has very low entropy.
+
+
+If you have very big variance, then you
+
+
+have very high entropy.
+
+
+So one intuition is that entropy
+
+
+represents how random your random
+
+
+variable is. Another equally good way to
+
+
+say it is how large is the log
+
+
+probability in expectation under itself.
+
+
+So if you have a very narrow
+
+
+distribution that only takes on a few
+
+
+values then those few values will have
+
+
+very high probability because there's
+
+
+only a few of them. If it takes on many
+
+
+values then each of those values will
+
+
+have lower probability because there are
+
+
+a great many of them.
+
+
+So here are two pictures. Which of them
+
+
+has higher entropy? Top or bottom?
+
+
+Top. Right? So this is high. This is
+
+
+low. very uh kind of natural concept.
+
+
+And now let's look at that bound that we
+
+
+worked out. The expectation under Q of Z
+
+
+of log P of X given Z plus log P of Z.
+
+
+So the thing inside the brackets that's
+
+
+just the likelihood of X comma Z. That's
+
+
+log P of X comma Z. And then you add the
+
+
+entropy to it.
+
+
+Okay. So let's say that this graph
+
+
+represents our posterior. So the y- axis
+
+
+is the probability of x comma z and the
+
+
+x axis is z. Okay. So this is the
+
+
+distribution uh that that we want to uh
+
+
+kind of capture. If I just look at that
+
+
+first term, if I try to find a q of z
+
+
+that maximizes the expected value under
+
+
+q of z of
+
+
+the um the distribution, that's it's
+
+
+kind of like an RL problem. It's like
+
+
+finding treating q of z as a policy with
+
+
+z as its actions. It's like trying to
+
+
+find the policy with the Z that has the
+
+
+highest probability. So if this graph
+
+
+represents the probability, then the
+
+
+solution might just look like this.
+
+
+It'll try to put high probability on the
+
+
+tallest peak.
+
+
+But I also have this entropy term. And
+
+
+the entropy term is saying all else
+
+
+being equal, I would like that
+
+
+distribution to be big. I do not want it
+
+
+to be small.
+
+
+And that thing that I drew is very
+
+
+small.
+
+
+So the entropy term does not like that.
+
+
+The entropy term says if you can make
+
+
+this thing bigger, please do so.
+
+
+So now when I have the entropy term,
+
+
+it'll it'll be bigger. It'll be like
+
+
+that. And notice what happens. If it's
+
+
+just trying to find the point with the
+
+
+highest probability, it doesn't capture
+
+
+the distribution very well. When I also
+
+
+try to make it big, it'll sort of expand
+
+
+out to fill all of the ZV values that
+
+
+have high probability.
+
+
+So once I have that entropy term, this
+
+
+whole objective is actually trying to
+
+
+kind of match the distribution uh uh x
+
+
+comma z uh as closely as possible
+
+
+because it's trying to find the biggest
+
+
+gaussian will sort of fit into that
+
+
+curve.
+
+
+>> Yes.
+
+
+Yeah. So the way to think about this is
+
+
+that if you have a point with very low
+
+
+log probability, let's say the
+
+
+probability is zero. The log of zero is
+
+
+negative infinity. So the penalty for
+
+
+having nonzero probability under Q of Z
+
+
+for any point where its log probability
+
+
+is negative infinity is extremely large.
+
+
+So if it was just that first term, it
+
+
+really it really really wants to avoid
+
+
+anything with low probability.
+
+
+But the entropy term says okay that's
+
+
+fine. You can just stick to the stuff
+
+
+with high probability but get as much of
+
+
+it as you possibly can because I want
+
+
+that distribution to be very big.
+
+
+So um let's now revisit kale divergence.
+
+
+We saw in the policy gradient lectures
+
+
+that kale divergence is a kind of a
+
+
+measure of how different two
+
+
+distributions are. But it actually um we
+
+
+can interpret it even more than that. So
+
+
+KL divergence just as a reminder is the
+
+
+expectation under q of x of log q of x /
+
+
+p of x for two distributions q and p.
+
+
+And since the logarithm of a of a ratio
+
+
+can be expressed as the difference of
+
+
+logarithms. That's the same as the
+
+
+expected value under log q of x minus
+
+
+the expected value of log p of x. and
+
+
+moving the terms around that's basically
+
+
+the negative of the expected value of
+
+
+log P of X minus the entropy because
+
+
+that that first term expectation under Q
+
+
+of X of log Q of X is the negative
+
+
+entropy. Okay, there's something cool
+
+
+going on here because on the previous
+
+
+slide we had an expected value of some
+
+
+stuff plus an entropy and here we have
+
+
+the negative of the expected value of
+
+
+some stuff minus some entropy. So it
+
+
+kind of looks an awful lot like KL
+
+
+divergence just the negative of the
+
+
+thing that we had on the previous slide.
+
+
+Okay, so kale divergence how different
+
+
+are two distributions or how small is
+
+
+the expected log probability of one
+
+
+distribution under another minus the
+
+
+entropy.
+
+
+Okay, so why entropy? Well, exactly that
+
+
+reason because if we didn't have that
+
+
+entropy term, then the thing that
+
+
+minimizes KL divergence would just
+
+
+capture the mode. But because we have
+
+
+the entropy term, it tries to capture
+
+
+the mode and be as big as possible.
+
+
+And in fact the kale divergence is
+
+
+driven to zero only when these
+
+
+distributions are exactly identical.
+
+
+So as you might expect this bound that
+
+
+we worked out can actually be expressed
+
+
+uh as having a very close relationship
+
+
+to a kale divergence.
+
+
+So let's call this bound L of li of p
+
+
+comma qi. So the reason that I subscript
+
+
+everything with i is that this is for a
+
+
+particular data point xi. So particular
+
+
+data point XI, I'm going to refer to
+
+
+this bound as LI and it's a function of
+
+
+P, our model, and QI, our approximate
+
+
+posterior.
+
+
+And now I'm going to ask what makes this
+
+
+approximate posterior good or bad? Like
+
+
+clearly if I just choose like a random
+
+
+Qi of uh Z, it's a valid bound, but it
+
+
+might be just a very inaccurate bound.
+
+
+So the intuition and this I'm going to
+
+
+try to make this more precise is that qi
+
+
+of z is good if it's a close
+
+
+approximation to the true posterior z
+
+
+given x i.
+
+
+So approximate in what sense? Uh
+
+
+approximate in the sense of kl
+
+
+divergence. So I I want qi of z to have
+
+
+a small kale divergence against x
+
+
+against z given x.
+
+
+Okay. So let's work that out. Let's
+
+
+write down the kale divergence between
+
+
+uh qi of z. I apologize that's a typo.
+
+
+It should be qi of z not qi of x i uh
+
+
+against p of z given x i. So I'm going
+
+
+to plug in into the formula for kale
+
+
+divergence that I had before. And now p
+
+
+of z given x uh that's just p of x comma
+
+
+z divided by p of x. Right? That's just
+
+
+by definition of conditional
+
+
+probability. So uh I can write it like
+
+
+this.
+
+
+And now I'm going to do the usual thing
+
+
+with uh logarithms of products because
+
+
+if I have a logarithm of a product I can
+
+
+express it as a sum of logarithms. So if
+
+
+I break up this the whole product inside
+
+
+the log then I can break it up into four
+
+
+terms. So uh the
+
+
+first term is uh coming from the
+
+
+denominator actually and it has a minus
+
+
+sign in front. So that's the expectation
+
+
+under q of z of log p of x given z plus
+
+
+p log p of z. That's kind of the same
+
+
+thing that I had up up at the top. So
+
+
+that's just breaking up that joint into
+
+
+the two constituent terms. And then I
+
+
+have the two terms in the numerator.
+
+
+Expectation under Q of log q of z. And
+
+
+that's just my negative entropy. And
+
+
+then I have the uh expectation under q
+
+
+of z of log p of x.
+
+
+That last term is kind of weird, right?
+
+
+That's going to simplify drastically.
+
+
+Any ideas how the last term is going to
+
+
+simplify?
+
+
+Yeah, the last term is just log of p of
+
+
+x because the thing inside the
+
+
+expectation doesn't depend on z. So the
+
+
+last term is not an expectation at all.
+
+
+It's just P of X.
+
+
+So I can write it out like this. And now
+
+
+some of you looking at this last line
+
+
+might notice a great deal of similarity
+
+
+to the first line,
+
+
+right? Because the the the expectation
+
+
+the negative expectation minus the
+
+
+entropy is just the negative of my L up
+
+
+at the top. And then I have my log P of
+
+
+X.
+
+
+Okay, so that's kind of cool. The kale
+
+
+divergence between my approximate
+
+
+posterior and my real posterior is just
+
+
+the negative of my bound plus log p of x
+
+
+and log p of x is the thing that I mo
+
+
+want most of all because that's my log
+
+
+likelihood. That's the thing that I want
+
+
+to maximize with respect to the
+
+
+parameters of my model.
+
+
+So this is really really neat. If I
+
+
+rearrange the terms, uh if I basically
+
+
+uh shift L uh uh to to one side and and
+
+
+shift the kale to the other side, then
+
+
+log P of X is equal to the kale
+
+
+divergence plus my bound.
+
+
+This statement at the bottom
+
+
+is actually also another proof that L is
+
+
+a lower bound on log P of X.
+
+
+Can someone tell me why?
+
+
+Yeah. So, someone shouted out because
+
+
+the kale divergence is always positive.
+
+
+So, what this says is that the log
+
+
+probability of my data point is equal to
+
+
+a positive number plus L which means
+
+
+that L uh has to be less than or equal
+
+
+to log P of X because if you add a
+
+
+positive number to it and it's equal
+
+
+that means it can only be less.
+
+
+And furthermore, the smaller that kale
+
+
+divergence is, the tighter the bound is.
+
+
+If the kale divergence is zero, if Q is
+
+
+exactly the posterior, then it is not a
+
+
+bound anymore. It is equality.
+
+
+So remember, I'm going to be pushing up
+
+
+on my bound and when the bound gets to
+
+
+the top, it's it'll start pushing up on
+
+
+my likelihood. And the gap between these
+
+
+two things, this gap is given by the
+
+
+Kale divergence. So if the kale
+
+
+divergence is zero then I'm right up up
+
+
+up there on my likelihood which means
+
+
+that if the kale divergence is zero then
+
+
+maximizing my bound directly pushes up
+
+
+on the likelihood that I want and if the
+
+
+kale divergence is small then I have
+
+
+only a small gap and I only have to go a
+
+
+little bit higher until I start pushing
+
+
+up on my log likelihood.
+
+
+>> Yeah.
+
+
+Well, yeah. So, that's why we care about
+
+
+how tight the bound is. So, if the if
+
+
+the bound is exact, meaning that it's
+
+
+it's actually quality, then clearly
+
+
+maximizing the bound is exactly what you
+
+
+want. If the kale divergence is very
+
+
+small, like it's 0.001,
+
+
+then you only need to go up by 0.001
+
+
+before you start actually climbing on
+
+
+I
+
+
+so if your kl divergence is small enough
+
+
+then you will always increase the the
+
+
+log p of x. Yes.
+
+
+>> Yeah. Yeah. So the question is like why
+
+
+did I bother with that Jensen thing when
+
+
+I could have just done this? U the
+
+
+answer is that this one requires
+
+
+starting from a very unintuitive place
+
+
+of writing down the kale divergence. But
+
+
+once you know this and if you believe
+
+
+what's on this slide you can forget
+
+
+about all that other stuff.
+
+
+Yes.
+
+
+Oh, you're saying that if you if you
+
+
+keep the bound fixed and you just
+
+
+increase the the kale divergence.
+
+
+Um,
+
+
+so the
+
+
+for a reason that we will see shortly,
+
+
+it's much more practical to increase the
+
+
+bound
+
+
+Um so and actually let's talk about this
+
+
+a little bit. Okay so this is the the
+
+
+equation that I had before and that gave
+
+
+us this uh this way to derive the bound
+
+
+and
+
+
+the
+
+
+kale divergence uh this I'm just kind of
+
+
+repeating what was on the previous slide
+
+
+is given by this equation. So
+
+
+one of the things that we're going to
+
+
+note here is that this
+
+
+log p of x term is independent of q. So
+
+
+one of the things that uh is kind of
+
+
+interesting is that
+
+
+if we
+
+
+maximize L with respect to Q not with
+
+
+respect to P but with respect to Q this
+
+
+will actually minimize the KL divergence
+
+
+because the KL divergence consists of
+
+
+two terms one of which is log P which
+
+
+doesn't depend on Q at all and the other
+
+
+one is just negative L.
+
+
+So before we saw that you can maximize L
+
+
+with respect to P and that will maximize
+
+
+a bound on your log likelihood. But it's
+
+
+also the case that maximizing L with
+
+
+respect to Q will actually tighten your
+
+
+bound
+
+
+because it will reduce the KL
+
+
+divergence.
+
+
+So not only did we do we now have a
+
+
+bound that we can maximize to increase
+
+
+our log likelihood, we also have a way
+
+
+to select Q. The way you select Q is by
+
+
+optimizing it to maximize the same exact
+
+
+quantity.
+
+
+So now we can actually get a method out
+
+
+of this. Um if what we want is to
+
+
+maximize the log probability of our X's.
+
+
+What we can do is we can choose the
+
+
+model to maximize our lower bound as
+
+
+follows. for every x in your data set or
+
+
+for every mini batch, calculate the
+
+
+gradient of your lower bound with
+
+
+respect to the parameters of p with
+
+
+respect to theta. Uh and the way that
+
+
+you do that is by sampling a z from your
+
+
+posterior and estimating the gra the
+
+
+gradient of the expected log likelihood.
+
+
+And then you could take a gradient step
+
+
+on that and then you can up update your
+
+
+Q's to maximize the same bound. And you
+
+
+can do that with gradient descent or
+
+
+with whatever method you want. So
+
+
+actually both P and Q are actually
+
+
+optimized with respect to the same
+
+
+objective and optimizing that objective
+
+
+with respect to Q tightens your bound
+
+
+meaning it brings your approximate
+
+
+objective closer to the true one and
+
+
+optimizing the bound with respect to P
+
+
+raises the objective value.
+
+
+So that's pretty nice. Now you do need
+
+
+to figure out how to actually optimize
+
+
+this bound with respect to Q. Um so for
+
+
+example if your Q is represented as a
+
+
+Gaussian where you literally store the
+
+
+mean and variance of that Gaussian well
+
+
+you can compute the gradient with
+
+
+respect to mu and sigma for example and
+
+
+do gradient descent.
+
+
+In some cases there's there's even
+
+
+closed form formulas for these that you
+
+
+could work out. So this is an actual
+
+
+method. This is actually going to train
+
+
+your uh model P with gradient ascent not
+
+
+on the log likelihood but on this
+
+
+expected log likelihood and by
+
+
+optimizing that same quantity with
+
+
+respect to Q you will tighten the bound
+
+
+giving you a better objective and there
+
+
+is one remaining problem with this
+
+
+and the problem has to do with how we've
+
+
+chosen to represent our approximate
+
+
+posterior which is we have a mu and a
+
+
+sigma for every single data point and if
+
+
+we have a lot of data points this is a
+
+
+problem.
+
+
+So the number of parameters we're going
+
+
+to have is the number of uh parameters
+
+
+in our model plus the number of data
+
+
+points multiplied by the number of
+
+
+dimensions in mu and sigma. And that's a
+
+
+very large number of parameters.
+
+
+So this is a real method. You can
+
+
+actually use this method. But the one
+
+
+remaining problem we have with this is
+
+
+that we have uh a number of parameters
+
+
+that now scales with the number of data
+
+
+points which is not what we want to see
+
+
+in large scale machine learning
+
+
+problems. So, next time we'll talk about
+
+
+how to get rid of this. All right. Any
+
+
+questions about this method?
+
+
+Yes.
+
+
+Oh, I see. Yeah. So, yeah, in practice,
+
+
+what you want to do is you want to pick
+
+
+a class of distributions for Q that'll
+
+
+give you the smallest tail divergence.
+
+
+Now, one thing I will say is that for
+
+
+most real problems,
+
+
+the posterior from Q is very bad. And
+
+
+you can pick like, you know, a Gaussian
+
+
+versus a beta distribution versus a
+
+
+whatever distribution, but they're all
+
+
+going to be bad because the real
+
+
+posterior is some monster. So, in
+
+
+reality, in variational inference,
+
+
+typically you don't spend that much time
+
+
+trying to get a better distribution
+
+
+because they're all terrible. Um, yeah.
+
+
+So, so that that's basically the idea.
+
+
+And by the way, for those of you that
+
+
+might be wondering, the expectation
+
+
+maximization algorithm that some of you
+
+
+might have learned about is exactly
+
+
+this. So, expectation maximization, the
+
+
+um the the E step is when you update Q
+
+
+to maximize the bound. The uh MTEP is
+
+
+when you improve your model. So em is an
+
+
+instance of this typically not done with
+
+
+gradient ascent typically done with some
+
+
+other approach but the it's a special
+
+
+case of this general method. So if you
+
+
+learn about em you can forget about it
+
+
+and just remember this this is the more
+
+
+general thing.
+
+
+Yes.
+
+
+Mhm.
+
+
+Yeah.
+
+
+So the step where you update Q will
+
+
+always decrease the kale divergence
+
+
+because the kale divergence is just
+
+
+negative L plus a constant that doesn't
+
+
+depend on Q. the step where you change
+
+
+P, that might actually increase the KL
+
+
+divergence.
+
+
+So you can almost think of it as like
+
+
+when you update Q, you're trying to find
+
+
+a better approximate objective. When you
+
+
+update P, you're optimizing that
+
+
+approximate objective, but the
+
+
+approximate objective is only valid
+
+
+locally. So the more you optimize the
+
+
+approximate objective, the the more
+
+
+incorrect it might get. So that's why
+
+
+you want to keep updating Q to sort of
+
+
+keep up with it.
+
+
+All right, thank you all. Let's see you
+
+
+all on Friday to talk about a more
+
+
+practical version of this.
+
+
+Where you get rid of all the

@@ -1,0 +1,7921 @@
+Is it tomorrow?
+
+
+I'm not saying
+
+
+Let's go. Let's go.
+
+
+Is it
+
+
+kind
+
+
+I don't know.
+
+
+I hope
+
+
+All right, let's get started. Uh
+
+
+so the a fun game I play at the
+
+
+beginning of lecture is to is find the
+
+
+marker and unfortunately the instructor
+
+
+who teaches at the end of the day on
+
+
+Thursday plays hide the marker and uh so
+
+
+therefore I don't have a marker today.
+
+
+Oh that would be great.
+
+
+>> Uh any color would do.
+
+
+>> Okay cool. Thank you. And please
+
+
+remember to take your marker back at the
+
+
+end. Otherwise the next instructor will
+
+
+play hide the marker with your marker.
+
+
+Um all right. So um last uh last time
+
+
+when we adjourned um we uh were talking
+
+
+about different kinds of models for
+
+
+imitation learning that could represent
+
+
+complex distributions. We learned about
+
+
+how to represent non-marovian policies
+
+
+with history. And we learned about how
+
+
+to represent multimodal policies with uh
+
+
+things like flow matching which all of
+
+
+you will be implementing in homework one
+
+
+or perhaps have already implemented. Uh
+
+
+now I didn't get through the whole
+
+
+lecture although I got through the most
+
+
+important parts there are a few bits
+
+
+that I wanted to get to. Um so let me
+
+
+skip over the parts that I already did
+
+
+last time.
+
+
+And um I think I'll I'll pause briefly
+
+
+at the at the flow matching slide
+
+
+because I want to see if any of you guys
+
+
+have any lingering questions since last
+
+
+time.
+
+
+So um
+
+
+to remind all of you uh if we want to
+
+
+actually implement flow matching as a
+
+
+policy like what you will do in homework
+
+
+one then the neural network that you
+
+
+train is not actually producing uh
+
+
+actions directly. what it's producing is
+
+
+these flow matching uh vector fields. So
+
+
+V the the vector field is the thing that
+
+
+uh determines how the base distribution
+
+
+turns into the action distribution. So
+
+
+that's basically this animation. So the
+
+
+vector field is the up down directions
+
+
+that that dot goes. That's what you're
+
+
+learning. And the vector field takes as
+
+
+input three things. It takes in the
+
+
+observation which we don't worry about
+
+
+when we're doing like regular flow
+
+
+matching for like image generation
+
+
+because there is no observation but for
+
+
+your policies there's an observation and
+
+
+it takes in the previous point in flow
+
+
+matching which I'm denoting as a little
+
+
+t tow remember there's two two kinds of
+
+
+time steps there's like the physical
+
+
+time the time at which you're producing
+
+
+the action and then there's the flow
+
+
+matching time so little t is physical
+
+
+time and toao is flow matching time and
+
+
+then of course it has to take in the
+
+
+flow matching time step because in
+
+
+general you a different vector field at
+
+
+every time step. So your neural network
+
+
+takes in these three things and it
+
+
+outputs a velocity in the vector field
+
+
+which is of the same dimensionality as
+
+
+your action. Uh and that's what you're
+
+
+training. And the way you do this is uh
+
+
+for every element that you want in your
+
+
+mini batch, you're going to sample an
+
+
+observation action from your data set.
+
+
+You're going to sample the noise from
+
+
+the base distribution which typically
+
+
+would be zero mean variance Gaussian.
+
+
+Then you would sample a flow matching
+
+
+time. And this is actually a design
+
+
+choice. You can choose the distribution
+
+
+to sample the time from. But for
+
+
+simplicity, the simplest one is a
+
+
+uniform distribution between zero and
+
+
+one. If you want to really hyper
+
+
+optimize this, sometimes it's a little
+
+
+bit better to uh increase the
+
+
+probability of times that are earlier or
+
+
+later and decrease in the middle. But
+
+
+you know, whatever. There's all sorts of
+
+
+dark magic that goes into choosing this.
+
+
+But if you're not sure, just choose
+
+
+uniform. And then you would compute the
+
+
+intermediate point by linearly
+
+
+interpolating between those. Uh and that
+
+
+gives you the uh point at which you're
+
+
+training your vector field at time
+
+
+towel. Uh and then you would update your
+
+
+model with a loss. And the loss is just
+
+
+the difference between the vector field
+
+
+and the velocity you should have to go
+
+
+from uh at0 to the true action at
+
+
+okay. So that's basically how you train
+
+
+flow matching for policies. And uh I
+
+
+will pause there and ask if you guys
+
+
+have any questions that have been
+
+
+lingering since last Wednesday about
+
+
+this.
+
+
+>> Yes.
+
+
+>> Yeah. So the question was does it matter
+
+
+how you u how you uh integrate uh at
+
+
+inference time? So it depends on your
+
+
+vector field. Uh so remember what what
+
+
+we discussed on Wednesday is that let me
+
+
+try to see if I can find the brightest
+
+
+possible marker. Okay. Oh, that's good.
+
+
+Okay. So
+
+
+the this is your base distribution. This
+
+
+is your final distribution.
+
+
+And remember that when we train we train
+
+
+uh the vector field to do to have
+
+
+straight lines. Because this supervision
+
+
+signal is contradictory. In reality, you
+
+
+can't have straight lines and you might
+
+
+have some curvy lines like this. In
+
+
+regard to the integrator, the answer is
+
+
+it depends how curvy your lines are. If
+
+
+you if you happen to be so lucky as to
+
+
+have a perfectly straight line vector
+
+
+field, one integration step of forward
+
+
+oiler will get you exactly the answer.
+
+
+And that's really easy. If you have a
+
+
+super curvy vector field that goes like
+
+
+this, then maybe you need lots of steps.
+
+
+uh for if you want a rule of thumb, use
+
+
+10 steps for uh actions and use about
+
+
+100 steps for images. Uh actually and a
+
+
+quick question for all of you guys. Can
+
+
+someone tell me about a situation where
+
+
+you will have a straight line vector
+
+
+field a special case? Yes.
+
+
+Okay. So one good example is the target
+
+
+distribution is a direct delta, right?
+
+
+So in that case obviously all lines have
+
+
+to go there. Another example is if it's
+
+
+also a Gaussian, especially if it's the
+
+
+same Gaussian because then it'll just go
+
+
+straight there. All right, any other
+
+
+questions? Yeah.
+
+
+>> So, uh yeah, for those of you that
+
+
+didn't hear the questions about
+
+
+distillation, um
+
+
+uh yes, you can do distillation. One
+
+
+very common trick uh specifically for
+
+
+diffusion and flow matching. If you
+
+
+don't like the idea of taking those 10
+
+
+integration steps, you know, I already
+
+
+gave you a discount off the image
+
+
+generation going from 100 to 10, but
+
+
+even if even 10 is not good enough,
+
+
+there's a fun trick. It's called
+
+
+refflow. It's essentially distillation.
+
+
+So what you do is you train your your
+
+
+flow matching model and then you sample
+
+
+a bunch of noises, use a really
+
+
+expensive integrator to get perfect
+
+
+actions for those noises, store noise
+
+
+action tupils and then train another
+
+
+network to go from the noise to the
+
+
+action in one step and that's
+
+
+distillation. It's also called reflow
+
+
+and it works well and you can reduce the
+
+
+number of steps you need dramatically by
+
+
+doing that. Any other questions? Yes.
+
+
+Correct. The observations are still just
+
+
+like coming in from the side and nothing
+
+
+about flow matching does anything
+
+
+special for observations.
+
+
+All right. There's one more trick uh I'd
+
+
+like to tell you about uh which will be
+
+
+useful for imitation learning and then
+
+
+we can cover some bonus materials and
+
+
+then move on to RL. So the the last
+
+
+trick is called action chunking. And
+
+
+action chunking is one of these like uh
+
+
+you know uh mysterious superheroes of
+
+
+the imitation learning world in that it
+
+
+it helps a great deal and nobody quite
+
+
+knows why or nobody knows its identity
+
+
+and all that stuff. Uh basically if you
+
+
+would like to do imitation learning for
+
+
+high frequency continuous control. So
+
+
+this is not for you if you want language
+
+
+models. This is not for you if you want
+
+
+like Atari games. But if you are in a
+
+
+domain where you want high frequency
+
+
+continuous control that's typically the
+
+
+case in robotic control if you want like
+
+
+um robotic manipulation uh drones uh
+
+
+something where you have a control
+
+
+frequency of let's say 10 to 100 hertz
+
+
+and the actions are continuous and
+
+
+perhaps highdimensional this thing helps
+
+
+a lot and while a lot of people have
+
+
+claimed to know why the truth is nobody
+
+
+really knows why. Uh but it is kind of a
+
+
+reasonably natural trick. So in a
+
+
+standard policy uh if you uh are okay
+
+
+with having a marovian policy you train
+
+
+it to produce actions given the current
+
+
+observation. So current action given
+
+
+current observation and then you execute
+
+
+the current action and then you observe
+
+
+the next observation and then you
+
+
+generate the next action. In an action
+
+
+chunked policy, you train a model that
+
+
+produces many actions, maybe 10 actions
+
+
+or 50 actions.
+
+
+And then you can execute
+
+
+either all of those actions in open loop
+
+
+in the environment, meaning compute 50
+
+
+actions, take all 50 actions, and then
+
+
+observe again. Or you can execute some
+
+
+subset of them. Maybe you execute 10 of
+
+
+them. Don't execute just one because
+
+
+that doesn't help.
+
+
+So then you observe, you know, you run a
+
+
+T through A plus K and then observe O A
+
+
+T plus K plus one and then repeat. So
+
+
+essentially in you're kind of redefining
+
+
+your control problem. Instead of uh
+
+
+having uh the action be of the native
+
+
+length, you redefine an action to be a
+
+
+sequence of actions.
+
+
+Uh this is quite good for all sorts of
+
+
+robotic control things. This is a a
+
+
+video from uh the uh diffusion policy
+
+
+paper by Chiol showing this for pushing
+
+
+a little object on table. uh generally
+
+
+for robotic manipulation tasks
+
+
+especially this is very helpful and
+
+
+these days if you see a state-of-the-art
+
+
+uh robotic manipulation policy trained
+
+
+with imitation learning almost certainly
+
+
+it's going to be using this uh as far as
+
+
+why it helps there's a lot of
+
+
+speculation but as I said no definitive
+
+
+answer one kind of speculation is that
+
+
+well you're essentially reducing your
+
+
+horizon because if you imagine that
+
+
+you're taking that you're recmputing
+
+
+actions every 10 steps now your horizon
+
+
+is essentially 10 times uh shorter uh
+
+
+another explanation is that you you get
+
+
+much stronger uh training signal from um
+
+
+a sequence of actions than you do from a
+
+
+single action. So you train a better
+
+
+network. But the truth is that people
+
+
+don't really know. All right. Any
+
+
+questions about this?
+
+
+>> Yes.
+
+
+So the question is can you do it for
+
+
+regular RL the answer is a little
+
+
+complicated. So for imitation learning
+
+
+it definitely helps and you know for
+
+
+imitation learning one thing you can
+
+
+think about is that well in imitation
+
+
+learning the human supervision is kind
+
+
+of messy like it's going to have uh it's
+
+
+going to be non-marovian it's going to
+
+
+be multimodal so these very messy
+
+
+supervision signals it helps for RL
+
+
+where you're learning the policy
+
+
+yourself uh this is kind of at the edge
+
+
+of current research so it definitely
+
+
+does not behave the same way in RL as it
+
+
+does in imitation learning but it
+
+
+sometimes helps
+
+
+Correct. It's not about computational
+
+
+constraints, although obviously it's
+
+
+nice for computational constraints too,
+
+
+but not that's not the main benefit that
+
+
+people typically see.
+
+
+Yes,
+
+
+>> that's a good question. Yeah. Um,
+
+
+so I don't know the answer to that. Uh,
+
+
+and
+
+
+the the two choices are not mutually
+
+
+exclusive. So you can do action
+
+
+chunking, you can have history, you can
+
+
+do action chunking without history, you
+
+
+can do history without action chunking.
+
+
+As far as you know how much they
+
+
+synergize with each other, I don't know
+
+
+the answer to that good experiment to do
+
+
+uh at some point if you if you want to
+
+
+play around with your homework one code.
+
+
+Yes.
+
+
+>> Yeah. So this is a really interesting
+
+
+question. The question was, well, I I
+
+
+said that you could generate a long
+
+
+action chunk, but then only execute a
+
+
+piece of it. So then the question is,
+
+
+well, why bother if you're going to
+
+
+throw out the end of it? Why why bother
+
+
+generating it? So the answer is that you
+
+
+do get additional training signal from
+
+
+it during training. Uh which means that
+
+
+your network might actually learn
+
+
+something different than if you'd only
+
+
+train on short chunks. Uh now again, as
+
+
+with all things deep learning at that
+
+
+level, it's a little bit of like black
+
+
+magic and your your mileage may vary and
+
+
+you should try different things and see
+
+
+what works well empirically. There isn't
+
+
+really like a fundamental deep
+
+
+theoretical reason why that should be
+
+
+good.
+
+
+All right. Um, let's move on. Uh, I'll
+
+
+I'll skip through some of the videos
+
+
+since we're we still have another
+
+
+lecture to go to. Um, but I did want to
+
+
+talk about a few other things, a few
+
+
+other like tricks and last minute gift
+
+
+ideas that are helpful for getting
+
+
+imitation learning to work. So, so far
+
+
+we've talked a lot about methods, but as
+
+
+some of you hopefully know, when you
+
+
+work on machine learning in reality,
+
+
+data is just as important as methods.
+
+
+And nowhere is this more true than an
+
+
+imitation learning because the kind of
+
+
+data that you train on will probably
+
+
+greatly determine not just the
+
+
+performance of your policy but also its
+
+
+resilience, its ability to recover from
+
+
+mistakes and things like that. So it
+
+
+really matters what kind of data you use
+
+
+for imitation learning. Um so
+
+
+here is like a here's a trick. We talked
+
+
+about how you have this uh compounding
+
+
+errors problem where if you make a
+
+
+little mistake then you find yourself in
+
+
+a really weird state and you make a
+
+
+bigger mistake. Now, while in theory
+
+
+it's very hard to fix this problem
+
+
+because you know some of those mistakes
+
+
+might perturb you and really in ways
+
+
+that the human demonstrator didn't
+
+
+expect in practice a lot of dynamical
+
+
+systems that you want to control you can
+
+
+recover. They're they're recoverable. So
+
+
+maybe if you drive the car off a cliff
+
+
+it's very hard to put it back on the
+
+
+cliff. But you if you drive the car just
+
+
+a little bit out of its lane then you
+
+
+can put it back in the lane. And what
+
+
+sometimes works very well is to not make
+
+
+your data for imitation learning too
+
+
+good. If your data is too good, meaning
+
+
+the car never swerves away from the
+
+
+perfect center of the lane, then as soon
+
+
+as it swerves even a little bit by
+
+
+accident at test time, it'll be
+
+
+confused. But if you are not too too uh
+
+
+careful and you have a little bit of
+
+
+variability in your data, just enough to
+
+
+u show the model what happens when it
+
+
+makes a small mistake, but not enough to
+
+
+lead to disaster in the demonstrations
+
+
+themselves, that can really help because
+
+
+now when you make a little mistake, you
+
+
+will actually see some examples of
+
+
+recovery. And people do this in all
+
+
+sorts of ways. Uh the most natural one
+
+
+is if there are people producing
+
+
+demonstrations like they're literally
+
+
+driving the car, you can instruct them
+
+
+to uh collect data in certain ways. But
+
+
+there's been also all sorts of exotic
+
+
+tricks that people have tried like if
+
+
+you are uh driving the car, introduce a
+
+
+little bit of artificial noise into the
+
+
+driving. Uh maybe don't do this on a
+
+
+highway 70 miles an hour, but you know
+
+
+there's there's technical solutions as
+
+
+well. The point is just to get data that
+
+
+has a little bit more coverage of
+
+
+possible situations.
+
+
+Okay. So the mistakes do hurt but the
+
+
+corrections help and often the
+
+
+corrections help more than the mistakes
+
+
+hurt. Yes.
+
+
+>> Exactly. Yeah. So Dagger essentially
+
+
+achieves this by running the policy and
+
+
+letting the policy make those mistakes.
+
+
+But if you don't want to run Dagger
+
+
+which is maybe costly because it
+
+
+requires running your policy in the real
+
+
+world, you can just get your human
+
+
+demonstrators to do this kind of stuff.
+
+
+Yes.
+
+
+Yeah. So the question was uh well is it
+
+
+possible to just kind of set up your
+
+
+model so that when it sees an unfamiliar
+
+
+state it'll just take the nearest
+
+
+familiar action. The trouble is that in
+
+
+a dynamical system that's often not
+
+
+enough. So if you imagine a car driving
+
+
+down the road and it moves a little to
+
+
+the left, it turns a little to the left.
+
+
+Now the nearest thing might be to go
+
+
+straight. But of course if you're
+
+
+already facing a little left, you need
+
+
+to go right to correct. you can't just
+
+
+keep taking the the same action. So,
+
+
+usually recoveries actually require
+
+
+feedback. The technical term in control
+
+
+is feedback.
+
+
+Okay. Um, another thing that people
+
+
+sometimes do is a little bit of data
+
+
+augmentation. And that Nvidia uh car
+
+
+driving thing with three cameras that we
+
+
+talked about uh last time is an example
+
+
+of a kind of data augmentation.
+
+
+Basically, synthetically modifying your
+
+
+data in that case by adding a left-acing
+
+
+and a rightfacing camera with modified
+
+
+actions to go in the opposite direction.
+
+
+Data augmentation is always a little bit
+
+
+domain specific, but in many domains, if
+
+
+you're willing to put some thought into
+
+
+it, you can come up with some data
+
+
+augmentation to teach those feedbacks.
+
+
+Um, another thing that is a much more
+
+
+kind of recent uh innovation in this
+
+
+area. Um, and here I want to sort of um
+
+
+preface this with a little bit of
+
+
+uncertainty because since this kind of
+
+
+stuff is so new, I think it remains to
+
+
+be seen as to how this actually works in
+
+
+practical imitation learning is um
+
+
+pre-training. And um for those of you
+
+
+that are not familiar with the concept,
+
+
+when training very large models, a
+
+
+common practice is to take an extremely
+
+
+large data set of relatively low
+
+
+quality, train the model on that very
+
+
+large data set first and then take a
+
+
+smaller data set of extremely high
+
+
+quality and train the model some more
+
+
+which is called fine-tuning on that
+
+
+smaller data set. This is most commonly
+
+
+done with language models because when
+
+
+language models are trained and language
+
+
+models are trained by imitation
+
+
+learning, don't let anyone tell you
+
+
+otherwise. They are first trained on
+
+
+huge amounts of data scraped from the
+
+
+web indiscriminately. Think like all
+
+
+Wikipedia. And that doesn't produce a
+
+
+language model like chat GPT that will
+
+
+answer questions. It just produces a
+
+
+language model where if you type in some
+
+
+text, it'll just complete it with a
+
+
+bunch of junk. But that forces the model
+
+
+to learn lots of stuff. And then there
+
+
+is a fine-tuning or sometimes called
+
+
+post-training phase where smart
+
+
+engineers curate a really nice data set
+
+
+of like questions and answers and that's
+
+
+that data set is much smaller and then
+
+
+they post train it on that and that gets
+
+
+you chat GPT. So this is a very common
+
+
+recipe in LM but it's also a recipe that
+
+
+is increasingly being used in other
+
+
+areas like robotic control driving etc.
+
+
+So the problem is that we want the model
+
+
+to see lots of situations including bad
+
+
+situations so that it knows how to
+
+
+handle them but we don't want it to
+
+
+teach it how to enter those bad
+
+
+situations.
+
+
+Right? So that pre-training data has
+
+
+lots of good stuff and bad stuff but it
+
+
+also has like really stupid decisions
+
+
+whereas the post-training data has
+
+
+really good decisions but because it has
+
+
+only good decisions you don't see it
+
+
+entering bad situations.
+
+
+So be so one way to resolve this
+
+
+contradiction is to first train it on
+
+
+bad data and then train it some more on
+
+
+good data. So bad data sees lots of
+
+
+situations. Good data has great actions.
+
+
+Bad data has suboptimal actions but good
+
+
+data doesn't see as many situations. So
+
+
+to get the best of both worlds, you
+
+
+train on the bad data first so that you
+
+
+see lots of stuff and then now that the
+
+
+model knows lots of things, now you tell
+
+
+it, okay, given what you know, this is
+
+
+what you should actually do. Do the good
+
+
+stuff.
+
+
+So that it basically mirrors what's done
+
+
+in language model world. Uh and um you
+
+
+know here are an example of some videos
+
+
+for um a robotic foundation model. This
+
+
+is a pi zero. Pre-training has data for
+
+
+you know 10,000 hours from lots of
+
+
+different robots doing all sorts of
+
+
+random stuff. And then post- training is
+
+
+kind of carefully selected data for
+
+
+things like you know folding laundry or
+
+
+uh assembling boxes where the data is
+
+
+much less heterogeneous and of much
+
+
+higher quality. So you see less mistakes
+
+
+and it kind of tells them all like this
+
+
+is what I want you to be doing. Okay. So
+
+
+I won't dwell on that too much. Uh but
+
+
+maybe any quick questions about this.
+
+
+Yeah.
+
+
+>> So it really depends on your domain,
+
+
+right? So uh perhaps uh you would you
+
+
+would have the ability to get data from
+
+
+humans that are very deliberately doing
+
+
+the the task really well versus just
+
+
+kind of like general people just driving
+
+
+cars randomly, right? So the
+
+
+pre-training data can't be terrible, but
+
+
+it doesn't have to be as perfect as you
+
+
+want your final policy to be.
+
+
+No.
+
+
+Yeah.
+
+
+So pre-training is uh predicting it.
+
+
+It's still imitation learning. So it
+
+
+works the same way as as any other uh
+
+
+imitation learning method. It's
+
+
+predicting actions from observations.
+
+
+And by the way, when people say that
+
+
+like LLM pre-training is
+
+
+self-supervised, it is essentially the
+
+
+same thing. You can view the next token
+
+
+in LM as the action and the preceding
+
+
+tokens as the observation. Yes. Back
+
+
+there.
+
+
+Yeah. Yeah. So the question was uh like
+
+
+what do people do to get the model to to
+
+
+avoid forgetting the pre-training stuff?
+
+
+Generally for very large models there's
+
+
+a lot of care that goes into choosing
+
+
+hyperparameters for training. The
+
+
+important hyperparameters are how many
+
+
+epochs you go through the data uh and uh
+
+
+learning rates. So typically what you
+
+
+would want is fewer epochs during
+
+
+pre-training, more during post-training.
+
+
+Um so there isn't any like particularly
+
+
+effective silver bullet. It's just
+
+
+careful selection of hyperparameters.
+
+
+Yes.
+
+
+>> Well, this is a two-phase process.
+
+
+Oh, I see. I see. Uh so yes, people have
+
+
+experimented with that. That's so recent
+
+
+that I really don't have anything
+
+
+horseworthy to say about it, but yes.
+
+
+All right. Um the last topic uh I wanted
+
+
+to talk about which is like kind of you
+
+
+know this is at this point much further
+
+
+out on the like uh speculative end but
+
+
+it's kind of a fun thing to think about.
+
+
+Um, so far we've talked about imitation
+
+
+learning methods that learn one task,
+
+
+but in some cases actually multitask
+
+
+learning can make imitation learning
+
+
+easier. And that might sound a little
+
+
+paradoxical because multitask learning
+
+
+means you're learning to perform
+
+
+multiple tasks. So that should be
+
+
+harder, but sometimes it's easier. So
+
+
+here's a little uh illustration. Let's
+
+
+say you're driving this car and you have
+
+
+some demonstrations and the
+
+
+demonstrations uh go to a particular
+
+
+location. That's like the standard
+
+
+setting. And you're learning a policy
+
+
+that's really good at like driving to
+
+
+P1. Okay, it's a policy for P1. But what
+
+
+if instead you have a bunch of
+
+
+demonstrations that all drive to
+
+
+different locations?
+
+
+Well, what you can do is you can train a
+
+
+policy that takes as input the location
+
+
+that it's supposed to drive to.
+
+
+And now you have a multitask policy. And
+
+
+the good thing about this is first of
+
+
+all, you could use a lot more
+
+
+demonstrations because it's probably
+
+
+much easier to get lots of
+
+
+demonstrations that drive to different
+
+
+places. But second, a more subtle point
+
+
+is that these demonstrations are drive
+
+
+to different locations, they have better
+
+
+coverage. They see more states and
+
+
+therefore they're going to be better at
+
+
+all those recoveries.
+
+
+So the reason that multitask learning
+
+
+can sometimes be more effective for
+
+
+imitation learning is when you're
+
+
+training on multiple tasks, you might
+
+
+see a greater variety of states and
+
+
+therefore you might learn to recover
+
+
+from more states. And I picked this
+
+
+particular example intentionally because
+
+
+of course you don't need someone to tell
+
+
+you what location these demonstrations
+
+
+were trying to drive to. you can just
+
+
+look at where they ended up and reabel
+
+
+the entire trajectory as saying, well,
+
+
+if you ended up at P1, that means you
+
+
+were trying to get to P1 because you're
+
+
+assuming your demonstrations are good.
+
+
+So, this leads to a particular method
+
+
+called goal condition behavioral
+
+
+cloning, uh, which is kind of a fun way
+
+
+uh, to use lots of very diverse
+
+
+demonstrations, even if you're not quite
+
+
+sure what they were trying to do, which
+
+
+is you have your demonstration sequences
+
+
+of states and actions. You take the last
+
+
+state and assume that that's what the
+
+
+demonstration was trying to accomplish
+
+
+and then learn a policy conditioned on
+
+
+the final state and in general you can
+
+
+use any sufficient statistic of the
+
+
+final state. So in that in that car
+
+
+example maybe you uh get images and
+
+
+locations but you don't condition it on
+
+
+the final image you just condition on
+
+
+the final location. That's kind of a fun
+
+
+trick. It's sometimes called gold
+
+
+condition behavioral cloning. And uh if
+
+
+you have a bunch of demonstrations that
+
+
+are doing all sorts of weird stuff and
+
+
+you're not sure what to do with them,
+
+
+this can be a neat trick to try. Any
+
+
+questions about this?
+
+
+Okay. Um I will skip all the videos here
+
+
+because I really want to get to the fun
+
+
+RL stuff, but there are lots of videos
+
+
+for the for the actual material of
+
+
+today's lecture. I wanted to get us
+
+
+started on reinforcement learning. And
+
+
+uh this lecture is not going to cover
+
+
+any specific reinforcement learning
+
+
+algorithms. This is really kind of a
+
+
+assumptions and definitions. This is to
+
+
+help us define how we should think about
+
+
+reinforcement learning problems. We've
+
+
+already seen a few concepts. We've seen
+
+
+states and observations and actions. But
+
+
+there are a few more concepts that we
+
+
+need to really fully nail down the
+
+
+problem so that starting next week we
+
+
+can start learning about some
+
+
+reinforcement learning algorithms.
+
+
+So the first thing that we have to learn
+
+
+about is the marov decision process. So
+
+
+in reinforcement learning
+
+
+we are interacting with a with some kind
+
+
+of universe. Uh of course the universe
+
+
+is a little bit abstracted. It's not as
+
+
+complex as our full universe. And the
+
+
+minimal compact definition of a universe
+
+
+for the purpose of decision-m is called
+
+
+a marov decision process. Markov because
+
+
+we're going to have states that obey the
+
+
+marov property. Decision process because
+
+
+we're going to be making decisions.
+
+
+So we've already seen a lot of the
+
+
+concepts. We've got states, we've got
+
+
+actions. I will dispense with
+
+
+observations for now. We'll come back to
+
+
+observations, but for now, let's assume
+
+
+everything is fully observed. So no
+
+
+observations. O is equal to T. Oh,
+
+
+sorry, O is equal to S. Um, so we're
+
+
+going directly from states to actions.
+
+
+And in imitation learning, we had those
+
+
+states and actions. And what we were
+
+
+doing is maximizing the log probability
+
+
+of the actions in our data set given the
+
+
+states. But let's say that we are not so
+
+
+fortunate as to have demonstration data
+
+
+that tells us what we need to do. We
+
+
+just have the Markov decision process.
+
+
+We can interact with it. We can play
+
+
+around. We can explore. And we have to
+
+
+figure out for ourselves how to take
+
+
+good actions. So that's the general
+
+
+reinforcement learning setting.
+
+
+So how do we know which action is better
+
+
+or worse? In a Markov decision process,
+
+
+you are given an additional object which
+
+
+is a reward function. A reward function
+
+
+in the most general case is a function
+
+
+of the current state and the current
+
+
+action and it tells us which state
+
+
+action tupils you prefer. Now there's a
+
+
+very important subtlety here uh and
+
+
+sometimes this causes some confusion. In
+
+
+the most general case, the reward
+
+
+function depends on states and actions.
+
+
+If you would like to simplify your
+
+
+thinking about this, pretend that it
+
+
+depends only on states. The dependence
+
+
+on actions is a little bit confusing.
+
+
+Um, the reward function doesn't tell you
+
+
+what you should do. It tells you which
+
+
+outcomes you prefer. So, an example of a
+
+
+reward function for driving would be
+
+
+zero most of the time, plus one if you
+
+
+are located at your destination, and
+
+
+minus 1 million if you're in a car
+
+
+accident.
+
+
+The dependence on actions is null. Now,
+
+
+why why would you want to depend on
+
+
+actions? Well, let's say that you want
+
+
+to uh make sure that your car runs
+
+
+nicely 10 years, 20 years from now.
+
+
+Perhaps the action where you slam on the
+
+
+gas as hard as possible is like a little
+
+
+damaging to your car. So maybe you get a
+
+
+minus 0.001 for doing that. So in
+
+
+general, you might want to have some
+
+
+dependence on actions if you want to
+
+
+avoid certain actions. Maybe certain
+
+
+actions are inherently costly. But if
+
+
+you want to simplify your thinking, just
+
+
+imagine that depends only on states. And
+
+
+that gives you like a pretty accurate
+
+
+picture of the world.
+
+
+Now, there's an obvious problem with
+
+
+this because if the reward function
+
+
+doesn't tell me what actions to take,
+
+
+well, how do I know how I should drive
+
+
+the car so that I don't get into a car
+
+
+accident 10 time steps from now? And
+
+
+that's basically the problem that
+
+
+reinforcement learning aims to solve.
+
+
+Okay, I'll I'll pause here because this
+
+
+concept of reward functions is extremely
+
+
+important. Any questions? Yes.
+
+
+It's just state and action t. So the
+
+
+action t at has no effect on st.
+
+
+It has an effect on st plus one.
+
+
+Yes.
+
+
+>> Is it a bad idea to condition rewards on
+
+
+observations? The answer is no. It is a
+
+
+perfectly reasonable idea. And the
+
+
+reason is that observations depend on
+
+
+states and the reward depends on states.
+
+
+So therefore it's okay for the reward to
+
+
+depend on anything that depends on
+
+
+states.
+
+
+All right. So yeah driving happily on on
+
+
+the road high reward getting in a car
+
+
+accident low reward. And then the RL
+
+
+problem is figure out those actions that
+
+
+avoid the car accidents. Uh okay. So
+
+
+together the state, the action, the
+
+
+reward and the transition probabilities,
+
+
+the probabilities of transitioning to
+
+
+other states define a Markov decision
+
+
+process. And let me just now uh do this
+
+
+much more precisely, much more formally.
+
+
+Uh why do we call it a Markov decision
+
+
+process? Where does it come from? So in
+
+
+the beginning uh in the uh at the
+
+
+beginning of time, there was the the
+
+
+Markoff chain. Uh and it is in fact
+
+
+named after Andre Marov, who's a
+
+
+mathematician from the very early 20th
+
+
+century. The Markoff chain had nothing
+
+
+to do with reinforcement learning. Uh
+
+
+it's the most basic probabistic model of
+
+
+a dynamical system.
+
+
+So there are no actions in the Markoff
+
+
+chain. There are only states and it
+
+
+looks like this. So if you're if you
+
+
+remember basets from introductory AI,
+
+
+this is a baset for a Markoff chain.
+
+
+Baby's first dynamical system as simple
+
+
+as it gets. And all that the Markoff
+
+
+chain has is transition probabilities.
+
+
+The probability of entering the next
+
+
+state given the current state.
+
+
+And it obeys the markoff property
+
+
+because now here hopefully any of you
+
+
+that that remember at least a little bit
+
+
+of basets will realize that if S2 is
+
+
+observed then of course S3 is
+
+
+independent of S1. Uh very very
+
+
+straightforward
+
+
+and you can define it with just two
+
+
+objects a set of states script S and a
+
+
+transition operator T.
+
+
+So S is straightforward just a set and
+
+
+it can be a set of continuous states or
+
+
+discrete states whatever you want. It's
+
+
+just a set and t is a transition
+
+
+operator. Now what is it? Why is it
+
+
+called a transition operator instead of
+
+
+transition probability? Well, you've got
+
+
+these probabilities P of ST plus one
+
+
+given ST.
+
+
+And you can imagine that if your states
+
+
+are discrete, let's say they have 10
+
+
+states, then that means that to to fully
+
+
+write down P of ST plus one given ST,
+
+
+you need 100 numbers 10 by 10. the
+
+
+probability of entering one state given
+
+
+another state
+
+
+um and the probability of being at some
+
+
+state uh P of ST plus one right now you
+
+
+can obtain that by I apologies there's a
+
+
+typo that should be a sum over ST uh by
+
+
+summing over ST from the previous time
+
+
+step and multiply by the probability of
+
+
+going into ST plus one okay so that's
+
+
+marginalization
+
+
+so you take the current state marginal
+
+
+multiply uh multiply by the probability
+
+
+of going to the next state sum over all
+
+
+the previous states and guess you the
+
+
+probability of being in that state right
+
+
+now. So we can write down a vector.
+
+
+Remember that in this example let's say
+
+
+you have 10 states. You can write down a
+
+
+vector with 10 numbers where every entry
+
+
+in that vector is the probability of
+
+
+being in that state right now. And I'm
+
+
+going to call that vector mu. So the
+
+
+first entry of mut is the probability of
+
+
+being in state one right now. The second
+
+
+entry in mut is the probability of being
+
+
+in state two right now and so on and so
+
+
+on. So if I have 10 states I'll have a
+
+
+vector of dimensionality 10.
+
+
+And I can create a matrix and that's why
+
+
+I'm going to this is called a transition
+
+
+operator. I can create a matrix where
+
+
+the J entry is the probability of
+
+
+entering into state I given that you
+
+
+were in state J.
+
+
+And what's the dimensionality of this
+
+
+matrix of F10 states?
+
+
+Shout you can shout it out 10 by 10
+
+
+exactly. So now I can do some linear
+
+
+algebra and in machine learning we love
+
+
+linear algebra. So if we can write it
+
+
+with linear algebra that's way better
+
+
+than trying to write it in a normal way.
+
+
+uh we can say that mut plus one is just
+
+
+script t * mu t. So that's really cool.
+
+
+Like I can run my dynamical system
+
+
+forward just by multiplying vectors by
+
+
+matrices.
+
+
+Yes.
+
+
+Yeah. Yeah. Yeah. That's a typo. The the
+
+
+the summation should be st. It's a typo
+
+
+on my slide. Thank you. Uh all right. So
+
+
+this this bit of linear algebra will
+
+
+actually be important later. It's not
+
+
+just gratuitous. uh because this linear
+
+
+algebra will get a little bit more
+
+
+complicated when we go to marov decision
+
+
+processes but you can already you know
+
+
+hopefully your imagination is already
+
+
+turnurning that if you want to take two
+
+
+steps then you do t * t * mu if you want
+
+
+to do three steps you do t * t * t * mut
+
+
+and if you want to do k steps you do t ^
+
+
+k * mu t so really nice to write in
+
+
+linear algebra because then we can have
+
+
+these really concise formulas where you
+
+
+have to think really hard about what
+
+
+they mean all right marov decision
+
+
+processes so this is this is what we're
+
+
+we're all after a marov decision process
+
+
+is basically a way to retrofit actions
+
+
+into the Markoff chain. Uh action has
+
+
+nothing to do with marov other other
+
+
+than its heritage. Uh and as far as I
+
+
+can tell, it was popularized by this guy
+
+
+named Richard Bellman in the 1950s. Um
+
+
+so the baset just like before only now
+
+
+you have actions and the actions in
+
+
+general you don't care how they produce
+
+
+somebody picks those actions and they go
+
+
+in and they affect the probability of
+
+
+going to the next state. So now you have
+
+
+uh four objects. You have your state
+
+
+space which is a set of states. You have
+
+
+your action space. Same deal can be
+
+
+continuous, can be discrete, can be
+
+
+anything you want. You have your
+
+
+transition operator which is going to be
+
+
+a bit more complicated. And you have
+
+
+your reward function. The reward
+
+
+function is a scalar field on the set of
+
+
+states and actions.
+
+
+So first question, can we turn a Markov
+
+
+decision process into a Markoff chain?
+
+
+Because Markoff chains were really
+
+
+convenient to work with. we could have
+
+
+this linear operator. We could compute
+
+
+the next state distribution by
+
+
+multiplying the previous one by t. So it
+
+
+would be very convenient if we could
+
+
+turn a markoff decision uh process into
+
+
+a markoff chain.
+
+
+And you can all you do is you just
+
+
+redefine this kind of uh new state to
+
+
+just be the state and the action. You do
+
+
+need a policy for this. So you need to
+
+
+know the probability of a given s. But
+
+
+for a fixed policy for a fixed pi a
+
+
+given s you can actually turn your
+
+
+markoff decision process into a markoff
+
+
+chain and do all sorts of convenient
+
+
+stuff. So here the probability of s+1
+
+
+comma 80 at plus1 given stat is just the
+
+
+probability of st plus1 given sdat times
+
+
+the policy which is the probability of
+
+
+plus1 given st1. Yes,
+
+
+>> that's right. So, uh, the transition
+
+
+operator here, that one is not that
+
+
+thing. They're not the same. But we'll
+
+
+we'll get to this in a second. Uh,
+
+
+before I get to that, I want to also
+
+
+just complete the set of definitions.
+
+
+Uh, oh, question back there.
+
+
+So, the policy is just the probability
+
+
+of the action now given the state now.
+
+
+All right. uh I'll I'll come back to
+
+
+MDP, but first I want to complete my set
+
+
+of definitions and tell you about
+
+
+partially observed Markov decision
+
+
+processes. So now we're going to bring
+
+
+back the observations just for a little
+
+
+bit just to tell you where they fit in.
+
+
+So now we have an even more complex uh
+
+
+baset. Now we got the observations
+
+
+hanging off of the states. We have
+
+
+longer definitions, but substantively it
+
+
+doesn't actually change that much. So
+
+
+you add an additional set of
+
+
+observations,
+
+
+you have your transition probabilities,
+
+
+and now you have what is sometimes
+
+
+called an initial operator or an
+
+
+observation probability, which is just a
+
+
+probability of observation given state.
+
+
+Um, and here's a question for you guys.
+
+
+Can you write it as a markoff chain?
+
+
+Yeah, you can. So you just use the chain
+
+
+rule probability, multiply together the
+
+
+probabilities of those observations, and
+
+
+you can do it as a as a exercise at
+
+
+home. U, but for now, we'll stick to the
+
+
+fully observed case.
+
+
+Okay, so let's uh talk about a few
+
+
+useful concepts. Um
+
+
+here's my policy. It has parameters
+
+
+theta. In this model of the markov
+
+
+decision process and again fully
+
+
+observed for now, the policy takes in S.
+
+
+It produces A. S and A gets sent out
+
+
+into the world and the world produces
+
+
+the next state according to a
+
+
+probability P of S prime given SA. Uh by
+
+
+the way, don't worry about the prime.
+
+
+This is just shorthand for ST and SD
+
+
+plus one. So sometimes in RL we get a a
+
+
+little lazy and instead of writing ST
+
+
+and SD plus one, we just write S and S
+
+
+prime.
+
+
+Okay, so that's kind of the schematic
+
+
+diagram of how an NDP works. Policy
+
+
+produces actions. The world selects the
+
+
+next state and it keeps going in a loop
+
+
+like this until you're done. Okay, and
+
+
+this is just shortand for T+1.
+
+
+So if you assume that uh we have a a
+
+
+finite horizon problem and we'll we'll
+
+
+talk about infinite horizon later but
+
+
+let's say we have a finite horizon
+
+
+meaning that you will interact with this
+
+
+world for capital h steps
+
+
+then underlying all this there is a
+
+
+probability distribution over
+
+
+trajectories over sequences of states
+
+
+and actions of length h
+
+
+and for shortand we'll sometimes call it
+
+
+p theta of toao the reason there's a
+
+
+subscript theta is because of course
+
+
+this probability distribution depends on
+
+
+which policy you to use if you use a
+
+
+different policy you'll get a different
+
+
+distribution of states and actions.
+
+
+If I want to write out this probability
+
+
+distribution, I can use the individual
+
+
+conditional probability distributions in
+
+
+my uh markup decision process to write
+
+
+it like this. It is the product of the
+
+
+distribution over initial states times a
+
+
+giant product over all time steps of the
+
+
+probability of taking the action at that
+
+
+time step times the transition
+
+
+probability at that time step. So this
+
+
+is just chain rule of probability using
+
+
+my MTP baset.
+
+
+Okay. So where did this come from? It
+
+
+came from the baset for the MTP.
+
+
+Okay. Any questions so far about
+
+
+definitions and probability
+
+
+distributions?
+
+
+Okay, great.
+
+
+So this is the this is sometimes called
+
+
+a trajectory distribution. It's a
+
+
+distribution over sequences of states
+
+
+and actions.
+
+
+Another useful concept is what what is
+
+
+sometimes referred to as a state
+
+
+marginal. A state marginal is the
+
+
+probability of being in a particular
+
+
+state at time step t. Now there's
+
+
+nothing mysterious about state
+
+
+marginalss. As with any marginalization,
+
+
+the way you get a state marginal is you
+
+
+sum over all the other variables to
+
+
+integrate them out and then you get a
+
+
+state marginal. So it's a giant sum over
+
+
+all of the states and actions that
+
+
+preceded time step t of the probability
+
+
+of of all these states and actions. Very
+
+
+very ugly, but that's how you can define
+
+
+it. And the definition is, you know,
+
+
+hopefully relatively straightforward.
+
+
+Um
+
+
+so now notice that of course the
+
+
+marginal at at time step t only depends
+
+
+on prior states and actions because you
+
+
+know we live in a causal world. So in
+
+
+general you don't have to integrate out
+
+
+future states and actions. You can just
+
+
+uh only uh use the ones in the past.
+
+
+But here's a question. What if we just
+
+
+uh want samples from the state marginal?
+
+
+So we don't care about what's the
+
+
+probability of ST but we want a sample
+
+
+from P of ST.
+
+
+How can we get a sample from a state
+
+
+marginal?
+
+
+Yes,
+
+
+that's right. Just just run the policy.
+
+
+So if you run your policy in the world,
+
+
+maybe it's a physics simulator or maybe
+
+
+it's the real world, just run a
+
+
+trajectory, get the whole trajectory and
+
+
+take the state at time step t and that
+
+
+is a sample from the state marginal. So
+
+
+the point here is that writing down all
+
+
+these probabilities looks really
+
+
+complicated. Lots and lots of equations.
+
+
+But actually getting samples from these
+
+
+distributions is very easy because you
+
+
+literally just run your policy in your
+
+
+simulator or in the real world and you
+
+
+get your samples. And that's why in
+
+
+reinforcement learning most of the time
+
+
+we'll want to work with samples because
+
+
+samples will make everything really easy
+
+
+whereas trying to compute these
+
+
+probabilities is going to be really
+
+
+really complicated. So basically if you
+
+
+want like a rough uh uh rule of thumb we
+
+
+work with probabilities when we want to
+
+
+do theory and we work with samples when
+
+
+we want to actually code things up so
+
+
+they work. So you'll see a lot of
+
+
+probabilities in this lecture but
+
+
+remember when you actually run these
+
+
+algorithms typically they're operating
+
+
+on samples and the probabilities are
+
+
+never stored in the computer.
+
+
+Okay.
+
+
+Now let's talk about what this is all
+
+
+leading up to which is the objective of
+
+
+reinforcement learning. Once we've
+
+
+nailed down the objective, then at least
+
+
+we know what problem we're trying to
+
+
+solve.
+
+
+So, we've got the reward function, which
+
+
+tells us which states and actions are
+
+
+better. Driving down down the road
+
+
+happily is high reward. Being in a car
+
+
+accident is low reward. And by the time
+
+
+you hit someone, it's too late. So, you
+
+
+need to take you need to somehow
+
+
+optimize your policy so that it doesn't
+
+
+get bad rewards later.
+
+
+So, we need to optimize for long-term
+
+
+reward.
+
+
+So the objective in reinforcement
+
+
+learning now can be created using these
+
+
+concepts that that that we we just
+
+
+learned about. It is the expected value
+
+
+of the total reward over your trajectory
+
+
+and the expectation is taken under the
+
+
+trajectory distribution.
+
+
+So the trajectory distribution defines a
+
+
+distribution over sequences of states
+
+
+and actions and you can sum up the
+
+
+reward over that sequence and that is
+
+
+the total reward of that trajectory and
+
+
+you want to maximize the expected value
+
+
+of that.
+
+
+Yes.
+
+
+So the question is why doesn't the
+
+
+reward function depend on the transition
+
+
+probability? In general, you don't know
+
+
+the transition probabilities. So uh when
+
+
+you're driving the car down the road,
+
+
+you can drive the car and you can see
+
+
+what happens next. We don't actually
+
+
+know what probab what the probability of
+
+
+each event happening is. So that's why
+
+
+we like to work with samples because
+
+
+with samples, we don't need to know what
+
+
+the probabilities are. We can just try
+
+
+things and see.
+
+
+Any other questions?
+
+
+Okay,
+
+
+so that's the objective of reinforcement
+
+
+learning. And basically every algorithm
+
+
+that we're going to learn about in this
+
+
+course is trying to maximize the
+
+
+expected cumulative reward under the
+
+
+trajectory distribution induced by our
+
+
+policy.
+
+
+Now let's manipulate this objective a
+
+
+little bit to get a better sense for
+
+
+what it means. So let's go back to the
+
+
+Markoff chain view. So this is my
+
+
+objective, the expected value of the
+
+
+total reward. And by linearity of
+
+
+expectations, I can write it as a sum
+
+
+over all the time steps of the expected
+
+
+value of the reward at that time step
+
+
+under the state action marginal at that
+
+
+time step. So this just follows
+
+
+trivially from linearity of
+
+
+expectations. And this is the marginal
+
+
+distribution over states and actions.
+
+
+And the marginal if you recall is this
+
+
+giant sum.
+
+
+So now here's a question. Is there a
+
+
+simpler way to write this? Can we go
+
+
+back to all the that nice linear algebra
+
+
+and uh write down some cute linear
+
+
+algebra method for writing down the
+
+
+expected reward at a particular time
+
+
+step without having lots of sums and
+
+
+lots of multiplications.
+
+
+Well, if you remember that markoff
+
+
+decision process can be [clears throat]
+
+
+reduced to a Markoff chain for a fixed
+
+
+policy just by redefining the state to
+
+
+be the concatenation of the state in
+
+
+action with these transition
+
+
+probabilities.
+
+
+So now I can do something similar to
+
+
+what I did for the markoff chain. I can
+
+
+create a a vector mu and this part is
+
+
+going to be a little bit nuanced. So in
+
+
+this vector mu the first entry is the
+
+
+probability of being in state one and
+
+
+taking action one. The second entry is
+
+
+the probability of being in state one
+
+
+and taking action two and so on and so
+
+
+on. And then after that you have all the
+
+
+probability being in state two and
+
+
+taking action one and then state two and
+
+
+taking action two and state two and
+
+
+taking action three and so on and so on
+
+
+and then state three and action one,
+
+
+state three and action two etc etc. So
+
+
+uh if you have n states and m actions,
+
+
+you're going to have n * m entries in
+
+
+this vector.
+
+
+But if I have like you know 10 states
+
+
+and five actions, it's just a vector
+
+
+with 50 numbers. Nothing mysterious
+
+
+about it. And I can also define uh this
+
+
+capital T. This is not the same as the
+
+
+MDP transition operator. This is a
+
+
+simplified transition operator. Um I can
+
+
+define T to be just like before the
+
+
+probability of going into the E entry in
+
+
+that vector given that I'm currently in
+
+
+the J entry. So uh TIG is the
+
+
+probability that S prime is the S in the
+
+
+E tupil SI given that I was in the J
+
+
+tupole SJ and AJ. So this is the J state
+
+
+action tupole. This is the first tupil,
+
+
+second tupil, etc. It's a little bit
+
+
+confusing because I have like the the
+
+
+product of all states and actions, but
+
+
+you can still just stack them up and
+
+
+create this matrix. And I I'm I'm
+
+
+writing theta everywhere just to make it
+
+
+really clear that this thing does depend
+
+
+on your policy. So it's a policy
+
+
+specific uh transition operator. And
+
+
+just like before with the Markoff chain,
+
+
+I can say mut plus one is equal to t *
+
+
+mut exactly the same as with the old
+
+
+markoff chain.
+
+
+And using this I can actually figure out
+
+
+these uh state action marginalss and
+
+
+write them down in a really concise
+
+
+form.
+
+
+So
+
+
+I need to define the reward. I'll define
+
+
+the reward also as a giant vector of the
+
+
+same size. So the first entry is the
+
+
+reward of state one action one. The
+
+
+second entry is the reward of state one
+
+
+action two and so on and so on.
+
+
+My expected value is the sum over all
+
+
+states and actions of the probability of
+
+
+that state and action times the reward
+
+
+of that state and action. So that means
+
+
+that it's a sum over all the entries in
+
+
+these vectors of uh mui and ra i and
+
+
+that means that it's the inner product
+
+
+of these two vectors.
+
+
+That makes sense. Uh expect expected
+
+
+value is really the inner product
+
+
+between the vector of probabilities and
+
+
+the vector of the values of a function.
+
+
+And now if I want to express mu t as uh
+
+
+in terms of the initial probabilities
+
+
+mu1 and the transition operator t. How
+
+
+can I do that? Any ideas?
+
+
+Okay. So uh mu t is t * mu t minus one.
+
+
+But if I want to express it in terms of
+
+
+mu1.
+
+
+Yeah.
+
+
+>> That's right. So you raise t to the
+
+
+power uh t
+
+
+script t the power t. Okay, so mu t is
+
+
+uh script t ^ t minus one * mu1. So I
+
+
+can substitute that in there. And now
+
+
+there we have it. This is the expected
+
+
+reward at time step t expressed entirely
+
+
+in terms of quantities that you should
+
+
+know uh if you have a perfect model of
+
+
+your mdp. So you have your initial
+
+
+probabilities mu1. That's just where you
+
+
+start. You have your transition which I
+
+
+defined on the previous slide and you
+
+
+have your reward.
+
+
+So in my opinion that's a much more
+
+
+concise way of writing it. You don't
+
+
+have to worry about summing over huge
+
+
+numbers of variables. Uh although you
+
+
+have to worry about exponentiating
+
+
+matrices but you know hopefully you're
+
+
+comfortable with that. I do want to
+
+
+emphasize that this is not the sort of
+
+
+thing that you would actually do in any
+
+
+real RL algorithm because you would like
+
+
+to do this without knowing the
+
+
+transition probabilities. But this is a
+
+
+very convenient way to analyze the RL
+
+
+objective. So when we're doing theory we
+
+
+find ourselves doing a lot of this. When
+
+
+we when we code things up in a computer
+
+
+we never do this.
+
+
+All right. Any questions about what I
+
+
+did here? Yes,
+
+
+because I have a typo.
+
+
+Thank you for catching that. So, let me
+
+
+write the correct equation on the slide.
+
+
+See, I remade all of my slides this
+
+
+winter break and usually I do it right,
+
+
+but sometimes I mess up. Okay, so the
+
+
+correct equation should be
+
+
+should be this. Thank you for catching
+
+
+that.
+
+
+>> That's right. So by linearity actually
+
+
+expands out.
+
+
+>> I I I I could claim that that's why I
+
+
+did it, but it's super confusing to
+
+
+write it that way.
+
+
+>> Yeah. You you you get you get the
+
+
+average visitation if you do that. Yeah.
+
+
+>> Yes.
+
+
+>> Yeah. So if you have continuous actions
+
+
+or continuous states in general these
+
+
+vectors are of infinite dimensionality.
+
+
+Um everything still can be made to make
+
+
+sense. uh you need to be rather careful
+
+
+with all sorts of measure theory
+
+
+concepts to make it all make sense and I
+
+
+do not want to do that in this course
+
+
+but everything still works out.
+
+
+All right,
+
+
+let's continue. So now here's a fun
+
+
+question. What if you have an infinite
+
+
+horizon? What if h goes to infinity?
+
+
+Well, one thing that happens as h goes
+
+
+to infinity is in general if you don't
+
+
+make some assumption about your reward,
+
+
+your sum of rewards is also going to go
+
+
+to infinity. Like imagine your reward is
+
+
+like one at every step. Um if you sum
+
+
+over infinite infinitely many ones, you
+
+
+get an infinity. So that's no good. So
+
+
+we're going to slightly modify this.
+
+
+We're going to put a one over h in
+
+
+front. And now we can take h to
+
+
+infinity.
+
+
+So now now the question is at least well
+
+
+wellformed. What happens as h goes to
+
+
+infinity?
+
+
+Take a second to think about it and then
+
+
+I'll I'll I'll I'll tell you a story
+
+
+about it.
+
+
+So as h goes to infinity actually a lot
+
+
+of things work out just fine because as
+
+
+h goes to infinity you can still write
+
+
+this as an expected value under a state
+
+
+action marginal and if you make some
+
+
+simple assumptions which I'll tell you
+
+
+about in a second basically the
+
+
+intuition is this that eventually you
+
+
+enter what is called a stationary
+
+
+distribution basically what that means
+
+
+is that after enough time
+
+
+you are in some distribution over states
+
+
+and actions. And if you run it long
+
+
+enough, you kind of don't remember where
+
+
+you started. So if I go for a random
+
+
+walk around the UC Berkeley campus, if I
+
+
+had like a few too many drinks, uh maybe
+
+
+a few hours later, I won't remember
+
+
+where I started. And if I keep walking
+
+
+around, I still don't remember where I
+
+
+started. So you the assumption that you
+
+
+need for this to work is you need your
+
+
+Markoff chain to be uh erotic and
+
+
+aperiodic. Uh what does that mean?
+
+
+Ergotic means that you can go anywhere
+
+
+from anywhere else. So if the world
+
+
+consists of two islands and you can
+
+
+never go from one island to the other
+
+
+island. Then of course you will always
+
+
+remember which island you started on.
+
+
+But if your markoff chain satisfies the
+
+
+property that any state can be reached
+
+
+from any other state eventually then if
+
+
+you run it long enough eventually you'll
+
+
+forget where you started and that's
+
+
+guaranteed. A periodic just means that
+
+
+it's not like a sinosoid. You don't have
+
+
+to worry about that assumption. In
+
+
+practice you very rarely have to deal
+
+
+with periodic markoff chains. So
+
+
+basically as long as you can get
+
+
+anywhere from anywhere else and you
+
+
+wander around randomly long enough
+
+
+you'll forget where you started and
+
+
+therefore you can say that in that
+
+
+infinite sum almost all of the terms
+
+
+will be from the stationary
+
+
+distribution. The ones in the beginning
+
+
+will not be but there are so few of them
+
+
+relative to all the rest of infinity
+
+
+that they hardly matter.
+
+
+Okay. So that means that all I have to
+
+
+know is what stationary distribution
+
+
+I'll converge to and my overall average
+
+
+reward is just the expected value in
+
+
+that stationary distribution.
+
+
+So does the distribution converge to a
+
+
+stationary distribution? The answer is
+
+
+yes. If you have an argotic markoff
+
+
+chain, which means that anything can be
+
+
+reached from anything else roughly
+
+
+speaking.
+
+
+So now the challenge is how do we figure
+
+
+out what the stationary distribution is.
+
+
+Well, the cool thing about the
+
+
+stationary distribution is that it's
+
+
+stationary, which means that the station
+
+
+distribution muar has to be equal to the
+
+
+distribution you get after you apply the
+
+
+transition operator. So mu bar is equal
+
+
+to t * mu bar
+
+
+the same before and after. And that
+
+
+means that you can do a bit of linear
+
+
+algebra to figure out where it is. And
+
+
+this is why we like to write things in
+
+
+with linear algebra because then we can
+
+
+do all these manipulations and actually
+
+
+get an answer. So if you want to solve
+
+
+for mu bar, just do a little bit of
+
+
+algebra. T minus i * mu bar equals z.
+
+
+And that means that mu bar is an igen
+
+
+vector of uh t with igen value one.
+
+
+That's it.
+
+
+always exists under some regularity
+
+
+conditions and that allows us to write
+
+
+down the expected reward under the
+
+
+stationary distribution as mubar
+
+
+transpose r.
+
+
+Now again we usually don't solve for the
+
+
+stationary distribution directly in our
+
+
+algorithms. We're not actually going to
+
+
+do this. The place where it helps to do
+
+
+this kind of math is to characterize
+
+
+solutions theoretically. So this is not
+
+
+stuff that you you're going to be ever
+
+
+coding up. This is stuff that we will
+
+
+use to understand the behavior of our
+
+
+algorithms. And we will see this again
+
+
+and again when we talk about RL theory
+
+
+later in the course. Understanding how
+
+
+we can manipulate the RL objective with
+
+
+linear algebra is very useful for
+
+
+understanding RL algorithms
+
+
+theoretically.
+
+
+Any questions about this slide?
+
+
+Yes, back there.
+
+
+Um
+
+
+so this is all this has um uh this is
+
+
+all just like analysis of markoff chains
+
+
+completely independent of anything in RL
+
+
+but the the result there is that if you
+
+
+have an erotic aperiodic markoff chain
+
+
+it has a unique stationary distribution
+
+
+which means there's only one vector with
+
+
+uh uh value one and it kind of makes
+
+
+sense because if it's going to be
+
+
+obeying that property uh then uh and and
+
+
+and the thing exists then you're always
+
+
+going to enter the same uh state. The
+
+
+what happens like if you have the two
+
+
+islands case if you want a little bit of
+
+
+intuition if you basically have two
+
+
+subsets of states where you can't go
+
+
+from one to the other but within those
+
+
+the chain is argotic then you would
+
+
+expect to see two stationary
+
+
+distributions one in each one.
+
+
+All right any other questions? Yes.
+
+
+Ah okay. So uh is there a difference
+
+
+between states and states and actions?
+
+
+There isn't because the action part is
+
+
+actually really simple. The action you
+
+
+just take the state probabilities and
+
+
+then you multiply them by the policy. So
+
+
+that's very straightforward. Basically
+
+
+if the state distribution is the same
+
+
+then the action distribution will also
+
+
+be the same.
+
+
+All right. Um, so we learned about uh
+
+
+the infinite horizon case and the finite
+
+
+horizon case. Uh, and in both cases
+
+
+they're expected values of rewards. It's
+
+
+just that in the infinite horizon case
+
+
+we have to take a little bit of care uh
+
+
+with stationary distributions. One
+
+
+little detail here in RL we almost
+
+
+always care about expectations.
+
+
+Like it's very tempting when you're
+
+
+making a decision to say like hey um you
+
+
+know if I do this thing I'm going to get
+
+
+$20. But in real life, everything is
+
+
+stochcastic. There's always some
+
+
+probability of something happening like
+
+
+maybe you'll get $20, maybe you'll get
+
+
+hit by a bus. The probability of getting
+
+
+hit by a bus might be low, but your
+
+
+overall return is going to depend on all
+
+
+of these different events. So in RL, we
+
+
+always deal with expectations. But the
+
+
+nice thing is that when you have an
+
+
+algorithm based on sampling,
+
+
+expectations of discontinuous functions
+
+
+actually become much easier to deal with
+
+
+because they might still be continuous
+
+
+and differentiable with respect to the
+
+
+probabilities. So to give you a little
+
+
+bit of intuition for this, let's say
+
+
+you're driving the car along your windy
+
+
+mountain road and you get a plus one if
+
+
+you stay on the road and a minus one if
+
+
+you go off the cliff. This is a
+
+
+discontinuous event. So if I if I draw
+
+
+the function the reward function as a
+
+
+function of state it is not a continuous
+
+
+function of state. It is not a
+
+
+differentiable function of state. So for
+
+
+a traditional control theoretic approach
+
+
+uh for example for um uh trajection
+
+
+optimization methods that rely on
+
+
+differentiating the uh the reward with
+
+
+respect to state that'll be a big
+
+
+problem. The reward is discontinuous and
+
+
+non-ifferiable with respect to state.
+
+
+However,
+
+
+if I have a probability associated with
+
+
+falling or probability associated with
+
+
+staying on the road, the expectation is
+
+
+still smooth and differentiable with
+
+
+respect to the probabilities.
+
+
+Right? So if you imagine the
+
+
+probabilities go up and down, the
+
+
+expected value is still continuous in
+
+
+those probabilities.
+
+
+And this is why we can often use
+
+
+differentiation based methods for RL
+
+
+because we are not differentiating with
+
+
+respect to the state. We are
+
+
+differentiating with respect to
+
+
+probabilities
+
+
+and that's very very convenient because
+
+
+that means that you can solve all sorts
+
+
+of problems that are very discontinuous
+
+
+with very discontinuous rewards. For
+
+
+example, rewards that are like plus one
+
+
+if you did the right thing and zero
+
+
+everywhere else. And you can still use
+
+
+the kind of gradient based optimization
+
+
+techniques that we know and love with
+
+
+neural networks. So this is a little bit
+
+
+abstract at this point, but you will see
+
+
+this occur in a big way when we talk
+
+
+about policy gradients next week. So if
+
+
+you ever get confused and you think
+
+
+like, oh man, how do I optimize a
+
+
+discontinuous non-ifferiable reward
+
+
+function? Remember in RL we do not
+
+
+differentiate with respect to states in
+
+
+general. We differentiate with respect
+
+
+to policy parameters which induce
+
+
+probabilities.
+
+
+All right. Um any questions about this?
+
+
+Okay, let's take a five minute inter
+
+
+intermission and we'll come back at
+
+
+9:12.
+
+
+>> Hello
+
+
+What's up?
+
+
+>> Yeah, go ahead. Yeah, go ahead.
+
+
+>> Thank you.
+
+
+>> Sorry, I'm listening. Go ahead.
+
+
+I also had a look at the paper and
+
+
+>> the Stefan Ross paper 201
+
+
+it it it actually doesn't. So,
+
+
+basically the paper has a more refined
+
+
+uh proof. They're trying to be as
+
+
+efficient as possible. So, um you can
+
+
+have a very um kind of cludgy proof that
+
+
+just says, okay, if you run the Dagger
+
+
+algorithm infinitely long, then you're
+
+
+mixing all these different distributions
+
+
+and eventually you're most of that
+
+
+mixture consists of the policy
+
+
+distribution and then they do converge.
+
+
+What they wanted to show in the paper is
+
+
+something a little bit more refined.
+
+
+They basically wanted a more efficient
+
+
+proof. So they actually directly show
+
+
+that the cost becomes low which actually
+
+
+happens earlier before the distributions
+
+
+converge.
+
+
+>> Okay. Yeah, I see that. But also
+
+
+maybe there could be some cases where
+
+
+even if the
+
+
+you
+
+
+don't converge. Is it possible?
+
+
+>> Um it's a good question. I'm not sure.
+
+
+Uh if I were to guess, and this is just
+
+
+a guess, that you can make some simple
+
+
+regularity assumptions where that
+
+
+doesn't happen. Like the kind of place
+
+
+where you can imagine that happening is
+
+
+if they sort of oscillate and they
+
+
+switch back and forth.
+
+
+>> Yeah.
+
+
+>> I I suspect you can make some regularity
+
+
+assumptions. So that's not the case, but
+
+
+I don't know.
+
+
+>> Yeah, because I was thinking like we're
+
+
+we're getting a bound like convergence
+
+
+on on the expected loss and maybe and
+
+
+not on the screen maybe. So maybe I was
+
+
+thinking that. Yeah, I I wasn't sure
+
+
+like the two distribution were converg
+
+
+you were mentioning adding mistakes to
+
+
+the train distribution. I was just
+
+
+wondering would there still be
+
+
+distributional shift between like um the
+
+
+expert visitation and the model
+
+
+visitation because like the model could
+
+
+still learn to recover and stuff but I'm
+
+
+thinking like when you run it even
+
+
+though it has to recover could it still
+
+
+visit a state where the expert has not
+
+
+>> yeah it could absolutely do that. So
+
+
+this is not a this is not a bulletproof
+
+
+solution. It's just a mitigation
+
+
+strategy that often works well in
+
+
+practice.
+
+
+>> So it improves the performance. But
+
+
+let's say like putting dagger with this
+
+
+will still also
+
+
+>> in general. Yes. So in general you can't
+
+
+guarantee that this will fix it. And the
+
+
+reason is that you can't guarantee that
+
+
+the um the recoveries will um that like
+
+
+basically when the policy makes those
+
+
+little mistakes, it can still make a
+
+
+little mistake in the in the in the in
+
+
+the mistake state and they can still
+
+
+take it further out. Um people have done
+
+
+much more sophisticated analysis where
+
+
+you make some assumptions on the
+
+
+dynamical system like you assume some
+
+
+smoothness and things like that and if
+
+
+you assume enough things then you can
+
+
+you can actually make it be a guaranteed
+
+
+thing but you need more more
+
+
+assumptions.
+
+
+>> So then in general with including
+
+
+mistakes in a training distriution
+
+
+or
+
+
+>> yeah and in practice the way that shows
+
+
+up is that if you have some mistakes and
+
+
+some recoveries then you just get
+
+
+policies that are more robust.
+
+
+>> Very good question. I was just wondering
+
+
+what you meant by you had like pi theta=
+
+
+>> equals theta.
+
+
+>> Yeah, maybe I'm using overly loose
+
+
+notation.
+
+
+>> Okay.
+
+
+>> Um, imagine it's like this that um you
+
+
+have um uh discontinuous outcomes like
+
+
+uh you um you win the lottery or you
+
+
+lose the lottery, right? And your action
+
+
+is like buy the lottery ticket.
+
+
+>> So that then you can write all this out.
+
+
+You have an action which is buy or don't
+
+
+buy the lottery ticket. You have only
+
+
+two states you can go into which is you
+
+
+have a winning ticket or you don't. and
+
+
+then everything actually makes sense.
+
+
+This this was a little bit fast and
+
+
+loose.
+
+
+>> All right, I should probably continue.
+
+
+>> All right, folks. We're going to start
+
+
+in under a minute. Please uh find a
+
+
+seat.
+
+
+All right. So the last part of today's
+
+
+lecture, we're going to talk about some
+
+
+general themes about RL algorithms.
+
+
+We're going to talk about the anatomy of
+
+
+an RL algorithm. We'll talk about the
+
+
+different kinds of of RL algorithms and
+
+
+some themes that we will see again and
+
+
+again in this course. So an RL algorithm
+
+
+has three parts. It has an orange part,
+
+
+a green part, and a blue part. So, uh,
+
+
+basically every algorithm that we'll
+
+
+learn about in this course is going to
+
+
+have some version of these three parts.
+
+
+Sometimes they are a little bit uh,
+
+
+degenerate and simple, and sometimes
+
+
+they're very complicated, but in pretty
+
+
+much every algorithm, you're going to
+
+
+generate samples, which means that you
+
+
+run some policy and you get some data.
+
+
+Then you're going to do something with
+
+
+those samples. You're going to analyze
+
+
+them to understand how good your policy
+
+
+was. And this can be as simple as just
+
+
+summing up the rewards over the sample
+
+
+trajectories or as complex as fitting
+
+
+like a neural network model that
+
+
+represents a world model and all this
+
+
+stuff. So that's the green box and then
+
+
+you're going to use the model that you
+
+
+fit in that green box to somehow improve
+
+
+your policy and that's the blue box. And
+
+
+different algorithms do this in very
+
+
+different ways but they all roughly are
+
+
+going to have these three parts. So if
+
+
+you ever meet a new RL algorithm and you
+
+
+want to get a better sense for what it's
+
+
+doing, ask what are those three parts?
+
+
+So here's a simple example. Uh I'm going
+
+
+to uh run my policy and get three
+
+
+trajectories. I'll sum up the rewards of
+
+
+those trajectories. Uh you know, maybe
+
+
+the green one is a really good
+
+
+trajectory, the red one is a bad one,
+
+
+the yellow one is in between. And I'm
+
+
+going to increase the probability of the
+
+
+good trajectories and decrease bad ones.
+
+
+Okay, that's an algorithm. That's
+
+
+actually what policy grading algorithms
+
+
+do. In the green box, they do something
+
+
+very very simple. They literally sum up
+
+
+the to find out how good each of those
+
+
+trajectories was. In the blue box, they
+
+
+use gradient uh of the expected reward
+
+
+to improve the policy. We'll learn about
+
+
+this uh next week on Wednesday. This is
+
+
+kind of the arguably the simplest
+
+
+algorithm.
+
+
+You can also have another very complex
+
+
+method. Maybe in the green box you fit a
+
+
+neural network to the dynamics. You
+
+
+train a neural net to predict the next
+
+
+state given the current state in action.
+
+
+And in the blue box you run back
+
+
+propagation through this thing. You know
+
+
+assuming everything is deterministic to
+
+
+improve the policy with back prop. This
+
+
+is called model based reinforcement
+
+
+learning because you fit a model of the
+
+
+world and then you use that model to get
+
+
+a better policy. This is a very
+
+
+different algorithm but it still has the
+
+
+same parts. Get some data in the orange
+
+
+box, fit something to that data in the
+
+
+green box. In this case, you're fitting
+
+
+something much more complicated and then
+
+
+use that something to get a better
+
+
+policy in the blue box. So, pretty much
+
+
+every algorithm will have a structure
+
+
+like this.
+
+
+Any questions so far?
+
+
+Okay. Now, even though the parts are
+
+
+going to be conserved, the relative cost
+
+
+and complexity of each of these parts
+
+
+will be very different for different
+
+
+algorithms.
+
+
+For example, let's take the orange box.
+
+
+Can someone think of an example of an RL
+
+
+system where the orange box generating
+
+
+samples is exceptionally cheap such that
+
+
+I can generate as many samples as I
+
+
+want? Yeah.
+
+
+Yeah. If you have a really fast
+
+
+simulator.
+
+
+Any other examples?
+
+
+Yeah. Language modeling. That's a great
+
+
+example because with language models, if
+
+
+you're generating multiple possible
+
+
+answers to a question, you can sample
+
+
+from that model all you want. You need a
+
+
+verifier to then verify those samples,
+
+
+but you can sample all you want. Um,
+
+
+Alph Go, great example. Simulating games
+
+
+of Go. If you have neural networks
+
+
+controlling both players, it's pretty
+
+
+easy because the rules of Go can be
+
+
+programmed in a computer.
+
+
+But sometimes this can be really
+
+
+expensive.
+
+
+For example, um if you're managing the
+
+
+tax policy of a large nation state, then
+
+
+generating samples sample trajectories
+
+
+is very hard because it might require
+
+
+decades of well, okay, maybe more
+
+
+seriously, if you're running if you if
+
+
+you're controlling a vehicle on a real
+
+
+road, right? Like that that's a case
+
+
+where you might have very expensive
+
+
+sampling because you need a safety
+
+
+driver and all that stuff. So real
+
+
+robot, car, power grid, whatever,
+
+
+sampling is in real time and it's
+
+
+expensive and potentially dangerous
+
+
+because you need somebody to monitor for
+
+
+safety. So this is a costly thing.
+
+
+Sampling in a fast simulator maybe
+
+
+hundreds of thousands of times faster
+
+
+than real time. Very cheap. You can do
+
+
+it as much as you want. Yes.
+
+
+>> Yeah. This is a really good question. So
+
+
+the question is like in the orange box
+
+
+are you always collecting samples with
+
+
+the policy? Um this is actually a very
+
+
+subtle question because depending on the
+
+
+method you're using you might actually
+
+
+want to collect samples that are more
+
+
+informative than the ones that your
+
+
+policy would produce. And we'll actually
+
+
+talk about this later in the course when
+
+
+we talk about exploration. So you do not
+
+
+necessarily collect samples with your
+
+
+best policy. You might intentionally
+
+
+diversify those samples.
+
+
+Okay. Uh green box. So for that policy
+
+
+gradient method, there's kind of a
+
+
+degenerate green box which is just like
+
+
+sum up the rewards to find out how good
+
+
+your trajectories are. For model based
+
+
+RL, it's a really complicated thing
+
+
+where you train an entire neural network
+
+
+to predict future states. So then it
+
+
+might be very expensive. So the green
+
+
+box can be very simple or can be very
+
+
+complex. And the blue box can also be
+
+
+really simple like maybe just take a
+
+
+gradient uh with policy gradients or it
+
+
+can be really complicated like doing all
+
+
+sorts of model based planning. So we'll
+
+
+see all sorts of algorithms and they'll
+
+
+be they'll differ in this regard.
+
+
+Okay, any questions here? Yes.
+
+
+>> Yeah. So there are actually a lot of
+
+
+ways to do that. Uh so part of why I
+
+
+didn't go into it is that there are many
+
+
+options. But if you want like a a little
+
+
+bit of uh simple intuition here is a a
+
+
+very simple yet effective model based RL
+
+
+strategy. Generate some samples. Train a
+
+
+really good neural network to basically
+
+
+model the world and then generate a huge
+
+
+number of additional samples from that
+
+
+neural network. So now these training
+
+
+that that neural net to model the world
+
+
+and generating that huge number of
+
+
+additional samples is uh a modeling
+
+
+step. It's separate from generating real
+
+
+world data. And obviously that'll be
+
+
+pretty efficient because you're
+
+
+generating lots of extra samples, but
+
+
+it's expensive.
+
+
+Yeah. And there's many other ways to use
+
+
+a model, but that's maybe like one one
+
+
+kind of mental model you can have. Yes.
+
+
+>> Yeah. Yeah.
+
+
+Yes.
+
+
+So it depends on your problem domain. If
+
+
+you're if you're do like uh if you're
+
+
+doing the language model thing and you
+
+
+just have uh one answer and you want a
+
+
+reward model, then all you need is the
+
+
+reward. If you have a complicated
+
+
+dynamical system, then if you want to uh
+
+
+predict what will happen next, then you
+
+
+need the full transition model. It
+
+
+depends on the on the problem domain.
+
+
+Okay. So
+
+
+next I want to tell you about value
+
+
+functions and Q functions. Uh this is
+
+
+something that we'll go into in a lot
+
+
+more detail when we talk about specific
+
+
+algorithms. We'll learn about algorithms
+
+
+that use value functions and Q
+
+
+functions. But I want to introduce the
+
+
+general concept because it's a concept
+
+
+that we see a lot in RL and it helps us
+
+
+understand how to deal with these big
+
+
+expectations that we have the expected
+
+
+rewards.
+
+
+So remember the RL objective is the
+
+
+expected value of the cumulative reward
+
+
+that you get by summing over all the
+
+
+time steps. And this is kind of a
+
+
+monster like that probability
+
+
+distribution. If you remember, if I were
+
+
+to write it out, it has all those terms.
+
+
+Uh, it's pretty complicated.
+
+
+So, there are a few identities that make
+
+
+it much more manageable.
+
+
+I can write it out as the expected value
+
+
+under the initial state
+
+
+of the expected value of the initial
+
+
+action of the reward at time step one
+
+
+plus
+
+
+the expected value over the second state
+
+
+of the expected value of the second
+
+
+action of the reward at time step two
+
+
+plus etc etc etc. So you'll notice that
+
+
+if I actually write out this expectation
+
+
+so that uh I add more and more variables
+
+
+as I go in I get the something that
+
+
+starts looking like a recursive
+
+
+expression.
+
+
+So if I knew the stuff inside of this
+
+
+then I could write it recursively and
+
+
+I'm going to denote the stuff inside
+
+
+those brackets as Q. Q is a function of
+
+
+S1 comma A1 and Q is equal to the reward
+
+
+right now plus the expected value of the
+
+
+future stuff.
+
+
+And now things simplify a lot because
+
+
+the expected value of the total reward
+
+
+is just the expectation with respect to
+
+
+the state now of the expectation of the
+
+
+action now of the Q value.
+
+
+This is not a very sophisticated
+
+
+statement because I literally just
+
+
+introduced a shorthand notation for that
+
+
+big sum inside.
+
+
+But the nice thing about introducing the
+
+
+shorthand notation is that I get a lot
+
+
+of recursive expressions now that make
+
+
+it a lot easier to deal with big
+
+
+expectations. But so far I haven't
+
+
+actually done anything terribly
+
+
+sophisticated. I literally just
+
+
+introduce Q as a way to denote in
+
+
+shorthand that uh the stuff that goes
+
+
+inside the brackets.
+
+
+Of course, looking at this expression,
+
+
+you can some of you might immediately be
+
+
+able to guess that if my goal is to make
+
+
+this objective big, that's what our role
+
+
+wants to do. It wants to make it big.
+
+
+Now, it's pretty clear that if I just
+
+
+want to pick the probability of the
+
+
+first action, well, I can pick the
+
+
+probability of the first action to make
+
+
+Q really big. If I know what Q is. So,
+
+
+that's why uh value functions and Q
+
+
+functions are so convenient because if
+
+
+you compute them, then it becomes much
+
+
+easier to improve your policy.
+
+
+So for example, if I just choose the
+
+
+action with uh that maximizes Q with
+
+
+probability one, that'll be a pretty
+
+
+good policy for that first time step.
+
+
+This is not a real method. This is just
+
+
+intuition for now, but hopefully it gets
+
+
+you a sense for why Q functions are
+
+
+important. And when we talked about all
+
+
+those probabilities and marginalss
+
+
+before, remember I said we don't
+
+
+actually compute the probabilities and
+
+
+marginalss in our algorithm. the Q
+
+
+functions we will compute like these you
+
+
+you will actually compute using using
+
+
+your uh code in homework three I believe
+
+
+okay so let's actually define these
+
+
+things properly and let's see what
+
+
+happens
+
+
+so the Q function in general it depends
+
+
+on a policy so we write qi to to make it
+
+
+clear this is the Q function for a
+
+
+policy pi it's a function of a state and
+
+
+an action at a time step t and it's
+
+
+defined as the total reward that you
+
+
+will get if you start in state s take
+
+
+action A and then follow your policy
+
+
+thereafter.
+
+
+You can also define a value function
+
+
+which is just like that only it's a
+
+
+function of only S. So the value
+
+
+function is if you start in state S and
+
+
+then follow your policy for the rest of
+
+
+the trajectory, what is the total
+
+
+expected reward you will get?
+
+
+Looking at these two things, can someone
+
+
+tell me how I can write out my value
+
+
+function in terms of the Q function?
+
+
+Can I express V in terms of Q?
+
+
+Yes.
+
+
+It's not the maximum.
+
+
+That's right. It's the it's expectation.
+
+
+So uh V is uh just the expected value of
+
+
+Q under the action distribution which is
+
+
+your policy. So they're very closely
+
+
+related.
+
+
+And of course the expected value of V of
+
+
+S1 is literally the RL objective. So if
+
+
+I plug in those the definitions I will
+
+
+get exactly the sum the expected sum of
+
+
+rewards. So these are kind of you can al
+
+
+also think of these as like different
+
+
+ways to write your objective.
+
+
+All right this is kind of a lot to take
+
+
+in. Any questions about this?
+
+
+Okay let's talk about using Q functions
+
+
+and value functions. So here's an idea.
+
+
+If you have a policy pi and you can
+
+
+somehow estimate qi and we'll learn
+
+
+about lots of ways to estimate it, but
+
+
+if you can somehow estimate qi, then you
+
+
+can improve pi.
+
+
+You can choose a new policy pi prime
+
+
+that assigns a probability one to the
+
+
+arg max of q. So in in you construct a
+
+
+new pi prime that in every state just
+
+
+takes the arg max of q with respect to a
+
+
+and then selects that action.
+
+
+And that will be a better policy because
+
+
+it'll have a better expected value of Q.
+
+
+And what the guarantee technically is
+
+
+that this policy is at least as good as
+
+
+pi. And in most cases going to be
+
+
+better. In fact, if everything is exact
+
+
+and perfect, it will be better than pi
+
+
+if there exists a better policy. If
+
+
+you're already at the optimal course,
+
+
+you can do better than the best. And it
+
+
+actually doesn't matter what the initial
+
+
+policy is. You'll always improve it if
+
+
+you can uh do this exactly.
+
+
+Here's another idea. you can compute a
+
+
+gradient to increase the probability of
+
+
+good actions.
+
+
+So if you choose an action for which q
+
+
+pi s comma a is bigger than vp pi of s
+
+
+that means you're choosing a better than
+
+
+average action. So if you increase the
+
+
+probability of better than average
+
+
+actions then you will get a better
+
+
+policy
+
+
+because remember the the value function
+
+
+is the expected value of Q. So the value
+
+
+function is literally the average uh
+
+
+return you expect to get in that state.
+
+
+So if you do better than average that
+
+
+means you are doing better and therefore
+
+
+that means you are improving your
+
+
+policy.
+
+
+So you can for example modify your pi to
+
+
+increase the probability of actions that
+
+
+have a higher Q value than the value in
+
+
+that state.
+
+
+And that's what we'll do with policy
+
+
+gradients. So anything that modifies
+
+
+your pi to make those good actions more
+
+
+probable will be making your policy
+
+
+better.
+
+
+So these ideas are very important in RL.
+
+
+We'll revisit them over and over again.
+
+
+Uh and you know essentially all of RL is
+
+
+about finding policies with high Q
+
+
+values.
+
+
+Any questions about this?
+
+
+Okay. So if at this point this looks a
+
+
+little bit abstract, don't worry. We'll
+
+
+dive into this much more concretely when
+
+
+we learn about actual algorithms. But I
+
+
+wanted to give you guys a sense of what
+
+
+to expect here.
+
+
+So that green box that is often where
+
+
+you'll you're going to find Q functions
+
+
+and value functions. Many many RL
+
+
+algorithms
+
+
+in that green box are going to estimate
+
+
+a Q function or a value function of the
+
+
+current policy.
+
+
+Estimating the Q function or value
+
+
+function does not change the policy. It
+
+
+is purely a modeling step but it will be
+
+
+used in the blue box to make the policy
+
+
+better.
+
+
+Okay. So let's talk about the types of
+
+
+RL algorithms we're going to encounter.
+
+
+There are quite a few of them and
+
+
+there's all sorts of reasons why we have
+
+
+many different RL algorithms.
+
+
+They all aim to maximize the expected
+
+
+reward.
+
+
+Policy gradient algorithms are perhaps
+
+
+the most direct approach to RL. With a
+
+
+policy gradient algorithm, your goal,
+
+
+hence the name, is to compute the
+
+
+gradient of the objective with respect
+
+
+to the policy or the policy parameters
+
+
+in general. Policy gradient algorithms
+
+
+tend to be simple. uh they tend to be
+
+
+expensive in terms of requiring many
+
+
+samples uh and uh they tend to be you
+
+
+know quite quite nice to use if you have
+
+
+cheap samples if you're running in a
+
+
+simulator for example oftentimes if you
+
+
+see let's say simtoreal transfer results
+
+
+for robots like humanoid robots doing
+
+
+back flips chances are those were
+
+
+trained with policy gradients
+
+
+value based methods value based methods
+
+
+are all about estimating the value
+
+
+function or the Q function uh A pure
+
+
+valuebased method might not even
+
+
+represent the policy explicitly. It
+
+
+might only learn the Q function and then
+
+
+take that arg max just through the Q
+
+
+function. The Q function essentially is
+
+
+the policy at that point. Uh the classic
+
+
+example of this is DQN for Atari games.
+
+
+And you will actually implement these
+
+
+things in homework 3.
+
+
+Actor algorithms have both actor critic
+
+
+algorithms have both a policy and a
+
+
+value function where the value function
+
+
+is used to train the policy. So in an
+
+
+actor critic method you train a critic
+
+
+which is the value function which
+
+
+evaluates how good your policy is for
+
+
+different states and actions and then
+
+
+you use it to make your policy better.
+
+
+Actor critic methods are typically among
+
+
+the most efficient RL algorithms. So if
+
+
+you have very expensive samples then you
+
+
+might use an actor critic method.
+
+
+Model based RL algorithms are algorithms
+
+
+that train a model of the world. they
+
+
+they learn to predict future states and
+
+
+then they use that to somehow improve
+
+
+your policy and there are many ways to
+
+
+use a model to improve your policy. You
+
+
+can use it for planning. So maybe you
+
+
+don't even have an explicit policy. You
+
+
+literally just run a planner against
+
+
+your model.
+
+
+They can they can improve the policy by
+
+
+directly computing gradients through the
+
+
+model or they can generate additional
+
+
+synthetic samples that can then be used
+
+
+to boost the number of samples available
+
+
+to one of the previous algorithms. So
+
+
+model based are very heterogeneous and
+
+
+they tend to be somewhat domain specific
+
+
+in the sense that certain kinds of model
+
+
+based RL methods will work better in
+
+
+some domains than others
+
+
+and there's many versions.
+
+
+Any questions about this?
+
+
+Yes.
+
+
+Right. Uh yes. So generally for all of
+
+
+the things on this slide, this is under
+
+
+standard RL assumptions. The standard RL
+
+
+assumption is that you get to take
+
+
+samples. You get to observe the reward
+
+
+for all of your samples. You get to not
+
+
+care where that reward came from. Like
+
+
+it sort of comes from on high. Uh and
+
+
+it's known. The the reward values are
+
+
+known. Uh and the critic is not there to
+
+
+estimate what the reward is. the critic
+
+
+is there to estimate those expected
+
+
+values.
+
+
+So there's sort of an there's a very
+
+
+different slide that I would make for
+
+
+the different types of RL problems. This
+
+
+is all for the canonical problem and
+
+
+these are different methods.
+
+
+Okay. So um model based RL let's talk
+
+
+about that in modelbased RL the green
+
+
+box is learning some kind of model of
+
+
+the world. And in general of course the
+
+
+uh the world is probabilistic. So it's
+
+
+not actually that f ST comma AT equals
+
+
+ST plus one. In general, it's a
+
+
+probability. So you're somehow going to
+
+
+learn P of ST plus one given ST. And
+
+
+this this could be very simple. Uh if
+
+
+you're like playing chess, the rules of
+
+
+chess are pretty simple. If you are uh
+
+
+controlling an autonomous vehicle from
+
+
+image observations, this might be
+
+
+incredibly complex because now you're
+
+
+essentially like modeling all the visual
+
+
+observations in the world.
+
+
+And then there are a few different
+
+
+options for using those learned
+
+
+transition probabilities to improve the
+
+
+policy. And let me tell you about those
+
+
+options.
+
+
+One is to just use the model to plan. So
+
+
+maybe you don't even have an explicit
+
+
+policy at all. You just learn a model
+
+
+and then uh you run your favorite
+
+
+trajectory optimization, motion planning
+
+
+uh or optimal control algorithm.
+
+
+And uh this essentially you know many of
+
+
+these are continuous smooth optimization
+
+
+methods. So if you're familiar with NPC
+
+
+for example a classic way to do learning
+
+
+based NPC is to learn the model and then
+
+
+run NPC against the model. Uh if you're
+
+
+in a discrete space a very common choice
+
+
+is to use Monte Carlo research. Uh these
+
+
+kinds of techniques are very commonly
+
+
+used for games. uh for you know if you
+
+
+want to to play uh chess go or poker or
+
+
+something Monte Carlo research is often
+
+
+the method of choice for planning.
+
+
+You can also use the model to do
+
+
+continuous optimization of the policy
+
+
+because once the model is known
+
+
+technically you have everything needed
+
+
+to to compute that expected value and
+
+
+you can differentiate it. You have to
+
+
+take care because differentiating
+
+
+through stochcastic functions is
+
+
+difficult. But if they have a convenient
+
+
+form like a Gaussian, you can actually
+
+
+differentiate through them and we'll
+
+
+learn how to do that. Uh so it requires
+
+
+some tricks to make it work. And you can
+
+
+also use the model to learn a value
+
+
+function. So you can generate a bunch of
+
+
+samples from your model, fit the value
+
+
+function, use the value function to
+
+
+improve your policy. And that's
+
+
+basically a dynamic programming method.
+
+
+There's other ways too, but these are,
+
+
+you know, some of the common ones.
+
+
+Any questions about modelbased RL? This
+
+
+is a very high level summary. We'll have
+
+
+more details later but any burning
+
+
+questions.
+
+
+Okay. Uh value function methods. So
+
+
+value function methods they will learn V
+
+
+or Q in that green box and then they'll
+
+
+do something really simple in the blue
+
+
+box like for example just choose the
+
+
+action that maximizes Q. So if you have
+
+
+a discrete action problem like Atari
+
+
+games, there's maybe four actions in
+
+
+every state. They're discreet. very easy
+
+
+to enumerate the Q value of all four
+
+
+possible actions and just directly
+
+
+choose the best one and all of the
+
+
+challenges in learning those value
+
+
+functions and Q functions.
+
+
+Direct policy gradients
+
+
+policy improvement uh consists of
+
+
+computing the gradient of the RL
+
+
+objective with respect to the parameters
+
+
+of your neural network policy.
+
+
+And the model or estimated return for a
+
+
+for a pure policy gradient method is
+
+
+actually really simple. just sum up all
+
+
+the rewards and use them in the gradient
+
+
+estimator. And that's what we'll do next
+
+
+Wednesday. But if you have an actoric
+
+
+algorithm, then you have both. You fit
+
+
+the value function or Q function in the
+
+
+green box and then you use it to compute
+
+
+the policy gradient in the blue box. So
+
+
+actritic is like policy gradient plus
+
+
+value based methods added together.
+
+
+Okay. So why so many? Why can't we just
+
+
+have like one good RL algorithm, learn
+
+
+that in one two-hour lecture and then be
+
+
+done with this and then go home? Uh why
+
+
+do we need so many RL algorithms? Well,
+
+
+the issue is that these different
+
+
+methods have very different trade-offs
+
+
+and uh RL is very very general can in
+
+
+principle if you have a perfect RL
+
+
+algorithm that can solve literally any
+
+
+problem world hunger uh you know getting
+
+
+a good grade anything. But of course in
+
+
+reality RL algorithms are imperfect. So
+
+
+because they are imperfect, because they
+
+
+require samples, because they're
+
+
+computationally expensive, they can't
+
+
+actually solve any problem in practice.
+
+
+And different algorithms have different
+
+
+trade-offs.
+
+
+So one trade-off that we might care
+
+
+about is sample efficiency. How how
+
+
+expensive are our samples? If we our
+
+
+samples are really expensive, we might
+
+
+want a very efficient algorithm. If our
+
+
+samples are very cheap, we might want an
+
+
+algorithm that can use many samples, but
+
+
+is maybe better along some other axis.
+
+
+Stability and ease of use. oftentimes
+
+
+the cheapest uh algorithms in terms of
+
+
+the s number of samples are also the
+
+
+hardest to use.
+
+
+They uh might require more
+
+
+hyperparameter tuning. They might
+
+
+require more careful design of the
+
+
+neural network architecture. So this is
+
+
+also an important trade-off.
+
+
+Some methods make different assumptions.
+
+
+For example, the most general methods
+
+
+can handle stochastic systems. Some
+
+
+methods struggle with stochcastic
+
+
+systems. They require deterministic
+
+
+systems. But of course sometimes you
+
+
+actually want to solve a deterministic
+
+
+problem. So maybe there's other methods
+
+
+available to you. Is your problem
+
+
+continuous or discreet?
+
+
+Value based methods like Q-learning or
+
+
+DQN are great if you have a small number
+
+
+of discrete actions like in Atari games.
+
+
+But if you have a very high dimensional
+
+
+continuous action space then they are
+
+
+very difficult to use.
+
+
+Is your problem episodic or infinite
+
+
+horizon? This is kind of a subtle
+
+
+trade-off because maybe you have a truly
+
+
+infinite horizon problem that does not
+
+
+cleanly split into episodes. Maybe you
+
+
+are doing stock trading.
+
+
+You don't get to just go back in time
+
+
+and retry trading your stocks on Monday.
+
+
+You have to keep going. So some real
+
+
+world processes are inherently infinite
+
+
+horizon and continuous and you cannot
+
+
+just like reset and go back. Whereas in
+
+
+some things you can in some case you can
+
+
+definitely reset. Like if you're playing
+
+
+a game of Go, yeah, you can play lots of
+
+
+games of Go and each game of Go is
+
+
+independent of every other one.
+
+
+And uh different things are easy or hard
+
+
+in different settings. Sometimes the
+
+
+policy is really really simple but the
+
+
+model is really complex and sometimes
+
+
+the other way around. So depending on
+
+
+what's more complex and more simple in
+
+
+your domain um then u you you can choose
+
+
+a different algorithm.
+
+
+Let me compare uh a few uh methods along
+
+
+some of these axes. So sample
+
+
+efficiency, how many samples do you need
+
+
+to get a good policy? How much do you
+
+
+need to interact with the world or how
+
+
+much do you need to run your simulator?
+
+
+Um so typically the most important
+
+
+question that you want to ask to
+
+
+understand if a method is sample
+
+
+efficient is whether it is off policy.
+
+
+What does this term mean? Off policy
+
+
+means that you can improve the policy
+
+
+without generating new samples from that
+
+
+policy.
+
+
+On policy means that each time the
+
+
+policy is changed, you have to generate
+
+
+new samples.
+
+
+So a classic example of an off policy
+
+
+algorithm would be model based RL. If
+
+
+you want to train that transition
+
+
+probability, you can use whatever
+
+
+samples you can get your hands on. It'll
+
+
+actually turn out that it works better
+
+
+if you have samples that are closer to
+
+
+your policy because of distributional
+
+
+shift. But in principle, whatever data
+
+
+you have, you can put into the training
+
+
+set for the model.
+
+
+Policy gradient is the classic example
+
+
+of an on policy algorithm because policy
+
+
+gradient literally generates samples
+
+
+from your latest policy use it to
+
+
+compute a gradient improves the policy
+
+
+and then throws those samples in the
+
+
+garbage.
+
+
+So if you want to be very uh uh frugal
+
+
+with your samples then you want to reuse
+
+
+past samples and you want an off policy
+
+
+algorithm. If your samples are cheap if
+
+
+they come from a cheap simulator you
+
+
+don't care about that.
+
+
+So that's a big distinction.
+
+
+there is uh you know an interesting
+
+
+question we could ask is um
+
+
+why would you ever use a less efficient
+
+
+algorithm. So we can put uh the
+
+
+different RL algorithms on a spectrum in
+
+
+terms of their efficiency and because
+
+
+off policy versus on policy is such a
+
+
+big distinction I'm going to just put
+
+
+that uh barrier in there just to tell
+
+
+you everything to the right of that is
+
+
+on policy everything to the left is off
+
+
+policy. So the least efficient which we
+
+
+will not cover in this course because
+
+
+they're so inefficient are methods that
+
+
+don't even use gradients at all. So
+
+
+these are things like evolutionary
+
+
+strategies. These are methods that
+
+
+basically perform a stcastic search
+
+
+directly in the space of policy
+
+
+parameters. These can be effective
+
+
+methods of last resort if you either
+
+
+didn't take this class or have no other
+
+
+way to solve your problem. I wouldn't
+
+
+recommend it though. Uh the more
+
+
+mainstream thing that you are likely to
+
+
+use in the on policy bucket is policy
+
+
+gradient algorithms. We'll learn about
+
+
+those next week and they're really nice.
+
+
+Uh you can also do all sorts of cool
+
+
+theory with them and they're very
+
+
+practical. You can implement them uh in
+
+
+a simulator. You can use them for LLMs.
+
+
+You can use them for sim tore robotic
+
+
+things. They're really cool. Actor
+
+
+critic algorithms can be both on policy
+
+
+or off policy depending on how you set
+
+
+them up. And that's pretty interesting.
+
+
+We'll learn about that. And then
+
+
+Q-learning, Q function methods. Those
+
+
+are kind of the classic off policy
+
+
+methods. And then if you want to be even
+
+
+more efficient, then you would do some
+
+
+kind of model based thing. And the more
+
+
+model based you are, the more kind of
+
+
+domain knowledge you add into your
+
+
+model, the more efficient you can be.
+
+
+So then the question is why would you
+
+
+use a less efficient algorithm? Like
+
+
+shouldn't you just always go as far to
+
+
+the left on this as you as you can?
+
+
+Well, the problem is that computational
+
+
+cost is not the same as sample
+
+
+efficiency. And oftent times, not
+
+
+always, but often, we actually find that
+
+
+if you have a very cheap simulator, the
+
+
+less efficient methods are more
+
+
+computationally efficient. So if you
+
+
+want like a rough sense for this model
+
+
+based RL is computationally very
+
+
+expensive because you're training this
+
+
+big model just to model your system. So
+
+
+you can generate additional samples
+
+
+through the model for example. If your
+
+
+model is a video model generating a
+
+
+video with a video model is way more
+
+
+expensive than real time. So typically
+
+
+when you go to the left on the spectrum
+
+
+what you're really doing is you're
+
+
+trading off compute cost for the sake of
+
+
+better sample efficiency. And that makes
+
+
+a lot of sense. We've seen that in many
+
+
+other domains of machine learning. You
+
+
+can either get more data or you can
+
+
+spend more compute. So when you're going
+
+
+to the left, you're essentially spending
+
+
+more compute to require less data. And
+
+
+sometimes that's a good trade and
+
+
+sometimes it isn't.
+
+
+Another comparison is stability and ease
+
+
+of use. Typically the more expensive
+
+
+methods are going to be easier to use.
+
+
+Um and you can ask some questions that
+
+
+will help you understand stability and
+
+
+ease of use. Like one good question is
+
+
+does it converge? In supervised machine
+
+
+learning, we're kind of spoiled because
+
+
+we're used to methods that converge.
+
+
+Often they converge uh in some very nice
+
+
+efficient way. In RL
+
+
+RL algorithms typically converge under
+
+
+greatly simplifying assumptions like
+
+
+linear function approximation and
+
+
+discrete state spaces, but under
+
+
+realistic assumptions, they are often
+
+
+not guaranteed to converge and we rely
+
+
+on a lot of hyperparameter tuning to get
+
+
+them to actually work. Uh and if they do
+
+
+converge, it's not always clear that
+
+
+they converge to something good. So
+
+
+typically the way you deal with these
+
+
+things in deep learning land is you
+
+
+tweak hyperparameters, adjust things,
+
+
+run lots of experiments and you will of
+
+
+course experience that in your homeworks
+
+
+and you will probably after doing
+
+
+homework two, homework three and
+
+
+homework four gain some appreciation for
+
+
+which algorithms converge more readily
+
+
+and more happily to a solution that you
+
+
+like. Um, so
+
+
+the underlying reason for this is that
+
+
+in supervised learning, in the regular
+
+
+machine learning that you learned about
+
+
+before,
+
+
+almost always if you're training a
+
+
+neural net, you're optimizing with
+
+
+gradient descent. And gradient descent
+
+
+is a really nice algorithm. Gradient
+
+
+descent is a convergent algorithm. It
+
+
+has nice convergence rates, all that
+
+
+stuff. In reinforcement learning,
+
+
+most algorithms you'll learn about with
+
+
+a few exceptions are not just doing
+
+
+gradient descent on the RL objective
+
+
+function. So Q-learning is a is an
+
+
+instance of something called fixed point
+
+
+iteration. Uh it's not actually directly
+
+
+maximizing the RL objective. Uh model
+
+
+based RL trains the model, but a better
+
+
+model doesn't necessarily result in a
+
+
+better policy. Increasing the likelihood
+
+
+of the transitions onto the model
+
+
+doesn't directly increase expected
+
+
+reward. So there is a kind of an
+
+
+indirect process there. Policy grain is
+
+
+actually the only one that is uh truly
+
+
+computing the gradient of the RL
+
+
+objective. But to get the policy
+
+
+gradient to be well behaved oftent times
+
+
+we do uh uh we we introduce various
+
+
+optimizations various improvements that
+
+
+make it not exactly match the true
+
+
+gradient of the RL objective but make it
+
+
+faster and more efficient.
+
+
+Any questions so far?
+
+
+Okay.
+
+
+Um, so to make this a little bit more
+
+
+specific to talk about different
+
+
+algorithms,
+
+
+value function fitting when you fit the
+
+
+V function or the Q function to data.
+
+
+Typically, you do this by minimizing the
+
+
+error of fit, meaning how accurate the
+
+
+value function or Q function is. But
+
+
+it's not necessarily a given that a
+
+
+lower error in your value function or Q
+
+
+function translates to higher expected
+
+
+reward. they're two different
+
+
+objectives. Uh so because of that um uh
+
+
+it's hard to argue that these are
+
+
+directly optimizing the RL objective. Uh
+
+
+and at worst it doesn't optimize
+
+
+anything. Um many popular DPRL
+
+
+algorithms that learn value functions
+
+
+are not actually guaranteed to converge
+
+
+to anything in the general nonlinear
+
+
+case. They typically have convergence
+
+
+guarantees under some very simplifying
+
+
+assumptions like linear function
+
+
+approximators or tabular discrete
+
+
+environments. But in the general case
+
+
+they don't and therefore we need to have
+
+
+all sorts of tricks to make them work.
+
+
+Um model based RL the model is typically
+
+
+trained to fit the data as accurately as
+
+
+possible. But the intuition for why a
+
+
+more accurate model fit doesn't
+
+
+translate to higher expected reward is
+
+
+that you're always trading off errors.
+
+
+So you might become more accurate in a
+
+
+place that doesn't matter and become
+
+
+maybe a tiny bit less accurate in a
+
+
+place that matters a lot. And therefore
+
+
+you might actually get a worse policy
+
+
+from a model that is technically a
+
+
+little bit better with respect to
+
+
+average error.
+
+
+So the model will converge but just
+
+
+because the model converges doesn't mean
+
+
+that you get a better policy.
+
+
+Policy gradient actually does perform
+
+
+gradient ascent on the true RL objective
+
+
+but it typically results in very high
+
+
+variance gradients that require lots of
+
+
+tricks uh to make them uh work well.
+
+
+So now if we want to name a few
+
+
+algorithms uh and you'll see these in
+
+
+the rest of the course value function
+
+
+methods uh examples of these are
+
+
+Q-learning and DQN temporal difference
+
+
+learning is a way of learning value
+
+
+functions uh fitted value iteration is
+
+
+another example of a valuebased method
+
+
+policy gradient methods uh reinforce
+
+
+natural policy gradient PO uh GRPO is
+
+
+also policy gradient method so uh a lot
+
+
+of the methods that are widely used for
+
+
+LLMs are policy gradient methods and
+
+
+then actor critic methods um A3C soft
+
+
+vector critic model based methods uh
+
+
+Dina or Dina like methods uh m0ero is an
+
+
+example of a modelbased method so we'll
+
+
+learn about many of these if if these
+
+
+names don't ring a bell to you don't
+
+
+worry about it uh but we'll learn about
+
+
+many of these over the course uh of this
+
+
+class
+
+
+all right any questions before I show a
+
+
+few videos and wrap up
+
+
+okay so um here is an example of value
+
+
+based methods. This is uh something that
+
+
+you will do for homework 3. This is a
+
+
+Q-learning method that's playing an
+
+
+Atari game. Um this is this was
+
+
+originally introduced in a paper in
+
+
+2013. Uh it uses Q-learning with
+
+
+convolutional neural networks.
+
+
+Um so this will be you know it's like a
+
+
+slightly computationally expensive
+
+
+method, but it's cool because it can
+
+
+play games. Um this is a policy gradient
+
+
+method uh running for a robotic
+
+
+locomotion task, a simulator robotic
+
+
+locomotion task. This is actually TRPO.
+
+
+It's very similar to PO. We'll learn
+
+
+about both of those in this class. Um,
+
+
+and uh, we'll learn about all sorts of
+
+
+concepts like trust regions that make
+
+
+these things more stable. Okay, so this
+
+
+is a preview of what's to come. Next
+
+
+week we'll learn about policy gradients,
+
+
+then actor critic, and then valuebased
+
+
+methods. See you all next week.
+
+
+[applause]

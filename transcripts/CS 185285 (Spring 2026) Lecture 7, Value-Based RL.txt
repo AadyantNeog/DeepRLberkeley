@@ -1,0 +1,4357 @@
+All right, I should probably start the
+
+
+lecture.
+
+
+Okay, welcome everybody. Uh please uh
+
+
+find a seat. We're going to get started.
+
+
+So, we learned about policy gradients
+
+
+and actor-critic methods, and today
+
+
+we're not going to add like another
+
+
+thing to actor-critic. We're actually
+
+
+going to take away something and talk
+
+
+about methods that don't have an actor
+
+
+and just only have a critic.
+
+
+And these are value-based methods. And
+
+
+um you guys should all pay attention in
+
+
+this lecture because homework three is
+
+
+going to have you actually implement
+
+
+these things yourself.
+
+
+Um
+
+
+there's a little bit of an echo there.
+
+
+How about that?
+
+
+Okay, maybe that's better.
+
+
+Uh all right, let's talk about
+
+
+actor-critic without the actor. We're
+
+
+going to take the actor-critic algorithm
+
+
+that we learned about last week and
+
+
+we're going to simplify it a little bit
+
+
+to see if we can get a method that's
+
+
+easier to use and easier to implement
+
+
+and maybe works a little bit better in
+
+
+some cases.
+
+
+So, here is the off-policy actor-critic
+
+
+that we had before. So, as a reminder,
+
+
+uh this is what we left off on on in um
+
+
+last Friday.
+
+
+In an off-policy actor-critic algorithm,
+
+
+you collect a little bit of data, maybe
+
+
+just one time step of data, by taking an
+
+
+action with your latest policy, and then
+
+
+you don't actually immediately train on
+
+
+that transition, you just store it in
+
+
+your replay buffer. And the replay
+
+
+buffer typically would be implemented as
+
+
+a ring buffer that
+
+
+stores some fairly large recent chunk of
+
+
+experience, maybe the last 1 million
+
+
+transitions. The oldest one gets pushed
+
+
+out and the newest one gets put in.
+
+
+And then you have a training step, and
+
+
+the training step doesn't even
+
+
+necessarily use the immediate transition
+
+
+you just collected. What the training
+
+
+step does is it loads a mini-batch,
+
+
+maybe 64 or 128 transitions from your
+
+
+replay buffer, and then
+
+
+on that mini-batch, we evaluate target
+
+
+values as the the reward for that sample
+
+
+plus the expected value under your
+
+
+policy of the Q function at the uh next
+
+
+state S prime. And this is where we're
+
+
+actually sampling from our latest
+
+
+policy, but using the state from the
+
+
+buffer. So, we sample from our latest
+
+
+policy because we want to evaluate the
+
+
+latest policy, not the policy uh that we
+
+
+used back when we collected that
+
+
+transition. That's what makes this an
+
+
+off-policy algorithm.
+
+
+Then we update our critic by taking
+
+
+one or more gradient steps on the
+
+
+squared error between the critic and
+
+
+these target values.
+
+
+And then we estimate our policy gradient
+
+
+either using the re-parameterization
+
+
+trick or using the likelihood ratio
+
+
+estimator that we learned about. So,
+
+
+either of those could be used. And then
+
+
+we take a gradient step on with our
+
+
+policy gradient. So, this is the
+
+
+off-policy actor-critic algorithm that
+
+
+we learned about at the end of Friday's
+
+
+lecture.
+
+
+Okay.
+
+
+So, now here's a funny idea.
+
+
+Let's say that I have a relatively small
+
+
+discrete action space. Maybe I'm playing
+
+
+Atari games and there's four buttons you
+
+
+can press. So, your actions consist of
+
+
+uh one categorical variable with four
+
+
+possible values.
+
+
+So, in that case, maybe I don't actually
+
+
+need a separate actor model. I can just
+
+
+take my Q function and I can enumerate
+
+
+the values of all four possible actions
+
+
+and just take the best one.
+
+
+So, maybe I can define my policy
+
+
+implicitly like this. It assigns
+
+
+probability one to the action that is
+
+
+the argmax of Q and a probability zero
+
+
+to everything else.
+
+
+If you have a discrete action space that
+
+
+you can enumerate, this is actually
+
+
+decently straightforward to do.
+
+
+So, now what I could do is I can
+
+
+actually delete these last two steps of
+
+
+the actor-critic algorithm. There's no
+
+
+more separate neural network for pi and
+
+
+I can define my my policy pi implicitly
+
+
+as this argmax.
+
+
+And now, if I imagine what happens to my
+
+
+target values,
+
+
+so the target values are an expected
+
+
+value under this policy. And now the
+
+
+policy is defined in this implicit way.
+
+
+So, the policy is just assigning a
+
+
+probability of one to the argmax of
+
+
+Q-hat-pi.
+
+
+So, this thing actually simplifies in
+
+
+quite a nice way. Anybody have any ideas
+
+
+about what happens to that expected
+
+
+value?
+
+
+Yes?
+
+
+Right, the expected value becomes the
+
+
+max because you're taking the arg max,
+
+
+plugging it into the function, and that
+
+
+is the max.
+
+
+So, now we have a
+
+
+a much more
+
+
+uh a short algorithm, one that I can
+
+
+write in three lines instead of five,
+
+
+and all I have to do is replace that
+
+
+target value with r plus gamma times max
+
+
+over a prime.
+
+
+And then I update my critic with one or
+
+
+a few gradient steps, and that's it.
+
+
+And then when I take actions in step
+
+
+one, I sample them from pi, where pi is
+
+
+defined as that arg max.
+
+
+So,
+
+
+just to summarize the resulting
+
+
+algorithm, this is off-policy critic
+
+
+only uh RL, which is also called
+
+
+Q-learning.
+
+
+Uh I'm going to train just one model. It
+
+
+takes in state and action, outputs a
+
+
+real value, and because I don't have a
+
+
+pi theta anymore, I'm going to call this
+
+
+Q theta instead of pi theta cuz I'm I I
+
+
+like using theta. There's no more pi
+
+
+theta.
+
+
+So, first you get your transition by
+
+
+taking one step in your uh environment
+
+
+with an action that comes from pi theta,
+
+
+where pi theta is actually just uh Q
+
+
+theta in disguise. It's just uh the arg
+
+
+max of Q theta.
+
+
+Store it in my buffer, load a batch. For
+
+
+every uh transition in my batch,
+
+
+evaluate the target value, where the
+
+
+expected value of Q theta at the next
+
+
+step is just the max because my policy
+
+
+is an arg max,
+
+
+and then I update it using one or a few
+
+
+gradient steps
+
+
+uh on the squared error between Q and
+
+
+the target values.
+
+
+And that's it. That's the algorithm.
+
+
+So, this is like the shortest lecture I
+
+
+have in this course, 6 minutes in, we're
+
+
+done. We've learned about Q-learning,
+
+
+and we can all go home.
+
+
+Um so, we could just stop here.
+
+
+Uh but
+
+
+uh
+
+
+I'm going to spend the rest of this
+
+
+lecture explaining what the heck is
+
+
+going on here, and what's sort of like
+
+
+the underlying principle behind doing
+
+
+this. But uh if you really just want to
+
+
+do homework three and principally have
+
+
+everything you need at this point and
+
+
+you can go home. Uh any questions about
+
+
+this? Yes.
+
+
+>> Is there any on-policy Q-learning or do
+
+
+you just have to do it off-policy?
+
+
+>> Uh so the question was is there any
+
+
+on-policy Q-learning or do you have to
+
+
+do it off-policy? So the short answer is
+
+
+there is nothing that requires the
+
+
+replay buffer to be big. So if you set
+
+
+the size of the replay buffer to be one,
+
+
+then it's an on-policy algorithm. Um and
+
+
+that's all right. Uh it's not a great
+
+
+algorithm at that point because you're
+
+
+essentially taking mini batches of size
+
+
+one, but you can make stuff like that
+
+
+work. Um as far as the tradeoffs between
+
+
+being more or less off-policy, that's
+
+
+actually really complicated and it's a
+
+
+very hard question to answer.
+
+
+Empirically, people often find this
+
+
+these kind of things work well with
+
+
+actually fairly large replay buffer, but
+
+
+it's very difficult to like characterize
+
+
+what problems would
+
+
+require being more on-policy versus
+
+
+less.
+
+
+Any other questions about this?
+
+
+Yes.
+
+
+>> Can we think of Q as learning the
+
+
+dynamics of the world
+
+
+>> Okay, so the question was can we think
+
+
+of Q as learning the dynamics of the
+
+
+world implicitly? That's actually a a
+
+
+fairly uh deep statement in the sense
+
+
+that you know, what the Q function is uh
+
+
+trying to do is
+
+
+predict the outcome of your action.
+
+
+Technically, it's predicting
+
+
+the outcome of that action given a
+
+
+particular policy that you'll run in the
+
+
+future, which is this argmax policy. So
+
+
+it is a kind of a predictive model. Um
+
+
+for those of you that are really curious
+
+
+about this, there's a very classic paper
+
+
+by uh Peter Dayan called successor
+
+
+representations that actually takes this
+
+
+idea and runs with it. It basically runs
+
+
+Q-learning where the rewards are
+
+
+indicators for states, so then you're
+
+
+learning probabilities of reaching
+
+
+different states, which is very much
+
+
+like a multi-step model. Um I think I
+
+
+might be covering this in the
+
+
+model-based lecture later.
+
+
+Any other questions?
+
+
+So algorithm is not crystal clear to you
+
+
+guys, this is a good time to ask because
+
+
+you will be implementing this in
+
+
+homework three.
+
+
+Okay, great.
+
+
+So, now let's uh
+
+
+talk about
+
+
+kind of another perspective that we can
+
+
+use to derive the same Q-learning
+
+
+algorithm. So, the the kind of the
+
+
+spoiler for this lecture is that I've
+
+
+already told you what the what the
+
+
+ending looks like. The ending looks like
+
+
+this. And now what I'm going to do is
+
+
+I'm going to get to this ending from a
+
+
+slightly different perspective that'll
+
+
+help us understand better what value
+
+
+functions and Q functions are really
+
+
+doing. Because we got here by taking
+
+
+actor-critic and removing a piece of it.
+
+
+Which is like a pretty straightforward
+
+
+way to to understand this given how we
+
+
+structure the course, but there is
+
+
+another way to get to the same answer,
+
+
+and that'll tell us a little bit more
+
+
+about, you know, essentially the
+
+
+structure of value functions and Q
+
+
+functions.
+
+
+So, let's talk about policy iteration
+
+
+and dynamic programming.
+
+
+So, um
+
+
+the high-level idea of uh kind of a
+
+
+class of methods that I'm going to call
+
+
+policy iteration algorithms is that
+
+
+you have two steps, the green step and
+
+
+the blue step.
+
+
+Very much like the steps we learned
+
+
+about before. And abstractly you can say
+
+
+that the green step is something that
+
+
+evaluates a policy, meaning figures out
+
+
+uh what is its value function or Q
+
+
+function or something. It figures out
+
+
+something about how good that policy is
+
+
+in for every state and or maybe even
+
+
+every state and action. And then the
+
+
+second step, which is the blue step,
+
+
+takes this evaluation, this Q function
+
+
+or value function or whatever, and uses
+
+
+it to make the policy better. So,
+
+
+abstractly
+
+
+uh lots of uh you know, actor-critic, uh
+
+
+Q-learning, all these methods are kind
+
+
+of like fitting within this framework.
+
+
+And
+
+
+the kind of most uh conventional way to
+
+
+define policy iteration would actually
+
+
+use uh this kind of value function type
+
+
+approach. You would just say the way I'm
+
+
+improving my policy is by setting it to
+
+
+be this argmax and
+
+
+the way I evaluated is, you know, there
+
+
+I have a few choices.
+
+
+So,
+
+
+the kind of evaluation procedure we
+
+
+talked about so far basically
+
+
+looks like this. It's it sets the Q
+
+
+function to be the reward plus the
+
+
+expectation of the next value and then
+
+
+we have a choice. Do we want to actually
+
+
+represent Q or represent V? Obviously,
+
+
+one is related to the other through this
+
+
+equation and you can set up algorithms
+
+
+that learn either Q or V
+
+
+and they have slightly different
+
+
+properties.
+
+
+So, if you take a normal course on
+
+
+reinforcement learning rather than this
+
+
+course, probably what a an ordinary
+
+
+course on reinforcement learning would
+
+
+start with is it would actually say
+
+
+like, "Hey, let's talk about value
+
+
+functions first and learn about dynamic
+
+
+programming and then from there work up
+
+
+to fancy stuff like policy gradients."
+
+
+So, we'll actually do that and go
+
+
+through that journey very briefly, but
+
+
+you guys already know
+
+
+the answer to all of this and where we
+
+
+get to in the end.
+
+
+So, let's talk about policy iteration
+
+
+first using just value functions.
+
+
+And this is kind of one of the most
+
+
+classic dynamic programming solutions to
+
+
+RL.
+
+
+So, to start with we'll make a
+
+
+unwarranted assumption, which is that we
+
+
+actually know the transition
+
+
+probabilities and both the state space
+
+
+and the action space are very small. So,
+
+
+for example, maybe you live in a
+
+
+4 by 4 grid world, 16 possible states
+
+
+and for every state you can go left,
+
+
+right, up and down. And you know exactly
+
+
+what the probabilities of getting to
+
+
+each state are. Like if you're in the
+
+
+top left and you go right, let's say 90%
+
+
+probability you end up in the state to
+
+
+the right and like, you know,
+
+
+10% probability you'll go to like a
+
+
+random nearby state or something like
+
+
+that. So, this is a very simple toy
+
+
+reinforcement learning problem. You
+
+
+don't need neural networks for this. You
+
+
+can implement everything with tabular
+
+
+representations. Tabular just means that
+
+
+you have a big table with numbers
+
+
+uh for the value function in every
+
+
+state. That's going to be 16 numbers.
+
+
+Okay? So, this is the kind of stuff that
+
+
+you would probably see in a typical
+
+
+introduction to reinforcement learning.
+
+
+16 states, four actions per state, and
+
+
+the full V pi can be stored in a table
+
+
+with 16 numbers.
+
+
+So,
+
+
+uh now the the transition operator is a
+
+
+16 by 16 by four tensor. So, next state,
+
+
+16 options. Previous state, 16 options.
+
+
+Previous action, four options.
+
+
+And now you can write down a
+
+
+bootstrapped update for your value
+
+
+function, where the way that you would
+
+
+update the value function in each state
+
+
+would be by taking the expected value of
+
+
+the Q function under the policy. That's
+
+
+just the definition of the value
+
+
+function. And for the Q function, I've
+
+
+plugged in the recursion, which is just
+
+
+the reward plus gamma times the expected
+
+
+value of the value function at the next
+
+
+state.
+
+
+And if we have these assumptions, if we
+
+
+know P and everything is small and so
+
+
+on, we can evaluate these expectations
+
+
+directly in closed form. So, we can
+
+
+literally sum over all of the S primes
+
+
+for all of the S and A's, calculate
+
+
+these expectations. All of them are
+
+
+basically
+
+
+inner products between vectors, fairly
+
+
+small vectors. So, you can literally
+
+
+calculate this quantity exactly without
+
+
+any samples.
+
+
+So, uh you can you plug in your current
+
+
+estimate for V on the right-hand side.
+
+
+So, it's a bootstrapped update. Uh
+
+
+calculate it exactly without any samples
+
+
+using your known probabilities, and you
+
+
+will actually be able to to compute
+
+
+this.
+
+
+And then, when you're done, you want to
+
+
+extract your policy by taking the argmax
+
+
+of Q,
+
+
+uh and that gives you a deterministic
+
+
+policy, pi of S equals A.
+
+
+So, if I were to take that deterministic
+
+
+policy and plug it into the equation up
+
+
+above,
+
+
+uh then uh, what I get uh, is a slightly
+
+
+simplified equation because I don't
+
+
+really have, um, an expected value, uh,
+
+
+over, uh, the policy anymore. So, I just
+
+
+plug in
+
+
+uh, pi of s there in in place of a.
+
+
+Yes.
+
+
+>> If you're supposed to, like, in this
+
+
+example, maybe update your value to
+
+
+bigger, and then and then
+
+
+it causes [clears throat] when you plug
+
+
+it back in it becomes bigger and then it
+
+
+would bigger
+
+
+>> Mhm.
+
+
+>> like become a like a loop and explode.
+
+
+>> So, the reason it doesn't explode is
+
+
+that I have gamma, and if if gamma is
+
+
+less than one, uh, for any finite
+
+
+reward, you'll always have a a
+
+
+convergent sum.
+
+
+The way you can think about it is like
+
+
+if if you think of the geometric series,
+
+
+sum from t equals zero to infinity of
+
+
+gamma to the t, it'll sum to one over
+
+
+one minus gamma.
+
+
+So, if your rewards are bounded by r
+
+
+max, the highest value you'll get is one
+
+
+over one minus gamma times r max.
+
+
+Yes.
+
+
+>> So, with such a small board and action
+
+
+state,
+
+
+uh,
+
+
+why do we need to use s estimate for the
+
+
+value of the next state? Cuz didn't you
+
+
+just say that we can we can compute it
+
+
+to the very end?
+
+
+And then we can just
+
+
+So, we can look at and we can actually
+
+
+compute that value of the next state.
+
+
+>> You could, yeah. So, so you you could
+
+
+actually just, uh, run your policy and
+
+
+and sum together the rewards, but doing
+
+
+it this way avoids any sampling
+
+
+whatsoever. So, the expectations are all
+
+
+exact. Now, the value there that you're
+
+
+plugging in is not exact because it's
+
+
+your learned value.
+
+
+Uh, but there's no sampling error, which
+
+
+is actually quite nice. Like, you know,
+
+
+obviously in practical RL algorithms we
+
+
+can't do this, but, um,
+
+
+this is why
+
+
+the title of this slide is dynamic
+
+
+programming. This is basically a dynamic
+
+
+programming method for solving an MDP.
+
+
+It's not a reinforcement learning method
+
+
+in the sense that there's no sampling,
+
+
+there's no policy that you're running in
+
+
+the world, there's no trial and error.
+
+
+This is just straight up dynamic
+
+
+programming.
+
+
+Yes.
+
+
+>> It's pretty clear that there's like a
+
+
+some kind of like closed-form solution
+
+
+for the for the structure of this but is
+
+
+there also a closed form
+
+
+solution that you can use for like just
+
+
+to get V directly as well?
+
+
+>> Oh, this is a really interesting
+
+
+question. Okay, so if you have a fixed
+
+
+policy, then there is in fact a closed
+
+
+form solution for the value function.
+
+
+It involves
+
+
+basically solving a system of linear
+
+
+equations.
+
+
+There is no closed form solution for the
+
+
+optimal value function if your policy is
+
+
+changing because the max is a non-linear
+
+
+operator. So if you want to evaluate a
+
+
+policy and you have these assumptions
+
+
+where everything is known, you can
+
+
+simply solve a system of linear
+
+
+equations. But if you want to find the
+
+
+optimal policy meaning that you have
+
+
+this policy improvement step, then you
+
+
+cannot do that with linear equations.
+
+
+Okay, so
+
+
+now the policy iteration method
+
+
+is going to be evaluate V pi and that's
+
+
+by running this bootstrapped update.
+
+
+And then step two is set the policy to
+
+
+be the argmax policy.
+
+
+So that's the method.
+
+
+Policy evaluation, that just involves
+
+
+repeatedly performing this step.
+
+
+Repeatedly compute R plus
+
+
+the expected value of the next V.
+
+
+And you do that many times and it will
+
+
+converge to a fixed point. And then step
+
+
+two, set the policy to be the argmax.
+
+
+And in a tabular setting
+
+
+set the policy to be the argmax
+
+
+literally means like populate a table
+
+
+where for every state you have the index
+
+
+of the action you should be taking.
+
+
+So this is tabular policy iteration.
+
+
+This is often times the first algorithm
+
+
+that we would learn about in a
+
+
+conventional reinforcement learning
+
+
+course.
+
+
+So policy evaluation just means doing
+
+
+this thing many times.
+
+
+And
+
+
+outside of these tabular settings this
+
+
+will not work because of course you
+
+
+can't enumerate all the states and you
+
+
+don't know the transition probabilities.
+
+
+Now we can simplify this idea even
+
+
+further. This is a two-step algorithm,
+
+
+right? Evaluate V pi and then set pi to
+
+
+be the argmax.
+
+
+So to simplify it,
+
+
+we can uh uh
+
+
+think about what that arg max is going
+
+
+to be. So, you have this table of Q
+
+
+values for every state and action,
+
+
+there's a number.
+
+
+Uh and
+
+
+uh if you take the arg max, you can sort
+
+
+of think of it as selecting uh one entry
+
+
+from every row in the table. So, for
+
+
+every state, you pick the action that is
+
+
+the arg max, right? So, that the arg max
+
+
+becomes the policy.
+
+
+The value of that policy is just the
+
+
+max.
+
+
+So, what you can do is you can skip the
+
+
+policy extraction step entirely and just
+
+
+plug that max into
+
+
+uh your value function update.
+
+
+So, you can say, "Well, my Q value is
+
+
+um
+
+
+R plus gamma expected value of the next
+
+
+V, and my V is just the max of Q."
+
+
+So, now I the blue box is like a little
+
+
+bit funny because the blue box doesn't
+
+
+even produce a policy anymore. It
+
+
+actually produces a value function.
+
+
+But, we know how to get policies from
+
+
+value functions, so the two are kind of
+
+
+uh interchangeable.
+
+
+So, now from here, it's hopefully
+
+
+obvious to see how we're going to change
+
+
+this into a into a one-step algorithm
+
+
+instead of a two-step algorithm because
+
+
+now we can just take that uh expression
+
+
+for V and plug it into V of S prime in
+
+
+step one.
+
+
+So, if we do that, then we get value
+
+
+iteration. Um
+
+
+So, value iteration is basically where
+
+
+you would repeatedly uh set V of S to be
+
+
+the max over the actions of RSA plus
+
+
+gamma of uh expected value of V of S
+
+
+prime. And we'll talk about that next.
+
+
+Any questions here? Yeah.
+
+
+>> In the step two, we do it for every
+
+
+single state.
+
+
+>> Yeah. So, everything here is done for
+
+
+every state and action so far. So, so
+
+
+far everything is tabular and uh
+
+
+exhaustive, and there's no samples.
+
+
+We'll bring in samples later.
+
+
+Mhm.
+
+
+>> So, you still run your policy, get the
+
+
+data from like some sort of feedback,
+
+
+otherwise how do you don't know like
+
+
+what will be the next policy for S and
+
+
+P?
+
+
+>> So, in this case, there are no samples
+
+
+and we're assuming that we know P of S
+
+
+prime given S, A. So, this is literally
+
+
+enumerating of all possible states and
+
+
+all possible future states.
+
+
+Yes.
+
+
+>> At inference time, you select the action
+
+
+that maximizes Q at every single every
+
+
+state.
+
+
+>> Exactly. So, at inference time, you you
+
+
+would figure out what is the the argmax
+
+
+of that thing.
+
+
+>> How's it different from the previous
+
+
+slide?
+
+
+>> Um what's different from the previous
+
+
+slide is that here
+
+
+we're representing the policy
+
+
+explicitly. So, we would have an actual
+
+
+table where for every state we have an
+
+
+integer representing which action we
+
+
+take. And the point I want to make here
+
+
+is that you can do exactly the same
+
+
+thing without having to represent the
+
+
+policy at all. So, all you store is the
+
+
+values.
+
+
+Okay. So, now let's talk about what
+
+
+happens when we have function
+
+
+approximators rather than tables.
+
+
+So, how do we represent V of S?
+
+
+One of the ways to represent, of course,
+
+
+is a big table with one number for every
+
+
+S, which works if you have a small state
+
+
+space. Okay? So, it's literally like,
+
+
+you know, for S equals zero, you have V
+
+
+of S equals something and that's a
+
+
+table. But if you have a a more
+
+
+realistic RL problem, maybe your states
+
+
+correspond to like images from a car
+
+
+racing game.
+
+
+Uh well, if your resolution is 200 by
+
+
+200 RGB with 255 values, then your state
+
+
+space is 255 to the third power raised
+
+
+to the power of 200 by 200. So, that's a
+
+
+very difficult table to store in memory
+
+
+and that's why we want to do deep RL, of
+
+
+course, and use function approximation.
+
+
+So,
+
+
+um this is sometimes called the curse of
+
+
+dimensionality. As you increase the
+
+
+dimensionality of your state space, if
+
+
+you want to use a big table, the size of
+
+
+the table blows up exponentially and
+
+
+that's very very bad.
+
+
+So, let's use a neural net.
+
+
+So, the neural net will take an S and
+
+
+output V of S. We've already seen this a
+
+
+little bit and it's going to have some
+
+
+parameters.
+
+
+So, now as usual, what we can do with
+
+
+this neural net is we can train it by
+
+
+regressing onto the target values. So,
+
+
+instead of computing a value and storing
+
+
+in a table, we compute the value and use
+
+
+it as a target for regression. And of
+
+
+course, we'll get a little bit of
+
+
+approximation error from doing this, but
+
+
+the upshot is that we can hopefully
+
+
+train it on a subset of the states, on a
+
+
+sample of the states, and get it to
+
+
+generalize decently well to this entire
+
+
+exponentially large space because neural
+
+
+nets will hopefully learn generalizable
+
+
+representations.
+
+
+So, it's very straightforward from here
+
+
+to just expand the algorithm from before
+
+
+into a fitted value iteration algorithm.
+
+
+So, it's just like value iteration, but
+
+
+now you're fitting a neural net. So, you
+
+
+compute your targets to be the max over
+
+
+the current action of the Q value, and
+
+
+for the Q value, you plug in that
+
+
+recursion. So, it's max over AI of RSI
+
+
+AI plus the expected value of the value
+
+
+function at the next state.
+
+
+And then, instead of just writing that
+
+
+number into a table, you use that number
+
+
+as a regression target for V.
+
+
+And this is called fitted value
+
+
+iteration.
+
+
+This is in fact a perfectly valid um
+
+
+deep RL algorithm for the setting where
+
+
+you can enumerate all the actions, and
+
+
+you know the transition probabilities.
+
+
+Because you need to, of course, evaluate
+
+
+that quantity inside the max for every
+
+
+possible action, which means testing out
+
+
+transitions that you would get in the
+
+
+same state for different actions.
+
+
+Which requires knowing the transition
+
+
+function.
+
+
+Okay, any questions about what happened
+
+
+here?
+
+
+Yes.
+
+
+>> Why are we setting theta to the
+
+
+argument?
+
+
+>> Um because you you would like the neural
+
+
+net parameters that minimize the squared
+
+
+error.
+
+
+>> Oh, yeah.
+
+
+>> Yeah, that's an argument over theta, not
+
+
+over actions.
+
+
+So, this is just the the step two is
+
+
+just supervised regression. There's
+
+
+nothing fancy.
+
+
+Any other questions?
+
+
+Okay.
+
+
+Now, of course, the trouble with this is
+
+
+that, as I said, you have to know the
+
+
+transition probabilities. Uh in general,
+
+
+you would like to do this without
+
+
+knowing the transition probabilities.
+
+
+So, the problem of course is this step
+
+
+because this is in order to compute this
+
+
+max over all possible actions, it means
+
+
+that for every action you could take,
+
+
+you need to figure out what would be the
+
+
+next state for that action, evaluate its
+
+
+uh
+
+
+its value, and then find the best one.
+
+
+So, uh that's difficult to do unless you
+
+
+have closed-form access to the
+
+
+transition probabilities.
+
+
+So, we can modify this algorithm a
+
+
+little bit to make it more practical. Um
+
+
+to understand this, let's go back to
+
+
+policy iteration for a second. So,
+
+
+policy iteration was like this, evaluate
+
+
+Q pi, and then set pi to be pi prime,
+
+
+where pi prime is just the argmax.
+
+
+So,
+
+
+uh and then policy evaluation just
+
+
+involved repeating this operation,
+
+
+repeatedly setting V to be R uh pi of S
+
+
+plus uh expected value over the next uh
+
+
+V pi. So, what if instead of doing
+
+
+policy evaluation like this, we do
+
+
+policy evaluation on Q func Q functions
+
+
+rather than value functions?
+
+
+Um it's actually very, very similar. Uh
+
+
+the only difference is that
+
+
+now we're plugging in the policy into
+
+
+the next time step instead of the
+
+
+current one.
+
+
+And of course, you can fit this using
+
+
+samples. All right, so you can uh get
+
+
+some samples of S A S prime and
+
+
+repeatedly perform this
+
+
+uh Q function evaluation. Very similar
+
+
+idea.
+
+
+But now,
+
+
+we can take this Q function evaluation
+
+
+and do the same max trick that we did to
+
+
+go from policy iteration to value
+
+
+iteration, and we'll get something
+
+
+called Q value iteration.
+
+
+So, uh
+
+
+before when we had policy iteration, we
+
+
+said, "Well, well, we know what pi prime
+
+
+is. Pi prime is just the argmax. So,
+
+
+let's take the max and plug it in, and
+
+
+then we get value iteration, fitted
+
+
+value iteration. No policy, just
+
+
+computing values directly."
+
+
+So, let's do the same thing with Q
+
+
+values. Uh
+
+
+So, you you
+
+
+set your target value to be R plus gamma
+
+
+expected value of V, but now you have a
+
+
+Q function rather than a V function. So,
+
+
+the V function is just the max over the
+
+
+next action of Q.
+
+
+Right? So, that's basically substituting
+
+
+the arc max.
+
+
+So, now line one is expressed entirely
+
+
+in terms of Q functions, line two is
+
+
+expressed entirely in terms of Q
+
+
+functions, and we don't ever have to
+
+
+test other transitions other than ones
+
+
+we sampled.
+
+
+So, the trick was just going from a
+
+
+function of S to a function of S and A.
+
+
+The reason this works, of course, is we
+
+
+are testing different actions, but the Q
+
+
+function takes in the action as input
+
+
+and doesn't require simulating an entire
+
+
+transition.
+
+
+So, this is fitted Q iteration because
+
+
+now we are iterating on the Q function
+
+
+in line one and then fitting it in line
+
+
+two.
+
+
+And we don't require
+
+
+simulation of different actions. Yes.
+
+
+>> For clarity, we're able to approximate
+
+
+the expected value of V something that I
+
+
+give
+
+
+S prime of I because of the assumption
+
+
+that our policy takes the
+
+
+>> The arc max. Yeah, exactly.
+
+
+Yes.
+
+
+>> You missed the maximum over that R plus
+
+
+the gamma expected value.
+
+
+>> Uh
+
+
+Did I miss the maximum? Uh no, no. So,
+
+
+so what what this means is that I want
+
+
+that
+
+
+Yeah, it's a notational quirk. So, the
+
+
+the V is the V of the the new the arc
+
+
+max policy.
+
+
+>> Yeah, but I'm saying that when you have
+
+
+a Y I, you need to get the max A I for
+
+
+the first term, right? And you also need
+
+
+the max of A prime for the second.
+
+
+>> I don't need the the max over A I for
+
+
+the first term because notice that what
+
+
+I'm regressing to is Q of S I A I. So, Q
+
+
+of S I A I is the value if you take
+
+
+action A I. So, I don't need to max over
+
+
+A I.
+
+
+>> I see. So, this S I A I is given from
+
+
+the sample.
+
+
+>> Yes, yes. And that And that's important
+
+
+because that's what makes all of this
+
+
+work. Because if I needed max over AI,
+
+
+then I would still need the transition
+
+
+probabilities.
+
+
+But good question. Any other questions?
+
+
+Yes.
+
+
+So, policy evaluation means given a
+
+
+fixed policy, figure out its value
+
+
+function or Q function. Policy iteration
+
+
+is an algorithm for finding an optimal
+
+
+policy that alternates between policy
+
+
+evaluation and policy improvement.
+
+
+And then
+
+
+value iteration or Q value iteration is
+
+
+a is basically a version of policy
+
+
+iteration that sort of shortcuts and
+
+
+removes step two and plugs the arc max
+
+
+policy directly into the value function
+
+
+update.
+
+
+Yes.
+
+
+Yeah, good question. So, the question
+
+
+was are we worried about bias since
+
+
+we're using neural nets to approximate
+
+
+this function these functions? So, we'll
+
+
+talk about this more on Friday, but
+
+
+there's sort of a dark side to the story
+
+
+which is
+
+
+value iteration in the tabular case and
+
+
+Q value iteration in the tabular case
+
+
+are guaranteed to converge to a fixed
+
+
+point. This is not a trivial fact, but
+
+
+they are probably fixed point
+
+
+algorithms.
+
+
+Fitted value iteration and fitted Q
+
+
+iteration are in general not valid fixed
+
+
+point algorithms and in general are not
+
+
+guaranteed to converge to anything.
+
+
+Which is kind of a big problem because,
+
+
+you know, if you have a machine learning
+
+
+algorithm, you'd really like it to
+
+
+converge. Um so, there's a little bit of
+
+
+bad news there when it comes to the
+
+
+theory and we'll talk about that on
+
+
+Friday.
+
+
+Yes.
+
+
+So, here there is no V
+
+
+the only
+
+
+the only neural network is Q and V is
+
+
+just derived from Q. So, V is just the
+
+
+quantity you obtain by maximizing Q over
+
+
+actions.
+
+
+Correct. Yes.
+
+
+And by the way, one detail I should
+
+
+mention. This will this will come up
+
+
+later, but I might as well say it now is
+
+
+that
+
+
+there are
+
+
+two ways to implement Q, right? So, kind
+
+
+of the obvious one based on the actual
+
+
+critic lecture is a neural net that
+
+
+takes in S and A and outputs
+
+
+a real value, right? So, this is kind of
+
+
+what we would expect from actual critic.
+
+
+But, if you have a small discrete action
+
+
+set, you can actually just as well
+
+
+implement your Q
+
+
+so that it outputs
+
+
+one real value for every A. So, let's
+
+
+say I have three actions,
+
+
+I'll just have a network that takes in S
+
+
+and outputs three real numbers.
+
+
+And this makes it much easier to find
+
+
+the arc max because my network
+
+
+immediately outputs the Q values for all
+
+
+the actions and I can just take that
+
+
+vector and maximize it. So, oftentimes,
+
+
+if we're doing this kind of stuff with a
+
+
+small action space, we'll have that will
+
+
+be our Q network instead of one that
+
+
+takes in S and A as input.
+
+
+But, it's kind of it's an implementation
+
+
+detail. It doesn't actually affect any
+
+
+of the math.
+
+
+Any other questions?
+
+
+Okay.
+
+
+So,
+
+
+the good thing about this fitted Q
+
+
+iteration algorithm is that it works
+
+
+even for off-policy samples. So, we just
+
+
+need samples SI, AI, SI prime, and we
+
+
+can run these equations on those samples
+
+
+and fit our Q function. And there's only
+
+
+one network. So, there's no policy
+
+
+gradient whatsoever. We're just training
+
+
+one neural net that looks like that.
+
+
+Um the problem is I as I alluded to
+
+
+already is that there's no convergence
+
+
+guarantee for non-linear function
+
+
+approximation.
+
+
+We'll talk about this more on Friday, so
+
+
+don't worry about that statement for
+
+
+now, but
+
+
+theoretically, this is like a very ugly
+
+
+thing to do. But, practically, it kind
+
+
+of makes sense.
+
+
+Okay.
+
+
+So, here's the a summary of the full
+
+
+fitted Q iteration algorithm. And uh for
+
+
+each step of that algorithm, there are
+
+
+some parameters that we need to keep
+
+
+track of.
+
+
+So, first, you collect a data set of
+
+
+transitions using some policy.
+
+
+And you get to pick how many transitions
+
+
+you collect, and you get to pick what
+
+
+policy you're going to use to collect
+
+
+them.
+
+
+So, if if you want kind of the simplest
+
+
+version of it, maybe you're going to use
+
+
+your latest policy, the argmax policy.
+
+
+Then you're going to compute these
+
+
+target values, and the target values are
+
+
+going to be the reward plus gamma
+
+
+uh times the max of the next action.
+
+
+Then you're going to solve this
+
+
+regression problem
+
+
+uh and and that's it. So, uh your
+
+
+network maybe takes in S and A and
+
+
+produces Q, or it might be this thing
+
+
+that just takes in S and produces Q for
+
+
+every A.
+
+
+Um and you can pick how many gradient
+
+
+steps to use for your regression, and
+
+
+you can pick uh how many times to
+
+
+alternate between recomputing targets
+
+
+and redoing regression in between
+
+
+additional data collection.
+
+
+So, these are parameters of the
+
+
+algorithm, and different settings of
+
+
+those parameters will lead to pretty
+
+
+different algorithms.
+
+
+So, this is kind of a general recipe for
+
+
+fitted Q-iteration.
+
+
+Yeah.
+
+
+>> Any experimental work gradient
+
+
+[clears throat] steps as when you use
+
+
+I can imagine like you
+
+
+every time you kind of like minimize it,
+
+
+you can repeat it and minimize it again
+
+
+by the just most social norm.
+
+
+Why you need the gradient steps as well?
+
+
+>> Yeah. So, the the the question was why
+
+
+do we why do we think of the why did I
+
+
+make a big deal out of the this
+
+
+parameter, which is the number of
+
+
+gradient steps in the in the
+
+
+minimization? So, if you minimize to
+
+
+convergence, uh it might take uh quite a
+
+
+long time. And
+
+
+if you think about what the backup in
+
+
+step two is doing, um let's say that
+
+
+initially your Q function just outputs
+
+
+very small values, like you initialize
+
+
+it so it's mostly zero. So, now the
+
+
+first step of that regression will
+
+
+regress onto the rewards. The second
+
+
+step will regress onto the reward plus
+
+
+the next reward. The third step will
+
+
+regress onto the reward plus the next
+
+
+reward plus the one after that. And if
+
+
+you expect that you need to sum up like
+
+
+a thousand steps worth of reward to get
+
+
+an accurate estimate, then you probably
+
+
+need to in general alternate step two
+
+
+and three about a thousand times.
+
+
+So, if you're running step three to
+
+
+convergence, uh and that takes like a
+
+
+million gradient steps, now you have a
+
+
+billion total steps to take. So, maybe
+
+
+it's better to take fewer steps and
+
+
+recompute your targets more often.
+
+
+Now, in practice, this actually becomes
+
+
+a very delicate hyper parameter and it's
+
+
+actually bad both to compute too often
+
+
+and to compute not often enough. And
+
+
+we'll talk about kind of the practical
+
+
+trade-offs a lot more when we discuss
+
+
+practical deep Q-learning algorithms on
+
+
+Friday.
+
+
+But for now we want to get kind of the
+
+
+conceptual foundations out of the way.
+
+
+Any more questions about this?
+
+
+Yes.
+
+
+Yeah. So the policy in these cases is
+
+
+always defined implicitly. So the policy
+
+
+pi of S that's a deterministic policy
+
+
+it's just always given by the argmax
+
+
+of Q
+
+
+over A.
+
+
+So if your Q function is structured like
+
+
+this where it outputs a real a real
+
+
+number for every action, you literally
+
+
+just run it, get a number for every
+
+
+action, and then do an argmax on that.
+
+
+So essentially the Q function is the
+
+
+policy in effect. It's just represented
+
+
+in a kind of a roundabout way.
+
+
+Yes.
+
+
+This is pi.
+
+
+Oh, it my my my handwriting is just bad.
+
+
+Let me Let me write it a little more
+
+
+clearly.
+
+
+Okay.
+
+
+Um
+
+
+Now let's let's go back to this uh
+
+
+kind of Q-learning setup that we started
+
+
+with at the very beginning of the
+
+
+lecture.
+
+
+So
+
+
+first uh
+
+
+why is this fitted Q-iteration thing an
+
+
+off-policy algorithm?
+
+
+Conceptually, the reason that we can do
+
+
+this with samples that came from other
+
+
+policies is that
+
+
+um
+
+
+we are evaluating our our our new policy
+
+
+by taking this max you through the Q
+
+
+function. So, this approximates the
+
+
+value of this argmax policy at the state
+
+
+S prime.
+
+
+Right? So, the reason we have that arg
+
+
+that max is because it's really the
+
+
+value of the argmax.
+
+
+And
+
+
+um
+
+
+given the state and the action, the
+
+
+transition to S prime doesn't depend on
+
+
+uh on pi.
+
+
+So, that's why it's an off-policy
+
+
+algorithm.
+
+
+And
+
+
+one way that you could think about this
+
+
+is that
+
+
+you kind of have this like data set of
+
+
+transitions
+
+
+and you can run fitted Q-iteration on
+
+
+that data set. You can kind of like turn
+
+
+that crank as much as you want, and
+
+
+periodically you collect a little bit
+
+
+more data and add it to this bucket.
+
+
+So, before we had this view of RL as
+
+
+very much like
+
+
+you know, collect some data, update the
+
+
+policy, collect more data, update the
+
+
+policy. But, now we have kind of a
+
+
+different view that we just have a data
+
+
+set and we're cranking away updating our
+
+
+Q function on that data set, and then
+
+
+periodically we can kind of like add
+
+
+more stuff to that bucket.
+
+
+Um
+
+
+so
+
+
+what is uh fitted Q-iteration
+
+
+optimizing? Like, there's some kind of
+
+
+learning problem and there's an
+
+
+objective to that learning problem. And
+
+
+this is actually like a surprisingly
+
+
+nuanced question. So, we have this uh
+
+
+regression error that we can call E
+
+
+uh
+
+
+Bellman error. And we can write out E if
+
+
+we just like, you know, substitute in
+
+
+the equation for Y. And we can see that
+
+
+um
+
+
+the error actually has the Q function
+
+
+showing up in two places. So, it's Q
+
+
+minus R plus gamma max of the
+
+
+Q at the next step. And I kind of hid
+
+
+that before by using this target Y to
+
+
+make it look like you're just regressing
+
+
+Q onto Y. But, because Y depends on Q
+
+
+now, uh
+
+
+the full error actually looks a little
+
+
+weird. Like, it doesn't look like a
+
+
+normal regression problem.
+
+
+Now, if the error is zero, if it
+
+
+actually is exactly zero, then um
+
+
+the Q function is equal to to R plus the
+
+
+max of the next Q function, and this is
+
+
+the optimal Q function corresponding to
+
+
+the optimal policy. So, if we can
+
+
+actually get this error to be exactly
+
+
+zero for all states and actions, we are
+
+
+definitely all good. But, there's a bit
+
+
+of a challenge here because in practice,
+
+
+of course, we have samples and we have
+
+
+approximation error. So, this error
+
+
+won't go exactly to zero, and um that
+
+
+can be a little bit of a uh challenge
+
+
+because it's a little hard to say how
+
+
+good your policy is if you have non-zero
+
+
+Bellman error. So, with policy gradient,
+
+
+like you're directly optimizing the
+
+
+return of the policy. Here, you're not
+
+
+optimizing the return of the policy
+
+
+directly, you're optimizing this Bellman
+
+
+error, which doesn't necessarily have
+
+
+like a one-to-one mapping to how good
+
+
+the policy is. So, pretty much uh the
+
+
+thing we can say definitively is that if
+
+
+it's actually exactly zero, you've got
+
+
+the optimal policy. If it's not exactly
+
+
+zero, there's a very complex analysis we
+
+
+we need to do to relate this to the
+
+
+value of the policy, which we'll do much
+
+
+later in the course.
+
+
+Okay.
+
+
+So,
+
+
+the update of policy maximizes the uh
+
+
+the reward uh if you if you have the
+
+
+optimal Q function, and sometimes we'll
+
+
+write the optimal Q function as Q star,
+
+
+and the optimal policy as pi star.
+
+
+Um
+
+
+and
+
+
+most of the guarantees for this will
+
+
+actually be lost when we leave the
+
+
+tabular case and go to neural networks.
+
+
+So,
+
+
+in the tabular case, very easy to get
+
+
+this error to be exactly zero. In the
+
+
+non-tabular case with neural nets,
+
+
+that's pretty hard.
+
+
+Yes.
+
+
+>> What is beta?
+
+
+>> Beta?
+
+
+>> Yeah, it says expectation of SA sample
+
+
+from beta.
+
+
+>> Oh, uh
+
+
+apologies. It's a uh
+
+
+notational quirk. Uh sample from your
+
+
+replay buffer.
+
+
+So, this is whatever buffer you're try
+
+
+you're using to track all of the data
+
+
+you've collected.
+
+
+Um okay. So, now
+
+
+this fitted Q iteration that I that I
+
+
+wrote out for you guys is kind of a very
+
+
+generic form of a method. So, if you if
+
+
+you choose the hyper parameters K and
+
+
+number of gradient steps and so on in
+
+
+different ways, you can actually get
+
+
+different algorithms.
+
+
+A very classic Q-learning algorithm,
+
+
+uh sometimes called Watkins Q-learning
+
+
+or sometimes just called regular online
+
+
+uh
+
+
+uh
+
+
+Q-learning, uh can be written like this.
+
+
+And these are actually the same thing.
+
+
+So, let me walk you through it. At the
+
+
+top we had the fitted Q-iteration that
+
+
+that we derived. And it's a very generic
+
+
+thing. You collect a data set using some
+
+
+policy, you compute your targets, you
+
+
+take some number of gradient steps on
+
+
+the regression objective, and you repeat
+
+
+that K times.
+
+
+If we set everything to one, b- me-
+
+
+meaning collect one sample, uh take one
+
+
+gradient step, then we get a classic
+
+
+online Q- Q-learning algorithm where you
+
+
+uh
+
+
+take one action, observe a transition,
+
+
+immediately compute a target value on
+
+
+that transition, and immediately take
+
+
+one gradient step uh on that uh
+
+
+transition.
+
+
+And this is
+
+
+kind of the most classic textbook uh
+
+
+Q-learning algorithm for um
+
+
+with function approximation.
+
+
+But the thing I want to emphasize is
+
+
+that this is just a special case of the
+
+
+thing up top where I set the parameters
+
+
+the S and the K and so on to one.
+
+
+And one of the things that's actually
+
+
+like an important choice here is
+
+
+how you take that action.
+
+
+So, before when we talked about policy
+
+
+gradient, there was no question about
+
+
+how we take our action. Policy gradient
+
+
+is on policy, so we always take the
+
+
+action from our latest policy. But
+
+
+because Q-learning can use transitions
+
+
+in principle from any policy, we
+
+
+actually get a choice about how to take
+
+
+that action, and it doesn't have to be
+
+
+the argmax during the learning process.
+
+
+Once we're done learning, we always want
+
+
+to take the argmax because that's the
+
+
+best policy. But during the learning
+
+
+process, the Q-function is not yet
+
+
+necessarily a good Q-function, so we
+
+
+might choose to take that action in
+
+
+different ways to find better data.
+
+
+Yes.
+
+
+>> Why would people not use the latest
+
+
+policy?
+
+
+>> Yeah.
+
+
+Yeah, so let's let's talk about that a
+
+
+little bit. Um
+
+
+one of the reasons why using the argmax
+
+
+policy might be a bad idea is that your
+
+
+Q function is initialized in some way
+
+
+and maybe just randomly
+
+
+from that initialization, it tends to
+
+
+assign slightly higher values to
+
+
+particular action than others.
+
+
+If you always take the argmax, notice
+
+
+that it's a deterministic policy, then
+
+
+you'll keep taking that same action and
+
+
+more or less collecting the same data
+
+
+over and over again. So, the trouble
+
+
+with this is that you really want the
+
+
+data that you're going to be using to
+
+
+train this thing to kind of cover the
+
+
+MDP pretty well.
+
+
+But, because your policy here, the
+
+
+argmax policy is always deterministic,
+
+
+just taking the same deterministic
+
+
+action over and over again might not get
+
+
+you that coverage.
+
+
+So, in practice, what we typically want
+
+
+to do in step one of this algorithm is
+
+
+change the policy a little bit to have
+
+
+more randomness than just taking the
+
+
+argmax.
+
+
+This is sometimes called the exploration
+
+
+problem. Yes.
+
+
+>> So, maybe instead of like using argmax,
+
+
+we can use like softmax or something?
+
+
+>> Yeah, that's an interesting idea.
+
+
+That's sometimes called Boltzmann
+
+
+exploration. So, one choice is to not
+
+
+take the argmax, but to compute a
+
+
+softmax distribution using Q. That's
+
+
+exactly right.
+
+
+Um
+
+
+there are
+
+
+um
+
+
+other ways to do it. Actually, one of
+
+
+the most popular ones is it's sometimes
+
+
+called epsilon greedy, which basically
+
+
+means you with probability 1 minus
+
+
+epsilon, you take the argmax. So, most
+
+
+of the time you would do what you think
+
+
+is the good thing, but with probability
+
+
+epsilon, you would select a different
+
+
+random action.
+
+
+So, it just means that the probability
+
+
+of an action is 1 minus epsilon if it's
+
+
+the argmax and then epsilon divided by
+
+
+the number of actions minus 1 if it's
+
+
+not the argmax. Yes.
+
+
+>> Do you know what the state of the art is
+
+
+currently for these types of policies?
+
+
+Do they tend to use like epsilon greedy
+
+
+cuz that seems very inefficient to kind
+
+
+of just taking a random step or two.
+
+
+>> Yeah, so the question was, well, okay,
+
+
+epsilon-greedy seems like it would be
+
+
+really inefficient because you're
+
+
+basically just like mixing a random walk
+
+
+with your latest policies. Is there a
+
+
+better way to do it? There are much
+
+
+better ways to do it that are quite a
+
+
+bit more complicated that we will learn
+
+
+about in the exploration lecture later.
+
+
+And the kind of the short preview of
+
+
+this is that
+
+
+these kind kinds of exploration
+
+
+strategies like soft max and
+
+
+epsilon-greedy are action space
+
+
+exploration methods. So, they randomize
+
+
+the actions. But, what we would really
+
+
+like to do ideally is get the policy to
+
+
+go to many different states rather than
+
+
+many different actions. Right? Like if
+
+
+you're in that grid world, maybe you
+
+
+have lots and lots of states in the
+
+
+grid, but your actions are just like
+
+
+left, right, up, down. So, if you choose
+
+
+random actions, you're doing a random
+
+
+walk, but if you go to a random state,
+
+
+then you're actually getting good
+
+
+coverage. And
+
+
+going to highly varied states is much
+
+
+harder than taking highly varied
+
+
+actions. So, we'll need a lot more
+
+
+machinery to do that that we'll learn
+
+
+about later.
+
+
+Any other questions about
+
+
+epsilon-greedy?
+
+
+So, the good thing about this
+
+
+epsilon-greedy exploration strategy is
+
+
+that it is dead simple. So, basically,
+
+
+if you're implementing Q-learning in
+
+
+like homework three or something,
+
+
+this is a good thing to start with. Very
+
+
+easy, definitely better than always
+
+
+taking the argmax,
+
+
+and requires minimal additional
+
+
+machinery to implement. So, most
+
+
+Q-learning methods by default will use
+
+
+this kind of thing.
+
+
+Uh the other option,
+
+
+as was already previewed in an earlier
+
+
+question, is to set the probability of
+
+
+the actions to be proportional to the
+
+
+exponential of the Q-values, which is
+
+
+basically the soft max. So, you know,
+
+
+PyTorch implements a soft max for you.
+
+
+Just plug your Q-values into the soft
+
+
+max, treating them as though they were
+
+
+logits of a categorical distribution,
+
+
+and that'll get get you a distribution
+
+
+over actions that definitely prefers the
+
+
+high Q-value actions, but assigns a
+
+
+non-zero probability to other actions.
+
+
+This is sometimes called Boltzmann
+
+
+exploration. and one of the things
+
+
+that's kind of nice about Boltzmann
+
+
+exploration is that if you know that a
+
+
+particular action is extremely bad, it
+
+
+has like a negative 1 billion value,
+
+
+then it will have an extremely low
+
+
+probability.
+
+
+So, this can be kind of nice if for some
+
+
+reason during exploration, you really
+
+
+want to avoid the really, really bad
+
+
+actions. So, epsilon greedy uh maybe is
+
+
+a bit more uniform in that respect to
+
+
+Boltzmann exploration uh is going to uh
+
+
+bias much more much more away from the
+
+
+low value actions.
+
+
+And which one you prefer kind of depends
+
+
+on the specifics of your problem.
+
+
+Now, we'll explore exploration in a lot
+
+
+more detail in a later lecture, but for
+
+
+now, like, you know,
+
+
+uh what I would say is that if you're
+
+
+implementing Q-learning and you just
+
+
+want something easy, go for the epsilon
+
+
+greedy stuff. If you have a very large
+
+
+action space and there and maybe there's
+
+
+some actions that are easy to learn that
+
+
+they're bad, uh maybe the Boltzmann
+
+
+exploration is a good choice. Yes.
+
+
+>> Um
+
+
+is it like you wanted to diverge from
+
+
+the states that you go to?
+
+
+>> Mhm.
+
+
+>> What if
+
+
+a state requires, you know, multiple
+
+
+steps to take to get there, but
+
+
+um you know, it you would have to
+
+
+explore for multiple steps, but the the
+
+
+probability of that happening is like
+
+
+epsilon to the
+
+
+>> Mhm.
+
+
+>> whatever that
+
+
+>> Yeah.
+
+
+>> length decay factor is
+
+
+>> Yep. Yep. So, that's a good point. So,
+
+
+the question was, well, the difference
+
+
+between selecting random actions and
+
+
+reaching random states is that uh if you
+
+
+need a sequence of very specific actions
+
+
+to reach a distant state, then the
+
+
+probability of actually getting there
+
+
+decays exponentially if you're in
+
+
+introducing randomness into your
+
+
+actions. So, in general, the way that
+
+
+better exploration methods work is they
+
+
+actually hijack the RL machinery and
+
+
+change the rewards to basically reward
+
+
+the policy for for going into new
+
+
+states. Exactly deal with this problem.
+
+
+Okay. So, just to conclude, let's put
+
+
+this all back together.
+
+
+Uh and of course, you already know the
+
+
+answer since we had the answer in the
+
+
+first 6 minutes of the lecture, but if
+
+
+we put this all back together into
+
+
+Q-learning with a replay buffer, uh we
+
+
+have step one, take uh
+
+
+um
+
+
+one step with your policy, where your
+
+
+policy might be something like the
+
+
+epsilon greedy policy now. So, not the
+
+
+arg max, but basically arg max plus a
+
+
+bit of exploration. Or, it could be the
+
+
+Boltzmann exploration policy. So,
+
+
+whatever policy we're using for
+
+
+exploration, take a step, add it back to
+
+
+the replay buffer, sample a batch from
+
+
+the replay buffer, calculate the target
+
+
+values,
+
+
+and then regress onto the target values.
+
+
+And we can choose how many gradient
+
+
+steps to take on that regression
+
+
+problem. Typically, a small number will
+
+
+work well.
+
+
+And that's the
+
+
+Q-learning algorithm.
+
+
+Now,
+
+
+if you code this up exactly as I
+
+
+described it, it almost certainly won't
+
+
+work. And the the deep reason why it
+
+
+doesn't work is that, remember, this
+
+
+once you start introducing function
+
+
+approximation, in general, this isn't
+
+
+going to actually minimize the Bellman
+
+
+error. It won't drive it to zero, and
+
+
+convergence is not guaranteed. So, we'll
+
+
+find out how to make it work next time,
+
+
+and what we'll basically talk about is a
+
+
+bunch of tricks that people can use to
+
+
+stabilize this kind of Q-learning
+
+
+algorithm. And with deep nets networks,
+
+
+it basically doesn't work without the
+
+
+tricks. But, if you use the tricks and
+
+
+use them correctly, this can actually be
+
+
+a very effective and very simple method.
+
+
+So, that we'll talk about on Friday, and
+
+
+I'll see you then.
+
+
+Yes.
+
+
+>> Mhm.
+
+
+>> Mhm.

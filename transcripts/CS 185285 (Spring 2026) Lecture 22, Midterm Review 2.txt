@@ -1,0 +1,2810 @@
+All right, let's get started. So, we'll
+uh we have a lot to cover today. So,
+we'll continue where we left off uh last
+time, which was with the which was on
+policy gradient. So, we had discussed
+regular policy gradient and baselines.
+Uh the next thing I want to review is
+the important sample policy gradient. So
+the setup here is that we would like to
+be able to take multiple gradient steps
+on the policy on the neural network for
+every set of samples that we produce
+because samples tend to be costly. If
+you're doing LMS then you need to
+actually generate uh candidate answers
+for each of your prompts like in
+homework 4. If you're doing policy
+gradient for like some robot task maybe
+you need to actually run multiple trials
+in the real world. So it' be really nice
+to take multiple gradient steps for each
+of those. So the way that we set this up
+is uh we have our expected reward and
+now the problem is that our samples
+aren't coming from the current policy pi
+theta which means that the trajectory
+distribution doesn't match pi theta. So
+the uh trick that we're going to use is
+called important sampling. Important
+sampling is a very general technique for
+estimating the expectation under one
+distribution when you have samples from
+a different distribution. So uh the the
+way to drive it board sampling is
+actually very simple. Write out the
+equation for an expected value and then
+put in q of x / q of x which is just
+one. Right? And now this can be
+expressed as an expected value under q
+of x and all you get is this additional
+ratio p of x over q of x. So this is
+just a general trick for estimating the
+expected value under one distribution if
+you have samples from a different one.
+In this case you want the expected value
+under p and you have samples from q. So
+in our case Q is the old policy, P is
+the new policy. So uh we put that in and
+we get this important sampled equation.
+And now the trick is that these are
+probabilities of trajectories. So if we
+were to substitute in our equation for
+the probability of a trajectory, then we
+have a lot of terms, but many of them
+are the same on the top and bottom. So
+the initial state probabilities and the
+transition probabilities are the same.
+So our importance weights if you want to
+do this exactly are just the product of
+the action probabilities at all the time
+steps. So this is the exact importance
+weight uh policy gradient and it looks
+like this. Now this by itself we're not
+very happy about because the product
+inside those importance weights is
+exponential uh in the time horizon. So
+if you imagine these probabilities are
+numbers between zero and one and your
+horizon is like 10,000. Now you have
+some number that's less than one raised
+to a power of about 10,000 which is
+roughly approximately zero. Uh or uh if
+the denominator uh is smaller then it'll
+be larger than one. So then raised to
+the 10,000 power it'll be uh it'll go to
+infinity. So that means that you would
+expect your importance weights to either
+vanish or explode uh depending on
+whether the sample is becoming more
+likely or less likely if you have
+something exponential on the horizon. So
+that's bad. Uh formally what that means
+is that the variance of your important
+sampled estimator uh blows up very
+rapidly.
+So basically everything from here until
+we derive the full PO method is really
+just a way to reduce the variance of
+this important sampled estimator. So
+this thing is exact. It is correct. it's
+just uh it's going to be impractically
+high variance to use.
+So one thing that we do which is uh
+maybe a bit of an egregious
+approximation but it ends up being quite
+effective is first uh we write the
+objective a little bit differently.
+Instead of writing it as a set of
+samples over trajectories we can write
+it as a set of samples over state action
+tupils. This is an equivalent way to
+derive the policy gradient. So you could
+start with the expectation over
+trajectories which contains a sum over
+time steps and convert it to samples and
+then deal with it. Or you could take the
+sum out of the expectation. You get an
+expectation over state action marginalss
+and then convert it to samples. It's
+exactly the same thing but it makes it a
+little bit more explicit that the
+importance weights are really a ratio of
+state action probabilities. And it just
+so happens that that ends up being the
+same as the product of all the actions
+until that time step which kind of makes
+sense. It's like the probability of
+being in the state is the probability of
+taking the actions that led you to that
+state. Um but uh with this formulation
+you can take this state action marginal
+and split it up and note that the
+importance weights is the ratio of the
+probability of being in a state times
+the probability of taking an action in
+that state. So that kind of makes sense.
+Uh and then now comes the really
+egregious part. So so far everything is
+exact. The problem is that we can't do
+this because we don't know what the
+state probabilities are. So the really
+egregious approximation is to just
+ignore this. And this is incorrect. It
+is not any longer uh a correct policy
+gradient. And we spent uh an entire
+lecture just proving that even though
+this is incorrect, it is incorrect by a
+bounded amount. And this kind of gives
+us license to say that hey uh ignoring
+this thing does give you an incorrect
+gradient, but it's correct if you're
+very very close to the old policy. So as
+long as you don't change the policy too
+much, disregarding this term is not too
+terrible. And the particular way in
+which it's not too terrible is that
+disregarding this introduces some error.
+Meaning the objective you are optimizing
+is a little bit different from the true
+objective. But it is different by a
+bounded amount and that amount is small
+if the policies are similar. Uh the way
+you can kind of think about this uh if
+you want a mental model is here is like
+the true objective that you want to
+optimize
+and the objective that you're actually
+optimizing let's say you're over here is
+kind of like that right so maybe far
+away it's really different but close by
+it's pretty similar. So that's kind of
+okay that if you optimize this
+approximate objective maybe you'll go
+over here which is a little bit better.
+That's basically the mental model for
+for what happens when you ignore the
+state probabilities.
+Okay. Uh any questions so far? Yes.
+>> The on policy policy gradient is exact.
+>> Oh, it's for it's a sample based
+approximation. So it's an expected value
+and you're approximating with samples.
+Uh it is sorry. So it is uh a sample
+based approximation but it is unbiased
+meaning that if you generate enough
+samples you get the right answer whereas
+for that one no matter how many samples
+you generate you will not get the right
+answer.
+Okay so uh
+what we've gotten to is that we have
+this approximate gradient uh it is no
+longer blowing up exponentially in the
+horizon. So we can actually implement
+this. The trouble is that we really need
+to somehow limit how far we go from our
+old policy and there are basically two
+variants of PO with two different
+mechanisms for doing this. Clipping the
+importance weights and introducing a
+kale divergence regularizer and they
+both work. So clipping importance
+weights uh exactly what it sounds like
+basically if the samples are too
+different uh then that ratio is very far
+from one. So if the new sample is much
+more likely then it'll be much larger
+than one. If it's much less likely, it's
+much lower than one. So if you think
+about that picture on the right side,
+imagine each of those little crosses
+represents a sample. The circle is the
+old policy and the big long ellipse is
+the new policy. Okay? So the big long
+ellipse is very different from the
+circle, which means the policy is
+changing a lot. And looking at where the
+samples are, you can see that most of
+the places where that new policy visits,
+there are no samples there. Which means
+that if you use your old samples to
+estimate its value, you will not get an
+accurate estimate. So what you need to
+do is somehow prevent the policy from
+going that far away so that is well
+supported with the samples that you
+have.
+So this is our important sampled policy
+gradient and we're going to call this
+ratio uh w of tow or w of a. And
+uh w uh if you're moving the policy down
+like that, it's decreasing a lot for
+those bad samples at the top and it's
+increasing a lot for the samples at the
+bottom. So the intuition behind clipping
+the importance weights is that well
+this kind of thing happens when this
+kind of thing happens then some of the
+weights are very large and some are very
+small. So let's just limit how large or
+small they can get. Uh and this is done
+in a very straightforward way uh
+basically if they exceed 1 plus epsilon
+or if they go below one minus epsilon
+you just limit them to be no larger or
+no smaller than that. So you're only
+allowed to deviate from one by epsilon.
+that doesn't actually prevent the policy
+parameters from changing. It just
+prevents giving credit to the policy for
+doing that. So it can keep increasing
+the weight on that sample, but if it
+increases it past one plus epsilon, it
+doesn't get any more credit for that. So
+it has no incentive to drift any further
+than 1 plus epsilon.
+So it's it's a little bit of a funny
+mechanism because it doesn't actually
+constrain the policy parameters, but it
+sort of removes the incentive to change
+the parameters that far.
+>> Yes.
+So in this case uh if you were to
+actually implement this the numerator
+would be
+this
+and the denominator would be
+this.
+So this would be wt
+this would be
+Uh if you want a good choice of epsilon,
+try 0.1.
+Um okay. Uh there's one more detail
+which I won't go through in too much
+detail. Uh it's it's a little bit
+counterintuitive, but at least to me,
+but it is important which is in practice
+basically if you um just do this then as
+I mentioned it doesn't actually
+constrain the parameters. So you get
+into a situation where uh the
+optimization can cheat a little bit. So
+you can say that for some highreward uh
+samples it'll kind of like max them out.
+It'll go all the way to one plus epsilon
+and for some lowreward samples it will
+um
+uh for the sake of maxing out the high
+reward samples uh it will you know drive
+them to to to the far right there. The
+issue is that if for the bad samples you
+keep increasing the probability, the
+policy is actually getting uh worse, but
+you can sort of run it up against that
+limit and then if you can push up the
+good sample even more at the cost of
+pushing up the bad sample a lot past one
+plus epsilon, you're not paying any
+price for that. So the way you can think
+about it is you have some region with
+like a bit of good stuff and there's a
+really really bad thing there. So now
+you really want to go to that region
+because you've got good stuff there, but
+you can't do it without putting some
+probability mass on the bad thing. Well,
+that clipping limits how much more
+likely the bad thing can get. It only
+gets worse by at most epsilon.
+Uh so one way that this thing can cheat
+is it can increase the probability on
+the bad thing by epsilon, but maybe it
+increases the probability on the good
+stuff by epsilon as well. And there's
+maybe just by accident more good
+samples. So now you have a a kind of a
+an incentive to take more risks than you
+should because you won't pay more than
+one plus epsilon price for the bad
+sample even if your actual probability
+increases way more. So maybe you've
+increased the probability on that bad
+sample by like a thousand x but your the
+price you're paying is only one plus
+epsilon.
+So that's not a good thing because then
+you can actually end up being
+erroneously optimistic about how much
+your policy is degrading because of that
+bad sample. So one additional practical
+trick that people do is they uh
+basically
+have this clipping but they um take a a
+min between the clipped and unclipped
+objective. So that's that uh that
+equation there, which basically means
+that you're limiting how much the policy
+benefits from the good samples, but
+you're not limiting how much it pays for
+the bad samples. And that just prevents
+this kind of exploitation issue. Uh if
+this isn't like 100% clear to you, I
+wouldn't worry about it too much, but if
+you want to understand it better, you
+know, uh take a look at the slide
+afterwards. It's also fine to just uh
+you know, uh know that this is
+happening. This is not like the most
+profound or important detail of PO.
+So the full algorithm uh works like
+this. Sample samples from your policy.
+Uh evaluate the target values for your
+critic, fit your critic, kind of the
+usual thing. Um you you typically you
+would do the GE estimator and we'll talk
+about that in a few slides. Uh and then
+use your uh gradient in this case the
+the clipped objective which is given by
+this equation. So it's the minimum
+between the importance weighted
+objective and the clicked importance
+weighted objective.
+Take some number of gradient steps and
+then after you've taken some number of
+gradient steps, collect new samples.
+Okay, so this is an actual practical
+method you can implement. Uh there are a
+few details. Uh uh you can add entropy
+regularization if you want the policy to
+not collapse and keep exploring. Um
+that's a very simple trick. uh the
+entropy for uh most policy classes you
+would use like a Gaussian can be
+computed in closed form. If you have
+discrete actions then you can just use
+the formula for the entropy and just add
+that to your objective. Um other tricks
+uh to use uh standardize the advantages.
+So subtract the mean divide by the
+standard deviation that gives you better
+behaved gradients. But that's basically
+uh the method.
+Any questions about clipped PO?
+Okay. Um
+now the other kind of uh uh PO uh
+algorithm the kale divergence PO the
+derivation for that was a little bit
+involved.
+The method is actually pretty
+straightforward. The method is based on
+the same intuition which is you want to
+limit how much your policy changes from
+the old policy. So that picture on the
+right side and
+the important sampling clipping is very
+easy to implement. uh but it's like it's
+a little bit ad hoc uh in the sense that
+we're not explicitly constraining the
+new policy parameters to stay close to
+the old ones. So roughly speaking you
+can think of the motivation for the
+other variant of PO as just putting an
+explicit constraint on the policy. Uh
+and it's a little bit more principled.
+It's maybe like a little trickier to
+implement but basically that's the
+entire idea. the derivation for it um
+that we had in class was a little bit
+more involved and really that derivation
+is there to more fully understand why
+it's done the way it's done uh but it's
+not really like uh integral to the to
+the method itself. So the der the
+derivation follows a few steps. The
+purpose of this entire derivation is to
+show that
+using that single timestep importance
+weight basically ignoring the state
+probabilities
+with the advantages computed from the
+old policy
+is a well- definfined approximation
+meaning approximation with bounded error
+against the policy gradient that you
+want. So that's the entire purpose of of
+all this stuff and there's really two
+things that we have to show uh to uh
+explain this. One is that we can use
+advantages from the old policy because
+you compute your advantages by using the
+old samples. And the second is that you
+can disregard the state probabilities.
+Using the advantages from the old policy
+is uh not a crude approximation. It is
+actually totally fine to do. What it
+does is it slightly changes your
+objective. Instead of the objective
+being being the value of the new policy,
+it's actually the value of the new
+policy minus the value of the old
+policy. Now the value of the old policy
+is a constant with respect to theta
+prime. So all it's it's saying is uh
+your objective is different by a
+constant and that's totally okay because
+if you add a constant to an optimization
+objective it does not change the
+optimum. Um the derivation for this
+which I will not go through in detail uh
+but it's pretty straightforward. So uh
+it's it's in the lecture slides. Uh you
+can walk through that uh the derivation
+and you end up with uh a very this very
+simple equivalence that j theta prime
+minus j theta is the expectation under
+the new policy of the advantage of the
+old policy.
+Okay. Uh not a particularly profound
+thing and really it's just an excuse for
+us to use a of pi theta instead of a of
+pi theta prime in our objective. Why?
+Okay. Well, because we don't know a
+theta a pi theta prime because we don't
+have samples from pi theta prime. So
+that's all this is. Uh it's a good idea
+to understand the derivation, but it's
+uh not a terribly complicated bit of
+algebra.
+Any questions about this step?
+Okay,
+the distribution mismatch part is more
+complex. So, so far what we got to is
+this uh is okay if our states come from
+uh P theta prime and what we'll we're
+going to do in practice is get our
+states from P theta the old policy and
+these things are not the same. So now
+this is a very nice objective. It's very
+easy for us to optimize because theta
+prime only appears in the numerator of
+the importance weight. So you can take
+the derivative of this using pietorch
+and everything will be great. But these
+are not equal and the thing on the right
+will deviate from the thing on the left
+when the policies are very different
+from each other. That kind of makes
+sense, right? When the policies are
+different from each other, the state
+distributions are different and
+therefore using the wrong state
+distribution will be worse, will be less
+correct.
+And of course, we would really like this
+to be uh uh the thing on the right to be
+a good approximation because it's
+actually practical to optimize. Okay. Um
+so the thing that we showed in lecture
+and it actually uses very similar
+building blocks as the imitation
+learning uh proof from Wednesday is that
+while these state distributions are not
+the same, we can bound how far apart
+they are if we if the policies are not
+too far apart. So that's very similar to
+what we did for imitation learning
+because for imitation learning we're
+saying well if your learned policy
+is close to the expert policy then your
+learned policy state distribution is
+close to the expert state distribution.
+And here it's the same thing except
+instead of an expert we're trying to
+show that our learn policy our new
+policy theta prime is close to the old
+policy pi theta.
+So
+uh there's like a simple version of this
+proof uh and a slightly more complex
+one. the simple one is basically
+identical to the important sampled
+thing. It says okay let's just for
+simplicity assume that the old policy is
+deterministic. Uh it isn't like that's
+just not the case but then we can write
+everything out very plainly and then if
+it's not deterministic then there's a
+little bit of complexity. So when it's
+deterministic we define close in terms
+of total variation divergence which
+actually turns out to be the same as
+bounding the probability of a mistake
+and then we just follow exactly the same
+math as for the imitation learning
+lecture. We express the distribution for
+pi theta as this 1 - epsilon to the t
+plus 1 minus 1 - epsilon to the t * p
+mistake and
+then we just follow all the same logic
+and arrive at unsurprisingly the same
+bound which is that the difference in
+the state distributions goes as epsilon
+t. So this like I literally just copy
+and pasted this from the imitation
+learning lecture and just changed the
+symbols exactly the same thing.
+Now in the case where the policies are
+uh stochcastic
+basically what we're going to do is
+we're going to
+try to use the same proof uh as before
+the one for the deterministic one and
+the way to do it is to sort of derive a
+generalization of the notion that
+there's a bound in the probability of
+making a mistake. So when you have a
+when you're comparing your policy to a
+deterministic policy, it's very
+intuitive what making a mistake means
+because the deterministic policy only
+takes one particular action in a
+particular state. So a mistake means you
+took any other action. When you have two
+stochcastic policies, basically the
+intuition uh for what it means to make a
+mistake is that each of those stoastic
+policies you can think of it as a
+computer program. And uh when you
+implement in a computer program
+something that uses random numbers, what
+you would typically do uh is you would
+generate a random number from a random
+seed and then you would transform it
+through a series of deterministic
+operations into the sample you want. So
+like if you want a random number between
+zero and 10 distributed uniformly then
+you might generate a random floating
+point between zero and one and multiply
+by 10. So the multiply by 10 is a
+deterministic operation and the like
+random seed quote unquote going into
+this is this random number between zero
+and one. Um so
+think about it like this. You could
+implement your two stochcastic policies
+in many different ways. Let's implement
+them in the way that they are most
+likely to agree. So essentially we we'll
+we'll write the code for the two
+policies so that u if we generate a
+particular random seed if it's possible
+for that seed for them to agree then
+they'll agree. Okay,
+so there are many ways to do it, but
+we'll choose the one that lines them up
+the most. And then the probability of
+making a mistake is essentially the pro
+the probability that they'll output the
+same action under this like maximal
+agreement implementation uh when given
+the particular random seed that you
+actually got randomly.
+Okay, so the way that this can be stated
+more precisely and this is like a little
+bit of a mouthful uh so that's why I
+wanted to explain the the more intuitive
+version is that if the total variation
+divergence between two two distributions
+is bounded by epsilon that means that
+you can construct a joint distribution
+whose two mar marginalss are the two
+distributions you want and where the
+probability that the first and second
+variable agree is uh one minus epsilon.
+Okay, so you have two distributions PX
+of X and P Y of X. You can construct a
+joint distribution P of X comma Y. So
+the marginal with respect to the first
+variable is PX. The marginal with
+respect to the second variable is PY. So
+you're kind of welding these two things
+together. And the probability that when
+you sample something that the first and
+second uh variable will agree is 1 minus
+epsilon. This is just a mathematical
+form formalization of that computer
+program argument uh that I explained.
+Okay, this is like a little bit subtle.
+Any questions about this?
+Okay. Uh so long story short, this is
+really just an excuse for saying that
+the probability of making a mistake is
+um uh is less than epsilon.
+So basically px of x agrees with py of y
+with probability um uh with probability
+one minus epsilon.
+Um
+so another or equivalently you can say
+that p uh that the pi theta prime takes
+a different action than pi theta with
+probability at most epsilon and once we
+have this we can just uh plug this into
+the same proof from before crank through
+it and get exactly the same result.
+Okay, so it's essentially just like an
+excuse to reuse the same proof.
+And once we have this, now the
+relationship we've derived is that if
+the total variation divergence of the
+policies is bounded, then their state
+distributions are also bounded. Then
+from there we can say well our policy
+gradient is just some function or our
+policy objective is just some function
+and we're going to be approximating the
+expected value of that function under
+one state distribution using the other
+one. So we're going to be using um uh p
+theta and what we want is uh p theta uh
+sorry what we want is uh p theta prime
+and we're using p theta. So we
+substitute that in and this is again
+this is following exactly the same logic
+as the imitation learning lecture. So uh
+you uh add uh p theta and subtract it uh
+so that's zero. Then you take the
+absolute value which is a bound crank
+through all of that and you end up with
+this relationship. So if you use p theta
+instead of p theta prime then your
+additional error is uh 2 * epsilon t per
+time step uh of the maximum value of f
+and because epsilon shows up in there as
+epsilon gets smaller that error term
+gets smaller. So if we replace f with
+our approximate objective then this is
+the relationship that we recover. So the
+thing that we actually want to maximize
+is lower bounded by by the thing that we
+can actually compute minus a sum over
+all of our time steps of 2 epsilon t
+times a constant. And the constant is
+basically roughly the value of the
+largest advantage you could see. And the
+value of the largest advantage you could
+see is the horizon times r max because
+the total reward over any trajectory is
+at most horizon times r max.
+Okay.
+So it's a good idea to to understand how
+this kind of proof is derived. But
+basically it's really just the same
+proof as we had on Wednesday for
+imitation learning just repackaged with
+uh different symbols. And the clever
+bits here are that lema that allows us
+to extend it to stochcastic policies uh
+and a little bit of machinery to apply
+it to the important sampled policy
+objective. And once we put those
+together then we get this uh this bound.
+And the implication of this bound is
+that if you optimize that thing at the
+bottom, then
+as long as that error term is small
+enough, then you're going to also push
+up on the thing at the top.
+Yes.
+Yeah. So f here is everything inside
+that state expectation.
+And uh my claim is that everything
+inside that state expectation can be
+bounded by uh h* r max or r max over 1
+minus gamma.
+Um the reason that you would expect that
+thing to be bounded by a h* r max is
+that this thing inside the brackets is
+an important sampled estimate of an
+advantage. Uh so an expected value is
+just a a linear combination of values
+with weights that are between zero and
+one which means that it can't be any
+larger than the largest advantage. And
+the largest advantage can be at most h*
+r max because what an advantage is is
+the value of one state minus the value
+of another state and values are sums of
+rewards which are at most h*s r max.
+uh it can be so it's it's not a constant
+but it's bounded by a constant. So the
+way I would put it is that that c
+essentially what this is saying is that
+for any so for all a t comma st comma
+theta comma theta prime the expected
+value over uh a t of pi theta prime
+a t given s
+over pi theta a t given s
+of the advantage
+this thing
+is inc
+comma C. So this is actually the claim
+and that and the reason that that's true
+is that well this thing you kind of
+don't care what these distributions are.
+It's just some expected value and it's
+an expected value of this and these
+things are in C to C.
+Uh, so that's why there's an h.
+>> So, so, so these things these are uh RT
+plus gamma V ST + one minus V of ST.
+Okay.
+So,
+in the worst possible case like this,
+this thing is as big as possible and
+this thing is as small as possible. So
+if your rewards are between zero and r
+max this thing, the smallest this could
+be is zero. The largest this could be is
+r max over one minus gamma.
+And you got you have two horizon
+factors. So it's a term with one horizon
+factor summed over horizon time steps.
+>> Yes.
+So the way you can think about this is
+that that function on the bottom line is
+uh it's a different objective and what
+we're showing is that when epsilon is
+small enough that other objective is not
+too far from the objective we want. So
+this is before we've even taken any
+gradients. So of course when we then go
+to take the gradients the gradients are
+not going to match. Uh but if you're
+optimizing the function at the bottom
+and it's only off by at most that amount
+then as long as epsilon stays small
+meaning you constrain the policy so that
+epsilon doesn't exceed some some limit
+then increasing that thing at the bottom
+will also increase the thing at the top.
+And like the intuition here is that as
+epsilon increases that slack term also
+increases. So eventually they can come
+apart. So over here because the epsilon
+gets large enough and your slack is
+larger.
+So basically uh that that 2 epsilon uh t
+* c is is this this thing.
+Okay. So what we get from this is that
+if we maximize that approximate
+objective subject to a constraint and we
+choose epsilon to be small enough then
+we will improve our policy by a non-zero
+amount and we you know we have to be a
+little careful in choosing that epsilon
+all that stuff.
+Um
+so from there uh what we do is uh
+there's a relationship between total
+variation divergence and kale
+divergence. Obviously if you bound the
+kale divergence you're also bounding the
+total variation divergence. Uh and kale
+divergence is much more convenient to
+use for most distribution classes we
+would work with. So if you have
+gaussians for example it's much more
+convenient to use kale divergence. Uh
+and the method that we actually derive
+from this is po with a kale divergence
+constraint. So how that works is uh all
+the usual policy gradient stuff with
+your GE estimator and now your objective
+is no longer it doesn't have any
+clipping anymore. Instead it has that
+beta* log pi theta term log pi theta
+prime term which is an approximation to
+the kal divergence between pi theta and
+pi theta prime. Why is it an
+approximation that kale divergence?
+Well, I can write that on the board.
+So,
+DKL
+pi theta
+pi theta prime this.
+This is just the expected value
+under
+pi theta
+of log
+pi theta prime minus log p theta.
+Now, since we're going to be
+differentiating with respect to theta
+prime, we don't care about this term.
+And since our samples come from pi
+theta, all that means is that for all of
+these samples from pi theta, we just add
+a log pi theta prime term. And it has a
+multiplier in front of it. And that
+multiplier is the lrange multiplier. Uh,
+which you can adjust automatically. The
+way you adjust it automatically is using
+a method called dual gradient descent,
+which is a really fancy way of saying if
+you are too far away, increase the
+weight. If you're not far enough, then
+decrease the weight. It's a very
+intuitive rule. Yes.
+>> Because it's hard to implement. Exactly.
+Uh you can, by the way, use reverse
+scale. I mean, in general, you do know
+the previous policy, but it's just a
+little bit more annoying.
+Okay, so that's uh that's PO, both
+variants of PO. Uh any questions about
+the PO stuff?
+Okay, cool. Um yeah, it's a good idea to
+to study up on the policy gradient
+things uh and uh get like a pretty
+thorough understanding of of these
+derivations because you know policy
+gradient is important to understand.
+It's very widely used today. It's used
+for virtually all of the RL with
+language models. So, good to study up on
+this material. Yeah,
+>> both methods are PO. Uh, probably the
+clipped one is the one that's more often
+implemented, but both are used. Uh,
+there, as far as I know, there isn't a
+clear consensus about which one is
+better. Um, it's a little bit uh
+situational. I think that often times
+people prefer the clipped one because
+well you have to compute the importance
+anyway and coding up the clipping
+operation is really really easy although
+I think this is pretty easy too so I
+don't know it's a matter of taste I
+guess
+okay um actor critic so so far we've
+actually been talking about actor critic
+methods in disguise because every one of
+these policy so-called policy gradient
+derivations actually had a critic uh we
+just uh uh call these things policy
+gradient just for kind of historical
+reasons, but really these are all actor
+critic algorithms and actor critic just
+reverse refers to any method that has a
+policy and a value function. And in
+fact, pretty much all methods that we
+would use that have a policy also have a
+value function. So technically, they're
+all actor methods. Uh and pure
+non-actorritic policy gradients are
+actually pretty rare these days. GRPO is
+one example of of a pure policy gradient
+method.
+Um so the classic online actor critic
+which is not going to come as a surprise
+at this stage to anybody is a an
+algorithm where you generate samples
+from your policy. You compute target
+values.
+So basically you can use individual
+transitions to compute those target
+values. You don't even need whole
+trajectories
+and then update your value function with
+its parameters fi using these target
+values. And the value function is just
+regressing onto the target values. Okay,
+so just a regression objective. And then
+you would use this value function to
+evaluate an advantage. And there are a
+few different ways to do this. The
+simplest one is the one-step
+bootstrapped advantage, which is just R
+plus gamma VS prime minus V of S. And
+then you would use that advantage in
+your policy gradient. So in like the
+very first uh actor critic paper to my
+knowledge ever written, this is actually
+the method that is implemented. It's a
+pure online method. Uh in this case,
+it's actually as written here, it's
+updating the actor and the critic every
+single time step. This is not a good
+idea because you're you're essentially
+doing SGD with a batch size of one. But
+this is the most classic uh original uh
+I guess OG actor critic method. Um these
+days you wouldn't actually do this, but
+this is you know kind of good a good
+historical footnote.
+Uh and there are some methods that do a
+variant of this. One classic example is
+A3C. A3C is basically this, but to deal
+with a batch size of one, it actually
+implements multiple parallel workers
+that are each running a separate copy of
+your simulator so that you can basically
+uh have a a uh multiple samples for each
+of these steps. So you might have like
+eight threads running your Atari game
+simulation in parallel and each of those
+steps is done with eight samples instead
+of one. That's that's what A3C does. Not
+terribly important to know because these
+days this is generally not the method
+that is used but it is possible to do
+this kind of stuff.
+Yeah.
+Um
+so as written it says get one sample and
+then use that sample to update.
+>> Yeah. So so there's basically two ways
+that you can take multiple samples. One
+way to do it would be to do what A3C
+does and have multiple parallel workers
+and that's fine. The other way is to
+just do step one a you know n times. The
+problem with doing step one n times is
+that now you get n extremely correlated
+samples because they're sequential in
+time. And that's actually pretty bad
+because with uh stochastic gradient
+descent methods if your samples are very
+strongly correlated then essentially all
+bets are off. So you can actually do it
+that way. It's just it's not a very good
+idea. I wouldn't recommend that.
+So the recommended way of doing this is
+to actually use a replay buffer and then
+you get the n policy active critic
+method. So we'll get to that in a
+second. Yeah.
+So the way you can think about it is
+let's say you're solving some regression
+problem. So I've got
+my true function
+and then I'm going to train my neural
+net approximation. Okay. So with regular
+uh stochastic gradient descent, I might
+generate a sample here, a sample here, a
+sample here, and I minimize the error on
+those samples. But imagine that I first
+generate a bunch of samples here. Okay,
+what my function is going to do is it's
+going to want to go through this stuff
+and then it'll do some like crazy stuff
+over here. So I overfit to these things
+and then I move on and I overfit to
+these things and then I overfit to these
+things and eventually I get I work my
+way over here and now I'm I'm minimizing
+the error on these where my error is
+probably huge because I've been busy
+overfitting over here. So I get huge
+gradients going through my network which
+will mess up my work over here.
+So if you have these correlated samples
+through uh with an SGD algorithm,
+essentially instead of learning the
+thing you want to learn, you're just uh
+cycling through overfitting to different
+parts of your target and forgetting the
+other parts.
+Yeah.
+>> Yeah. So the question was well why not
+use Monte Carlo estimation? Good
+question. Um I mean maybe the real
+historical reason is that the original
+actor critic paper was written by some
+folks that were really into temporal
+difference learning and they really
+wanted to do it this way. Um maybe the
+more sophisticated reason is that it is
+kind of your only choice if you really
+want to update every single time step
+because if you want to update every
+single time step you don't have the rest
+of the structure yet.
+Okay. Now um there are basically if you
+imagine the the phoggenetic tree of
+actoric algorithms this is like the
+original actoric algorithm and it has
+two branches. One branch goes to on on
+policy methods policy gradients and
+eventually works its way down to PO and
+the other branch goes to off policy
+methods and works its way to like DDPG
+SACE and TD3 the kind of off policy
+methods that we use today. So these are
+sort of the tr the two different uh
+children of this original actor critic
+method. So for the um on policy methods
+a lot of what they're going to be trying
+to do is come up with better advantage
+estimators that have lower variance and
+come up with these like important
+sampled policy gradient techniques. So
+we've already talked about the policy
+gradient techniques. So we can also talk
+about advantage estimators.
+Um the thing about advantage estimators
+is that they represent a trade-off. So
+in general you can generalize one step
+TD to nstep TD which basically means sum
+up your reward over some number of steps
+over n steps. Then after n steps put
+your target value at step n plus one. uh
+and then or so I guess it's over n minus
+one steps and then put your target value
+at step n uh and and then subtract the
+current value as n goes to infinity you
+get Monte Carlo as n goes to one you get
+regular TD now n is a trade-off what are
+you trading off when you increase n
+as you increase n you get less bias why
+well because the policy gradient is uh
+unbiased if you're the value you're
+subtracting is wrong because the value
+you're subtracting that minus V of ST
+that's just a baseline. It's unbiased
+for any baseline.
+V of ST could be a random number and it
+would still be unbiased.
+The source of bias is the gamma to the N
+* V of ST plus N. So as N goes to
+infinity, gamma to the power of infinity
+is zero. So eventually the multiplier on
+that target value uh v of s plus n goes
+to zero. So as n goes to infinity this
+becomes less biased
+but it has higher variance because those
+rewards you're summing up they're
+essentially a single sample estimate of
+the total reward of a distribution of
+trajectories that you could have gotten.
+So you're sitting at some state there
+are many possible futures and for the
+next nstep step steps you're only going
+to consider one of those futures and at
+the end you're going to put in v of s
+plusn which is your estimate of the
+expected value of all the possible
+futures from there. So the rule to
+remember is larger n means less bias but
+more variance.
+Yes.
+>> Yeah. Yeah, as as n approaches infinity,
+it becomes exactly exactly Monte Carlo.
+So as a quick mental exercise, imagine
+that my policy and my MDP are both
+deterministic.
+What would be the most ideal value of N
+to use?
+Think about this for a few seconds.
+[clears throat]
+So if everything is deterministic,
+variance is going to be zero. So you
+should use the unbiased version and have
+n go to infinity.
+Uh if your value function is perfect,
+meaning that the bias you're incurring
+is very very small, then n should be
+small. You should use n equals one
+because your value function is very
+good. So
+therefore n represents a kind of
+trade-off parameter. And for a while
+what people would do is they would tweak
+n as a hyperparameter to um find the
+trade-off that worked well for their
+problem for their particular combination
+of randomness and value function
+inaccuracy.
+But what you can also do is you can have
+sort of a a softer version of n. And
+this part is like a little bit
+arbitrary. And I just want to like I
+just I want us to admit that it's
+arbitrary. There there isn't really like
+a very great explanation for it. But it
+is something that it like is pretty
+simple and works pretty well. So that's
+why people use it. The somewhat
+arbitrary choice is to say, well,
+instead of having one nstep estimator,
+let's just um linearly combine all
+possible nstep estimators with some
+weights w.
+Okay, why? Well, it's kind of hard to
+pick n. So let's just mix many different
+ends together. And the particular
+weights uh that uh people use is uh have
+an exponential fall-off. So wn is lambda
+to the n minus one. So nstep estimator
+uh with n= 1 gets a weight of 1. n= 2
+gets a weight of lambda. n= 3 gets a
+weight of lambda squared. Then lambda
+cubed then lambda 4th and lambda to the
+5th etc etc etc. This is like a pretty
+arbitrary choice. And the main reason to
+use this kind of exponential fall-off is
+because it leads to a very simple
+implementation.
+So if you actually write out the sum of
+all nstep estimators with each larger
+with the different values of n weighted
+by lambda to the n minus one, you get
+this kind of nice linear combination.
+You get the current reward plus gamma *
+1 minus lambda of v of sd + one plus
+lambda of the next reward plus 1 minus
+lambda of v of sd plus 2 plus lambda etc
+etc etc. And if you manipulate this with
+a bit of algebra, you actually end up
+with kind of an elegant equation where
+it's a sum over all the time steps of
+gamma time lambda raised to the power of
+how far forward you're going times
+delta. And delta is just the delta t
+prime is just the onestep advantage at
+time step t prime. So the reason that
+people like this is because you can
+compute all the deltas for all of your
+time steps when you're implementing PO
+and just average them together with
+these uh weights. So it's despite the
+kind of messy derivation, it's actually
+a pretty easy thing to implement. Uh and
+this is what people typically use. This
+is a generalized advantage estimation or
+GA when they go to um implement PO. So
+it's a little bit arbitrary, but the way
+to think about it is it's a mixture of
+all possible endstep estimators with
+larger n receiving exponentially lower
+weights.
+The other thing that this kind of
+elucidates is that gamma the discount
+factor plays a very similar role. So
+gamma can also be thought of as a bias
+variance trade-off parameter. Although
+the difference is that gamma actually
+changes your objective whereas lambda
+just changes your approximation, your
+sample based approximation.
+Okay, any questions about GE?
+Okay, so it's a good idea to understand
+how uh it goes from the sum of endstep
+returns to the actual thing that we
+implement and a good idea to have some
+intuition for why we do it this way.
+Yeah.
+Yeah, that's right.
+>> That that's why it's a little bit
+arbitrary. So you still you still have a
+hyperparameter. It's just a different
+one.
+>> Yes.
+Um yeah. So the question was has anyone
+tried to like have a clever WN uh
+weights? Not to my knowledge.
+uh it would make sense uh but I haven't
+seen it. Good idea.
+Okay. Uh so in terms of how this works
+uh at this point it's probably like not
+too surprising. So you train your value
+function, you estimate your GA estimator
+as the sum, use your policy gradient and
+that's basically the method. Um so in in
+practice there's a bunch of little
+tricks. Uh so you would use obviously PO
+instead of reinforced gradient here. You
+would center your advantages. So
+subtract the mean and divide by standard
+deviation and all that stuff. So this is
+all the stuff that you guys did uh in
+your homework. Okay. Um so that's one
+branch of the actor uh family tree. And
+then the other branch is off policy
+actor methods. So these are methods that
+try to retain many of the nice
+properties of these uh online methods
+where they want to update the actor and
+the critic every single step but uh they
+want to deal with this uh correlated
+samples problem by using a replay
+buffer. So the way that off policy actor
+critic methods work is when they collect
+a sample they add that sample to the
+replay buffer. You do not necessarily
+use that sample right away. You load a
+batch from your buffer and that batch
+now is sampled independently from all
+the samples in your buffer. And then you
+do all the usual online actor critic
+stuff but with this batch from your
+buffer. So you compute a target value
+for every sample in your batch. You uh
+take one or well typically one but you
+might uh do a few uh gradient steps on
+your value function error and then you
+compute your policy gradient in some
+way. And I'll talk about different ways
+to do this in a second. and then update
+your policy.
+Now, even though conceptually this
+method is coming from the same place as
+regular online actor critic, the
+particular
+unique requirements of this versus the
+on policy setting lead to very different
+methods in practice for so for example
+in this case since your samples are
+coming from your replay buffer in some
+sense your samples are cheap so you
+don't have to worry so much about
+variance reduction.
+Um, the samples also come from the from
+the wrong state distribution. So that's
+maybe a little bit of a problem, but
+they are pretty cheap and you're going
+to plug them into a Q function because
+you have to use Q functions if you're
+doing off policy learning. Uh, and the Q
+functions also have known gradients. So
+you actually don't have to use the grad
+log pi gradient because you're taking
+the gradient of the expected value of Q
+with uh which takes in SA and everything
+here is actually differentiable. So you
+would typically actually use a
+reparameterized gradient. So instead of
+uh doing grad log pi, you would uh
+calculate the expected value under pi of
+q as this reparameterized thing expected
+value over your noise of q of s comma mu
+of s plus sigma of s * epsilon where mu
+and sigma are the uh deterministic
+functions inside your pulse. If you have
+uh discrete actions then you can just
+sum over all of the actions and compute
+the expectation exactly in that way.
+So uh this is called the
+reparameterization trick and this is uh
+this is what would be used by soft actor
+critic for example which hopefully all
+of you implement in your homework. Yes.
+Right? So this algorithm is off policy
+meaning that the replay buffer contains
+samples from many different past
+policies. You are ignoring in this
+method the fact that there's a state
+distribution mismatch. So the old
+samples come from other states and this
+method just ignores that. And then to
+handle the the fact that uh the
+transitions come from the wrong policy,
+you're using a Q function because a Q
+function is a function of a state and an
+action uh without any regard for what
+policy that action came from. And the
+only way you're accounting for the new
+policy is by computing the expected
+value in line number two using your
+latest policy.
+So what makes this soft policy is
+actually line number two. Yeah.
+Yeah. Doing GA here would be impossible
+because for GAE you need multiple
+transitions from your policy. So the Q
+function basically the Q function trick
+only works for one time step because at
+the second time step now the action is
+coming from your old policy.
+That said I should probably mention that
+that doesn't stop people from trying. So
+people do actually use uh endstep
+returns sometimes for these things which
+is incorrect but they just kind of like
+ignore that is incorrect and do it
+anyway. So that is a thing that people
+do sometimes.
+>> Yes.
+>> Um the reason that that taking more than
+one step there would be wrong is that
+your samples came from older policies.
+So that means that so for the first time
+step you don't care about the action
+because the Q function is a function of
+state and action. But at the second step
+now that that second action isn't
+actually fed into the Q function. So it
+must be coming from your buffer and your
+buffer has actions from the wrong
+policy.
+All right. So that's actor critic.
+Q-learning is something that we talked
+about in great length in lecture. The
+thing is once you understand actor
+critic qlearning is actually very
+simple. Q-learning is just actor critic
+without the actor. So there is uh all
+this derivation about how we get
+Q-learning in terms of uh dynamic
+programming and value iteration and it's
+good to study up on that as well. But
+the simple version of Q-learning is it's
+really just actor critic without the
+actor and when we write it down it
+really looks exactly like that. So uh
+Q-learning with with target networks
+just like off policy actor critic
+generate a sample add it to the replay
+buffer load a batch compute a target
+value and take a gradient step on your Q
+function
+and the policy is implicit as a function
+of your of your of your Q function. So
+the policy now is not a separate network
+anymore. The policy is just defined as
+pi of a given s equals
+1. If
+a equals arg max
+of QSA
+and zero otherwise.
+Okay, this is a well- definfined
+distribution. is just fully determined
+by your Q function. So essentially this
+is kind of a slightly heretical way of
+of putting this but you can think of
+Q-learning as just actor critic where
+the actor is defined by this equation.
+And it just so happens that when you
+define it by this equation you no longer
+need any policy gradients. And that max
+in line two is literally just coming
+from plugging in this policy into your Q
+function because a function evaluated at
+its arg max is the max.
+>> Yes.
+Yeah. So uh the question is why not
+train a policy head on top of your uh Q
+function network. So for discrete
+actions you could absolutely do that.
+There's a and that's a people have uh
+trained actor critic methods in this
+way. The reason that for discrete
+actions people often prefer Q-learning
+is that it's easier not to have the
+policy head because uh in fact when
+people actually implement these things
+and when you guys implemented in
+homework 3 of course the way that you do
+it is you have your state going into
+your neural net and the neural net
+outputs a separate Q value for every
+action
+which practically looks like a policy
+already. So in a sense there is a policy
+head. It just happens to be the same
+head.
+Okay. Um so there are a few tricks for
+implementing Q-learning. And by the way
+these tricks are also used with actor
+critics. So they're not unique to
+Q-learning. And the tricks are use a
+target network. The reason to use a
+target network is because that uh in
+line two that target value is changing
+every time you change your Q function.
+So if you want to not have your
+regression method have to hit a moving
+target, you use a lagged Qbar which is
+updated every let's say 10,000 steps. Um
+and you use a replay buffer and all that
+good stuff.
+So uh the and the there's all these
+tricks that we covered in the Q-learning
+lecture. They all these tricks apply to
+actor critics. So they're not unique to
+Q-learning.
+The other trick that we discussed and
+I'll go through this pretty briefly uh
+is uh double qlearning. And double
+Q-learning basically deals with a very
+particular problem that happens when you
+evaluate a function at its arg max when
+that function might be a little noisy.
+So when you evaluate a function at its
+arg max if the function has some noise
+taking the arg maximizes the function
+but it also maximizes the noise. So in
+general if when you fit your Q function
+if you assume the errors are kind of
+randomly distributed is just as likely
+to overestimate as it is to
+underestimate. When you take its argmax
+you're very likely to overestimate
+because you're picking the point with
+the largest positive noise. So basically
+the trick in double qlearning is to
+decorrelate these things is to use one
+function to evaluate which action to
+take and a different function to
+evaluate the value of that action.
+because that way when your arg max is
+affected by some noise and you take the
+value of that action at least it's not
+it's not the same noise. So it's like
+the um the the yellow and the red star
+right. So uh here the red star is the
+arg max of that red curve but then you
+use the other function the yellow one to
+evaluate its value. So even though the
+choice of action is picking it based on
+overestimation, the value is not
+overestimated because it comes from a
+decorrelated function. So this is the
+idea behind double Q-learning. Of
+course, what people actually do is uh
+not quite this. In practice, when you
+want two functions QA and QB, you just
+use the current network and the target
+network. They are not decorrelated, but
+they're like decorrelated enough. So
+this still helps.
+So that's double Q and then um yes
+question.
+>> Yeah. So the reason that people call it
+a target network is that it is the
+network that is used for the target
+values. So colloquially in step two that
+thing on the right hand side of the
+equality sign is called a target value
+because that's the value that you are
+targeting in your regression and it's
+called a target network because it is
+the network that you use in the target
+value.
+Okay. Um and uh as all this discussion
+hopefully makes pretty apparent there's
+a very close relationship between
+Q-learning and actor critic where in
+lecture we derived actor critic starting
+from policy gradient and saying that
+like hey here's policy gradient we can
+reduce its variance etc etc. You can
+just as well derive actor critic uh
+starting from Q-learning and saying well
+in Q-learning you need to do this arc
+max so the job of the actors to do the
+arc max. If you have discrete actions,
+you can enumerate all the actions, check
+their value, and pick the largest one.
+If you have continuous actions, you can
+use another neural net to do this. And
+that's kind of what uh DDPG does. DDPG
+is basically actor critic with a
+deterministic actor. And that
+deterministic actor is essentially an
+evaluator of the argmax. So it does the
+usual actor thing for training your Q
+function. And then when it comes time to
+train your actor, the actor is not a
+distribution anymore. It's literally
+just a function that takes in a state
+and produces an action. And the way you
+train that function is by back
+propagating through Q to get MW to
+output S's with large uh Q's. Uh and
+that's that's DDPG. So DDPG just actor
+critic with a very simple actor that is
+not a distribution anymore. It's just a
+mapping from states to actions that's
+trying to find the arc max.
+So that's DBG uh very very similar to
+off policy actor critic with just
+instead of in line five here we use uh
+grad log pi in line five and ddpg it's
+just back prop
+this is for continuous spaces only the
+reason this is only for continuous space
+is because you need to take a derivative
+with respect to actions so if the
+actions are not continuous that
+derivative is not well defined
+Yeah, exactly.
+Okay.
+Uh, all right. So, that's uh DDPG. Um,
+and then one last bit about Q-learning
+that's really good to know is uh
+convergence or lack thereof for uh
+Q-learning methods. So
+this is something that we briefly talked
+about in lecture and it's good to
+understand which is that um
+value iteration and Q value iteration in
+the tabular case meaning in the case
+where you store the values of all the
+states and actions in a big table is
+guaranteed to converge to a fixed point.
+However, if you use a neural network
+instead of a table, which is what we
+typically do in deep learning, in
+general, it is not guaranteed to
+converge. And
+the way that this uh uh logic kind goes,
+this is not a proof. This is kind of a a
+a sketch. Uh but the way the sketch for
+this goes is that you can express value
+iteration as an operator. That's what we
+did uh last week on Wednesday. And you
+can show that that operator is a
+contraction uh specifically a
+contraction in the infinity norm which
+basically means that if you apply the
+value iteration operator to two
+different functions two different value
+functions they become closer together.
+So this is what this is what we
+discussed last week.
+Um
+when you use
+um a neural network to approximate some
+function you'd be regressing onto that
+function and that is a contraction in
+the two norm which means basically the
+uklidian distance between uh two
+functions becomes closer together if you
+project them onto some uh manifold of
+function approximators.
+So pi here is the projection operator.
+Projection is basically supervised
+learning. The way to think about it is
+is if that line represents the set of
+all neural nets, if you have two
+functions that are not neural nets and
+you train neural nets on both of them,
+they can only get closer together
+because they're being projected onto the
+set of things that neural nets can
+represent. And projection basically
+finds the closest point at a right angle
+to the thing that you want.
+So both of these things are
+contractions. And when you're doing
+fitted value iteration or fitted Q
+iteration or or or Q-learning or
+whatever, essentially what you're doing
+is you're applying both operators at
+each iteration. So first you apply the
+Bellman backup uh and that's a
+contraction infinity norm and then you
+apply the projection and that's a
+contraction the two norm. The problem is
+that
+com uh concatenating two contractions
+like this in two different norms is not
+actually necessarily a contraction of
+any kind. And um you can actually kind
+of if you're very very careful, you can
+actually draw it on a piece of paper. So
+uh you know this is what you'd like to
+see. You'd like to see your value
+functions getting closer to something.
+But here's what might actually happen.
+Let's say that star is the optimal value
+function. The line represents the set of
+functions you can represent with neural
+nets and that circle represents your
+current neural net value function. When
+you perform the backup, meaning that you
+compute those target values, that backed
+up version of V is closer to the star in
+terms of infinity norm, which means that
+the dimension that has the largest
+error, its error decreases. And when you
+project it, you find the point at a
+right angle on the manifold. And notice
+that V prime now is further from the
+star than V is even though both
+operations were contractions in a
+particular norm. So I drew this picture
+very very carefully so that that would
+happen. It doesn't always happen but it
+can happen which means that in general
+when you apply fitted q iteration fitted
+value iteration or q-learning you can
+actually move further away from the best
+uh value function from from b star or
+qst star. So this is a good fact to know
+uh and uh it doesn't happen in the
+tabular case it really requires the
+combination of function approximation
+and bleman backups.
+Okay. So conclusion is that value it
+duration converges fitted value it
+duration does not. Yeah.
+Okay. Yeah. So the question was well the
+this is kind of like presuming that this
+line doesn't contain that point BV. So
+yes, this this argument uh is predicated
+on the fact that the set of neural nets
+is like it's a limited constraint set
+and in indeed uh like one of the reasons
+why some people suppose that in reality
+this is not really a problem and deep
+learning actually works is that well
+neural nets are very expressive. They
+can represent lots of different
+functions. So while in principle this
+kind of stuff could happen in practice
+maybe it doesn't happen all that much
+which is like totally valid
+and in fact as you probably experienced
+in homework three you can make this
+stuff work. So clearly the problem isn't
+that bad.
+Okay. Um [clears throat]
+I think at this point we should take a
+little break. Let's come back at 9:18
+and we'll continue with variational
+inference.
+All right, let's resume. It's 918.
+So,
+one of the topics we covered was
+variational inference. And variational
+inference is a tool. It's not a tool
+that's specific to reinforcement
+learning, but it's something that we use
+in reinforcement learning actually in
+multiple different places. Um, I can
+think of at least three places. One
+place is for deriving the control as
+inference framework, which we use to
+derive soft vector and inverse RL. One
+is in modelbased RL where we use
+variational inference to learn models
+for example as sequence VAEEs and
+another place is representation learning
+where we could use variational inference
+to learn latent variable models where
+those latent variables can be used as
+representations of a state. So it's it's
+a tool. It's used in multiple very
+different ways in reinforcement learning
+and the really in the various inference
+lecture the goal was to give you this
+tool. But just keep in mind that it's
+not like
+the reason this was covered in the class
+is not for any one single reason but
+because it's actually used in multiple
+different places in very different ways.
+So the core idea in uh variational
+inference is that we would like to train
+a model with latent variables. So we've
+got some observations
+X and instead of directly modeling P of
+X which might be really complicated
+instead we
+introduce some other variable Z such
+that P of Z is very simple and the
+mapping P of X given Z
+is also some simple distribution of a
+complicated deterministic function. So
+for example, P of X given Z might be a
+Gaussian where the mean is some
+complicated function of Z and the
+coariance is some complicated function
+of Z.
+It's actually kind of stands to reason
+that if you take simple distributions
+like Gaussian here, transform it
+nonlinearly and produce these X's, then
+you can represent very complex
+distributions. So that's one of the
+reasons why you might want this. Yes.
+>> Yeah. So the question was like why does
+this thing need to be random?
+It doesn't.
+It's um
+in fact in flow matching that's that's
+actually what you have. It's you know
+when it comes to probabistic models it's
+much easier to derive probabilistic
+models in the general case where you
+assume everything is random. Uh but it
+will work for deterministic mapping as
+well.
+Okay. So
+what we're going to do with variational
+inference is we're going to represent
+the intractable log probability of X
+with something much more tractable. So
+in in a latent variable model like this
+the kind of you know if you open up your
+uh probability theory textbook log p of
+x is the log of what you get when you
+integrate out z and integrating out z is
+is intractable because you have to sum
+or integrate over all possible values of
+z. So what we do is we apply a series of
+operations to show that log p of x can
+be expressed as a much more manageable
+quantity. it's not going to be equal to
+this uh what's called the variational
+bound. It's going to be bounded by the
+variational bound. So it's going to be
+an inequality. Um and the way we do this
+is uh first we introduce this uh on the
+second line there we introduce Q. Uh Q
+is some other distribution. Q is
+specific to the data point Xi. So that's
+why it has a subscript I and Q is going
+to be something pretty simple like maybe
+it's a Gaussian centered at some point.
+We can introduce that into the the
+integral because Q over Q is one. And
+just like with the in our important
+sampling discussion before, if you
+introduce a a distribution like this,
+you can say that that integral now is an
+expected value under that distribution.
+That's just from definition of expected
+value. Um so now we have our log P of X
+is equal to the log of the expected
+value under Q of P of X given Z * P of
+Z. That's just the from the definition
+of our uh probabistic model. uh divided
+by q of z. And now we're going to
+introduce a an identity called uh
+Jensen's inequality. Jensen's inequality
+actually holds for any uh concave
+function and log happens to be concave.
+Uh and it just says that the log of the
+expected value of something is greater
+than or equal to the expected value of
+the log of something. So if you push the
+log inside the expectation, then you get
+a lower bound. It's actually not just
+true for logs, it's true for any concave
+function. And for a convex function the
+same thing but the inequality goes the
+other way. So we can apply this push the
+log inside the expectation and get this.
+And this thing is very appealing because
+now um you have
+the log of a bunch of quantities which
+you know X given Z and P of Z and I
+mentioned that these are simple
+distributions
+and you have Q of Z which we also
+assumed is a simple distribution and
+everything is an expectation under Q of
+Z. So uh now you can just generate
+samples from Z because the expectation
+is on the outside and use the sorry
+samples from Q of Z and use that to
+estimate the quantity inside and that's
+much more tractable than the log of an
+integral because the log of an integral
+cannot be approximated with samples
+because log is a nonlinear operation
+and uh the log of a product can be
+expressed as a sum of logs. So we can
+write this out in a more convenient form
+like this.
+And take note that that last term
+negative expectation under Q of Z of log
+Q of Z is just the entropy of Q. And the
+entropy for simple distributions like
+Gaussians actually has a closed form
+solution. So you can just plug in the
+formula from Wikipedia and evaluate that
+entropy.
+Now something to note about this is that
+this is true for any qi of Z. Like you
+could literally pick a random
+distribution. this bound will hold.
+But it is a worse bound if you do not
+choose it carefully.
+And the best Q of Z, the one for which
+the bound is tightest is
+P of Z given X.
+And it's like, you know, even if we
+disregard all the math,
+I think it like intuitively makes a lot
+of sense that that would be a good
+choice. It's like which Z's should you
+use? Well, you should use the ones that
+are most likely for your X because that
+you're trying to evaluate the
+probability of your X. So, it like kind
+of even if you don't think about the
+math, it kind of logically makes sense.
+So, it's a good idea to understand this
+derivation. It's a pretty simple
+derivation that gets us this quantity in
+the lower right, which is referred to as
+the variational lower bound. Yes.
+Okay. Yeah. So P of Z is your actual
+probabistic model like this is the thing
+that you uh that you're learning. This
+is referred to as a prior uh meaning
+that it's the distribution over Z's
+before you've seen any X's. So this
+might be just a Gaussian distribution.
+It has it carries very very little
+information actually no information.
+Q of Z is a distribution you're
+selecting to help you estimate the log
+probability of a data point.
+So q of z is uh
+basically approximating this quantity.
+It's approximating the posterior over
+z's for a specific data point.
+Okay. So in reality when we do this of
+course we don't just pick q of z
+arbitrarily since q of z since we would
+like it to be close to this quantity.
+What we actually do is we make q of z a
+function of x and this is called
+amortized variational inference. The
+reason it's called amvertised is that
+we are amortizing the difficulty of
+inferring that posterior res over all of
+our data points by training a neural
+network to do it. So amortize refers to
+the fact that a neural network is doing
+the job and the neural network is
+trained over many data points not just
+one.
+So now instead of Qi of Z, we have a
+neural net that gives us Q of Z given X.
+So we have basically two neural
+networks. We have our mapping from Z to
+X and that's our model. It's also
+sometimes referred to as a decoder. And
+we have our Q, which is our variational
+distribution, sometimes called an
+inference network, and sometimes called
+an encoder. Makes sense you'd call it an
+encoder because it takes X's and encodes
+them in Z's. So the most classic model
+that uses this kind of technique is a
+variational autoenccoder. Autoenccoder
+because it has an encoder and a decoder.
+So it takes X and encodes it and decodes
+it to itself. Uh and
+what it's doing is it's implementing
+this variational lower bound where Qi of
+Z is defined as this neural net Q5 of Z
+given Xi.
+Okay. And this is the various lower
+bound.
+So the way you train it is for every
+sample in your mini batch, every XI, you
+calculate the gradient of the lower of
+the variational lower bound with respect
+to theta. And that's pretty easy to do
+because you can just sample the Z's from
+Q and then evaluate all the terms inside
+that uh equation. So all of them are
+functions that you know
+and uh so you sample your Z's and then
+you evaluate the gradient and then you
+also have to evaluate the gradient with
+respect to phi the parameter of Q and
+something that we can recognize here is
+that this objective looks an awful lot
+like a reinforcement learning objective
+right if you pretend that Q5 is a policy
+it's the expected value of some reward
+under a object that looks a lot like a
+policy so you can use policy gradient
+for that. But also because everything
+inside the expectation is
+differentiable, you can also use the
+reparameterized gradient just like we
+did with vector critic and that's in
+fact the more popular choice.
+So uh the way that we actually derive
+this is we uh this is kind of the more
+practical way of implementing it. Uh
+usually we don't actually plug in log p
+of z directly. We recognize that we can
+group log P of Z with the entropy of Q
+and that's actually the KL divergence
+between the posterior and the prior. So
+you don't have to do it this way but
+this is the more common way of doing it.
+So you have the expected value of log P
+theta of X given Z and you have a K
+divergence between Q and P of Z.
+Uh and then you use the reparameter
+reparameterization trick. So instead of
+uh calculating the expected value under
+Q, you calculate the expected value
+under a zero mean unit variance Gaussian
+distribution and then replace Z with
+your mean and variance network.
+So this reparameterization trick and if
+you generate one sample from that unit
+Gaussian, this is the objective you get.
+And that KL divergence if both Q and P
+are Gaussian distributions, it just has
+a formula. You just look up the formula
+on Wikipedia and plug it in.
+And if you draw this as an architecture,
+what it looks like is this. X's come in,
+they go through this network QFI, and
+QFI has two heads. It outputs a mean
+over Z and a variance over Z. And then
+you generate your noise sample. Use the
+formula for a sample from a Gaussian to
+get the Z and then plug the Z into your
+decoder, which produces a mean and a
+variance over X. And those you can plug
+into that objective and train the whole
+thing. So at this point this is all you
+know ready for pietorch to do it to do
+its business. So this is a variational
+autoenccoder and there are many variants
+on the variational autoenccoder. You can
+have a conditional variational
+autoenccoder where each of these
+networks also gets some conditioning
+information. So if you want to use this
+to represent a policy if you represent a
+policy then x would be an action and
+then the image would go into both these
+models and that's totally fine. Uh and
+then you can have more advanced uh types
+of vaes. Any questions about this?
+Okay,
+a particular very advanced version of a
+of a VAE is a state space model. So one
+of the things that VA have been used for
+is representing partially observed MDPS.
+So a partially observed MDP would look
+something like this. So it would have
+observations at every time step and it
+would have um states at every time step.
+And we're going to call the state Z now
+instead of S just to make it very clear
+that the states are unobserved. So we
+don't know what they are. We don't even
+know how to represent them. So maybe the
+observations are images of Atari games
+and we'd like to find uh the state C.
+Okay.
+So this is just another kind of
+variational autoenccoder just one with a
+lot more structure. So in this case the
+latent variable Z uh and the latent
+variable O can be defined like this. The
+Z's are actually a concatenation
+of the states at all the time steps. So
+if you want to apply the the variational
+lower bound, you're going to be bounding
+the likelihood of all of the
+observations for a trajectory which is
+all the O's using the latent variables
+at all the step to all the Z's.
+So this this is an important
+distinction. The latent variable is not
+the Z at a single time step. The latent
+variable for the purpose of varial
+inference is the concatenation of the
+Z's for all the time steps. So it's a
+very big Zpace.
+And what is the prior? Well, the prior
+is the distribution over Z's before
+you've seen any of the observations. So
+the prior is structured. The prior is
+actually uh formed by the product of the
+probability of the initial state times
+the probabilities of all of the uh
+states under your learned dynamics which
+you're going to learn here. Okay. So
+this is the prime
+and then from here we just uh plug this
+into the various lower bound and turn
+the crank. So your your latent state now
+is walking around in this latent space.
+The decoder is going to be fully
+factorized. So every time step decodes
+independently uh and that gives us the
+markoff property. So we like that. Uh
+and the encoder can be whatever you
+want. So the encoder is something that
+takes a history of uh observations or
+observations and actions and tries to
+predict disease. And remember that any
+choice of Q is a valid bound. So it's
+actually a design decision for you as
+the algorithm designer to choose the Q
+you want. Uh and there are many
+different choices that have been used
+for state space models. So this one is a
+is what's sometimes called a filtering
+posterior where the Z depends on the
+current and all the past observations.
+And that's a very common choice.
+Okay, so uh at this point you can plug
+all of these things into the variational
+lower bound on the previous slide and
+get an objective and actually turn the
+crank and turn this into like a pietorch
+ready thingy. So basically the point I
+wanted to make with this slide is that
+the framework is actually very flexible
+and you can impose structure on your
+prior you can impose uh structure on
+your decoder and you can plug these
+things into your variational lower bound
+and get out a method for a much more
+sophisticated model like this.
+Okay. Any more questions about
+variational autoenccoders?
+Yes.
+Yeah.
+>> Okay. So the question is roughly like
+for the decoder this is a all the
+observations are being decoded
+independently from Z which forc which
+forces Z to be marovian meaning that the
+Z at every step represents everything
+you need to get the observations at that
+step and that is a a limiting choice
+because if we had for example a decoder
+that looked like P of uh OT given Z1
+through T this would be more powerful
+more expressive the reason so it depends
+on what you want to do with this model.
+One reason why you might want to do this
+is that you're going to take the Z's and
+plug them into Q-learning. If the Z's do
+not obey the Markoff property, you
+cannot use them as states in a
+Q-learning algorithm. So really the the
+choices that the modeling choices you
+make here uh should be informed by how
+easy do you want the model to to be to
+train but also what you want to do with
+these things.
+Okay.
+So one of the things that we used
+variational inference to derive is a
+probabistic model of optimal control and
+from there we actually figured out how
+to do inverse RL meaning how to learn
+reward functions from demonstrations.
+So uh this one is a little bit
+counterintuitive and a little bit
+involved but basically what we said is
+if we want to use RL as a model of
+behavior then pretending that
+somebody who is behaving in the world a
+person or an animal a monkey is
+deterministic in their behavior is kind
+of unreasonable like people make
+mistakes. So we want a model that
+represents
+how somebody behaves when they're trying
+to optimize a reward but where they
+might make mistakes and that's a very
+good probabistic model for for example
+trying to infer someone's objectives
+because they might not be perfectly
+deterministic in trying to achieve their
+objectives. So essentially this was an
+ent this was an exercise in cramming RL
+into the framework of probabistic
+models. And the way we did that is we
+took the probabistic model for an MDP
+with states and actions and we added
+some additional variables to uh
+represent that there is a goal that
+there's an objective and we call those
+optimality variables. It's um it's a
+little bit of a probabistic hack.
+There's actually other ways to do it.
+You can use something called conditional
+random fields where you don't need these
+variables. uh it's it's sort of a a
+almost like a notational trick, but it
+makes it maybe a little easier to
+understand than the random field
+version.
+These variables
+basically they represent the fact that
+the actions aren't being chosen
+arbitrarily. They're being chosen to
+maximize reward approximately. And we
+pick a distribution over each of these
+variables O given the state and action.
+And the distribution we pick is to say
+OT is a binary variable, a buli random
+variable whose probability of being true
+is the exponential of the reward. Assume
+the reward is uh uh always less than
+zero. So these are always numbers
+between zero and one.
+If we make this choice, it like this
+choice kind of looks arbitrary, but the
+reason we make this choice is because
+when we then turn the probabistic
+inference crank, we end up with a
+solution that actually makes sense from
+a control standpoint. So it's kind of
+reverse engineering. Um if we take this
+distribution over the optimality
+variables and we plug it into the
+probability of a trajectory given a
+sequence given all these O's then what
+we end up with is that the probability
+of seeing a trajectory given that you
+know that the O's were all true is the
+probability of that trajectory occurring
+in nature meaning the the transition
+probabilities times the exponential of
+the sum of rewards along the trajectory.
+And this is, I think, a fairly natural
+thing to write down because it's saying
+that, well, any trajectory could happen.
+The most rewarding trajectory is the
+most likely. And as the trajectory
+becomes less rewarding, it becomes
+exponentially less likely. It's kind of
+a reasonable model of somebody that
+generally does the right thing, but
+occasionally makes mistakes, especially
+when those mistakes are relatively
+harmless. Like for example, one of the
+things that happens here is that if you
+have two options that are equally good,
+they're both equally rewarding, you're
+equally likely to take both of them. And
+if you have one option that's like uh a
+little bit better than the other one,
+it's it's going to be like somewhat more
+likely. And if you have one option
+that's much better, it's going to be
+massively more likely because of the
+exponentiation. So big mistakes are very
+improbable. Small mistakes are quite
+likely. And that's pretty reasonable. So
+instead of taking like a straight line
+to the goal, you might take like a wavy
+line, but you'll still end up at the
+goal. Okay? And we use this framework uh
+in at least in this class for two
+different things. We used it to derive
+maximum entropy RL algorithms. So these
+are RL algorithms that maximize the
+entropy of the policy like soft actor.
+And we used it to derive inverse
+reinforcement learning methods which are
+methods for learning reward functions
+from demonstrations.
+And it makes a lot of sense to use this
+for learning reward functions from
+demonstrations because of course your
+demonstrations are probably not
+perfectly optimal. So this allows you to
+explain a little bit of noise in the
+demonstrations without having to like
+massively overfit to the particular
+behavior and explain every little nuance
+and every little mistake as though it
+was some factor in the reward function.
+Okay. So
+starting with this framework uh the
+first thing that we did is we related it
+to the RL algorithms that we already
+understand namely uh to uh Q function
+actor critic and the way that we did
+this is we first derived what is called
+a backward message. Uh for those of you
+that are familiar with probabistic
+models this is a very common thing that
+we do for example for HMM hidden markoff
+models we would compute forward and
+backward messages. For those of you that
+are not familiar with that don't worry
+about it. It's uh basically exactly what
+it says on this slide. So I won't go
+through the algebra for this, but uh the
+backward message is basically the
+probability of the optimality variables
+from the current time step little t
+until the end given the current state
+and action. And it's a very useful
+intermediate object that ends up having
+a very close relationship to value
+functions that we can use to infer the
+policy the action probabilities. So what
+we derived on this slide uh was
+basically a recursive relationship that
+expresses
+the backward message at time step t in
+terms of the backward message at time
+step t plus one. Okay. And I won't I
+won't go through this math. You can you
+can see it on the slide. It's it's it's
+all just a bunch of algebra. But once we
+did that algebra, one of the things we
+noticed is that uh if you take the log
+of the backward messages, you get a
+relationship that looks a lot like the
+Bellman backup. Uh so the log of beta st
+uh obeys a relationship similar to v of
+st. The log of beta stat obeys a
+relationship similar to q of stat. Okay.
+And once we have these things uh then we
+can do a bunch of uh kind of baze rule
+kind of uh manipulation to derive a
+given st comma optimality and that's our
+posterior action probabilities the
+action probabilities for this
+approximately optimal behavior. And
+again if we crunch through all the bay
+rule kind of math we end up with a very
+elegant relationship which is that this
+action distribution is just the ratio of
+the state action backward message and
+the state backward message. So the
+derivation for this is just basically
+gratuitous application of bay rule.
+So now to summarize what we get what we
+got in in that lecture we got a
+relationship between these q like and vl
+like objects it's not exactly the same
+as the bellman backup because instead of
+uh q being the reward plus the
+expectation of the next value it's the
+reward plus the log of the expectation
+of the exponential of the next value. So
+it's not exactly the same but it's kind
+of close. And we got a policy expressed
+as a ratio of these messages which turns
+out to be just the exponential of the
+advantage. That's actually pretty
+logical, right? Like advantage tells you
+how much better is a particular action
+than your average action. This is saying
+the probability is the exponential of
+that. So the best action is the most
+likely and as the advantage of the
+values decreases, they become
+exponentially less likely. Kind of what
+you would expect. So at this point we
+have a reasonable solution, but it's a
+solution that makes us a little bit
+uncomfortable because of that Q function
+equation. Essentially what this thing
+gives us is an overly optimistic
+strategy. It says instead of using the
+expected value of my action, I'm going
+to use the log sum X of my action, the
+best thing that could happen. So if from
+a given state and a given action there
+are multiple states that could occur and
+one of them is lucky and has a higher
+value it'll dominate that log of the
+expectation of the exponential because
+if you take a bunch of values you
+exponentiate them sum them up and take
+the log the largest value will dominate
+that because the exponential makes the
+largest value much much bigger than all
+the rest. So it's optimistic
+and
+it turns out that the framework of
+variational inference can fix this
+optimism for a very peculiar choice of
+variational distribution. So the control
+uh as inference framework uh does the
+following. It says let's apply
+variational inference to this treating
+the states and actions as latent
+variables and let's construct a
+variational distribution which has a
+very peculiar form. The variational
+distribution actually has P terms inside
+of it. So we'll actually choose it so
+that some terms match the model and some
+do not. So in particular everything we
+do not control which is the initial
+state distribution and the transition
+probabilities will be set to be the same
+as they are under the model. And the
+thing that we do control which is the
+action distribution will be a free
+variable. So we will design our own
+action distribution for this variational
+lower bound but we will force the
+initial state and the transition
+probabilities to be the same as they are
+in the real MDP.
+Okay.
+So if we were to draw basets for the
+model and for the variational
+distribution, this is our model and this
+is the variational distribution. So the
+varial distribution is the same initial
+state, the same transitions but a
+different action probability
+and uh so in the parlance of varial
+inference like the x's are the
+optimality variables those are the
+things that we know and the z's are the
+states and the actions.
+So if we apply the variational lower
+bound to this uh and we crunch through
+this whole thing, we basically end up
+with a situation where the
+expected value under Q it has the all
+the model terms and then it has all the
+Q terms and because we chose Q to have
+to share many of the terms the initial
+states and the transition probabilities
+basically cancel out inside the various
+lower bound. That's why that's why we
+chose them that way. And then the
+various lower bound is just the expected
+reward minus the action probabilities or
+equivalent the expected reward plus the
+entropy of the of the action
+probabilities.
+And that's really nice because now what
+we get is essentially just the same
+objective as what we have with policy
+gradient but with that entropy
+regularizer. And remember when we talked
+about PO when we implement PO we usually
+add an entropy regularizer anyway. So in
+fact when people code up PO they're
+doing exactly this. They have the same
+uh entropy regulariz. It's just that
+traditionally the entropy regularizers
+presented as like a heristic thing that
+you add to get better exploration but
+it's actually not heristic. It's just
+using this framework. So it all actually
+lines up.
+Um and uh if we turn the crank further
+and we work through what the recursive
+relationship looks like for the backward
+messages under this variational
+framework, it actually ends up looking
+like the familiar old Bellman backup
+without that log subx anymore. Uh and
+the value backup is uh a soft max
+instead of a hard max. So the hard value
+iteration algorithm has a max. the soft
+value iteration algorithm that we get
+from this has a soft max.
+So
+if I were to summarize kind of in a
+nutshell what's going on here
+essentially we went through a very
+different framework for looking at
+optimal control but arrive back at a
+very similar place which is that uh if
+we apply variational inference with this
+very peculiar choice of Q distribution
+you end up with an objective that looks
+like the familiar RL objective with the
+addition of entropy maximization and if
+you derive the value function equations
+the recursive equations they again look
+like the familiar equations but with a
+soft uh value maximization and it makes
+sense that it would be soft because it's
+a it's a stocastic policy.
+>> Yeah.
+>> Yeah. So the the reason this happens is
+that
+let me think about how to concisely
+explain this. So it's basically this
+choice of Q. So when we're doing
+probabistic inference,
+the probabistic inference procedure
+doesn't understand that you get to
+choose the actions but you do not get to
+choose the states because probabistic
+inference is like a it's trying to find
+an explanation. It's not it's not doing
+planning it's just explaining. So um the
+example that I used in lecture was well
+if I told you that uh this afternoon I
+could go and buy a lottery ticket. Maybe
+I will maybe I won't but I I I can do
+it. And then tomorrow I come in and I've
+got like a, you know, a lot of money.
+Like I've got like a gold chain and all
+this stuff. I've got a Ferrari outside.
+Okay, you can like put the two together
+and say, "Hey, I was like threatening to
+buy this lottery ticket and now I came
+in and I'm filthy rich. Well, maybe I
+got that lottery ticket." But of course,
+it's a ridiculous uh plan to make if I
+actually wanted to be very rich because
+buying a lottery ticket has a very low
+probability of making me rich. So like
+in hindsight if you're trying to explain
+what happened um you are just as likely
+to explain the event in terms of a a
+lucky transition as you are in terms of
+a good action. But of course in
+foresight when we actually have to
+choose those actions we have to plan for
+the expected case. So that's where we
+get a discrepancy. And and and what that
+means is that when you if you know that
+you got a good outcome if your evidence
+is that the optimality variable is true
+it changes your posterior belief about
+the action that was taken. But it also
+changes the posterior belief about the
+transition that happened. And
+variational inference is kind of like a
+hack that we use to force our beliefs
+about the transitions to not change.
+That's why we force the state
+transitions inside of Q to match the
+model transitions.
+Okay. So
+the the value and Q equations are
+actually what we use to derive soft
+critic. So soft actor critic is uh an
+algorithm that follows the regular actor
+critic framework. All this stuff is the
+same and
+in the soft version we add entropy to
+the policy objective and we also add it
+to the uh the bellman backup because we
+need to credit the Q function for the
+higher entropy that the policy will have
+in the future.
+So the full value backup is the reward
+plus the expected value of the next Q
+minus the log probability under the
+policy and that accounts for the policy
+entropy. So that's what soft vector
+critic does and it's basically just
+implementing this controls inference
+framework.
+Um and usually we put a multiplier on
+all the entropy terms so that we can
+trade them off against the reward
+magnitude.
+If we want to use this framework to
+learn the reward, this is inverse RL.
+Then we have a reward function with some
+parameters s
+and what we're going to do is we're
+going to take the gradient with respect
+to S of the likelihood of a trajectory.
+And that's basically going to be kind of
+classic variational inference. So we're
+we have samples from the unknown optimal
+policy and we're going to maximize the
+log probability of those samples given
+that we know the optimality variables
+are all true and given that s represents
+the parameters of the reward. So that's
+inverse RL and um when we differentiate
+the likelihood actually the transition
+probabilities don't don't matter because
+they don't depend on s and we end up
+with the sum of rewards minus the log
+normalizer and it's it's this log
+normalizer that's actually the problem.
+So let's work through this. uh the log
+normalizer is basically the thing that
+causes that distribution normalized to
+one and that's the integral over all
+possible trajectories of the probability
+of that trajectory times the exponential
+of its reward. That's a really really
+difficult object. And the cleverness uh
+that we have here is if we plug in that
+equation for Z and we differentiate it
+with respect to u uh SI then what we get
+is actually just another expected value
+under a different distribution. And this
+is actually a pretty elegant bit of
+math. uh I won't go through this uh but
+it's on the slide and it's like it's a
+very actually a very good exercise to do
+at home to work through this and
+convince yourself that this is actually
+the case but if you take this gradient
+then you end up with two expectation
+terms one is in expectation under the
+optimal policy that's the thing that
+produced your demos and it's just the
+gradient of the reward of those demos so
+that makes sense like make the reward of
+the demonstrations go up and the second
+term is the dist under the distribution
+of the trajectories from the policy that
+is optimal for your learned reward and
+it has a negative sign. So this actually
+makes a lot of sense. It's like saying
+let's make the reward from the
+demonstrations go up and let's make the
+reward of whatever the optimal policy
+for that reward is doing go down. And
+logically it stands to reason that this
+would force your policy to align with
+the demos because if you're making the
+demos more rewarding and you're making
+whatever the policy is doing less
+rewarding, eventually the only way that
+the policy can get high reward is by
+doing the same thing as the demos
+because then these terms will cancel
+out. And in fact, the grain is only zero
+when these two distributions match.
+So it actually makes a lot of sense that
+this would be a valid procedure for
+learning a reward that explains quote
+unquote the demos. Explains means that
+when you optimize for the soft optimal
+policy under the under that reward, it
+matches the demos.
+And then this first term you can
+estimate very easily using the samples
+of the demos that you have. And the
+second term is tricky.
+Naively you can estimate that second
+term just by running RL to convergence
+every single gradient step. And that
+would be very expensive but it would be
+valid. And then in practice what you do
+is you don't run RL all the way to
+convergence. You run something like one
+step of policy gradient and then you can
+estimate that term uh either with
+important sampling or with a few other
+tricks that we covered in the lecture.
+But this is kind of the high level
+structure of that method. Yeah.
+>> Yeah.
+>> Yep. Yeah. So, the question is like why
+why why would we want to do this? It's
+solving the same problem that behavior
+cloning is solving in the sense that
+it's going from demonstrations to a
+policy. The big difference is that this
+now is a method that is aware of the
+dynamics in the environment. So um the
+reason that this kind of thing might be
+preferred is if you are in a setting
+where it's practical to run RL and
+actually interact with the world, this
+can give you a policy that doesn't
+suffer from the compounding errors that
+BC has because it's actually aware of
+the dynamics.
+Now um one of the things that maybe uh
+might become obvious from looking at
+this uh or if you remember the lecture
+is that this now looks very much like an
+adversarial algorithm and in fact you
+can actually implement this kind of idea
+with a GAN uh and not even worry about
+the whole like reward uh relationship
+and instead use a regular discriminator.
+So that's a valid algorithm as well. It
+has slightly different properties, but
+you can do it. Uh, and the GAN version
+of this looks just like a regular GAN.
+So, you basically treat the policy as
+though it was a generator. You train a
+discriminator that it's a binary
+classifier between policy states and
+demonstration states. Uh, so just
+logistic aggression basically and then
+you use the log of your classifier as
+the reward. Now, this kind of method has
+slightly different trade-offs. Uh, one
+of the issues with this is that at
+convergence your classifier is
+outputting 50/50. So then your reward is
+a constant. Um, but it's simpler. So uh,
+often simpler to set up, but the
+discriminator convergence doesn't
+actually recover a reward. So basically
+the end result of the GAN version is a
+policy, not a not a reward function.
+Um, so that's inverse RL.
+And then the other kind of reward
+learning method that we learned about
+which is something that actually some of
+you might be using in your final project
+is uh RL from human feedback. This is a
+very different way of learning rewards.
+This is not learning rewards from
+demonstrations. It's learning rewards
+from expressed preferences. It's
+actually a simpler method but uh it has
+a different assumption. So RL from human
+feedback is a setting where uh you have
+two or maybe more trajectories from your
+policies. There's there's no demos
+anymore. And you ask somebody to express
+a preference over these. And the
+preference, what they're actually trying
+to say is which of these things has a
+higher total reward.
+So, uh what they say is that I like this
+one more than that one. But what that
+really means is that this thing has a
+higher total reward than this other one.
+And then what you do is you essentially
+train uh your reward model as though it
+represents the logits of a binary
+classifier.
+So the modeling assumption you're making
+is that the probability that somebody
+will prefer one trajectory over the
+other uh is given by a sigmoid applied
+to the difference of those of the
+rewards of those two trajectories.
+Uh so that's a modeling choice. You're
+basically explaining why somebody might
+express one preference over the other
+and also why that preference might be
+noisy because of course uh this sigmoid
+will give you some intermediate
+probability between zero and one. So
+you're basically saying the probability
+of expressing a preference of I over J
+is proportional exponential of the
+rewards of I divided by the rewards of I
+plus the the rewards of J
+and then you train the policy on this
+reward. So this is RHF basically.
+Okay. Um we have only a few minutes
+left. Uh but in terms of the other
+materials uh they're more recent.
+Hopefully you guys all remember them
+better. Uh but we covered uh modelbased
+RL. For model based RL u the kind of at
+a high level, one of the big things to
+remember is dealing with distributional
+shift. It was also intended as a kind of
+a a warm-up to the offline RL section
+that comes afterwards where it's really
+all about distributional shift. So in
+model based RL one big thing is you
+train the model on your data and then
+you collect more data using a policy
+that is good under that model. That
+policy might exploit the model but then
+if you add that data to training your
+model now your model is updated in
+exactly the places where your policy
+wants to go. So that was like one of the
+big ideas in modelbased RL. Um
+the other big idea was to stick to
+places where the model is confident and
+that's where we used probabilistic or
+uncertainty aware models. So good to
+remember that um uncertainty aware
+models uh you cannot train them just by
+looking at the entropy of the state
+prediction because that is the wrong
+kind of uncertainty. So you have to use
+an epistemic uncertainty estimate and
+the epistemic uncertainty estimate that
+we learned about there are many of them
+but a very standard one is to train an
+ensemble to train multiple networks and
+uh either use randomly chosen networks
+from your ensemble to generate samples
+or look at some measure of disagreement
+between those networks.
+We learned about how if you have a model
+you can make decisions in a variety of
+different ways. Um
+the difference between openloop and
+closed loop. In open loop you commit to
+a plan and then you go and execute that
+plan. A lot of planning methods that we
+learned about are actually openloop
+planning methods. Open loop is very good
+in a deterministic environment. In a
+stochastic environment openloop is not
+good. An example that you can keep that
+that you can remember to understand the
+suboptimality of open loop. If I tell
+you that I'm going to give you a math
+test
+and you have to commit to a sequence of
+actions like accept the math test and
+write down the answers, you cannot
+commit to a plan that will answer the
+test correctly until you've looked at
+the test. So that's the open loop case.
+In a deterministic environment, uh maybe
+it's it's quite easy to make an open
+loop plan. Like maybe you know the
+layout of this room and you can imagine
+a sequence of actions to go to the exit
+without having to observe the future
+states. But in a stocastic environment
+like the math test, you cannot commit to
+a sequence of actions to answer the test
+correctly until you've looked at the
+test. Even if you know perfectly uh how
+to solve any problem.
+So open loop is what we often get when
+we do planning. Closed loop is what RL
+solves. Closed loop is when you get a
+policy.
+Um I'll skip this part. Planning with
+uncertainty. In terms of actual methods
+for modelbased RL,
+uh the most popular methods for training
+policies with modelbased RL are actually
+methods that plug the model into some
+kind of model free algorithm. And many
+of these methods follow what is uh
+referred to sometimes as a dino style
+strategy which basically uh looks a lot
+like off policy Q-learning or acttoritic
+but in addition to using the usual off
+policy actor critic or or Q-learning
+strategy they select some states from
+your replay buffer and make short
+modelbased rollouts from those states
+using your latest policy. And the reason
+to do it this way is that
+error from your model accumulates over
+long rollouts. So you do not want to use
+your model as though it was a simulator
+to make fulllength rollouts the length
+of the entire trajectory. But at the
+same time you also don't want to make
+short rollouts right from the initial
+states because then you never see the
+later states. So a good compromise that
+is made with these dynasty methods is to
+pick states from your replay buffer
+which gives you a nice uniform
+distribution of states at all the time
+steps and make short branched rollouts
+from those states. And it's a compromise
+because of course now these short
+rollouts are not coming from your uh the
+states are not coming from your latest
+policy because you're essentially
+rolling in with those old policies but
+you do see an even distribution of all
+the different points in time. So it's
+kind of a nice compromise. So this is a
+very common choice and then you can just
+plug this data into like any off policy
+method you want.
+Okay. Um I'll stop there. Uh I didn't
+get a chance to cover offline RL and a
+few other topics but those are more
+recent. So hopefully you guys still
+remember that. Good luck on the exam
+next week. Uh and I'll see you all on
+Wednesday.

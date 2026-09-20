@@ -1,0 +1,4024 @@
+All
+
+
+right. Uh let's get let's get started.
+
+
+So um
+
+
+we have uh three more kind of full
+
+
+lectures that I'm going to be giving and
+
+
+then we have uh two guest lectures. Uh
+
+
+th this is a kind of a
+
+
+I guess enrichment material advanced
+
+
+material that is uh uh where I pick uh
+
+
+you know three lectures worth of fun
+
+
+advanced topics for you guys. uh maybe
+
+
+partly to provide you with some ideas
+
+
+that might inspire you for your final
+
+
+projects especially if you're doing the
+
+
+285 projects and partly also to just uh
+
+
+tell you about a selection of um you
+
+
+know interesting and uh perhaps unusual
+
+
+ideas. So um this lecture this Friday
+
+
+and also next Wednesday are perhaps not
+
+
+as core to like the most uh important
+
+
+DPRL stuff ever but it's kind of fun
+
+
+stuff and you know the aim here is more
+
+
+to get you guys thinking about the kind
+
+
+of uh unusual and more experimental
+
+
+ideas that people have explored. Um
+
+
+there is a quiz on grade scope for
+
+
+today's lecture and Friday's lecture.
+
+
+There is no quiz for next week's
+
+
+lecture. That's kind of more a broader
+
+
+perspectives thing. And then after that,
+
+
+uh, Friday next week and Wednesday the
+
+
+week after, we have guest lectures. One
+
+
+from, uh, Kevin France who will talk
+
+
+about, uh, LMS and one from Sihong who
+
+
+will talk about offline to online. Yes,
+
+
+they should be. Yes.
+
+
+Uh, it may be that uh, the TA has not
+
+
+quite clicked the button to post them
+
+
+yet, in which case they'll probably do
+
+
+that shortly.
+
+
+Um, all right. So today we're going to
+
+
+talk about exploration and uh skill
+
+
+learning. So we talked about the
+
+
+exploration problem quite a bit before.
+
+
+We discussed how you know for example in
+
+
+Atari games the breakout game is pretty
+
+
+easy. Like your DQN implementation from
+
+
+homework 3 can probably solve it but the
+
+
+Monttouma's revenge game is pretty
+
+
+difficult. And like on the surface it
+
+
+doesn't look like one is much more
+
+
+difficult than the other. Like if you
+
+
+were to actually play the games, I don't
+
+
+think you would find Montazuma's revenge
+
+
+to be really any harder. But for an RL
+
+
+agent, one of these uh tasks is easy
+
+
+because it has very immediate rewards
+
+
+that are very strongly aligned with
+
+
+doing well on the overall task, whereas
+
+
+the other one has delayed rewards that
+
+
+are maybe not as logically aligned with
+
+
+success on the overall task. Okay.
+
+
+uh and we talked about how the classic
+
+
+appro uh approach to addressing this
+
+
+kind of challenge uh in RL is to employ
+
+
+an exploration method that encourages
+
+
+the agent to visit all rarely visited
+
+
+states essentially drive the agent
+
+
+towards visiting new things and the idea
+
+
+is that if you attempt to visit new
+
+
+things for long enough eventually you'll
+
+
+visit all the states and then you'll
+
+
+solve the task. Um, but this is not the
+
+
+only way that we can look at uh the
+
+
+problem of exploration.
+
+
+Another way that we could look at it,
+
+
+which maybe makes more sense in some
+
+
+scenarios, is that perhaps
+
+
+you actually get to interact with an
+
+
+environment quite a bit, but what you
+
+
+don't get is a large amount of very
+
+
+goal- directed interaction. So, uh,
+
+
+a small child will go and play with
+
+
+things in their environment. Uh, and
+
+
+maybe they're doing coverage maximizing
+
+
+exploration. Certainly, this kid seems
+
+
+to be maximizing coverage of something.
+
+
+Uh, but they are perhaps not consciously
+
+
+extremely goal- directed in that. Like
+
+
+they're not thinking like, hey, I'm
+
+
+going to like roll everywhere on the
+
+
+floor so that I can eventually like
+
+
+learn uh arithmetic and then advanced
+
+
+calculus and then go to college and then
+
+
+get like a job that makes a lot of
+
+
+money. uh they're just rolling around on
+
+
+the floor having fun. Um so it's kind of
+
+
+uh interesting to imagine that maybe uh
+
+
+what we would what we could have our
+
+
+agents do is
+
+
+learn to explore in a kind of
+
+
+unsupervised way by playing around and
+
+
+turn that unsupervised experience into a
+
+
+set of skills that they could then apply
+
+
+to solve new tasks much more rapidly
+
+
+when they're actually given a task to
+
+
+solve.
+
+
+So uh you could perhaps learn skills
+
+
+without supervision and then use them to
+
+
+accomplish goals. Uh you can learn
+
+
+subsklls to use with hierarchal
+
+
+reinforcement learning. So maybe you
+
+
+acquire uh kind of a repertoire of
+
+
+behaviors and have a high level policy
+
+
+that uses those that repertoire as high
+
+
+level actions. And we'll talk about that
+
+
+on Friday a little bit. Uh and of course
+
+
+you can use this to explore the space of
+
+
+possible behaviors. Uh perhaps as a sub
+
+
+routine for the more traditional
+
+
+exploration problem.
+
+
+So uh for maybe like a less whimsical
+
+
+scenario, you could imagine that you
+
+
+have uh a robot that at training time
+
+
+can go into like an environment and
+
+
+figure out what is it that it can do in
+
+
+this environment that is potentially
+
+
+useful and then uh at test time somebody
+
+
+can actually give it a goal like today
+
+
+your job is to do the dishes and the
+
+
+robot goes and does the dishes because
+
+
+in its exploration of all the different
+
+
+things it could do that is one of the
+
+
+things that it tried doing.
+
+
+So in some sense the problem then is
+
+
+during this unsupervised phase, how do
+
+
+you take an MDP without a reward
+
+
+function and incentivize your agent to
+
+
+pull out potentially useful uh
+
+
+behaviors, behaviors that might be
+
+
+useful in the future when you're
+
+
+actually given a task. And it turns out
+
+
+that there's a an interesting um
+
+
+relationship between discovering useful
+
+
+skills and information theory. So, uh,
+
+
+information theory is like one of those
+
+
+things that sounds really fancy when you
+
+
+say, but it's actually, uh, fairly
+
+
+simple concept. So, we've already
+
+
+learned quite a bit of information
+
+
+theory in this course. Uh, some useful
+
+
+identities that we actually have seen
+
+
+before. Uh, P of X, that's a probability
+
+
+distribution. We all know about that.
+
+
+Uh,
+
+
+so there's a distribution. The blue dots
+
+
+are samples. The green thing is a
+
+
+distribution that fits those samples.
+
+
+And for a distribution like this, you
+
+
+can measure its entropy. And uh there
+
+
+was a some stuff on the exam with
+
+
+entropy. Hopefully you've all seen
+
+
+entropy. But entropy uh you know uh
+
+
+equations aside is basically a measure
+
+
+of how broad a distribution is. So a
+
+
+distribution with high entropy uh covers
+
+
+lots of values. It puts nonzero
+
+
+probability on many different values of
+
+
+x. A distribution with low entropy
+
+
+covers very few values. So it only puts
+
+
+a high probability on a few values of x.
+
+
+So if your distribution is like this
+
+
+little Gaussian thingy, the entropy is
+
+
+basically the width of that Gaussian.
+
+
+Big entropy means the distribution has
+
+
+uh a many values in its support. Low
+
+
+entropy means it has only a few values
+
+
+in its support.
+
+
+The next concept and this one we haven't
+
+
+learned yet but it's uh fairly
+
+
+straightforward is mutual information.
+
+
+So mutual information is a function of
+
+
+two random variables.
+
+
+Two pro two two random variables that
+
+
+have a joint distribution and marginal
+
+
+distributions. And the definition of
+
+
+mutual information is at least for me
+
+
+like a little bit inscrutable but when
+
+
+we actually think about it it makes
+
+
+sense. So this is the definition of
+
+
+mutual information. It's the KL
+
+
+divergence between the joint
+
+
+distribution of two variables and the
+
+
+product of their marginalss. Okay, this
+
+
+is maybe like not particularly
+
+
+intuitive. Um, and this is the
+
+
+definition of kale divergence. It's even
+
+
+less intuitive, but what mutual
+
+
+information means, I think it is
+
+
+actually fairly intuitive and we can
+
+
+look at it visually. So here are two
+
+
+pictures of samples from two joint
+
+
+distributions. So the dots are X comma Y
+
+
+tupils. They're samples from P of X
+
+
+comma Y. uh and in the top plot you can
+
+
+see that the value of y is like somewhat
+
+
+predictable from x. So as x gets larger
+
+
+y also gets larger. They're not
+
+
+perfectly equal. So there's also like
+
+
+additional information contained in x
+
+
+and y that's independent. But clearly
+
+
+there's a dependence between x and y
+
+
+because as x gets bigger y gets bigger.
+
+
+Whereas in the bottom plot, it doesn't
+
+
+look like there's a a strong
+
+
+relationship. Like y has some
+
+
+distribution, x has some distribution,
+
+
+but it doesn't seem like the value of y
+
+
+is particularly uh uh sensitive to the
+
+
+value of x.
+
+
+So in the top plot, x and y have high
+
+
+mutual information because
+
+
+y is a bit more predictable from x. And
+
+
+the way that you can relate that to the
+
+
+kale divergence equation is that if the
+
+
+kale divergence between p of x comm y
+
+
+and p of x times p of y was low meaning
+
+
+that the joint was similar to the
+
+
+product of marginalss then you wouldn't
+
+
+expect uh then you would expect that
+
+
+sampling from p of x and p of y
+
+
+separately would look very similar to
+
+
+sampling from them jointly and that's
+
+
+not the case in the top plot because uh
+
+
+there is a very close relationship
+
+
+between x and y. this
+
+
+it's very similar. Yeah. So you can
+
+
+think of it as an information theoretic
+
+
+notion of correlation.
+
+
+The the main difference is that
+
+
+correlation is is a linear relationship
+
+
+whereas mutual information isn't
+
+
+necessarily linear. It's just it's a
+
+
+little harder to draw. But if I had
+
+
+drawn it so that y is like a third order
+
+
+polinomial function of x then the mutual
+
+
+information would have been high too but
+
+
+the correlation might actually be low.
+
+
+>> Yes.
+
+
+So independence is a binary uh notion.
+
+
+So uh two variables are either
+
+
+independent or not. Um and variables
+
+
+that are independent have a mutual
+
+
+information of zero.
+
+
+So that's the bottom plot. Uh okay. So
+
+
+that's mutual information. And there's
+
+
+an interesting identity uh and that
+
+
+identity is actually not too hard to
+
+
+derive just from manipulating this
+
+
+expression with a little bit of algebra
+
+
+that the mutual information between X
+
+
+and Y can be decomposed as the entropy
+
+
+of Y minus the entropy of Y given X. Now
+
+
+it it's a symmetric quantity so it can
+
+
+also be decomposed the other way. So
+
+
+it's both entropy of Y minus entropy of
+
+
+Y given X and it's also entropy of X
+
+
+minus entropy of X given Y. So it's
+
+
+symmetric. uh and I've just drawn one of
+
+
+those things
+
+
+and that's a very useful expression to
+
+
+know whenever we need to do anything
+
+
+with mutual information. Uh and it also
+
+
+I think kind of makes sense. Basically
+
+
+what it tells us is that the mutual
+
+
+information between X and Y can be
+
+
+expressed as how much does P of Y cover
+
+
+versus how much does P of Y cover after
+
+
+you already know X. So the the intuition
+
+
+for how to think about that equation is
+
+
+how does knowing X change your
+
+
+uncertainty about Y. Obviously, if
+
+
+knowing X completely collapses your
+
+
+uncertainty about Y such that that
+
+
+second uh the thing you're subtracting
+
+
+is basically zero. Uh that's that's very
+
+
+good. Uh and if it doesn't change your
+
+
+belief about Y at all, meaning those two
+
+
+entropies are identical, then the mutual
+
+
+information is zero.
+
+
+Okay. All right. So now what does this
+
+
+have to do with RL? Well, if we're going
+
+
+to talk about exploration,
+
+
+then typically the distribution that we
+
+
+care about is the distribution over
+
+
+states.
+
+
+Why? Well, because we're exploring
+
+
+states. If we had a bandit, then it
+
+
+would be the distribution over actions.
+
+
+And if you want to be really general,
+
+
+it's actually distribution over states
+
+
+and actions together. But in most RL
+
+
+problems, the states are really
+
+
+complicated. And the actions are
+
+
+typically very simple. Uh that's not
+
+
+always the case. There are some esoteric
+
+
+RL problems where the actions are
+
+
+extremely complex. Like if you are
+
+
+controlling the power distribution
+
+
+network in the state of Texas and your
+
+
+actions are like all the settings of all
+
+
+the different power plants and switches
+
+
+and so on, maybe you have a giant action
+
+
+space, but usually you have a smaller
+
+
+action space and a large state space. Uh
+
+
+so really you care about the
+
+
+distribution over states because that's
+
+
+the hard part. And when we write like pi
+
+
+of s or in the past I've used the
+
+
+expression p subscript pi of s we're
+
+
+talking about the state marginal of a
+
+
+policy. Meaning that if you run the
+
+
+policy you generate lots of trajectories
+
+
+and then you look at the frequency with
+
+
+which states occur in those trajectories
+
+
+regardless of where they occur in time.
+
+
+That's your state marginal. And the
+
+
+reason that we care about state
+
+
+marginalss rather than trajectories is
+
+
+that if you assume that the environment
+
+
+is marovian, it doesn't really matter at
+
+
+what time you visit a state. All that
+
+
+matters is that you visited it. So it's
+
+
+really the state distribution that we
+
+
+care about.
+
+
+Okay. And then you can say, okay, well,
+
+
+what's the entropy of your state
+
+
+distribution?
+
+
+Um,
+
+
+why is the entropy of the state
+
+
+distribution something we might care
+
+
+about if we care about exploration? Any
+
+
+ideas?
+
+
+Yeah, exactly. So entropy quantifies how
+
+
+broad your distribution is. So if you
+
+
+have really high entropy over states
+
+
+that means you visited lots of states.
+
+
+If you have the highest possible entropy
+
+
+over states that means you visited all
+
+
+the states.
+
+
+The distribution that has the highest
+
+
+entropy in case any of you are wondering
+
+
+is the uniform distribution. So if you
+
+
+have the uniform distribution over
+
+
+states oftentimes that is actually
+
+
+impossible to achieve in a real MDP. But
+
+
+that means that you visited everything
+
+
+an equal number of times. The reason
+
+
+it's very difficult to achieve is
+
+
+because if my if my MDP always start
+
+
+over here, I'm always going to have
+
+
+higher density in this state than any
+
+
+other one because every single
+
+
+trajectory starts over here. Yes,
+
+
+pi of S. The way you can think about it
+
+
+is um run your RL algorithm and take
+
+
+like the replay buffer and look at the
+
+
+frequency of states in the replay
+
+
+buffer. That's P of S.
+
+
+Yeah. So the question was uh this is uh
+
+
+uh independent of time. Is there some
+
+
+significance in that? Um the answer is
+
+
+if you assume that you live in a
+
+
+marovian environment. So basically your
+
+
+transitions don't depend on time uh and
+
+
+it's infinite horizon. So there isn't
+
+
+some kind of like timer that runs out
+
+
+and the episode ends. then there's u no
+
+
+value in keeping time because it doesn't
+
+
+matter at which point in time you visit
+
+
+a state. If you lived in a finite
+
+
+horizon MTP like there's like a
+
+
+countdown and after 100 steps everything
+
+
+ends then you can always turn that into
+
+
+uh a time invariant MPP by just
+
+
+appending the time step to the state. So
+
+
+we can express it like this uh without
+
+
+loss of generality.
+
+
+Good questions. Any other questions?
+
+
+Yeah.
+
+
+Oh yeah, I see what you're saying. Uh
+
+
+that's right. Um so when I when I made
+
+
+that analogy about the replay buffer,
+
+
+like you have multiple trajectories in
+
+
+there. So it's okay if in a single
+
+
+trajectory you don't revisit a state
+
+
+twice. You're going to have many
+
+
+trajectories.
+
+
+So what you're saying is true is just
+
+
+not really an issue here.
+
+
+Okay. So this thing basically quantifies
+
+
+coverage. So we might actually care
+
+
+quite a bit about the entropy of our
+
+
+state distribution. And it turns out
+
+
+that there are some information
+
+
+theoretic quantities some mutual
+
+
+information based quantities that we can
+
+
+use to capture how good of a job we're
+
+
+doing of exploring. So one very classic
+
+
+idea is something called empowerment. Um
+
+
+there are actually multiple expressions
+
+
+of this. Uh I'll show you the the
+
+
+original one uh from uh Palani at all.
+
+
+Um the modern one that people use is
+
+
+actually a little different from this,
+
+
+but this is kind of good enough to get
+
+
+us started. Think about the mutual
+
+
+information between an action at a
+
+
+particular time step a and the state at
+
+
+the next time step s plus one. Going
+
+
+back to that decomposition of mutual
+
+
+information that we had on the previous
+
+
+slide, we can write this mutual
+
+
+information as a difference of two
+
+
+entropies. The entropy of the next
+
+
+state, the entropy of S+1 minus the
+
+
+conditional entropy of ST+1 given a T.
+
+
+And if we just kind of think about what
+
+
+this means,
+
+
+if you if your next state is not
+
+
+affected by your action at all,
+
+
+then you would expect that this mutual
+
+
+information would be zero because those
+
+
+two entropies would be identical. If
+
+
+your action completely deterministically
+
+
+determines the next state, meaning you
+
+
+have a great deal of control over the
+
+
+next state, then you'd expect this to be
+
+
+very large.
+
+
+Now there there's something subtle that
+
+
+happens because you have this first
+
+
+entropy. So there is a case where your
+
+
+action strongly determines the next
+
+
+state but empowerment is low and that's
+
+
+a case where the actions available the
+
+
+next states available to you are very
+
+
+few. So if you're walking down a hallway
+
+
+and your action is to either go like
+
+
+forward or backward there's two possible
+
+
+states. your action might fully
+
+
+determine it, but it is a less empowered
+
+
+state than if you're standing at an
+
+
+intersection where you can go left,
+
+
+right, forward, and backward. In both
+
+
+cases, your action fully determines the
+
+
+next state. But in the latter case,
+
+
+there are more next states available to
+
+
+you. So the intersection is a higher
+
+
+empowerment state than the middle of the
+
+
+hallway. So that's kind of nice that
+
+
+having both of those entropies in in
+
+
+that equation actually gives us a fairly
+
+
+natural notion of like kind of how many
+
+
+options are available to you. So if you
+
+
+choose if you can choose which way to go
+
+
+but the next state is only slightly
+
+
+affected by that choice like maybe you
+
+
+have like a 51% chance of going in the
+
+
+direction you asked for and 49% chance
+
+
+of going in some random direction that's
+
+
+low empowerment. If you if your action
+
+
+perfectly determines the next state but
+
+
+there are only a few next states like in
+
+
+the middle of the hallway that's low
+
+
+empowerment. But if you're at that
+
+
+intersection where there are many
+
+
+choices and your action affects the
+
+
+outcome very strongly that's high
+
+
+empowerment. So you can see how this
+
+
+might be a very natural notion of what
+
+
+makes a particular state uh desirable in
+
+
+in this kind of unsupervised RL sense a
+
+
+state where there are many options
+
+
+available to you and your choice
+
+
+strongly influences which option you get
+
+
+that is a high empowerment state now
+
+
+this by itself doesn't allow us to drive
+
+
+for example like skill discovery because
+
+
+nothing here actually says anything
+
+
+about skills or policies or anything
+
+
+like that so we'll have to modify this a
+
+
+to use it, but it can get a start. Yes.
+
+
+Question.
+
+
+So
+
+
+something that's a little bit
+
+
+counterintuitive about these things is
+
+
+that um
+
+
+even if you are in a domain where the
+
+
+number of possible values that your
+
+
+state could take on is very large. Um
+
+
+there there can still be distributions
+
+
+that are larger and smaller. So um maybe
+
+
+one way you can think about this is uh
+
+
+imagine that that that Montuma's revenge
+
+
+game. Okay, there's maybe some kind of
+
+
+graphics in the background that's
+
+
+changing randomly. Uh but even if
+
+
+there's a particular room where one of
+
+
+these graphics is changing rapidly, if
+
+
+you then go into a different room, then
+
+
+the values of the pixels you see are
+
+
+new. So your distribution is even
+
+
+broader. So the way to think about
+
+
+entropy is not like are there many
+
+
+different states or not. It's not like a
+
+
+binary thing. The way to think about it
+
+
+is is the range larger or smaller. So
+
+
+even if there's a lot of random stuff
+
+
+going on, you might change something
+
+
+about the environment and see even more
+
+
+random stuff.
+
+
+And that's actually one of the things
+
+
+that's so powerful about these
+
+
+information theoretic quantities as
+
+
+opposed to simpler estimators like
+
+
+Gaussian estimators or linear estimators
+
+
+is that they are really trying to think
+
+
+about the number of bits of information
+
+
+which can increase even in otherwise
+
+
+very complex environments.
+
+
+Okay. So let's talk about how we could
+
+
+actually use some of these uh ideas to
+
+
+develop practical algorithms that we can
+
+
+actually code up. So I'll start with a
+
+
+fairly classic skill discovery method.
+
+
+Um and it's actually based on
+
+
+empowerment uh but not empowerment of
+
+
+actions but rather empowerment of
+
+
+skills. So what we're going to be trying
+
+
+to learn is
+
+
+a set of skills and we can represent the
+
+
+set a set of skills as one neural
+
+
+network policy that just takes an
+
+
+additional input which is a categorical
+
+
+variable. This this thing that we call Z
+
+
+this is not like in VA Z is not a
+
+
+continuous vector. Z is just a
+
+
+categorical variable. It's a like 0 1 2
+
+
+3 4 5 6 7 let's say a number between
+
+
+zero and 10. Okay. If you want 10
+
+
+skills, zero, one, two, three, four,
+
+
+five, six, seven, eight, nine. Uh, it's
+
+
+your task index.
+
+
+And we have kind of like a reasonable
+
+
+maybe intuitive notion of what makes
+
+
+skills good. Like we would like the
+
+
+different skills to go to different
+
+
+places. So if you live in this 2D
+
+
+environment, maybe a good set of skills
+
+
+would look kind of like this. So these
+
+
+are the different skills and each skill
+
+
+goes to a different place.
+
+
+And I think you know if we just forget
+
+
+all the information theoretic stuff
+
+
+logically this kind of makes sense. We
+
+
+want the skills to go to different
+
+
+places. So if we have two skills that
+
+
+are identical that's maybe less useful
+
+
+than we have two skills that are
+
+
+different. And we would like over the
+
+
+set of all the skills available to us
+
+
+we'd like them to cover all the
+
+
+different things that could be done in
+
+
+this environment. So if like all the
+
+
+skills were different but they all went
+
+
+to the right maybe they went right and
+
+
+up right and down right and straight
+
+
+that wouldn't be as good as if they went
+
+
+both right and left. Okay. And you can
+
+
+maybe start to imagine what this has to
+
+
+do with that mutual information
+
+
+equation.
+
+
+So different skills should visit
+
+
+different state space regions and for
+
+
+every state space region there should be
+
+
+some skill that visits it.
+
+
+Okay, so here's how we can do this.
+
+
+We're going to run RL. No big surprise
+
+
+there. This RL class we run RL and we're
+
+
+going to treat this as basically a
+
+
+multitask RL problem. So the uh reward
+
+
+is summed over all the different skills
+
+
+and each skill has its own reward
+
+
+function.
+
+
+But wait uh the whole point was that you
+
+
+don't know what the task is. So we have
+
+
+to like actually make up this reward
+
+
+function ourselves.
+
+
+So what we're going to do is we're going
+
+
+to construct a very peculiar reward that
+
+
+actually evolves over the course of
+
+
+learning. The idea is that the reward
+
+
+for every skill will reward it for going
+
+
+into states that are unlikely for other
+
+
+skills to reach. Essentially, it's like
+
+
+a it's kind of a a competitive thing
+
+
+where every skill is rewarded for going
+
+
+somewhere different than all of its uh
+
+
+peers.
+
+
+Okay, that's the idea.
+
+
+And here's how we can do this.
+
+
+We're going to have a second neural
+
+
+network, a discriminator network that's
+
+
+going to assign a reward
+
+
+by trying to classify a state into which
+
+
+skill visited that state.
+
+
+Okay, so the training set for this P of
+
+
+Z given S is basically all the data from
+
+
+all the skills that consists of the
+
+
+state and the skill that was actually
+
+
+executed that reached that state.
+
+
+And all it's doing is it's a classifier,
+
+
+right? So if we have 10 skills There's a
+
+
+10-way classifier. It looks at the state
+
+
+and predicts which skill you actually
+
+
+ran when you reach that state.
+
+
+Yes.
+
+
+Just the state. Just the state. Yes.
+
+
+You can make this a function of state
+
+
+and action if you'd like. Um, typically
+
+
+when people do this, they don't make it
+
+
+a function of action, but that's kind of
+
+
+a domain specific thing. because in many
+
+
+cases the states are very complicated
+
+
+and the actions are very simple but
+
+
+there's nothing wrong with appending
+
+
+actions to this.
+
+
+Okay, so it's just a 10-way classifier
+
+
+and remember that probabilities sum to
+
+
+one. So if you have a particular state
+
+
+where two skills are equally likely to
+
+
+reach it at most this classifier will
+
+
+assign each of them probability of 50%.
+
+
+But if you have a state where one of the
+
+
+skills where only one skill ever reaches
+
+
+it then the classifier should assign a
+
+
+probability of 100%. So if you if you
+
+
+have that situation where two skills
+
+
+reach the same state, it is to the
+
+
+advantage of those two skills to somehow
+
+
+deintersect and go to different states
+
+
+because then they can each get 100%.
+
+
+Whereas if they keep competing over the
+
+
+same state, then they can each at most
+
+
+get 50/50. So this kind of objective
+
+
+incentivizes all the skills in this set
+
+
+of skills to pick their own little uh
+
+
+thieftum and go there without stepping
+
+
+on each other's toes because then they
+
+
+can each get 100% from this classifier.
+
+
+Okay, so you have your your agent uh
+
+
+every time you run a roll out, you give
+
+
+the agent a skill sampled randomly,
+
+
+sampled uniformly. So if you have 10
+
+
+possible skills, you sample a uniformly
+
+
+uniform random number between uh 0 and
+
+
+nine uh inclusive. You run that skill,
+
+
+you see which states you visit, and you
+
+
+add that to the training set for your
+
+
+discriminator. and your discriminator is
+
+
+just trying to predict which skill
+
+
+actually went into your policy that
+
+
+caused you to produce that state.
+
+
+And we can kind of visualize what this
+
+
+does and I think it's actually pretty
+
+
+natural. Let's say you have just two
+
+
+skills, green and blue. And initially
+
+
+this is what they're doing. Okay, so
+
+
+they're doing something pretty similar.
+
+
+So now the classifier will try to draw
+
+
+some kind of line between them. It'll
+
+
+try to separate the green and the blue,
+
+
+the states visited by green and the
+
+
+states visited by blue. And maybe it'll
+
+
+draw this line. And this line is not a
+
+
+very good uh classifier, right? Because
+
+
+it's very hard to guess for a given
+
+
+state whether it was a green state or a
+
+
+blue state. So now what will happen is
+
+
+if you use this classifier as a reward,
+
+
+the skills will want to be a little
+
+
+further apart and then the classifier
+
+
+will draw a cleaner line and then the
+
+
+skills will be even more apart and then
+
+
+you'll draw an even cleaner line and so
+
+
+on and so on. And in reality, you would
+
+
+do this not with two skills but maybe
+
+
+with like hundreds of skills and then
+
+
+they would go to different places in the
+
+
+environment. Yes.
+
+
+So the question was is it the same as a
+
+
+GAN but uh but you negated the
+
+
+generator's objective. Um interestingly
+
+
+enough this is actually not an
+
+
+adversarial process. Uh if we actually
+
+
+write everything out it turns out to be
+
+
+uh a cooperative game rather than
+
+
+adversarial game. Uh the discriminator
+
+
+and the skills actually cooperate to get
+
+
+uh uh everything to be separable which
+
+
+actually makes it easier.
+
+
+Okay. So, um, if we were to run this on
+
+
+some of the like little simulated
+
+
+environments like some of the benchmark
+
+
+tasks, here are some videos of what this
+
+
+hap what happens. This is a popular RL
+
+
+benchmark called half cheetah. It's a
+
+
+little two-legged thingy. Uh, and if you
+
+
+run this thing, you get some skills.
+
+
+These are this is showing three out of I
+
+
+think 16 skills. and one of them runs
+
+
+forward, the other one runs backward,
+
+
+and then the one in the middle does a
+
+
+flip and then sits on its butt, I guess.
+
+
+I don't know. Uh there's also some
+
+
+skills that you get that are not very
+
+
+interesting. Like sometimes it'll just
+
+
+like strike a particularly unusual pose
+
+
+and just stay there. Uh but the point is
+
+
+that any individual skill here is maybe
+
+
+not that useful, but some are pretty
+
+
+useful. Like the running forward, like
+
+
+that's actually a pretty good
+
+
+initialization if you want to get the
+
+
+thing to actually run forward. Um, here
+
+
+is a a 3D example for a little walking
+
+
+thing. And the different skills kind of
+
+
+walk in different directions or in
+
+
+different patterns. And then here is a
+
+
+uh the mountain car benchmark. It's a
+
+
+small scale task. We're supposed to roll
+
+
+this car up a hill and one of the scales
+
+
+actually rolls it up the hill
+
+
+successfully and the other two roll it
+
+
+in the wrong direction. Yes.
+
+
+Correct. Yeah. So the the reward
+
+
+function doesn't encode anything about
+
+
+completion of the task. It's just
+
+
+diversity of states. And you know that
+
+
+that's potentially problematic in some
+
+
+cases. So in these domains, these
+
+
+domains are pretty simple. There's only
+
+
+so many things you can do. If you had a
+
+
+very complex domain, then maybe many of
+
+
+those skills would be doing really
+
+
+stupid things. Uh they might be like
+
+
+wasting their time. If you have a robot
+
+
+in this room, maybe some of the skills
+
+
+will just like break stuff or fall on
+
+
+the floor in various creative ways. So
+
+
+sometimes in larger domains when people
+
+
+try to apply these ideas they um try to
+
+
+find ways to u limit the quantity with
+
+
+which you're computing mutual
+
+
+information. So instead of doing mutual
+
+
+information with the entire state you
+
+
+could do mutual information with just a
+
+
+subset of the state and that's very easy
+
+
+to do. All you have to do for that is
+
+
+limit the information going into the
+
+
+classifier. So if you have image pixels
+
+
+maybe you don't feed all the pixels into
+
+
+the classifier but you feed some summary
+
+
+statistic. Yes.
+
+
+>> Um so the question was in the mountain
+
+
+car case there's a lot of overlap
+
+
+between the um the states for the
+
+
+different skills. Uh so like what's up
+
+
+with that? Does it still work? Um
+
+
+generally for all of these things there
+
+
+will be a lot of overlap in states
+
+
+between the different skills if for no
+
+
+other reason than the trajectories tend
+
+
+to start in the same place. So
+
+
+really the
+
+
+the rewards that the skills are getting
+
+
+most of the time are not going to be
+
+
+perfectly uh like it's not like log of
+
+
+one. It's going to be some in between
+
+
+value. But even then you can um
+
+
+improve the skills by reducing the
+
+
+degree to which they overlap. So maybe
+
+
+you can't get a state where only your
+
+
+skill ever visits it, but maybe your
+
+
+skill can visit it like 20% more often
+
+
+than the other one. And that's still
+
+
+better.
+
+
+Okay. Now, many of you might have
+
+
+already guessed this, but the objective
+
+
+here is actually exactly the mutual
+
+
+information we had before. And except
+
+
+that it's not the mutual information
+
+
+between states and actions. is the
+
+
+mutual information between skills and
+
+
+states
+
+
+and
+
+
+this is the the de composition of that
+
+
+exactly the same equation as before I've
+
+
+just replaced a with z and the reason
+
+
+that this is uh that this procedure is
+
+
+maximizing this mutual information is
+
+
+the following that the first term
+
+
+this is just the entropy of the skills a
+
+
+priority and this is very very easy to
+
+
+maximize
+
+
+the way that we maximize the entropy of
+
+
+skills is by choosing the skills at
+
+
+random when we run training. So for
+
+
+every episode, we choose the skill from
+
+
+the highest entropy distribution over Z
+
+
+that we can find which is the uniform
+
+
+distribution. So if we have 10 skills,
+
+
+if we just choose one out of those 10 at
+
+
+random, that's exactly what we need to
+
+
+maximize this first term. That's very
+
+
+easy because Z is a is a variable that
+
+
+we picked and we can make it as simple
+
+
+as we want. So really the only thing
+
+
+that you need to maximize this mutual
+
+
+information is to minimize that second
+
+
+entropy and the way you minimize that
+
+
+second entropy is by making Z very
+
+
+predictable from the state and of course
+
+
+that is exactly what that classifier is
+
+
+doing. The classifier tries to predict Z
+
+
+from the state and the skills cooperate
+
+
+with that classifier to visit states
+
+
+from which the Z can be predicted very
+
+
+easily.
+
+
+So um because of that this procedure
+
+
+actually directly maximizes this mutual
+
+
+information quantity. So it is exactly
+
+
+empowerment. It's just not empowerment
+
+
+between actions and states. It's
+
+
+empowerment between skills and states.
+
+
+So that's why I wanted to explain that
+
+
+empowerment idea to you guys. And
+
+
+empowerment based skill discovery is
+
+
+actually a fairly significant kind of
+
+
+research area. And there's a lot of
+
+
+works uh more recent works do a lot
+
+
+better than the kind of original methods
+
+
+in terms of the sorts of ideas that
+
+
+people have explored to make the stuff
+
+
+work better. Um one class of ideas that
+
+
+has been very powerful is to use um a
+
+
+smarter representation for these things.
+
+
+Uh, for example, use representations to
+
+
+have a natural notion of a metric. So
+
+
+that instead of just pushing the skills
+
+
+apart in terms of their probability of
+
+
+visiting a single state, you can push
+
+
+them apart in terms of the distance
+
+
+between the states that they visit. And
+
+
+you can use more metric aware notions of
+
+
+uh distribution similarity than just
+
+
+this mutual mutual information. Yes.
+
+
+Mhm.
+
+
+Yeah. So, this is one of the issues with
+
+
+these kinds of methods. And let me just
+
+
+explain what the issue is for those of
+
+
+you that didn't hear the question. So,
+
+
+let's say that you you live in a in a
+
+
+room like this um and you start in the
+
+
+middle.
+
+
+What you would like if you have, let's
+
+
+say, two skills is maybe you want one of
+
+
+them to go over here and one of them to
+
+
+go over here. And if you have 20 skills,
+
+
+maybe you want them to go here, here,
+
+
+and here, right?
+
+
+But if the environment is sufficiently
+
+
+deterministic, what you could actually
+
+
+get is one of the skills that goes here
+
+
+and stops and the other one that goes
+
+
+here and stops.
+
+
+And maybe this region that they explore
+
+
+is actually a very, very small subset of
+
+
+the entire world. But because they've
+
+
+gotten just far enough apart that they
+
+
+don't overlap anymore, they're just as
+
+
+happy going here as they would be if
+
+
+they had explored the entire room. Now,
+
+
+in principle, if everything works out
+
+
+correctly and you have like a little bit
+
+
+of noise and all that stuff, it's still
+
+
+better for them to be further apart than
+
+
+to be close together. But, uh, in
+
+
+practice, if the amount of randomness in
+
+
+the environment is low enough, then they
+
+
+can be perfectly happy doing this. Uh,
+
+
+and that's that's why a lot of the more
+
+
+advanced methods for doing this, they
+
+
+tend to impose some kind of more
+
+
+geometric notion of distance. Uh one one
+
+
+way you can think about doing this is to
+
+
+take your classifier and heavily
+
+
+regularize it. So um if the classifier
+
+
+is let's say doing logistic regression
+
+
+if you imagine what logistic regression
+
+
+looks like with small weights. So with
+
+
+uh you know logistic regression with
+
+
+high weights might look like this. With
+
+
+small weights it looks like this. And
+
+
+that basically puts a natural metric on
+
+
+it. And there are variety of other
+
+
+tricks too that basically make it so
+
+
+that you incentivize the skills to be
+
+
+further apart in space rather than just
+
+
+non-over overlapping.
+
+
+Well, so the classifier is not
+
+
+predicting um state from Z, it's
+
+
+predicting Z from state. So as long as
+
+
+for the states that the skills do visit,
+
+
+it can predict the skill perfectly, then
+
+
+it's actually happy with that. Like the
+
+
+classifier never gets evaluated at
+
+
+states that uh that the skills didn't
+
+
+visit.
+
+
+Okay. So, uh this is so far we've talked
+
+
+about a fairly abstract notion of skills
+
+
+like these skills they uh yes
+
+
+>> um so you can actually derive all of
+
+
+this for continuous uh skills uh if you
+
+
+want uh and everything will work out the
+
+
+same way. you just need some way to
+
+
+model the distribution over continuous
+
+
+variables.
+
+
+So, so far we talked about this very
+
+
+abstract notion of skills. Uh so the
+
+
+this these like skill variables these
+
+
+Z's they don't really mean anything.
+
+
+They're they're latent variables
+
+
+actually. Uh we can also derive a
+
+
+framework for doing this with kind of
+
+
+much more grounded notions of skills. If
+
+
+we say that skills should themselves
+
+
+correspond to states, specifically goal
+
+
+states. So we would like different
+
+
+skills to be uh basically policies that
+
+
+go to different states.
+
+
+So here's a little tweak. Uh let's train
+
+
+the policy to produce actions
+
+
+conditioned on a state and a goal state.
+
+
+So now the the skill identifier G is
+
+
+itself a state and that's the state
+
+
+where we want this thing to go. And we
+
+
+saw this before. uh in uh part of the
+
+
+imitation learning lecture where we
+
+
+talked about um using goal condition
+
+
+behavioral cloning.
+
+
+Now we're going to do RL. Uh we'll talk
+
+
+a lot more about actually go conditioned
+
+
+RL on Friday, but for now I want to
+
+
+relate it to these uh uh information
+
+
+theoretic ideas. So just like before,
+
+
+we're going to
+
+
+sum over all possible goals, although we
+
+
+have to sample them in this case. And
+
+
+we'll have a reward for each goal. Uh
+
+
+and let's for now derive it in a way
+
+
+that's directly analogous to the skill
+
+
+discovery method that we had in the
+
+
+previous section. In reality, this is
+
+
+not a very widely used method for
+
+
+learning goal condition policy, but
+
+
+we'll start from this and then I'll
+
+
+describe the kind of uh tricks that
+
+
+people use in practice. So, so far we'll
+
+
+derive it in exactly the same way as we
+
+
+did in the skill discovery section
+
+
+because I think that the analogy is
+
+
+maybe a little bit uh elucidating.
+
+
+So, the reward will be the probability
+
+
+that um this goal was commanded given
+
+
+the state that was reached just like in
+
+
+the skill discovery case. So, in the
+
+
+skill discovery case, this is the
+
+
+probability that a particular Z was
+
+
+commanded given the state that was
+
+
+reached. Here, it's the probability that
+
+
+the particular goal was commanded given
+
+
+that state was reached. So just like
+
+
+before uh we pick some skill in this
+
+
+case we pick a goal we give it to our
+
+
+agent we see what it visits and then we
+
+
+train this discriminator to predict the
+
+
+states that get visited when you uh
+
+
+command different goals
+
+
+and this is of course
+
+
+uh exactly the same mutual information
+
+
+because it's basically the same method.
+
+
+Uh
+
+
+the second term is minimized because
+
+
+you're trying to visit states that are
+
+
+very predictable of which goal was
+
+
+commanded. Of course, the best way to
+
+
+make it easy for the classifier to guess
+
+
+which goal was commanded is to reach the
+
+
+commanded goal as quickly as possible
+
+
+because then the classifier can just
+
+
+output uh the state and say that that's
+
+
+that was your goal. So you can make make
+
+
+the things easy for the classifier but
+
+
+by deterministically and quickly
+
+
+reaching the goal state and that would
+
+
+minimize the second mutual information.
+
+
+But you you actually sorry the second
+
+
+entropy but you still have to deal with
+
+
+that first entropy term. And this is
+
+
+less trivial in this case than it was
+
+
+before because in the skill discovery
+
+
+case the Z variables were just like
+
+
+they're like a fiction. We just pick
+
+
+pick them and we can choose them to be
+
+
+like integers between zero and 10 and
+
+
+just sample them uniformly at random.
+
+
+But in this case the G's are actual
+
+
+states and we don't necessarily know
+
+
+which states even exist in the world.
+
+
+Like if you're playing Monttouma's
+
+
+revenge, you might not know what are all
+
+
+the valid like configurations of pixels
+
+
+that correspond to real Montzuma's
+
+
+revenge frames. You can command totally
+
+
+random images like basically random
+
+
+noise, but most of those would not be
+
+
+reachable and they would actually make
+
+
+things harder for the discriminator for
+
+
+the classifier. So the catch with a
+
+
+method like this is that you have to
+
+
+have some way to model P of G and you
+
+
+want to make P of G be as uniform as
+
+
+possible but you wanted to cover valid
+
+
+states. So you can't just make up like
+
+
+invalid states that could never exist in
+
+
+nature. Uh and that's actually a fairly
+
+
+challenging problem but it's mostly a
+
+
+generative modeling problem like it has
+
+
+very little to do with RL is just a
+
+
+problem of like estimating the
+
+
+distribution of valid images or valid
+
+
+states. And fortunately there's a lot of
+
+
+work in machine learning on estimating
+
+
+distributions over valid images. This is
+
+
+what most generative models do. So the
+
+
+point here is that reframed like this
+
+
+it's almost exactly the same as a skill
+
+
+discovery problem before except we would
+
+
+need some kind of generative model to
+
+
+represent P of G.
+
+
+And this is where like interesting stuff
+
+
+happens. Uh there isn't one answer to
+
+
+how to do this. Um I'll describe
+
+
+one kind of example method that does
+
+
+this kind of thing but uh this is
+
+
+generally where there's like room for
+
+
+creativity and kind of some domain
+
+
+specific practical implementations. Um
+
+
+one detail here is that in practice
+
+
+people usually don't use log p of given
+
+
+s as their reward.
+
+
+Uh they use other rewards like just a
+
+
+test for equality. So just like
+
+
+literally output the g that that
+
+
+corresponds to exactly the state or some
+
+
+nearby uh goal. So if the distance is
+
+
+less than some epsilon
+
+
+as a little thought exercise
+
+
+um I wonder if um any of you can uh kind
+
+
+of tell me
+
+
+if we use one of these heristic rewards.
+
+
+Let's make let's say the first ones
+
+
+right? So the uh the reward is one if
+
+
+the state exactly matches the goal and
+
+
+zero otherwise. Does that still have any
+
+
+relationship to this mutual information
+
+
+equation?
+
+
+Any ideas?
+
+
+Yeah. So, um
+
+
+it actually still has a relationship.
+
+
+It's just um the way you can think about
+
+
+this is that that classifier there
+
+
+um it's some kind of function. Okay. Uh
+
+
+if you learn the classifier and that
+
+
+function is a neural network. It might
+
+
+be a a very smart neural network. It
+
+
+might do something very sophisticated.
+
+
+look at the state and try to guess which
+
+
+goal was commanded to reach the state
+
+
+given how imperfect the policy is. It
+
+
+might also end up being a fairly naive
+
+
+neural network. It might just look at
+
+
+the state and say like okay if you if
+
+
+you arrived at this state probably that
+
+
+was your goal like that's maybe a worse
+
+
+classifier especially if you have a
+
+
+highly imperfect policy but it might be
+
+
+kind of okay. So restricting the reward
+
+
+to just be that delta S equals G is
+
+
+almost like saying I'm going to restrict
+
+
+myself to an extremely naive classifier.
+
+
+Now the policy can still change to make
+
+
+this extremely naive classifier be as
+
+
+good as possible. So this still works.
+
+
+You can just think of it as a
+
+
+restriction on the set of functions that
+
+
+you're allowed to consider. It's an
+
+
+extremely aggressive restriction. It's
+
+
+saying that the you're you're only
+
+
+allowed to consider basically identity
+
+
+functions. Uh which is obviously you
+
+
+know there's there's only one identity
+
+
+function. So it's very restricted set.
+
+
+But you can still cast it in this
+
+
+framework. It's just an extremely
+
+
+limited kind of discriminator. So even
+
+
+though in practice you wouldn't actually
+
+
+learn a neural network to be a
+
+
+discriminator for this thing, it still
+
+
+basically fits under the string.
+
+
+Okay. So uh just uh yes
+
+
+uh yeah so the question was in practice
+
+
+like is it actually better to use those
+
+
+things and to learn it? The reason that
+
+
+it's uh in practice usually better to
+
+
+use one of these simpler things is just
+
+
+because it makes the entire optimization
+
+
+more stable. So one of the challenges
+
+
+with uh skill discovery methods that
+
+
+have a learned discriminator is that
+
+
+even though it's a cooperative game
+
+
+rather than adversarial game, you still
+
+
+have these two models that have a very
+
+
+complex uh kind of dynamic between them.
+
+
+Um and because of that it can be a
+
+
+little tricky to tune all the
+
+
+hyperparameters to get these things to
+
+
+optimize stably. So if the reward is
+
+
+fixed rather than learned, it can be
+
+
+easier to set up. In practice, it's
+
+
+actually a lot easier.
+
+
+Okay, so as I mentioned uh in practice,
+
+
+the thing that people actually play
+
+
+around with in implementing these kinds
+
+
+of things is the is the PFG, the
+
+
+generation of goals. And this is one of
+
+
+those places where there isn't like one
+
+
+canonical answer. There's rather a large
+
+
+number of research papers that all do
+
+
+slightly different things. So I'll tell
+
+
+you about one actually fairly old method
+
+
+for this. And the reason I want to tell
+
+
+you about this fairly old method is
+
+
+because it just kind of illustrates a
+
+
+particular point I think fairly nicely.
+
+
+Uh the method is called skew fit. You
+
+
+don't have to worry so much about the
+
+
+name. Uh but the way it works is pretty
+
+
+simple. It maintains a generative model
+
+
+over goals. This can be a VAE for
+
+
+example. So one of these generative
+
+
+models that we learned about but
+
+
+something that allows you to represent
+
+
+PFG and we're going to call PIFG.
+
+
+Um and the way that learning proceeds is
+
+
+you sample a goal from PIFG. You attempt
+
+
+to reach that goal with your current
+
+
+goal condition policy and then you use
+
+
+the data from that rollout to update
+
+
+your policy with your favorite off
+
+
+policy method like soft actor critic or
+
+
+DQN or whatever. And then you use that
+
+
+data to also update PI ofG. And you can
+
+
+update PI ofG with uh by just basically
+
+
+appending all the states you visited to
+
+
+your training set and retraining it as a
+
+
+generative model as a VA and then you
+
+
+repeat the process.
+
+
+Okay, now this has a little bit of a
+
+
+problem.
+
+
+There's a there's uh an issue with this
+
+
+and we can actually do quite a bit
+
+
+better than this kind of naive approach.
+
+
+Any
+
+
+ideas what the problem is or how we
+
+
+could do better?
+
+
+Yeah. So the distribution PFG that
+
+
+you're fitting, you're just fitting it
+
+
+directly to your replay buffer. And
+
+
+imagine that your uh current policy is
+
+
+much better at reaching skills like on
+
+
+the left side of the room than it is at
+
+
+reaching skill at reaching states on the
+
+
+right side of the room. Like when you
+
+
+command a goal on the left, it always
+
+
+goes to the left. when you command a
+
+
+goal to the right, sometimes it just
+
+
+randomly goes to the left anyway. So now
+
+
+the density of states on the left is
+
+
+going to increase. The density of states
+
+
+on the right is going to decrease. And
+
+
+if your PFG is directly fitted to that,
+
+
+now it's just going to make things even
+
+
+worse because now it's going to sample
+
+
+goals on the left. It's like, oh, you're
+
+
+going to the left more often. Let me
+
+
+tell you to go to left even more often.
+
+
+And it will actually exacerbate this
+
+
+kind of bias that you have. So this
+
+
+procedure almost works but the trick
+
+
+that you need and this is actually
+
+
+something that's going to be true for
+
+
+many methods that do some kind of uh
+
+
+generative model over goals is you need
+
+
+to somehow rebalance your distribution
+
+
+to make it more uniform. So you've seen
+
+
+all these states but you've seen some
+
+
+states more often than others. So you
+
+
+would like to rebalance your training
+
+
+set so that you weight all the states
+
+
+to counteract the biases in your data
+
+
+set. And this is not a terribly new idea
+
+
+for us. This is actually very similar to
+
+
+what we've seen before when we talked
+
+
+about exploration bonuses, right?
+
+
+Because those exploration bonuses, they
+
+
+were expressed in terms of the frequency
+
+
+of states, the pseudo counts and so on.
+
+
+So what we would do here is very similar
+
+
+except that instead of using it uh to
+
+
+create an exploration bonus that we add
+
+
+to our reward for a policy, we would use
+
+
+it to rebalance the data set for
+
+
+training the goal generator. Um there
+
+
+are a variety of ways of doing this but
+
+
+basically like you know standard maximum
+
+
+likelihood training would just train the
+
+
+generative model to maximize the log
+
+
+probability of all the states. The thing
+
+
+we want is some kind of weighted maximum
+
+
+likelihood estimator that would weight
+
+
+the states the G's by
+
+
+um some kind of function of their
+
+
+probability uh ideally with a negative
+
+
+exponent. So if you really want to make
+
+
+it uniform you weight them by one over p
+
+
+of g. Okay?
+
+
+Because now you get a uniform
+
+
+distribution under the support of the
+
+
+the things that you visited. Now in
+
+
+reality doing one over p ofg might be
+
+
+too aggressive. So perhaps what you do
+
+
+is one over p of g to the 1/2 or
+
+
+something a little bit a little bit uh
+
+
+softer, right? So the original
+
+
+distribution might be like this. One
+
+
+over p of g would give you this, right?
+
+
+But raising it to the 1/2 might give you
+
+
+like something like that. Okay.
+
+
+Yes.
+
+
+So the question is, doesn't this kind of
+
+
+defeat the point? Like I made a big deal
+
+
+out of how you couldn't just pick random
+
+
+states. Well, the trick is that the
+
+
+support of this thing uh is uh is very
+
+
+tightly constrained. So you only have
+
+
+real images in the training set. So no
+
+
+matter what weight you put on these
+
+
+things, you're still only maximi
+
+
+maximizing the likelihood of real images
+
+
+because images that don't exist would
+
+
+always uh not occur in your training
+
+
+set.
+
+
+So that's why like I drew this box here,
+
+
+but notice that the box has finite
+
+
+extents. So there's all this stuff out
+
+
+here like this is where the garbage is
+
+
+and this would still a probability of
+
+
+zero.
+
+
+Okay, so that's basically the idea. Uh
+
+
+this particular method in this
+
+
+particular paper does it in a particular
+
+
+way using VAEs and all that stuff. But
+
+
+uh there are many other ways to do it.
+
+
+And in fact,
+
+
+what some people actually have done is
+
+
+said, well, maybe you can actually do
+
+
+even better than just uniform over all
+
+
+the things you've seen. Maybe you could
+
+
+say, well, things that I've already
+
+
+visited frequently, I can visit less
+
+
+often. So maybe what I can do is like
+
+
+the opposite of this, like that. Okay?
+
+
+And that's an even more aggressive
+
+
+exploration strategy. That's saying
+
+
+let's selectively propose goals that are
+
+
+in very rare regions of the state space
+
+
+and let's actually intentionally avoid
+
+
+proposing goals in places that I visited
+
+
+a lot. So don't just make it uniform
+
+
+actually go the other extreme and raise
+
+
+up the probability on the frontier and
+
+
+that's a good strategy if you want to
+
+
+rapidly explore a space.
+
+
+So the um this is something that people
+
+
+have done in lots of different papers
+
+
+that perhaps diverge a little bit from
+
+
+the more clean information theoretic
+
+
+interpretation. But just to give you
+
+
+some examples of this, there's a work
+
+
+called uh go explore which basically
+
+
+uses the strategy of selecting a goal on
+
+
+the frontier. So intentionally figure
+
+
+out which states have you seen that are
+
+
+on the edge of the visited region. go
+
+
+there using a goal condition policy and
+
+
+then do some random exploration in that
+
+
+region. Uh there's uh the the other
+
+
+paper that I have cited here by Mr.
+
+
+Edall uh combines this concept with some
+
+
+representation learning ideas where you
+
+
+try to uh represent states in a way that
+
+
+makes them particularly amendable to a
+
+
+goal proposal. So if you're interested
+
+
+in these topics like these are some
+
+
+classic papers you can check out and
+
+
+there's also a lot of uh more recent
+
+
+work on this kind of thing. All right,
+
+
+I'll see you all this Friday for a
+
+
+discussion of hierarchal RL and transfer
+
+
+learning.

@@ -1,0 +1,4474 @@
+All right. Um,
+
+
+let's get started. So, uh, today we're
+
+
+going to finish up our discussion of
+
+
+control as inference and we're going to
+
+
+combine the two things that we had
+
+
+introduced last week. We're going to
+
+
+actually combine variational inference
+
+
+and control as inference and have
+
+
+control as variational inference. And
+
+
+then going from there we'll uh, get
+
+
+started on some of the inverse
+
+
+reinforcement learning where we'll use
+
+
+the same inference framework to solve a
+
+
+different kind of problem where we learn
+
+
+rewards instead of policies.
+
+
+Okay. So, let's uh, briefly recap where
+
+
+we were at, um, last week.
+
+
+So, we talked about how if we want to
+
+
+construct a probabilistic model to
+
+
+describe not perfectly optimal behavior,
+
+
+but kind of near optimal behavior.
+
+
+Something where you don't necessarily
+
+
+have a a or or a monkey perfectly
+
+
+maximize their reward, but you want to
+
+
+model a system that generally makes good
+
+
+decisions, but occasionally makes
+
+
+mistakes, especially when those mistakes
+
+
+are kind of low stakes, then you you can
+
+
+construct this probabilistic model,
+
+
+which has states and actions,
+
+
+and
+
+
+in addition to modeling the probability
+
+
+of state action sequences, this model
+
+
+also adds these additional variables
+
+
+that represent your knowledge of the
+
+
+fact that the
+
+
+monkey has some kind of objective. And
+
+
+we call these optimality variables. They
+
+
+are binary variables
+
+
+uh that we assume are set to true,
+
+
+meaning that the monkey is truly trying
+
+
+to be optimal.
+
+
+Uh and we assign a probability
+
+
+distribution to those variables. We say
+
+
+that the probability of each of those
+
+
+optimality variables is the exponential
+
+
+of the reward, which was kind of like
+
+
+this funny choice that we made. And we
+
+
+saw that if we crunch through the uh
+
+
+inference kind of procedure for this,
+
+
+we'd end up with something where the
+
+
+probability of observing a trajectory is
+
+
+proportional to the probability that a
+
+
+trajectory occurs according to the
+
+
+dynamics, meaning like is it physically
+
+
+possible, times the exponential of the
+
+
+total reward, which was like a fairly
+
+
+natural setup where the most rewarding
+
+
+trajectory is going to be the most
+
+
+likely, and as trajectories become less
+
+
+rewarding, they become exponentially
+
+
+less likely, which you can think of as
+
+
+roughly modeling this idea that small
+
+
+mistakes are kind of okay, like the
+
+
+monkey might do things that involve
+
+
+small mistakes, but very big mistakes
+
+
+are very unlikely to be made, which kind
+
+
+of makes sense.
+
+
+And then starting from this
+
+
+probabilistic model, we worked out this
+
+
+kind of backward message equation, which
+
+
+in log space has
+
+
+kind of an interesting form that
+
+
+resembles a little bit what we saw with
+
+
+value iteration or
+
+
+uh Q-value iteration, where you have
+
+
+this kind of funny
+
+
+Bellman backup-like looking thing for Q
+
+
+and a soft max for V.
+
+
+We also saw that
+
+
+we can recover the policy as the ratio
+
+
+of the backward messages, the state
+
+
+action backward message, and the state
+
+
+backward message, which works out to be
+
+
+the exponential of Q minus V, which is
+
+
+the exponential of the advantage. And
+
+
+again, that's kind of like a lot of
+
+
+math, but leading to a a somewhat
+
+
+natural conclusion that says that high
+
+
+advantage actions are the most likely,
+
+
+and then sub-optimal actions become
+
+
+exponentially less likely as they become
+
+
+less advantageous.
+
+
+So, uh as a summary from last time, we
+
+
+had this probabilistic graphical model
+
+
+for optimal control. Uh
+
+
+the procedure for figuring out the
+
+
+policy in this model was essentially an
+
+
+inference procedure, similar to what
+
+
+somebody might do for a hidden Markov
+
+
+model or an extended Kalman filter, and
+
+
+mathematically it ended up looking kind
+
+
+of similar to dynamic programming or
+
+
+value iteration, but with a few small
+
+
+differences.
+
+
+Okay. So,
+
+
+from Wednesday,
+
+
+one of the main quirks that we ended up
+
+
+with, where we kind of didn't have a
+
+
+good explanation for it, is the fact
+
+
+that the Q update in this recursion is
+
+
+not the expectation over the next time
+
+
+step, but the log of the expectation of
+
+
+the exponentials. And this is actually
+
+
+like a very weird thing. Um intuitively,
+
+
+what this means is that even though the
+
+
+next time step is a random variable, the
+
+
+Q value that we're going to use is going
+
+
+to be dominated by the largest uh
+
+
+outcome.
+
+
+And like, here's an example that just
+
+
+kind of makes it perhaps clearer just
+
+
+how weird this is. Let's say that my
+
+
+action is to buy a lottery ticket.
+
+
+And if I buy that lottery ticket, I have
+
+
+a very small chance to get a really,
+
+
+really big reward. And a very large
+
+
+chance of getting a very small reward.
+
+
+If I take the expectation over the next
+
+
+time step, the expected value is going
+
+
+to be very low, because almost certainly
+
+
+I will not win the lottery. But if I
+
+
+take this log of the expectation of the
+
+
+exponentials, well, the exponential of
+
+
+like winning a
+
+
+a billion dollars is some like enormous
+
+
+number.
+
+
+So, the expectation of the exponentials
+
+
+is entirely dominated by that big
+
+
+reward. And when I take the log of that,
+
+
+I get back something that looks like the
+
+
+winning the winning prize. And that's of
+
+
+course pretty ridiculous, like uh okay,
+
+
+maybe you might say, okay, people are
+
+
+not particularly rational, so maybe
+
+
+people will buy the lottery ticket
+
+
+because their their expect their thought
+
+
+about the outcome is dominated by that
+
+
+really big prize, but it's probably not
+
+
+a good model of rational
+
+
+decision-making. So, we actually don't
+
+
+like this log of the expectation of the
+
+
+exponentials. Basically, it leads to
+
+
+optimistic behavior.
+
+
+And it's maybe a good way to model like
+
+
+a very optimistic monkey, but it's not a
+
+
+good way to model an a near-rational
+
+
+monkey. So, we don't like this thing,
+
+
+and we would like to change it.
+
+
+So, what I'm going to talk about today
+
+
+is how variational inference can come to
+
+
+the rescue and actually allow us to
+
+
+derive a version of this control as
+
+
+inference framework without this bad
+
+
+optimality thingy.
+
+
+Okay. So,
+
+
+this is the problem. The problem is that
+
+
+if we have stochastic transitions like
+
+
+buying a lottery ticket, then our backup
+
+
+is dominated by the best outcome, which
+
+
+is optimistic. And optimistic is
+
+
+generally not a good idea. It might be a
+
+
+good idea if you want to explore, or if
+
+
+you want to like try to try out new
+
+
+things, and you know, maybe optimistic
+
+
+people explore more effectively, they're
+
+
+more willing to go and try new
+
+
+restaurants in the hopes that it'll be a
+
+
+better restaurant than the last one they
+
+
+went to, but if you want good rational
+
+
+behavior, and you don't want to buy
+
+
+lottery tickets, then you do not want
+
+
+this thing.
+
+
+So, let's first ask, why does this
+
+
+happen? Like we we didn't make any math
+
+
+mistake, we went through a pretty
+
+
+reasonable probabilistic inference
+
+
+derivation, and we got this kind of
+
+
+seemingly irrational outcome.
+
+
+Well,
+
+
+the issue really has to do with the
+
+
+question that we're asking. So, when
+
+
+you're doing probabilistic inference,
+
+
+probabilistic inference is about
+
+
+answering a question. Like, what is the
+
+
+probability of Y given X? Or in this
+
+
+case, what is the probability of a
+
+
+sequence of states and actions given
+
+
+that you have a near optimal monkey.
+
+
+Um so,
+
+
+if you want the policy, you essentially
+
+
+take this distribution, you marginalize
+
+
+out the other time steps, and you
+
+
+condition on the state, and that's
+
+
+another inference problem. What's the
+
+
+probability of the monkey taking action
+
+
+AT if it finds itself in state ST and it
+
+
+is being uh
+
+
+uh an optimal monkey.
+
+
+But, this it is being an optimal monkey
+
+
+statement is a little bit loaded.
+
+
+What it's really saying is, given that
+
+
+you obtained high reward,
+
+
+given that you obtained high reward in
+
+
+hindsight, right? The The O's are the
+
+
+evidence. We know that you obtained high
+
+
+reward. Given that you obtained high
+
+
+reward, what was your action
+
+
+probability?
+
+
+This is That's That's the actual
+
+
+question we're asking.
+
+
+Given that you obtained high reward,
+
+
+because that's what O represents. O
+
+
+represents that you obtained high
+
+
+reward. The probability of OT
+
+
+equals true is the exponential of the
+
+
+reward.
+
+
+So, given that you obtained high reward,
+
+
+what was your action probability? That's
+
+
+a pretty reasonable question to ask.
+
+
+If you got high reward, what was your
+
+
+action?
+
+
+But,
+
+
+when you're doing inference, you could
+
+
+ask another question. What's the
+
+
+probability of ST + 1 given ST AT and
+
+
+all of the O's?
+
+
+That's the question. Given that you
+
+
+obtained high reward, what was your
+
+
+transition probability?
+
+
+And this is now a very problematic
+
+
+question.
+
+
+Going back to the lottery example, let's
+
+
+say I bought a lottery ticket, and you
+
+
+see me like today I'm I'm going You see
+
+
+me going and buying the lottery ticket,
+
+
+and then tomorrow I come in, and I've
+
+
+got like my gold chain, I'm driving my
+
+
+Ferrari. Like, okay, and then I'm going
+
+
+to ask you, what was my transition
+
+
+probability?
+
+
+Well,
+
+
+seeing all the bling, you're going to
+
+
+probably say like,
+
+
+um, yeah, probably that that was a
+
+
+winning lottery ticket.
+
+
+I do not have control over what whether
+
+
+that lottery ticket wins or not.
+
+
+The transition probability determines
+
+
+that. But if you see me come in tomorrow
+
+
+with, uh,
+
+
+you know, a lot of expensive stuff,
+
+
+your posterior belief over that PST plus
+
+
+one given SDAT
+
+
+is going to have higher probability on
+
+
+that being a winning lottery ticket,
+
+
+even though that is not under my
+
+
+control.
+
+
+So, this is the difference between
+
+
+asking the this question in hindsight,
+
+
+given that you obtain high reward, what
+
+
+was your transition probability, versus
+
+
+planning, given that you would like to
+
+
+get high reward.
+
+
+So, of course, if I want to get high
+
+
+reward, buying the lottery ticket is a
+
+
+bad idea. But in hindsight, if you know
+
+
+that I got high reward,
+
+
+your posterior over my transition
+
+
+probability is different.
+
+
+And this is bad because this is kind of
+
+
+the wrong question to ask.
+
+
+If you're if you're selecting the action
+
+
+now to get high reward in the future,
+
+
+you should not be asking, given that I
+
+
+obtained high reward, what was, uh, my,
+
+
+uh, my action or my transition
+
+
+probability.
+
+
+So, we need to somehow change how we're
+
+
+doing inference so that it it's really
+
+
+answering the right question.
+
+
+Okay, this is a little bit of a subtle
+
+
+point, but I think this it's very
+
+
+important to understand this to
+
+
+understand the distinction between
+
+
+probabilistic inference,
+
+
+which is really kind of a hindsight
+
+
+process, like given I saw this evidence,
+
+
+what happened, versus control, which is
+
+
+a foresight process, given that I would
+
+
+like something to happen, what should I
+
+
+do?
+
+
+Any questions here?
+
+
+Yes.
+
+
+Right. Yeah, so so your your evidence,
+
+
+what you assume you know in this kind of
+
+
+uh
+
+
+inference problem is that
+
+
+the monkey is optimal. Now, that
+
+
+statement is a little bit loaded. What
+
+
+it technically means is
+
+
+the monkey got high reward.
+
+
+And it could have gotten high reward
+
+
+because it took the right actions, or it
+
+
+could have gotten high reward because it
+
+
+got lucky.
+
+
+And the it got lucky is what leads to
+
+
+this kind of optimistic interpretation.
+
+
+And that's what we would like to fix.
+
+
+Okay. So, now we're going to have like a
+
+
+slightly mind-bending transformation of
+
+
+this.
+
+
+We want this thing. We want uh
+
+
+to get the right action probabilities,
+
+
+but we don't want this thing. So, we
+
+
+kind of want to modify the inference
+
+
+problem so that we would like to get the
+
+
+posterior over actions given that the
+
+
+monkey got high reward, but sort of like
+
+
+force it to not change the transition
+
+
+probabilities as it does it.
+
+
+So, we need to kind of change the
+
+
+problem a little bit.
+
+
+So, given that you obtain high reward,
+
+
+what was your action probability given
+
+
+that your transition probability did not
+
+
+change?
+
+
+Is that's like a bit weird.
+
+
+So, here's a question.
+
+
+Can we find another distribution over
+
+
+states and actions that is close to the
+
+
+posterior that we want
+
+
+but where the dynamics, the transition
+
+
+probabilities
+
+
+uh do not change, where they have the
+
+
+same transition probabilities that had
+
+
+before?
+
+
+Okay?
+
+
+So, it's kind of it's kind of a funny
+
+
+statement. We we would like to find a
+
+
+new distribution over states and actions
+
+
+that is close to the posterior
+
+
+given optimality, but where the dynamics
+
+
+are not affected by our knowledge that
+
+
+we're getting high reward.
+
+
+Okay?
+
+
+So, we've seen this kind of thing before
+
+
+because in variational inference
+
+
+we're actually doing exactly this. In
+
+
+variational inference, we pick another
+
+
+class of distributions that represents
+
+
+our posterior, but we can choose that
+
+
+class of distributions to be anything we
+
+
+want. So, in variational inference,
+
+
+essentially, we are selecting a class of
+
+
+probability distributions, and within
+
+
+that class, we will find the
+
+
+distribution closest to our posterior.
+
+
+And before, the reason we did this was
+
+
+just out of efficiency, because we
+
+
+wanted to select Q to be a
+
+
+tractable class of distributions, like a
+
+
+Gaussian, but now we're actually going
+
+
+to do it because it will allow us to
+
+
+solve a problem that is closer to what
+
+
+we really want without having this
+
+
+optimism issue. So, this is like kind of
+
+
+weird. Like, if you if you tell like a
+
+
+statistician about this, they'll be
+
+
+rather upset by this, because we have
+
+
+our original inference problem, and
+
+
+we're like torturing it in various ways
+
+
+to get rid of this optimism issue. So,
+
+
+it's like it's a little bit not kosher.
+
+
+But, it actually is is going to work.
+
+
+So,
+
+
+in variational inference, we have our
+
+
+observed variables and our latent
+
+
+variables. So, we called them X and Z
+
+
+before. So, our observed variables now
+
+
+are going to be our optimality
+
+
+variables. We know that we're going to
+
+
+get high reward.
+
+
+And our latent variables, the ones that
+
+
+we don't know, that's going to be the
+
+
+states and the actions.
+
+
+All the states and all the actions.
+
+
+Those are the Zs.
+
+
+Okay?
+
+
+So, of course, in variational inference,
+
+
+you're finding an approximate posterior
+
+
+Q of Z that approximates the actual
+
+
+posterior P of Z given X.
+
+
+And now Z is states and actions, X is
+
+
+all the Os. So, what we're trying to
+
+
+find is Q of S and A
+
+
+to approximate P of S and A given O.
+
+
+Okay?
+
+
+So, let's try variational inference.
+
+
+Okay.
+
+
+So,
+
+
+I am going to make kind of a funny
+
+
+choice for Q.
+
+
+And
+
+
+it's a little bit again, a little bit on
+
+
+unusual but let's look at this equation
+
+
+carefully. This is a choice I'm going to
+
+
+make.
+
+
+Uh I haven't justified this choice yet.
+
+
+And you will see that after I make this
+
+
+choice and I crunch through all the
+
+
+math, something quite elegant is going
+
+
+to pop out. So for now, you don't have
+
+
+any reason to believe me that this is a
+
+
+good choice. I just want to explain and
+
+
+then we'll see why it's good later. I'm
+
+
+going to choose Q to be the product of
+
+
+the true initial state distribution
+
+
+times the the the product over all the
+
+
+time steps of the true transition
+
+
+probability and some arbitrary
+
+
+distribution over actions.
+
+
+Which I which I call Q of AT given ST.
+
+
+So this is kind of a weird choice
+
+
+because my approximate posterior Q
+
+
+actually has terms in it that come from
+
+
+the true graphical model. It It has the
+
+
+P terms in there.
+
+
+This is a very unusual thing to do in
+
+
+variational inference but there's
+
+
+nothing incorrect about it. Like you
+
+
+know, these P's they're just they're
+
+
+just probability distributions. I can
+
+
+stick any probability distribution in
+
+
+there that I want. Yes.
+
+
+>> What is it that's unusual about this?
+
+
+>> What's unusual about this is that
+
+
+usually if you're doing variational
+
+
+inference, you would like to choose Q to
+
+
+be a very simple distribution because
+
+
+you'd like to be able to optimize over Q
+
+
+efficiently. And we have no reason to
+
+
+believe that P of S1 or P of ST + 1
+
+
+given ST AT are simple distributions. In
+
+
+fact, typically we don't even know what
+
+
+they are.
+
+
+Okay. So the same dynamics and the same
+
+
+initial state as P and the only new
+
+
+thing in Q is the action distribution.
+
+
+Okay? So if I were to draw this
+
+
+graphically,
+
+
+this is the original model that we saw
+
+
+before. So it has initial state,
+
+
+transition, and optimality.
+
+
+And this is Q. So Q has initial state,
+
+
+transition, and policy.
+
+
+Okay?
+
+
+And we would like to get Q to be as
+
+
+close as possible to the posterior and
+
+
+P.
+
+
+Okay? So, if you want to turn this into
+
+
+the variational inference notation, in
+
+
+variational inference X
+
+
+uh X is the observed thing, Z is the
+
+
+latent thing. So,
+
+
+the P graph that that that's P of Z
+
+
+given X, and the Q graph that's Q of Z.
+
+
+Okay.
+
+
+Any questions about this?
+
+
+Okay.
+
+
+So, now let's just write out our
+
+
+variational lower bound. At at this
+
+
+point this is going to be like fairly
+
+
+mechanical algebra. Uh there's going to
+
+
+be a lot of it, so lots of big
+
+
+equations, but they're not particularly
+
+
+glamorous equations. This is basically
+
+
+just straight-up substitution to what we
+
+
+saw before. So, this is my variational
+
+
+lower bound from before.
+
+
+And the second term that's the entropy.
+
+
+And as a reminder, this is the X, this
+
+
+is the Z. So, let's just like start
+
+
+plugging it in. So, this is this was my
+
+
+choice of Q.
+
+
+And plugging it in,
+
+
+log probability of all of my optimality
+
+
+variables is greater than or equal to
+
+
+the expectation under the distribution
+
+
+over states and actions coming from Q
+
+
+of
+
+
+I'm just going to take the log of of
+
+
+that Q, log of P of S1 plus the sum over
+
+
+all the time steps of log of the
+
+
+transition probabilities. Um
+
+
+sorry, this is the this is the
+
+
+probability under the original model.
+
+
+So, this is the log P. Uh so, that's
+
+
+initial state, transition, and
+
+
+optimality. And now I have minus log Q.
+
+
+So, minus log Q is minus log P of S1,
+
+
+minus log P of the transition
+
+
+probabilities, that's the yellow thing,
+
+
+and then minus log Q of AT given ST.
+
+
+Okay? So, I've just substituted in my
+
+
+definition for
+
+
+uh
+
+
+P of X {comma} Z and Q of Z.
+
+
+Yes.
+
+
+Oh, yes. Uh sorry.
+
+
+The the the the sum over the transition
+
+
+probabilities, that should go up to
+
+
+capital T minus one because there's
+
+
+there's no this goes off the end.
+
+
+Okay, so now something that you will
+
+
+will have noticed is that because I
+
+
+chose my Q to contain a bunch of terms
+
+
+that are also in P
+
+
+and because my bound has log P of X
+
+
+comma Z minus log Q of Z, a lot of these
+
+
+terms are actually duplicates of each
+
+
+other.
+
+
+So I have a plus log P of S1 and minus
+
+
+log P of S1, so those cancel and I have
+
+
+the dynamics both plus and minus and
+
+
+those cancel. So because of that careful
+
+
+choice of Q, I actually end up with a
+
+
+lot of the terms inside the bound
+
+
+canceling each other out.
+
+
+And my bound then becomes the expected
+
+
+value over all the states and actions in
+
+
+Q of the sum of the log probabilities of
+
+
+the optimality variables and those are
+
+
+just the rewards minus
+
+
+the log Qs.
+
+
+And this was intentional, like this is
+
+
+why Q was chosen this way so this
+
+
+cancellation would happen.
+
+
+And of course the
+
+
+log Q A given S, that's the entropy.
+
+
+So if I
+
+
+take the sum outside the expectation, I
+
+
+just get the sum over all the time steps
+
+
+of the expected value under Q of the
+
+
+reward at that time step plus the
+
+
+entropy.
+
+
+And this now is starting to look an
+
+
+awful lot like the regular reinforcement
+
+
+learning objective we've seen before.
+
+
+We're maximizing the reward in
+
+
+expectation under Q and we're also
+
+
+maximizing the action entropy. And
+
+
+notice that the only thing in Q that is
+
+
+not fixed is the distribution over
+
+
+actions Q of A T given S T, which is the
+
+
+policy.
+
+
+So if I want to maximize this thing, the
+
+
+only thing I get to change is the
+
+
+policy.
+
+
+So if if it were not for that entropy
+
+
+term, this would be exactly 100% the
+
+
+original policy gradient objective.
+
+
+And with the entropy term, it becomes
+
+
+the policy gradient objective with
+
+
+entropy.
+
+
+So just by making that little choice, by
+
+
+by choosing Q to be this funny
+
+
+distribution, and plugging it into the
+
+
+regular variational lower bound, I get
+
+
+back my RL objective with an addition of
+
+
+this entropy term.
+
+
+Any questions about this?
+
+
+Yeah.
+
+
+Q of AT given ST is just some
+
+
+distribution over actions given state.
+
+
+It could be anything. That's the thing
+
+
+that I'm going to want to optimize
+
+
+when I optimize my variational lower
+
+
+bound.
+
+
+Um
+
+
+so, we're taking the expectation under
+
+
+the trajectory distribution given by
+
+
+that uh
+
+
+the one that says like let Q blah blah
+
+
+blah equal whatever. That's an entire
+
+
+trajectory distribution, but it's
+
+
+determined by three types of terms. The
+
+
+initial state distribution, the
+
+
+transition probabilities, and the
+
+
+policy. And we don't get to change the
+
+
+initial state distribution or the
+
+
+transition probabilities. They're fixed
+
+
+by nature. So, if we want to optimize
+
+
+with respect to Q, all we're really
+
+
+changing is the action distribution.
+
+
+No, they they are they are different
+
+
+distributions.
+
+
+So, Q uh the the distribution over
+
+
+trajectories is just like in regular RL.
+
+
+Like you have a policy, and you have the
+
+
+policy's trajectory distribution.
+
+
+Q of AT given ST is the policy, and Q of
+
+
+S1 through T, {comma} A1 through T is
+
+
+the induced trajectory distribution.
+
+
+Good question.
+
+
+Okay. So,
+
+
+now if we want to optimize this thing,
+
+
+uh how do we do it?
+
+
+Well,
+
+
+the spoiler is that if you really wanted
+
+
+to make this easy for yourself, you can
+
+
+literally just use policy gradient. I'm
+
+
+going to tell you some other things as
+
+
+well,
+
+
+kind of for entertainment purposes and
+
+
+to connect it to inference better, but
+
+
+really the spoiler is at this point you
+
+
+could essentially be done. Like you
+
+
+could literally just plug in policy
+
+
+gradient for this.
+
+
+Entropy has a closed-form equation. You
+
+
+can differentiate it. It's like
+
+
+basically it's done at this point.
+
+
+But if you want to kind of still turn
+
+
+the crank a little bit and see how it
+
+
+relates to all this inference stuff, you
+
+
+can do that. You could for example
+
+
+derive a dynamic programming procedure
+
+
+for doing this. So,
+
+
+we've got our our our bound. That's
+
+
+that's just the stuff from the previous
+
+
+slide. And we could do a recursive
+
+
+procedure just like the one that we used
+
+
+to derive the the backward messages. So,
+
+
+we start at the end with the last time
+
+
+step.
+
+
+So, if we just consider all the terms in
+
+
+that expectation that depend on the last
+
+
+time step on A capital T and S capital
+
+
+T, well, that's just the expectation
+
+
+over the last state
+
+
+of the expectation of the last reward
+
+
+plus the entropy.
+
+
+And you could equivalently write it like
+
+
+this.
+
+
+So, whenever you see this is like a
+
+
+little information theory trick.
+
+
+Whenever you you're maximizing
+
+
+over some distribution
+
+
+uh of the expected value of some
+
+
+function under that distribution plus
+
+
+its entropy, the solution always has
+
+
+actually a very simple form. The
+
+
+solution is always the exponential of
+
+
+that function.
+
+
+Uh if you want to derive this at home,
+
+
+you can just take the the gradient of
+
+
+this thing, set the gradient to zero,
+
+
+and work through the algebra, and it's
+
+
+actually pretty straightforward.
+
+
+Uh it's a kind of a kind of a good thing
+
+
+to remember. Like whenever you see uh
+
+
+max over P of expectation under P of f
+
+
+of x plus the entropy of P, the solution
+
+
+is always e to the f.
+
+
+So, in this case it's e to the r.
+
+
+Uh
+
+
+so, that's kind of nice. Uh
+
+
+uh if you want to write out the the pro-
+
+
+proportionality constant, that's what it
+
+
+would be. You just divide by the
+
+
+integral over all actions of e to the r.
+
+
+And of course, since this is the last
+
+
+time step, Q is R because there's no
+
+
+next time step. So, Q S capital T A
+
+
+capital T is just R.
+
+
+Which means that this is also exactly e
+
+
+to the Q minus V or e to the advantage
+
+
+at the last time step.
+
+
+This is not a particularly insightful
+
+
+statement because obviously Q at the end
+
+
+is just R.
+
+
+So then we're going to write out V as
+
+
+the log of the that denominator and
+
+
+that's exactly the equation we had
+
+
+before.
+
+
+So,
+
+
+now we have uh if we were to like plug
+
+
+in
+
+
+this uh definition for Q and again I'm I
+
+
+won't work this out. This
+
+
+takes a little bit of algebra that you
+
+
+can do at home, but uh if you were to
+
+
+plug this in, then you get the objective
+
+
+at at the last time step is just the
+
+
+expectation of V.
+
+
+And now we'll we'll we'll do the
+
+
+recursive case. We'll go one step back
+
+
+plugging in this V and work out what
+
+
+happens.
+
+
+So, if we go one step back uh or in
+
+
+general some arbitrary step,
+
+
+then at at an arbitrary step little t,
+
+
+you get the expectation over the states
+
+
+at little t of the expectation over the
+
+
+actions of the reward plus the
+
+
+expectation of the next value.
+
+
+So, that that's just the recursive case
+
+
+plus the entropy.
+
+
+And
+
+
+now it all the same stuff happens. So,
+
+
+now we can define Q without this nasty
+
+
+log of the expectation of the
+
+
+exponential. We just we define Q in the
+
+
+conventional way as the current reward
+
+
+plus the expectation of the next value.
+
+
+So, that's a regular Bellman backup.
+
+
+Um
+
+
+and
+
+
+now I'm going to just plug that in
+
+
+there. So,
+
+
+I I I just literally define Q like this.
+
+
+So, I get this equation.
+
+
+And then
+
+
+by the definition of entropy it's just Q
+
+
+minus log Q. And again the exactly the
+
+
+same thing happens. Like we you have the
+
+
+expectation of some function plus the
+
+
+entropy of the of the distribution. So,
+
+
+the solution is going to be e to the Q.
+
+
+And again, if I write out the
+
+
+proportionality constant, that's the log
+
+
+of the integral over all the actions of
+
+
+Q. So, my distribution is exponential of
+
+
+Q - V or the exponential of the
+
+
+advantage.
+
+
+Just like before,
+
+
+and in fact, the only thing that
+
+
+actually end up changing is that instead
+
+
+of that optimistic Bellman backup, now
+
+
+have a regular Bellman backup.
+
+
+So, if I were to actually write out the
+
+
+resulting backward pass, very similar to
+
+
+before, but now the Q backup is actually
+
+
+what I would like it to be. It's It's
+
+
+not optimistic anymore. It's
+
+
+using the expected value under the true
+
+
+dynamics. And the V is still this soft
+
+
+max.
+
+
+So, now this is looking much more like a
+
+
+regular value iteration with the only
+
+
+difference being that the hard max is
+
+
+replaced by a soft max, which accounts
+
+
+for the fact that my policy is no longer
+
+
+going to be deterministic. It's no
+
+
+longer going to always take only the
+
+
+best action. It'll actually take a
+
+
+distribution over actions
+
+
+with the best action being the most
+
+
+likely and the suboptimal actions having
+
+
+their probability fall off exponentially
+
+
+as their value decreases.
+
+
+So, going from regular value iteration
+
+
+to soft value iteration.
+
+
+But again, this is The reason that I I
+
+
+talked about all this stuff is just to
+
+
+connect this back to the inference.
+
+
+Really, the important takeaway here is
+
+
+that objective where we're maximizing
+
+
+the sum of rewards plus the entropy. And
+
+
+you don't have to use dynamic
+
+
+programming for you can just literally
+
+
+just do policy gradient.
+
+
+So, just to wrap up the section,
+
+
+we're doing variational inference where
+
+
+our choice of variational posterior has
+
+
+the same initial state distribution and
+
+
+the same transition probability as the
+
+
+original model,
+
+
+but it has a learned action
+
+
+distribution.
+
+
+And we get a soft max for the V and we
+
+
+get a regular Bellman backup for the Q.
+
+
+Uh for more details, there you can see
+
+
+this uh kind of survey tutorial paper.
+
+
+There are a few variants of this that
+
+
+people use. You can add a discount in
+
+
+there. The discount has this
+
+
+interpretation as having a 1 minus gamma
+
+
+probability of transitioning into an
+
+
+absorbing state, a a death state, as we
+
+
+discussed before.
+
+
+You can also add a temperature. So, if
+
+
+you want to control how soft this is,
+
+
+you can add a 1 minus 1 over alpha in
+
+
+front of Q. As alpha goes to zero, the
+
+
+soft max approaches a hard max. So, you
+
+
+can think of regular value iteration as
+
+
+a limiting case of this method with a
+
+
+temperature that goes to zero.
+
+
+So, that's kind of cool. That means it's
+
+
+actually strictly more general than
+
+
+regular hard optimality.
+
+
+Okay. So, this is kind of the theory.
+
+
+And then after this, I'm going to tell
+
+
+you about some actual algorithms based
+
+
+on this framework. So, before we do
+
+
+that, any questions about this?
+
+
+Yes.
+
+
+Yeah, this is a good question. Why like
+
+
+why why do we need this? Um
+
+
+it it's a very subtle question. So, um
+
+
+there are some simple and slightly
+
+
+misleading answers and some very
+
+
+complicated but maybe less misleading
+
+
+answers. So, the complicated and less
+
+
+misleading answer is that
+
+
+there is a
+
+
+close relationship between this kind of
+
+
+approach to control and robust control.
+
+
+Uh why? Well, intuitively
+
+
+if you want to find a policy that
+
+
+maximizes reward and has high entropy,
+
+
+what you're trying to do is uh find a
+
+
+policy that is kind of as random as
+
+
+possible while still doing the task.
+
+
+Which is another way of saying it does
+
+
+the task in as many ways as possible.
+
+
+So, if I like if I if I'm trying to exit
+
+
+this room and I know how to go through
+
+
+the left exit and the right exit, now if
+
+
+one of the exits is blocked, I still
+
+
+have a way to do the task. So,
+
+
+uh and this statement can actually be
+
+
+made precise. You can actually show that
+
+
+this kind of approach to uh optimal
+
+
+control is more robust to poorly
+
+
+specified to incorrectly specified uh
+
+
+MDPs.
+
+
+The slightly more misleading, but maybe
+
+
+easier to understand explanation is that
+
+
+you get better exploration from policies
+
+
+with more randomness. The reason I think
+
+
+this is a little misleading is there are
+
+
+many better ways to get exploration.
+
+
+Uh and then of course the you know, the
+
+
+other reason is that
+
+
+in your homework you're implementing
+
+
+soft actor critic, which is based on
+
+
+this framework, and soft actor critic
+
+
+works quite well. So the the the more
+
+
+practitioner answer is like, well, it
+
+
+sometimes leads to good results.
+
+
+Okay.
+
+
+So let's talk about some actual
+
+
+algorithms based on this.
+
+
+So one of the things you could do is you
+
+
+could implement Q-learning with soft
+
+
+optimality.
+
+
+And this is actually like
+
+
+fairly straightforward. So standard
+
+
+Q-learning
+
+
+uh
+
+
+uses the max over Q over the actions as
+
+
+the target value.
+
+
+You don't actually represent V in in a
+
+
+computer. You this just kind of just to
+
+
+write it out. So in reality you just
+
+
+directly plug that max into your target
+
+
+value. That's Q-learning.
+
+
+In soft Q-learning, it's exactly the
+
+
+same except instead of taking a max over
+
+
+actions, you take a soft max.
+
+
+So if you have a discrete set of
+
+
+actions, you just exponentiate all their
+
+
+values, sum together the exponentials,
+
+
+and take the log. If you have continuous
+
+
+actions, then you have to take an
+
+
+integral. So it's like it's basically a
+
+
+one-line change.
+
+
+It's very easy to implement.
+
+
+Um this is a not a very popular
+
+
+algorithm because for small action
+
+
+spaces hard max works just fine, but if
+
+
+you would like to do this you can, and
+
+
+it's very easy. Just change the hard max
+
+
+to soft max, and you basically get
+
+
+uh a soft Q-learning algorithm.
+
+
+You can also do policy grading with soft
+
+
+optimality.
+
+
+So
+
+
+recall that this is our bound.
+
+
+And the policy gradient objective
+
+
+looks very very similar. So I've
+
+
+intentionally written the policy
+
+
+gradient objective uh
+
+
+with the sum taken out of the
+
+
+expectation. So, all we have to do
+
+
+is just add the entropy term to the
+
+
+policy gradient.
+
+
+And that gets us a valid way of
+
+
+uh finding the soft optimal policy. And
+
+
+it's actually very, very common to add
+
+
+an entropy term to policy gradient.
+
+
+Um
+
+
+entropy has a closed-form expression for
+
+
+most common policy classes. So, if you
+
+
+have a Gaussian policy, it's just a
+
+
+function of the covariance matrix. If
+
+
+you have a discrete action softmax
+
+
+policy, then you can directly write out
+
+
+the the entropy. So, it's very easy to
+
+
+add this term. Uh and it's actually very
+
+
+common to do this for policy gradient
+
+
+because one of the problems we often
+
+
+have with policy gradient is premature
+
+
+collapse of the entropy, meaning that
+
+
+the policy becomes deterministic very
+
+
+quickly before it has a chance to
+
+
+explore and cover the whole space. So,
+
+
+it is very common to add an entropy term
+
+
+to your policy gradient objective. And
+
+
+that keeps the policy from collapsing.
+
+
+And often times you would put a little
+
+
+multiplier on it. And perhaps you would
+
+
+even reduce this multiplier over the
+
+
+course of optimization so that at the
+
+
+end you still get a deterministic
+
+
+policy, but during training it maintains
+
+
+a high entropy. Yes.
+
+
+>> Wait, so
+
+
+in what situations would we not want to
+
+
+put in the entropy term?
+
+
+>> Yeah, um good question. Uh one of the
+
+
+one of the reasons that you might not
+
+
+want to put it is because you save
+
+
+yourself like one code. And if you don't
+
+
+need it and things are still working,
+
+
+you could omit it. Um the other reason
+
+
+you might not want to include it is that
+
+
+you get uh one more hyperparameter to to
+
+
+deal with, which is you probably want
+
+
+like a multiplier on this thing. Um so,
+
+
+maybe you don't want to deal with that
+
+
+hyperparameter. But if you're finding
+
+
+that your policy collapses prematurely,
+
+
+meaning that it becomes really
+
+
+deterministic before it has found good
+
+
+rewards, then this can be a good thing
+
+
+to add.
+
+
+Okay.
+
+
+Uh and then of course the most widely
+
+
+used algorithm based on this framework
+
+
+is the one that um
+
+
+you're doing in your homework, which is
+
+
+soft actor-critic. Soft actor-critic is
+
+
+basically exactly this, but now in
+
+
+actor-critic
+
+
+So, soft actor-critic
+
+
+uh works like this.
+
+
+Very similar to regular off-policy
+
+
+actor-critic. Get your transition, stuff
+
+
+it in your replay buffer, get a batch
+
+
+from your replay buffer, and compute a
+
+
+target value.
+
+
+Uh well, sorry. This is This is regular
+
+
+actor-critic. I'll show the soft one
+
+
+later. So, this is just a summary of the
+
+
+regular actor-critic. So, compute your
+
+
+target value, update your value
+
+
+function, uh estimate your policy
+
+
+gradient, and update the policy
+
+
+gradient. Okay?
+
+
+So, now what we're going to do to make
+
+
+the soft actor-critic is we're going to
+
+
+add the entropy to the policy objective.
+
+
+And then we also have to account for the
+
+
+fact that we have entropy at all the
+
+
+future time steps. So, we also add the
+
+
+entropy to of the next
+
+
+time step to the target value. So, our Q
+
+
+function represents the total reward in
+
+
+the future plus all the future
+
+
+entropies, and our actor objective also
+
+
+adds the entropy for the current time
+
+
+step.
+
+
+And the way that we estimate that
+
+
+entropy for the Q function back up
+
+
+conventionally is we just subtract log
+
+
+pi from the next
+
+
+time step uh value. Although, you could
+
+
+also compute the entropy in closed form
+
+
+and add that. Both are fine. Uh it's
+
+
+just more common to subtract the log
+
+
+probability.
+
+
+And that's it. That That's That's
+
+
+basically the soft actor-critic
+
+
+algorithm in your homework.
+
+
+This is one of the most commonly used
+
+
+off-policy actor-critic methods,
+
+
+uh and it's derived from exactly this
+
+
+inference framework. Yes?
+
+
+>> Is there a reason why
+
+
+the like entropy term is
+
+
+>> Yeah. So, the question was, "Well, why
+
+
+do we Why do we add the entropy for the
+
+
+next step instead of the current step?"
+
+
+And the reason, which which is a little
+
+
+subtle, is that the entropy depends on
+
+
+the policy.
+
+
+So, if we were to add it to the Q
+
+
+function, now we typically stop the
+
+
+gradient through the Q function. So,
+
+
+then when we go to optimize the policy,
+
+
+the policy optimization would be unaware
+
+
+of the fact that there's an additional
+
+
+gradient flow flowing going the entropy.
+
+
+So, if we add the current entropy to the
+
+
+policy objective instead of the Q
+
+
+function, we actually get a gradient
+
+
+through it.
+
+
+Yeah.
+
+
+Yeah, so basically the question was we
+
+
+added um
+
+
+So, we added this entropy to the policy
+
+
+objective and then we added it to the Q
+
+
+function at the next step.
+
+
+Well, what if we added entropy for pi of
+
+
+A given S instead of A prime given S
+
+
+prime and did not add it to the policy
+
+
+objective?
+
+
+Right? Because in the policy objective
+
+
+you just expect the expected Q. So, in
+
+
+principle, it looks like it's the same
+
+
+objective, except that the gradient
+
+
+wouldn't flow through it.
+
+
+Well, you can, yeah, but then you get
+
+
+basically exactly this.
+
+
+Um it's also very common with soft
+
+
+actor-critic to put a temperature in
+
+
+front of the entropy term to basically
+
+
+have a an additional parameter that
+
+
+allows you to determine how much of a
+
+
+weight you put on the temperature.
+
+
+This is technically redundant because
+
+
+you could also just divide all of your
+
+
+rewards by beta, but it's very
+
+
+convenient in practice because then you
+
+
+can very explicitly choose the the
+
+
+temperature instead of having to change
+
+
+all of your rewards.
+
+
+And uh typically this temperature
+
+
+basically controls how you trade off
+
+
+reward versus randomness.
+
+
+You can also dynamically adjust the
+
+
+temperature if you want to
+
+
+hit a desired level of entropy. And
+
+
+that's also a common choice.
+
+
+Okay, um any questions about soft
+
+
+actor-critic?
+
+
+Yes.
+
+
+Right. So, the objective is the sum of
+
+
+is the expected value of the sum of all
+
+
+the rewards plus all the entropies. So,
+
+
+when you optimize the policy, you have
+
+
+to take into account not just the
+
+
+entropy right now, but also the entropy
+
+
+in the future.
+
+
+So, you You like the policy to go to
+
+
+places where the policy can get high
+
+
+entropy.
+
+
+All right.
+
+
+So, now let's uh get started on the next
+
+
+part uh of our adventure, which is
+
+
+inverse reinforcement learning. And I'll
+
+
+I'll get started on this and then
+
+
+hopefully we'll continue it on Friday.
+
+
+So,
+
+
+inverse reinforcement learning refers to
+
+
+the problem of figuring out the reward.
+
+
+Not the policy, but the reward.
+
+
+So, in forward reinforcement learning we
+
+
+have a reward and we want to figure out
+
+
+a policy and in inverse reinforcement
+
+
+learning we have data of somebody
+
+
+executing a policy and we want to figure
+
+
+out their reward.
+
+
+And the reason that I put this together
+
+
+with control as inference is that it
+
+
+actually uses exactly the same
+
+
+probabilistic model.
+
+
+So, to set this up a little bit, we saw
+
+
+before that we could draw this picture,
+
+
+this this Bayes net, and that inference
+
+
+in this Bayes net
+
+
+is a kind of RL process.
+
+
+Where we compute these forward messages,
+
+
+compute the policy, or just run policy
+
+
+gradient with entropy.
+
+
+We can invert this and learn a reward
+
+
+function from demonstrations assuming
+
+
+that the demonstrator is acting under
+
+
+this model. So, going going back to that
+
+
+monkey, if we want to figure out what
+
+
+the goal of the monkey is, we can
+
+
+actually do that.
+
+
+So, instead of just figuring out what
+
+
+the monkey's policy is, we can actually
+
+
+say like, "Okay, we observe the monkey
+
+
+doing stuff,
+
+
+what did it intend to do? What was its
+
+
+goal?" And that can be really useful
+
+
+because if you can uh get some
+
+
+demonstrations and infer their reward,
+
+
+now you can compute a policy for that
+
+
+reward and that is a better way to do
+
+
+imitation learning than just directly
+
+
+doing behavior cloning because you're
+
+
+taking into account the consequences of
+
+
+the actions.
+
+
+In standard imitation learning,
+
+
+typically we would uh kind of copy the
+
+
+actions performed by the expert without
+
+
+really reasoning about the outcomes of
+
+
+those actions, like we did in behavior
+
+
+cloning.
+
+
+But, when people do imitation learning,
+
+
+we copy the intent of the expert. We
+
+
+don't typically just mimic their
+
+
+motions.
+
+
+And we might take very different actions
+
+
+to accomplish the goal that we inferred.
+
+
+So, uh here's a little video. This is
+
+
+from a um a a child psychology
+
+
+experiment. Okay, you can see there's a
+
+
+kid there on the right. He's watching
+
+
+this guy doing a thing. What is the guy
+
+
+doing?
+
+
+Wait for it.
+
+
+Okay, so is that imitation learning?
+
+
+I mean, kind of, but it's not really
+
+
+copying the action. It's It's It's
+
+
+imitating the intent.
+
+
+Right?
+
+
+And this is kind of this is much closer
+
+
+to what
+
+
+we ourselves would do when we're
+
+
+imitating somebody. We're not copying
+
+
+the muscle movements of somebody. We're
+
+
+trying to figure out what is it they're
+
+
+trying to accomplish, and then we
+
+
+accomplish that thing ourselves in our
+
+
+own way.
+
+
+So, that's what we actually want from
+
+
+imitation learning.
+
+
+Um now,
+
+
+in reinforcement learning, we often
+
+
+don't worry about this. Like, if you're
+
+
+doing Atari games for homework three, uh
+
+
+okay, like you have a reward function.
+
+
+It's literally the score of the game.
+
+
+So, you don't really worry too much
+
+
+about rewards. But, if you want to solve
+
+
+real-world problems, maybe you do care
+
+
+about that. Like, for example, if you
+
+
+want to drive a car in a manner similar
+
+
+to human drivers, perhaps you do
+
+
+actually want to get data of human
+
+
+drivers, infer their intent, and then
+
+
+optimize that intent in the best way
+
+
+possible. So, this is actually a fairly
+
+
+uh important problem to solve for
+
+
+real-world applications. It's just not
+
+
+as important on like RL benchmarks.
+
+
+Okay. So,
+
+
+let's talk about this a little bit.
+
+
+Let's say that you want to infer rewards
+
+
+from demonstrations. You have a bunch of
+
+
+data of somebody driving a car, and you
+
+
+want to figure out what their R of S
+
+
+comma A is.
+
+
+There's a little bit of a problem
+
+
+because by itself, this is like actually
+
+
+a pretty underspecified problem in the
+
+
+sense that many reward functions can
+
+
+explain the same behavior.
+
+
+So, to make this a little bit more
+
+
+obvious, let's say that I live in a 4 by
+
+
+4 grid world. It's a grid world with 16
+
+
+states. And I observe this kind of
+
+
+trajectory.
+
+
+And I want to assign a reward to each of
+
+
+the states under which this trajectory
+
+
+is optimal.
+
+
+Well, there are many explanations that
+
+
+all kind of on the surface seem equally
+
+
+good. Like for example, I could say that
+
+
+well, maybe the state that they're all
+
+
+headed towards is a really, really good
+
+
+state.
+
+
+Or maybe there's some really good state
+
+
+later on.
+
+
+Or maybe all the states that they
+
+
+avoided are really bad states.
+
+
+And without some kind of additional
+
+
+framework, all these explanations kind
+
+
+of seem equally likely. In fact, you
+
+
+could even have a really trivial
+
+
+explanation that says, the reward for
+
+
+every action that you didn't take is
+
+
+minus infinity. And the reward for the
+
+
+action that you did take is plus a
+
+
+million.
+
+
+But that's like not a very satisfying
+
+
+reward. Like somehow intuitively you
+
+
+feel like this doesn't really capture
+
+
+what we're looking for.
+
+
+Uh so, the probabilistic model actually
+
+
+kind of helps there because if we have
+
+
+a data set of behaviors that are maybe
+
+
+like a little bit sub optimal, we can
+
+
+actually look at the relative
+
+
+frequencies of different behaviors and
+
+
+use that to infer reward. Essentially,
+
+
+this kind of soft optimality framework
+
+
+serves to disambiguate things a little
+
+
+bit for us.
+
+
+So,
+
+
+let's talk about uh
+
+
+how uh we can do this.
+
+
+Now, our we're going to use the same
+
+
+probabilistic model, the same optimality
+
+
+variable with the same probability. The
+
+
+probability of the optimality variable
+
+
+is exponential R. But now, instead of
+
+
+trying to find the policy, we're going
+
+
+to be trying to find the R. So, R is
+
+
+going to be represented by some kind of
+
+
+parameterized function, maybe a neural
+
+
+net, or maybe a function of some
+
+
+features, if we know which features
+
+
+matter for our task.
+
+
+And we're going to call its parameters
+
+
+psi because we already used theta and
+
+
+phi. Theta is the policy, phi is the
+
+
+value function. So, the reward will have
+
+
+parameter psi.
+
+
+And
+
+
+we can equivalently write this as the
+
+
+probability of O given S {comma} A
+
+
+{comma} psi just to make it very
+
+
+explicit that these probabilities now
+
+
+depend on psi. And our goal will be to
+
+
+learn psi.
+
+
+So, the probabilistic model is the same.
+
+
+We have the probability of our
+
+
+trajectory is the probability of it
+
+
+happening physically, P of tau, which
+
+
+doesn't depend on the reward, plus the
+
+
+exponential of the sum of rewards.
+
+
+And what we are given now to solve this
+
+
+learning problem is a set of samples
+
+
+that are sampled from a soft optimal
+
+
+policy with the reward R psi. So, soft
+
+
+optimal meaning that this is the policy
+
+
+that maximize total reward plus entropy.
+
+
+This is basically data from our monkey.
+
+
+And maximum likelihood learning, which
+
+
+is what we always use when we want to
+
+
+find the most likely parameter vector,
+
+
+is just a matter of maximizing the log
+
+
+probability of our observed trajectories
+
+
+given that all of the optimality
+
+
+variables are true and the parameter
+
+
+vector psi.
+
+
+And this is a latent variable model.
+
+
+What are the latent variables in this
+
+
+model? Anybody want to raise their hand
+
+
+and tell me?
+
+
+What are the unobserved variables?
+
+
+Yes.
+
+
+The optimality is observed. We assume
+
+
+that that's true.
+
+
+Yes.
+
+
+The psi is what we're learning, so
+
+
+that's a parameter vector.
+
+
+Back there.
+
+
+The states and actions, exactly. So, the
+
+
+variables that don't occur in this log
+
+
+probability, those are the states and
+
+
+actions. So, we have to use variational
+
+
+inference to get those.
+
+
+And then it's just a a straight-up uh
+
+
+maximum likelihood training problem
+
+
+using the variational lower bound. So,
+
+
+the states and actions are the latent
+
+
+variables.
+
+
+Okay.
+
+
+Um now, uh if you want to take the
+
+
+gradient of this thing, the uh
+
+
+probability of the trajectory is is
+
+
+irrelevant because it's independent of
+
+
+psi.
+
+
+So,
+
+
+if you want to plug that in here,
+
+
+you get the reward the the sum over all
+
+
+the time steps of the reward of the
+
+
+trajectory minus the the
+
+
+log normalizer. And it's actually this
+
+
+log normalizer that's the hard part. Uh
+
+
+which because that's the integral over
+
+
+all trajectories.
+
+
+So, let's work through this, okay? So,
+
+
+we plug in the um
+
+
+that probability distribution, we get
+
+
+our
+
+
+sum of rewards minus log Z.
+
+
+And Z is this. So, the Z is Z is
+
+
+basically the hard part. Uh Z is the
+
+
+integral over all trajectories of the
+
+
+probability of that trajectory times the
+
+
+exponential of the reward of that
+
+
+trajectory. So, this is a monster. Like,
+
+
+this is not a quantity that you can
+
+
+estimate uh in closed form. Yes?
+
+
+>> this Z come from? Seems like it's
+
+
+proportional.
+
+
+>> Yeah, so notice that up there it says P
+
+
+of tau given O {comma} psi is
+
+
+proportional
+
+
+>> Yeah.
+
+
+>> to P of tau. So, proportional means that
+
+
+it's equal divided by some normalizer.
+
+
+>> Yeah, but that normalizer shouldn't
+
+
+depend on tau.
+
+
+All right, shouldn't shouldn't
+
+
+>> But it depends on psi. It doesn't depend
+
+
+on tau, but it depends on psi.
+
+
+>> Oh, okay. Okay.
+
+
+>> That's the problem.
+
+
+So, this is the normalizer. So, it's in
+
+
+Indeed, it doesn't depend on tau because
+
+
+it's an integral over all tau, but it
+
+
+unfortunately depends on psi.
+
+
+Um so, if we're just if we're doing
+
+
+learning, then we do have to take it
+
+
+into account.
+
+
+And
+
+
+here is the here is a fun trick that I
+
+
+can use to um get this under control.
+
+
+I'm going to take the gradient of that
+
+
+objective.
+
+
+And if I take the gradient of that
+
+
+objective with respect to psi,
+
+
+well, I have two terms. I have the sum
+
+
+over
+
+
+rewards and I have the log Z. So, the
+
+
+rewards, that's easy. That's just the
+
+
+reward of uh that's the gradient of the
+
+
+reward of uh tau for every tau in my
+
+
+data set. Essentially, that gradient
+
+
+term just says, "Make the rewards of my
+
+
+demos be really big."
+
+
+Okay, that's good. I can do that. But
+
+
+then I have that second term. And that
+
+
+second term is more complicated. So, if
+
+
+I have log Z and I want to differentiate
+
+
+with respect to psi, then just like
+
+
+plugging in the formula for the
+
+
+derivative of a logarithm, it's 1 over Z
+
+
+times the derivative of Z. And since the
+
+
+dependence on sign side Z is just in
+
+
+that exponential of R, that's the
+
+
+gradient I get. So, it's 1/Z times the
+
+
+integral of P of tau exponential of R
+
+
+psi of tau times the gradient over psi
+
+
+of
+
+
+R psi of tau. And remember, when I write
+
+
+R psi of tau, that's really just
+
+
+shorthand for a sum over all the time
+
+
+step inside tau. Okay?
+
+
+So, this is just differentiation.
+
+
+And now something kind of fun happens
+
+
+here. Notice that
+
+
+this uh
+
+
+1/Z P of tau exponential of R psi of
+
+
+tau, that's just the posterior over
+
+
+trajectories.
+
+
+That's exactly the distribution over
+
+
+optimal
+
+
+So, the
+
+
+can actually be written as the
+
+
+expectation over my demonstrations of
+
+
+the gradient of the reward for those
+
+
+demos minus the expectation over
+
+
+the posterior over trajectories given my
+
+
+current reward of the gradient of the
+
+
+reward. So, I want to increase the
+
+
+reward of all the demos and decrease the
+
+
+reward of whatever is the optimal policy
+
+
+under my current reward.
+
+
+And it kind of makes sense then because
+
+
+if the optimal policy under my current
+
+
+reward is equal to the demonstration
+
+
+policy, then these two terms should
+
+
+cancel out.
+
+
+Which is make which makes sense. The
+
+
+gradient is zero when my policy when my
+
+
+reward induces the same policy as the
+
+
+one that produced the demonstrations.
+
+
+That's what I want. I want a reward that
+
+
+induces the same policy as the one that
+
+
+produced my demonstrations, and that's
+
+
+when the gradient cancels out.
+
+
+And if I have the wrong reward, then
+
+
+this gradient will increase the reward
+
+
+of the demos and decrease the reward of
+
+
+whatever policy is optimal with respect
+
+
+to the current reward.
+
+
+Thus bringing them closer into
+
+
+alignment.
+
+
+Okay. So, estimate with samples, and
+
+
+this is the this is basically the soft
+
+
+optimal policy under the current reward.
+
+
+Now,
+
+
+from this
+
+
+you might infer a very simple and naive
+
+
+algorithm for solving this problem,
+
+
+which is a valid algorithm, which is
+
+
+literally learn the optimal policy for
+
+
+your current reward with your favorite
+
+
+maximum entropy RL algorithm, like soft
+
+
+actor critic or the entropy regularized
+
+
+policy gradient.
+
+
+So, just like go and solve this and then
+
+
+use that policy to estimate this
+
+
+gradient.
+
+
+Where this one is a sum over the expert
+
+
+samples and this is a sum over the
+
+
+policy samples.
+
+
+This is a valid way to solve the
+
+
+problem. It is
+
+
+very expensive because every time you
+
+
+take a gradient update on your reward
+
+
+function, you have to literally solve an
+
+
+entire RL problem, but it is a correct
+
+
+algorithm. So, if you are willing to
+
+
+wait a really long time, you could
+
+
+literally brute force this just by
+
+
+solving for a new policy every time you
+
+
+update your reward, and that would give
+
+
+you a valid way to learn the reward
+
+
+function.
+
+
+And just like
+
+
+at some intuitive level, it actually
+
+
+makes sense. It's like if you want to
+
+
+find a reward
+
+
+that makes your policy be the same as
+
+
+the expert's policy, well, just
+
+
+take whatever your current policy is
+
+
+producing, make that worse, take
+
+
+whatever the expert is producing, make
+
+
+that better, and then keep tweaking the
+
+
+the reward until the two are in
+
+
+alignment.
+
+
+And
+
+
+uh I'll I'll stop here because it's
+
+
+10:00 a.m., but on Friday, I will go
+
+
+through
+
+
+more practical inverse RL methods, which
+
+
+essentially just take this idea and try
+
+
+to make it more feasible in a in a
+
+
+practical method that we can implement
+
+
+on a computer without having this inner
+
+
+loop. All right, I'll see you all on
+
+
+Friday.
+
+
+>> So, how do you get from
+
+
+here to here?
+
+
+Like, are you saying that because of the
+
+
+fact that our color
+
+
+>> Mhm.
+
+
+>> Mhm.

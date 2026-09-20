@@ -1,0 +1,9118 @@
+Mhm.
+
+
+>> for that reason we still get
+
+
+Sorry about that.
+
+
+>> [snorts]
+
+
+>> All right. Let's get started. So, today
+
+
+we're going to have the last pre-midterm
+
+
+kind of real lecture and then next week
+
+
+we have two lectures that are going to
+
+
+be reviewing material before the midterm
+
+
+and then the midterm will be on April
+
+
+14th the week after that. So,
+
+
+today I'll I'll cover some new material
+
+
+about our old theory and then next week
+
+
+Wednesday and Friday I will go over the
+
+
+material we've covered so far in the
+
+
+course that will be on the exam and then
+
+
+the TAs will also organize three
+
+
+different sections on three different
+
+
+slices of the course material. They'll
+
+
+post information about that on Ed and
+
+
+you can choose to attend the section
+
+
+that is most relevant for the materials
+
+
+that you want to review or attend all of
+
+
+them.
+
+
+All right, but today let's talk about
+
+
+reinforcement learning theory and this
+
+
+is not a reinforcement learning theory
+
+
+course. This is not a place where we're
+
+
+going to go really deep on all of the
+
+
+intricacies of RL theory, but I do want
+
+
+to go over
+
+
+a few reinforcement learning theory
+
+
+topics to kind of give you guys a sense
+
+
+for how people go about analyzing
+
+
+reinforcement learning algorithms, the
+
+
+kind of results that that people try to
+
+
+show and some of the basic concepts and
+
+
+techniques that go into this.
+
+
+So
+
+
+the first kind of big picture question
+
+
+we'll start with is well, what's the
+
+
+point of reinforcement learning theory?
+
+
+So we learn about lots of algorithms. We
+
+
+know that we can code them up. We can
+
+
+run them and we can see what they do and
+
+
+hopefully if you code them up correctly,
+
+
+they'll do something good.
+
+
+Well,
+
+
+there are a number of different
+
+
+questions that you can ask about the
+
+
+theoretical properties of reinforcement
+
+
+learning algorithms that could be useful
+
+
+and they're useful in slightly different
+
+
+ways.
+
+
+So here are a few common ones.
+
+
+If you have a particular algorithm,
+
+
+let's say you have
+
+
+Q-learning or policy gradient and you
+
+
+run that algorithm
+
+
+and you take
+
+
+some number of samples, N samples
+
+
+and you have K iterations of that
+
+
+algorithm,
+
+
+how good is the result of the algorithm
+
+
+going to be?
+
+
+Now,
+
+
+this is a very difficult question to
+
+
+answer in general because of course as
+
+
+you probably learned from running the
+
+
+experiments in your homeworks, if you
+
+
+run the algorithm once, you get one
+
+
+result. If you run it twice, you get a
+
+
+different result. If you run it a third
+
+
+time, you get yet another result and if
+
+
+you run it on another problem, you get
+
+
+yet another result. So in general, it's
+
+
+very hard to answer a question like how
+
+
+good will this algorithm be in theory?
+
+
+So what people typically do instead is
+
+
+they analyze worst case performance
+
+
+under some set of assumptions. So
+
+
+instead of saying, I can theoretically
+
+
+prove that my algorithm is this good,
+
+
+you instead say I can theoretically
+
+
+prove that my algorithm is no worse than
+
+
+this under any circumstance so long as
+
+
+that circumstance fits under these
+
+
+assumptions.
+
+
+Okay, so let's say that we're doing
+
+
+Q-learning.
+
+
+One question that that we might like to
+
+
+answer, for example, is okay, in
+
+
+Q-learning you learn a Q function. So,
+
+
+how many samples do you need to
+
+
+guarantee that the difference between
+
+
+your learned Q function after K
+
+
+iterations, denoted by Q hat subscript
+
+
+K, and the true optimal Q function Q
+
+
+star is less than or equal to some bound
+
+
+epsilon. And if you are clever, you
+
+
+could work through a bit of math and
+
+
+show that you need at least some number
+
+
+of samples in order to guarantee that on
+
+
+the Kth iteration you're within epsilon
+
+
+of the true Q function, and presumably
+
+
+that number of samples would depend on
+
+
+epsilon and uh K.
+
+
+Um
+
+
+So,
+
+
+now ordinarily there's a lot of
+
+
+randomness in these algorithms, so the
+
+
+most you can hope for is to be able to
+
+
+prove that your error is bounded with
+
+
+some probability. So, you say, well,
+
+
+there's no guarantee in life, you can
+
+
+always get unlucky. Uh maybe my
+
+
+stochastic gradient descent algorithm
+
+
+always samples a really, really bad
+
+
+mini-batch, and it results in like
+
+
+really bad error, but perhaps I can
+
+
+prove that this bound exists with
+
+
+probability at least 1 minus delta,
+
+
+where delta is some small number.
+
+
+So, this is a fairly typical form for
+
+
+the kind of worst-case guarantee that
+
+
+somebody might want to work out for a
+
+
+particular algorithm.
+
+
+And then you would say, well,
+
+
+uh
+
+
+if I did a good job of uh writing down
+
+
+my proof, and I did a good job of making
+
+
+reasonable assumptions, then maybe I'll
+
+
+show that this error is less than or
+
+
+equal to epsilon with probability at
+
+
+least 1 minus delta, as long as the
+
+
+number of samples n is greater than or
+
+
+equal to some function of epsilon and
+
+
+delta, and presumably the K as well.
+
+
+Hopefully that function is not too
+
+
+terrible. So, if, for example, the
+
+
+number of samples you need is like
+
+
+exponential in the error or in delta,
+
+
+that's quite bad. That means that the
+
+
+number of samples is essentially
+
+
+intractable, but if it's some nice
+
+
+polynomial quantity, then you could say,
+
+
+well, my algorithm has reasonable sample
+
+
+efficiency.
+
+
+Okay. Now, when I wrote this down, I the
+
+
+the claim here, the hypo in this
+
+
+hypothetical result, which is not a real
+
+
+result, it's a hypothetical result, is
+
+
+that the norm between Q hat K and Q star
+
+
+is less than or equal to epsilon.
+
+
+Now, there's a little bit of notation
+
+
+here, which maybe is obvious to some of
+
+
+you, but we are doing that thing where
+
+
+we write the value function as a
+
+
+gigantic vector.
+
+
+Uh
+
+
+so, in this case, the Q function, it's
+
+
+it's a function, it's a function of
+
+
+states and actions, but if you have a
+
+
+finite state space and a finite action
+
+
+space, you can also pretend that the Q
+
+
+function is really a vector with
+
+
+a certain number of elements. How many
+
+
+elements? Well, the number of elements
+
+
+is going to be the cardinality of the
+
+
+state times the cardinality of the
+
+
+action space, right? Because that gives
+
+
+you a number of entries in that vector
+
+
+for every state action combination. So,
+
+
+if you assume, and this is where we
+
+
+start making assumptions, that your
+
+
+state space is finite and discrete and
+
+
+your action space is finite and
+
+
+discrete, then you can pretend that the
+
+
+Q function is a giant vector.
+
+
+If it's not finite and discrete, then
+
+
+the Q function can still be a giant
+
+
+vector, it's just really, really giant
+
+
+and specifically infinite, but turns out
+
+
+that a lot of cool linear algebra facts
+
+
+still hold even for infinite vectors, it
+
+
+just requires quite a bit more formalism
+
+
+and
+
+
+a bit of like measure theory to get it
+
+
+right. So, for now, let's just pretend
+
+
+everything is discrete and there's a
+
+
+countable number of entries in Q, and
+
+
+then you can do all sorts of linear
+
+
+algebra and vector notation to deal with
+
+
+it.
+
+
+Now,
+
+
+of course, what we really would like to
+
+
+understand in the end is when we run
+
+
+this algorithm
+
+
+and we get the policy that the algorithm
+
+
+produces, is the final policy a good
+
+
+policy.
+
+
+This kind of claim
+
+
+doesn't directly tell us that. This
+
+
+tells us if the Q function is a good Q
+
+
+function, but the Q function is really
+
+
+an intermediate thing, right? So,
+
+
+uh the final thing is the policy. So,
+
+
+something you have to watch out for is
+
+
+the assumptions that are being made, but
+
+
+also the final claim that's actually
+
+
+being shown and how that claim relates
+
+
+to what you really care about, which is
+
+
+how good is the result. So,
+
+
+a subtle difference, and this subtle
+
+
+difference is um
+
+
+maybe what might take you a little
+
+
+moment to notice is
+
+
+instead of saying that Q hat K, which is
+
+
+the learned Q function at the Kth
+
+
+iteration, uh is close to Q star, you
+
+
+could instead try to prove that Q pi K
+
+
+is within some epsilon of Q star.
+
+
+Anyone have any guess as to what the
+
+
+difference between these things is?
+
+
+Yeah.
+
+
+Yeah. So, uh
+
+
+one of them is the actual Q value of a
+
+
+policy, and the other one is a learned Q
+
+
+function. So, let me just uh explain
+
+
+this. There's a little bit of kind of
+
+
+notational convention.
+
+
+Okay.
+
+
+So,
+
+
+this is a Q function. Well, it's a
+
+
+letter Q, which represents a Q function.
+
+
+If I
+
+
+put a little hat on it, that means it's
+
+
+not a real Q function. That means it's
+
+
+it is a learned function, a neural
+
+
+network, for example, or a table.
+
+
+If I don't put a hat on it, that means
+
+
+it is a real, honest-to-goodness Q
+
+
+function.
+
+
+The real Q function of some policy.
+
+
+Now, in RL algorithms, we might often
+
+
+try to learn a Q function. Whenever
+
+
+we're learning a Q function, we're
+
+
+getting one of these.
+
+
+But that's a a figment of our
+
+
+imagination. It's something that sits in
+
+
+the computer.
+
+
+For any actual policy, it has a true Q
+
+
+function that in general is not known.
+
+
+It has to be estimated, but it exists.
+
+
+And typically, it's associated with some
+
+
+policy.
+
+
+So, if we have one of these, that means
+
+
+this is the real Q function for a policy
+
+
+pi. Chances are your algorithm will
+
+
+never know this, but you can still
+
+
+analyze it theoretically.
+
+
+Now, it just so happens that Q star is
+
+
+the real Q function. Notice there's no
+
+
+hat. It's the real Q function for the
+
+
+optimal policy. So, this is just
+
+
+shorthand for writing
+
+
+this.
+
+
+Okay?
+
+
+So, that means that Q pi K is the true Q
+
+
+function of the policy that you get at
+
+
+iteration K.
+
+
+Q hat pi K
+
+
+is any guesses?
+
+
+Yeah.
+
+
+>> The learned Q function corresponding to
+
+
+your policy at iteration K.
+
+
+>> That's right. This is the learned Q
+
+
+function for your policy iteration K.
+
+
+So, if you're like running actor critic
+
+
+for K iterations, this would be like the
+
+
+critic at iteration K.
+
+
+Okay?
+
+
+Yes.
+
+
+>> So, that Q hat
+
+
+QK hat equivalent to Q pi hat K hat.
+
+
+>> Yeah, so this is this is a this is a
+
+
+very subtle question. So, the question
+
+
+was is that Q hat K equivalent to
+
+
+Q hat pi K?
+
+
+And, the answer is it depends on your
+
+
+algorithm.
+
+
+So, if you're running Q learning, you're
+
+
+never actually estimating Q hat pi K.
+
+
+You're only estimating Q hat
+
+
+K.
+
+
+Okay. So, this is not the same thing.
+
+
+Uh
+
+
+Q pi K is the true Q function for of a
+
+
+policy iteration K.
+
+
+Okay. Now, there's other kinds of
+
+
+questions you could ask. Like, for
+
+
+example,
+
+
+rewinding back to Wednesday, if you say
+
+
+like, "Hey, I have a new exploration
+
+
+algorithm that I want to analyze that
+
+
+exploration algorithm." You could ask,
+
+
+"Well, if I use this exploration
+
+
+algorithm, how high is my regret?"
+
+
+Meaning, over the course of running that
+
+
+algorithm,
+
+
+how will the suboptimality of my actions
+
+
+accumulate? Hopefully, it'll accumulate
+
+
+at some vanishingly small rate. So, you
+
+
+might try to prove a bound like this
+
+
+that says that the regret after capital
+
+
+T steps of your exploration algorithm is
+
+
+bounded by something that's O of root TN
+
+
+log NT. I just took this from a random
+
+
+exploration paper.
+
+
+Uh
+
+
+And these are really fun bounds to
+
+
+prove. Um
+
+
+and there's lots of others.
+
+
+So, in today's lecture, we'll mainly
+
+
+focus on those first few, uh the the
+
+
+Q-function type bounds. Why? Well,
+
+
+because we all know about Q-learning,
+
+
+people really like to analyze
+
+
+Q-learning, and it's something that has
+
+
+maybe like the closest bearing to
+
+
+reality. But, there's lots of other
+
+
+kinds of facts that people like to
+
+
+prove. Exploration,
+
+
+uh efficiency, how well function
+
+
+approximate or how much function
+
+
+approximation impacts the performance of
+
+
+your method, that sort of thing.
+
+
+So, we'll focus on these types of
+
+
+questions today.
+
+
+All right. Now, the second big thing
+
+
+about any kind of theory is what kind of
+
+
+assumption do we make?
+
+
+Effective analysis is very hard in RL
+
+
+without very strong assumptions.
+
+
+So, typically, the kind of thing that
+
+
+you do
+
+
+is you look at your problem,
+
+
+uh which is to prove a bound on some
+
+
+complicated deep RL algorithm,
+
+
+realize that that problem is impossible,
+
+
+put it in the garbage, and find a
+
+
+different problem that's easier to
+
+
+solve.
+
+
+And uh that means make assumptions. So,
+
+
+instead of assuming that
+
+
+you're analyzing uh
+
+
+homework 3 DQN running on Atari games
+
+
+with
+
+
+uh
+
+
+convolutional neural networks or
+
+
+something, you instead assume that
+
+
+you're doing tabular Q-learning in a
+
+
+small finite MDP with some other kind of
+
+
+restrictive conditions.
+
+
+Uh and the trick is to make assumptions
+
+
+that admit interesting conclusions
+
+
+without divorcing us too much from
+
+
+reality. And this is very, very
+
+
+important.
+
+
+It's just like in physics, right? Like
+
+
+you know, you learn in physics that
+
+
+objects uh under gravity accelerate uh
+
+
+at a at a particular speed, uh but in
+
+
+reality, when you drop an object here on
+
+
+Earth, it accelerates at a different
+
+
+speed because of air resistance. But,
+
+
+you need to build some kind of model.
+
+
+You need to build up model in reasonable
+
+
+increments of complexity, so you
+
+
+simplify for the sake of analysis.
+
+
+Okay, so
+
+
+for example,
+
+
+uh
+
+
+one thing that is very tricky to deal
+
+
+with in analysis is exploration.
+
+
+Performance of RL methods is greatly
+
+
+complicated by exploration.
+
+
+You can set up a problem very easily
+
+
+that is essentially next to impossible
+
+
+in terms of exploration. Like if I tell
+
+
+you
+
+
+I have
+
+
+uh a particular prize for you.
+
+
+It's about this big and it's worth about
+
+
+$100 and I hid it somewhere in the
+
+
+continental United States.
+
+
+That's your exploration problem. Go.
+
+
+Like chances are that's a very very hard
+
+
+problem for you to solve. So, uh you
+
+
+kind of have to assume something a
+
+
+little bit more. Maybe I'll tell you
+
+
+okay, uh it's about this big and it's
+
+
+like somewhere in this room.
+
+
+Uh like so something that makes it a
+
+
+little bit easier to get a handle on it.
+
+
+Um because the worst case is just
+
+
+really really awful. So, if you always
+
+
+deal with the worst case and you handle
+
+
+exploration in its full complexity,
+
+
+chances are any bound you prove will be
+
+
+uh extremely bad, but in reality, most
+
+
+RL problems aren't that bad. Most RL
+
+
+problems aren't so pathological.
+
+
+So, theoretical guarantees
+
+
+uh
+
+
+for uh RL typically address worst-case
+
+
+performance and worst-case exploration
+
+
+is extremely bad, so you would typically
+
+
+assume something to say well, maybe
+
+
+exploration isn't that bad in this kind
+
+
+of problem setting.
+
+
+So, if you do want to study exploration,
+
+
+kind of the most you would hope for is
+
+
+to show that your favorite exploration
+
+
+method scales with some nice function of
+
+
+the total number of states, but of
+
+
+course, the total number of states can
+
+
+be huge. So, uh if you don't want
+
+
+something that's that terrible, then uh
+
+
+you might want to make some assumptions.
+
+
+So, for analyzing learning rather than
+
+
+exploration,
+
+
+maybe you somehow abstract away
+
+
+exploration. Like
+
+
+um
+
+
+so that you can understand how many
+
+
+steps you need to effectively learn a
+
+
+model or a value function
+
+
+that results in good performance. So,
+
+
+one assumption we can make, and we'll
+
+
+actually make this assumption in some of
+
+
+our uh work today,
+
+
+is to assume that you have a kind of a
+
+
+oracle exploration method.
+
+
+Specifically, to assume that you can
+
+
+sample from the dynamics
+
+
+for any state-action tuple. So, you can
+
+
+just like teleport to any state
+
+
+and try taking any action and see the
+
+
+next state.
+
+
+It's like a simulator assumption. That
+
+
+doesn't really hold in reality, but it's
+
+
+kind of equivalent to assuming that
+
+
+exploration is not too hard and you can
+
+
+get on with life and focus on analyzing
+
+
+learning.
+
+
+Of course, if you really want to analyze
+
+
+exploration, then you you wouldn't make
+
+
+this assumption uh and uh you would do
+
+
+something like a regret analysis.
+
+
+Okay, so the oracle exploration
+
+
+assumption is that for every
+
+
+state-action tuple, you assume that you
+
+
+can sample the next state n times.
+
+
+So, instead of really having to go out
+
+
+there and like generate trajectories,
+
+
+you can just like teleport to places and
+
+
+take the next state.
+
+
+And to be clear, we don't we wouldn't
+
+
+always assume this in any kind of
+
+
+analysis, but if you want to abstract
+
+
+away exploration, that's what you would
+
+
+do.
+
+
+Any questions about this?
+
+
+Yeah.
+
+
+>> So, the reason why this is the oracle
+
+
+exploration is like we assume that we
+
+
+stay in the same state instead of we we
+
+
+really go through the trajectory?
+
+
+>> It's stronger than that. It's assuming
+
+
+that you can teleport to any state you
+
+
+want.
+
+
+So, you could say that, "Hey, like I've
+
+
+done a really good job of exploring over
+
+
+here, but I haven't gone over there. So,
+
+
+instead of figuring out how to get over
+
+
+there, I'll just teleport there and just
+
+
+try to see what's there."
+
+
+So, it's it's a fairly strong
+
+
+assumption.
+
+
+Okay, so it kind of sounds like we're
+
+
+cheating a lot. So, what's I guess
+
+
+question.
+
+
+>> Sorry, on the previous slide, where did
+
+
+you
+
+
+impose that teleportation
+
+
+>> It's the statement assume we can sample
+
+
+from P S prime given S, A for any S, A.
+
+
+So, it's the any S, A part.
+
+
+Okay.
+
+
+So, what's the point of this? It kind of
+
+
+seems like we're cheating an awful lot
+
+
+just to prove some funny linear algebra
+
+
+bounds.
+
+
+Um
+
+
+So, you could say, "Well, maybe the
+
+
+point of uh doing RL theory is to prove
+
+
+that your RL algorithm will work
+
+
+perfectly every time." It would be
+
+
+really nice if we could prove that
+
+
+because uh you know, clearly it seems
+
+
+very hard on the homeworks to get our RL
+
+
+algorithms to work perfectly every time.
+
+
+But maybe if we could just prove that,
+
+
+then we wouldn't have to go and do it.
+
+
+Um
+
+
+Usually, this is not possible with
+
+
+current deep RL methods
+
+
+because well, first,
+
+
+they're not guaranteed to work. So, you
+
+
+can't prove something that's not true.
+
+
+But second, they're really, really
+
+
+complicated. Uh because the environment
+
+
+in which you run them is really
+
+
+complicated. And the models that you
+
+
+train with them, the neural networks,
+
+
+are really complicated.
+
+
+So,
+
+
+in that case, you really have two uh
+
+
+unsavory choices.
+
+
+Either you abstract away their
+
+
+complexity by assuming that the worst
+
+
+thing that could happen will happen, in
+
+
+which case you will get a result that
+
+
+proves that your algorithm is basically
+
+
+awful and never works. But that of
+
+
+course doesn't accord with reality
+
+
+because most cases aren't that bad. Or
+
+
+you make assumptions that simplify the
+
+
+problem so that it is not the real
+
+
+problem that you run it on, but somehow
+
+
+like abstractly assumes things that make
+
+
+it easier in a way that is a little bit
+
+
+more reflective of what you actually get
+
+
+in reality. And of course, the latter
+
+
+tends to be more useful.
+
+
+Um
+
+
+Now, it's still uh going to yield useful
+
+
+conclusions. It's just the conclusion is
+
+
+not that your algorithm will work every
+
+
+time. But the conclusion might be more
+
+
+like an understanding of how errors are
+
+
+affected by problem parameters. So, do
+
+
+larger discounts work better than
+
+
+smaller ones?
+
+
+If we have If we want half the error in
+
+
+our algorithm,
+
+
+would we expect generally to need double
+
+
+the number of samples, or four times the
+
+
+number of samples, or a million times
+
+
+the number of samples.
+
+
+So, usually we use precise theory to get
+
+
+imprecise qualitative conclusions about
+
+
+how various factors influence the
+
+
+performance of our RL algorithms under
+
+
+strong assumptions. And then we try to
+
+
+make the assumptions reasonable enough
+
+
+that these conclusions are likely to
+
+
+apply to real problems, but they're not
+
+
+guaranteed to apply to real problems.
+
+
+So, weird weird as it might sound, the
+
+
+purpose of theory is not to get hard
+
+
+guarantees, but it is to get uh rough
+
+
+kind of rules of thumb and intuition.
+
+
+So, don't take seriously uh somebody if
+
+
+they say that their RL algorithm has
+
+
+provable guarantees. The assumptions are
+
+
+always unrealistic, and theory is more
+
+
+of a rough guide to what might happen.
+
+
+But, it can be a really useful guide
+
+
+because it can tell us, for example,
+
+
+that the difficulty of a particular
+
+
+learning problem scales quadratically or
+
+
+cubically with the time horizon, or the
+
+
+amount of error scales quadratically or
+
+
+linearly with the number of samples. And
+
+
+these are useful conclusions.
+
+
+Okay.
+
+
+So, those are the principles. Now, let's
+
+
+get into some of the uh the particulars.
+
+
+So, first we have to
+
+
+uh learn uh a few basic tools to allow
+
+
+us to manipulate value functions and Q
+
+
+functions.
+
+
+This is a very familiar equation,
+
+
+hopefully to most of you. This is the
+
+
+Bellman equation that says that the Q
+
+
+function is given by the reward plus the
+
+
+discount times the expected value of the
+
+
+value function at the next state for a
+
+
+particular policy pi.
+
+
+And uh if we write out that expectation
+
+
+as a sum, we get this. So, the
+
+
+the uh next value is a sum over all
+
+
+future states of the probability of
+
+
+entering that state times the value.
+
+
+And what we can do is we can uh
+
+
+introduce a little bit of notation so
+
+
+that we can write these kinds of
+
+
+equations simultaneously at all states
+
+
+and actions. So, we'll do this with
+
+
+linear algebra. We will write Q as a
+
+
+vector. So, this is the shape of the of
+
+
+the Q function. It's a vector whose
+
+
+height is the number of states times the
+
+
+number of actions.
+
+
+The reward is also a vector whose height
+
+
+is the number of states and the number
+
+
+of actions.
+
+
+And then this matrix P basically
+
+
+contains all of those transition
+
+
+probabilities.
+
+
+So, the idea is that we want vectors of
+
+
+size S to go into vectors of size S
+
+
+times A. So, we know that the
+
+
+dimensionality of this needs to be uh
+
+
+SA by S.
+
+
+And um
+
+
+the value functions are vectors of size
+
+
+S.
+
+
+Okay.
+
+
+So, now you can kind of check through
+
+
+all this, make sure all the
+
+
+dimensionalities work out, and in fact
+
+
+you have a legitimate way to write out
+
+
+the Bellman equation simultaneously for
+
+
+all states and actions with matrices and
+
+
+vectors.
+
+
+Okay. Any questions about this? This is
+
+
+very important, so if something here
+
+
+doesn't quite click, this is a good time
+
+
+to ask.
+
+
+Okay, great.
+
+
+Um now, you could also write a
+
+
+state-action transition probability,
+
+
+basically the probability that when you
+
+
+are in state S and ac- take action A,
+
+
+you'll get into state S' and take action
+
+
+A'.
+
+
+And now that's going to be a square
+
+
+matrix, and of course the action
+
+
+probabilities are given by pi, so you
+
+
+just multiply pi times P, and you get
+
+
+this new matrix that I'm going to call P
+
+
+pi.
+
+
+And P pi is useful, of course, if you
+
+
+want to write the Bellman equation in
+
+
+terms of Q functions.
+
+
+So, now I can write Q pi = R + gamma
+
+
+times P pi times Q pi.
+
+
+And that is a Bellman equation for the Q
+
+
+function uh for a particular policy pi.
+
+
+Okay. And again, you can go go go
+
+
+through this and check that all the
+
+
+dimensionalities work out. Here it's
+
+
+even easier because every vector is of
+
+
+size SA, and the matrix is of size SA by
+
+
+SA.
+
+
+And now we can do a little bit of
+
+
+manipulation just to kind of
+
+
+give us a taste for how useful this kind
+
+
+of linear algebra is. We can figure out
+
+
+a very basic policy evaluation algorithm
+
+
+without any fancy RL stuff and just
+
+
+using pure linear algebra. How? We'll
+
+
+just solve for Q pi.
+
+
+Okay? So, to solve for Q pi, you
+
+
+subtract gamma times P pi times Q pi
+
+
+from both sides.
+
+
+Group the matrix terms together.
+
+
+And then invert the matrix on the left.
+
+
+Done.
+
+
+So, we had all this discussion about
+
+
+policy iteration and value iteration,
+
+
+etc. took us an entire lecture. Now, in
+
+
+just a few seconds, we have a completely
+
+
+impractical yet theoretically correct
+
+
+algorithm for recovering the Q function
+
+
+for a particular policy.
+
+
+Uh why is this not like an actual
+
+
+algorithm that we typically use? Any
+
+
+ideas?
+
+
+Yeah.
+
+
+It's hard to get a tabular R. What else?
+
+
+Yeah?
+
+
+You don't want to invert that matrix
+
+
+because it might be gigantic or
+
+
+infinite.
+
+
+Uh you for continuous actions, it's
+
+
+infinite. You also typically don't know
+
+
+P.
+
+
+Uh so, uh you're you're kind of all
+
+
+sorts of uh in trouble with this thing.
+
+
+Uh but, it is the a theoretically true
+
+
+fact. So, not a practical way to recover
+
+
+the Q function, but uh a correct
+
+
+relationship. And this is going to be
+
+
+really useful because this will allow us
+
+
+to express the Q function as a function
+
+
+of R and P.
+
+
+So, it's not a method that you could
+
+
+actually use except in very small
+
+
+problems, but a fun fact to be aware of.
+
+
+So, policy evaluation is a linear
+
+
+operator.
+
+
+Uh and uh how big is this thing? Well,
+
+
+uh
+
+
+here, this this kind of a fun little bit
+
+
+of back of the napkin math we can do.
+
+
+Um
+
+
+let's say that your rewards are roughly
+
+
+of size one.
+
+
+Okay? So, when I say how big, I don't
+
+
+mean dimensionality, I mean literally
+
+
+the numbers. How big are the numbers
+
+
+inside this matrix?
+
+
+So, your reward is let's say roughly of
+
+
+size one. And you know that Q values are
+
+
+discounted
+
+
+sums of rewards. So, Q values are going
+
+
+to look something like a sum from T
+
+
+equals zero to infinity of gamma to the
+
+
+T times R.
+
+
+Right? So, if we just roughly assume
+
+
+that all those R's are about of size
+
+
+one, then that geometric series becomes
+
+
+just a sum from T equals zero to
+
+
+infinity of gamma to the T. And a fun
+
+
+textbook fact is that that's just one
+
+
+over one minus gamma. So, it's a
+
+
+geometric series. Maybe you learned
+
+
+about it in in a math class or in high
+
+
+school. Uh
+
+
+so, again, back of the napkin math, if
+
+
+your rewards are roughly of size one,
+
+
+you would expect the entries in that
+
+
+matrix to be roughly of size
+
+
+uh
+
+
+one over one minus gamma. Okay?
+
+
+And
+
+
+interestingly,
+
+
+if we had a finite horizon problem with
+
+
+a horizon of capital H and your rewards
+
+
+were roughly of size one, then your Q
+
+
+values would be roughly of size H.
+
+
+So, people often refer to one over one
+
+
+minus gamma as a horizon
+
+
+because if you in finite horizon case,
+
+
+capital H multiplies rewards, and in the
+
+
+infinite horizon case, one over one
+
+
+minus gamma multiplies the rewards.
+
+
+So, if you want kind of a rough rule of
+
+
+thumb, if you see any kind of
+
+
+theoretical result where one over one
+
+
+minus gamma pops up, what you should
+
+
+really think about is that that's
+
+
+roughly how long the episode is. That's
+
+
+roughly the length uh the horizon of
+
+
+your problem.
+
+
+Because in a finite horizon case,
+
+
+that'll be replaced by capital H.
+
+
+Yep.
+
+
+Correct. Yeah.
+
+
+Yeah, so So, when I say approximately
+
+
+one, I mean the actual numbers in the
+
+
+vector are approximately one.
+
+
+This uh this is a little bit of kind of
+
+
+just back of the envelope uh uh
+
+
+analysis. It's not you know, don't take
+
+
+this too seriously. In reality, of
+
+
+course, the rewards are not one, but
+
+
+this gives you a little bit of a sense
+
+
+for how big Q values are.
+
+
+And that means that you should expect
+
+
+that I minus gamma P pi inverse term to
+
+
+have entries roughly of size 1 over 1
+
+
+minus gamma.
+
+
+Okay. So, let's go through our first
+
+
+proof. Uh and the first one is actually
+
+
+going to be
+
+
+kind of a a relatively simpler one. It's
+
+
+a warm-up, which is to prove the
+
+
+convergence of value iteration.
+
+
+Okay. So, value iteration is this uh
+
+
+written out in matrix uh vector
+
+
+notation. So, in value iteration, you
+
+
+take the reward, you add gamma times PV,
+
+
+where P is that thing I defined before,
+
+
+and then you take a maximum over all the
+
+
+actions within within each block to find
+
+
+the highest uh value action at each
+
+
+state.
+
+
+So, you could say that you have an
+
+
+operator. We'll call this operator
+
+
+capital T. It's a non-linear operator
+
+
+because it contains a max. And TV is
+
+
+defined as this the right-hand side of
+
+
+that value iteration equation. So, it's
+
+
+an operator, a non-linear operator.
+
+
+Let's call it the Bellman optimality
+
+
+operator.
+
+
+And what we what we would like to prove
+
+
+is that repeatedly applying the Bellman
+
+
+optimality operator results in a value
+
+
+function that is very close to the
+
+
+optimal value function V star.
+
+
+And the optimal value function V star is
+
+
+the value function for which this is a
+
+
+fixed point. So, if you take the optimal
+
+
+value function V star, you back it up,
+
+
+and you take the max over the actions,
+
+
+you should get back V star all over
+
+
+again.
+
+
+Okay. So,
+
+
+uh there's one very useful uh inequality
+
+
+that we're going to use here. It's uh
+
+
+uh I'll I'll I'm going to just state
+
+
+this inequality. I'm not going to prove
+
+
+it. Uh but, if you, you know, draw this
+
+
+on a piece of paper, it actually becomes
+
+
+fairly obvious that uh
+
+
+if you have two functions F and G and
+
+
+you take the difference between the
+
+
+maximums of those functions, that
+
+
+difference can't be any larger than the
+
+
+max of the difference of those two
+
+
+functions at any single point.
+
+
+Uh, this is uh actually fairly logical
+
+
+intuitive fact. Surprisingly, as with
+
+
+many logical intuitive facts, very hard
+
+
+to actually prove, but geometrically, if
+
+
+you just draw two functions and you look
+
+
+at the gaps between them, you can kind
+
+
+of get a feel for why this really should
+
+
+be right. Um, so this is a textbook
+
+
+identity and we're going to use it in
+
+
+our uh proof.
+
+
+Okay. So, let's start with two functions
+
+
+uh V and U. They're both value
+
+
+functions, but we're just going to
+
+
+assign two different letters to them so
+
+
+we can tell them apart. They don't have
+
+
+to be optimal. Any two uh value
+
+
+functions. And let's apply the Bellman
+
+
+optimality operator to both of them.
+
+
+So, let's back up uh V and let's back up
+
+
+U and we'll write out the absolute value
+
+
+of the difference
+
+
+of the backup of these two value
+
+
+functions for a particular state S.
+
+
+Okay?
+
+
+So, just substituting in the definition
+
+
+of that Bellman optimality operator, T V
+
+
+of S becomes the max over A of R of SA
+
+
+plus gamma times the expected value of V
+
+
+of S prime and the second term becomes
+
+
+the max over A of R plus gamma expected
+
+
+value of U of S prime. Okay? I just
+
+
+substituted in the Bellman optimality
+
+
+operator.
+
+
+And now I'm going to apply that
+
+
+inequality that identity. So, now notice
+
+
+that I have a max of one thing minus a
+
+
+max of another thing. So, that's less
+
+
+than or equal to the max of the
+
+
+difference.
+
+
+And of course, uh
+
+
+this allows me to cancel lots of stuff
+
+
+because
+
+
+here I have the reward minus the reward
+
+
+and then I have the probability times V
+
+
+of S prime minus the probability times U
+
+
+of S prime. So, the rewards the reward
+
+
+terms should both cancel and the
+
+
+probabilities I can group together. So I
+
+
+can just undistribute them basically and
+
+
+I get gamma times the max over the
+
+
+actions of
+
+
+the sum over all the S primes of the
+
+
+probability of S prime given SA times
+
+
+the difference of the values. Okay?
+
+
+Um and I'm writing this out point-wise
+
+
+uh per uh
+
+
+per state.
+
+
+Now I know that the probabilities are
+
+
+between 0 and 1.
+
+
+So if I'm summing over all of the S
+
+
+primes
+
+
+and
+
+
+multiplying it by V of S prime minus U
+
+
+of S prime and the
+
+
+uh the things that I'm multiplying by
+
+
+are probabilities meaning they sum to 1
+
+
+and they're always between 0 and 1, then
+
+
+I know that that has to be less than or
+
+
+equal to the particular state with a
+
+
+large difference.
+
+
+Okay? So because those probabilities uh
+
+
+sum to 1 and are always between 0 and 1,
+
+
+then this is less than or equal to the
+
+
+max over all possible states S prime of
+
+
+the difference between V of S prime and
+
+
+U U of S prime.
+
+
+And
+
+
+now some of you might recognize that
+
+
+whenever you have
+
+
+something like this
+
+
+max of S prime of some f of S prime
+
+
+this is the definition of the infinity
+
+
+norm.
+
+
+So this is basically
+
+
+this.
+
+
+Infinity norm is actually defined in
+
+
+this way. So infinity norm is the sorry,
+
+
+absolute value.
+
+
+Infinity norm is the entry of a vector
+
+
+that is that has the largest absolute
+
+
+value.
+
+
+So this is basically the definition of
+
+
+the infinity norm between V and U.
+
+
+And something that I kind of snuck in
+
+
+there is this gamma factor, right? The
+
+
+gamma factor got taken outside of the
+
+
+max. The gamma factor showed up
+
+
+originally in front of those
+
+
+probabilities because it was gamma times
+
+
+the expected value of the next state
+
+
+and because it showed up in front of
+
+
+both probabilities, I took it outside of
+
+
+the max. So, it's actually gamma times V
+
+
+minus U under the infinity norm.
+
+
+And of course, the original quantity I
+
+
+started with, TV of S minus TU of S,
+
+
+that
+
+
+uh is um
+
+
+uh
+
+
+the um that's a
+
+
+that's a bound on the infinity norm
+
+
+for the backed-up vectors.
+
+
+So, what we get with this is that
+
+
+backing up V and U,
+
+
+the infinity norm of their difference is
+
+
+actually
+
+
+less than or equal to gamma times the
+
+
+infinity norm between the original
+
+
+vectors.
+
+
+So, that's the uh
+
+
+the basic result and now we're going to
+
+
+do a little bit of fairly simple
+
+
+manipulation to go from this to a proof
+
+
+that
+
+
+um VI converges, yes.
+
+
+Um
+
+
+So,
+
+
+this is true for all st- Sorry, there's
+
+
+there's there's a little bit of a math
+
+
+matter here. This is true for all
+
+
+states.
+
+
+So, if it's true for all states, then
+
+
+it's true for the maximum state.
+
+
+Like basically, if you have a particular
+
+
+bound that holds for every single entry
+
+
+in a vector, then it also holds for the
+
+
+maximum entry in that vector.
+
+
+Good question.
+
+
+All right. So,
+
+
+now if
+
+
+if we kind of set aside the algebra and
+
+
+we look at this from uh you know, we
+
+
+step back a couple of feet and look at
+
+
+this from afar, what this inequality
+
+
+really says is that if you apply the
+
+
+Bellman optimality operator to two value
+
+
+functions, V and U,
+
+
+then the infinity norm between V and U
+
+
+will be smaller and it'll be smaller by
+
+
+a factor of gamma.
+
+
+So, let's say gamma is like 0.9, that
+
+
+means that after you apply
+
+
+the operator to both V and U, you should
+
+
+expect their distance under infinity
+
+
+norm to be uh at most 0.9 of their old
+
+
+distance, which means they're coming
+
+
+closer together.
+
+
+And the second piece of information, um
+
+
+and this this one I won't prove, but uh
+
+
+it's uh
+
+
+you know,
+
+
+the
+
+
+for the spirit of the proof, it's kind
+
+
+of less essential to um to see all the
+
+
+details for this, but the second fact uh
+
+
+is that the optimal value function is
+
+
+not changed by the Bellman optimality
+
+
+operator.
+
+
+Um this is, you know, may maybe fairly
+
+
+intuitive because the whole point of the
+
+
+Bellman optimality operator was that uh
+
+
+it's a relationship that holds for the
+
+
+optimal value function. So, if you apply
+
+
+T to V star, you should just get V star
+
+
+back again.
+
+
+And putting these two things together
+
+
+actually allows us to show that value
+
+
+iteration converges to V star because we
+
+
+can if we want to understand the
+
+
+distance between TV and V star, so TV
+
+
+minus V star under the infinity norm,
+
+
+well, we know that V star is equal to TV
+
+
+star, so we can sub substitute that in.
+
+
+So, you know that that's equal to TV
+
+
+minus TV star.
+
+
+And based on our result up above, that's
+
+
+bounded by V minus V star under the
+
+
+infinity norm.
+
+
+Okay, so applying T to V brings it
+
+
+closer to V star.
+
+
+Uh and in particular, applying T K times
+
+
+to V
+
+
+brings it gamma to the K closer to V
+
+
+star,
+
+
+which means that as K goes to infinity,
+
+
+you would expect uh that distance to go
+
+
+to zero.
+
+
+So, that's basically the result that
+
+
+shows that these things uh converge.
+
+
+Any questions about this?
+
+
+Yes.
+
+
+>> So, somewhat naively, I assigned a
+
+
+reasonable amount of credibility to the
+
+
+infinity norm as like a good distance
+
+
+metric, but I'm wondering if that itself
+
+
+like sort of compromises the actual
+
+
+result.
+
+
+>> Um yeah, so the question was like what's
+
+
+up with the infinity norm basically?
+
+
+Well, the infinity norm you can think of
+
+
+it as
+
+
+the worst-case error over all of the
+
+
+states.
+
+
+So, it's a fairly reasonable way to
+
+
+quantify how
+
+
+kind of kind of what your worst-case
+
+
+performance of your algorithm is cuz you
+
+
+can say, "Well, if in the worst possible
+
+
+state my error is small,
+
+
+that's like that's very nice because
+
+
+that means my error is small overall."
+
+
+So, this shows that in the worst case
+
+
+it's it goes to zero. And once it goes
+
+
+to zero for any norm, you know, it's
+
+
+close enough.
+
+
+Uh the reason that this there's like a
+
+
+little
+
+
+you're kind you're right to have like a
+
+
+little bit of a spidey sense that
+
+
+something is wrong here is that of
+
+
+course in reality for real algorithms
+
+
+that operate on samples,
+
+
+it's generally impossible to get an
+
+
+infinity norm result for a fairly
+
+
+obvious reason that it even if I learn a
+
+
+really great value function for like
+
+
+driving in the US, chances are it's not
+
+
+a great value function for driving in
+
+
+the United Kingdom and if I don't have
+
+
+any data in the United Kingdom, so
+
+
+usually the reason to be suspicious
+
+
+about results for infinity norms like
+
+
+this is not that there's anything
+
+
+actually wrong or incorrect about them,
+
+
+but that almost certainly they are
+
+
+ignoring a realistic model of sampling
+
+
+error. And this is of course ignoring
+
+
+any model of sampling error because
+
+
+there's no sampling.
+
+
+Okay. Um let's take a 4-minute break and
+
+
+come back at 8:50 for more difficult
+
+
+theory. So, see you in 4 minutes. Yes.
+
+
+Yeah.
+
+
+Uh to what extent has physics motivated
+
+
+our RL theory? Uh
+
+
+probably not very much. So, basically RL
+
+
+theory is uh
+
+
+it kind of boils down to
+
+
+learning theory, like traditional
+
+
+statistical learning theory with a bunch
+
+
+of additional manipulations to account
+
+
+for sequential stuff.
+
+
+Uh and I think actually the next proof
+
+
+that I'll go through after the
+
+
+intermission perhaps makes that point a
+
+
+little more clearly.
+
+
+>> Um
+
+
+maybe one way that I I I could explain
+
+
+this is that
+
+
+the MDP model of a of a temporal process
+
+
+is extremely abstract. It's It's like
+
+
+far more abstract than any physical
+
+
+system, and because of that
+
+
+uh
+
+
+general RL theory that applies to any
+
+
+MDP
+
+
+is uh
+
+
+Like there's a lot of nice things that
+
+
+you can make use of in physics that
+
+
+don't exist for arbitrary MDPs. So,
+
+
+because of that, analysis of arbitrary
+
+
+MDPs is extremely non-physical usually.
+
+
+And like especially once you get into
+
+
+worst case, because the worst case
+
+
+scenarios are
+
+
+extremely non-physical. It's like, you
+
+
+know, MDPs where in the worst case you
+
+
+could like teleport to any anywhere and
+
+
+all sorts of kind of stuff.
+
+
+Do you have a question?
+
+
+>> Yeah.
+
+
+Um I
+
+
+>> All right, let's get back to it.
+
+
+So, in the
+
+
+rest of today's lecture, there are
+
+
+two results that I want to get through.
+
+
+Those kind of the the main important
+
+
+result, and then if we have time at the
+
+
+end, there's a little bonus result. So,
+
+
+the main result is on sample complexity
+
+
+of running RL without exploration.
+
+
+Why without exploration? Well, because
+
+
+if it was with exploration, then the
+
+
+sample complexity would be pretty awful.
+
+
+So, since we don't want to be a we don't
+
+
+want to have too much of a downer here,
+
+
+we're going to have an optimistic result
+
+
+that says, "If I pretend that
+
+
+exploration is easy, what is the sample
+
+
+complexity of doing RL?" And the kind of
+
+
+RL that I'm going to do is actually
+
+
+model-based RL.
+
+
+Now, the reason for doing model-based RL
+
+
+is because at this level of abstraction,
+
+
+actually the punchline is that all the
+
+
+RL methods are going to look about the
+
+
+same, and model-based RL turns out to be
+
+
+particularly convenient to analyze.
+
+
+But, don't be perturbed by that because
+
+
+more or less the same thing would apply
+
+
+to most RL algorithms under these very
+
+
+simplistic assumptions.
+
+
+Okay.
+
+
+So, the setup is that we're going to
+
+
+have this oracle exploration. We're
+
+
+going to say that for every state and
+
+
+action, I am allowed to sample the next
+
+
+state n times.
+
+
+So, basically my cartoon kind of RL
+
+
+algorithm is step one, go to every
+
+
+single state, take every single action,
+
+
+and record how many times you land in S
+
+
+prime, and then estimate your
+
+
+approximate dynamics P hat by just
+
+
+counting the number of times that you
+
+
+landed in S prime.
+
+
+Um this is a like a slightly stupid
+
+
+algorithm, but if exploration was not a
+
+
+thing, it actually kind of makes sense.
+
+
+And then, step two,
+
+
+for a particular policy,
+
+
+use P hat to estimate Q hat pi.
+
+
+And this is pretty easy to do because if
+
+
+you have a model of your dynamics, you
+
+
+can just solve those linear equations.
+
+
+Okay. Not Not a real algorithm. Not
+
+
+something you would actually do in the
+
+
+computer, but under these simplistic
+
+
+assumptions, uh pretty reasonable.
+
+
+And then you can start asking some
+
+
+questions like, how close is Q uh Q pi
+
+
+hat to Q pi?
+
+
+You can also ask if we were to use this
+
+
+to find
+
+
+pi star, how close would um
+
+
+would we get to uh to pi star? And we'll
+
+
+get to that later. So, this is actually
+
+
+a policy evaluation algorithm, but we
+
+
+know that if you can do policy
+
+
+evaluation, then you can take the greedy
+
+
+policy and get policy improvement. So,
+
+
+we're really going to focus on analyzing
+
+
+policy evaluation, and then from there
+
+
+we'll see that it's actually very easy
+
+
+to get to a bound on uh
+
+
+on pi star.
+
+
+And
+
+
+when we say close, the way that we're
+
+
+going to quantify close out of
+
+
+theoretical convenience is going to be
+
+
+in terms of infinity norm.
+
+
+So, we're going to basically try to
+
+
+figure out if I use this cartoony
+
+
+model-based RL algorithm to get Q hat
+
+
+pi,
+
+
+then for the worst possible SA pair,
+
+
+what will be the error between my
+
+
+learned Q hat pi and the true Q pi?
+
+
+And I would like to bound that error by
+
+
+epsilon with probability at least 1
+
+
+minus delta
+
+
+if the number of samples is large
+
+
+enough. It's larger than some function
+
+
+of epsilon and delta. And of course, I
+
+
+would like to find what that function
+
+
+is.
+
+
+So,
+
+
+don't be worried if you see this
+
+
+infinity norm symbol. All that means is
+
+
+it's just the absolute value of the
+
+
+error for the worst state and action.
+
+
+Okay?
+
+
+Yes.
+
+
+Yeah, so the question is
+
+
+Yeah, so the question is why do this in
+
+
+terms of infinity norm instead of two
+
+
+norm? The answer is that is because it's
+
+
+easier to to get the proof to work in
+
+
+infinity norm. Um it is actually
+
+
+possible to derive proofs like this for
+
+
+other norms. They are extremely complex
+
+
+uh and they require some additional
+
+
+assumptions.
+
+
+Okay.
+
+
+Um
+
+
+but also infinity norm kind of makes
+
+
+sense because you can think of it as
+
+
+like the worst case error, worst case
+
+
+over all the states and actions.
+
+
+Okay.
+
+
+Um
+
+
+now we might also like to know um
+
+
+how close is
+
+
+Q hat star, the best policy under these
+
+
+dynamics, if we learned using P hat. So,
+
+
+that would be more like Q star minus Q
+
+
+hat star and we will try to show that
+
+
+that's also bounded. Uh
+
+
+and that's that's kind of what we really
+
+
+want if we're talking about learning
+
+
+rather than just estimation. So, this
+
+
+would be the optimal Q function. But for
+
+
+now, we'll focus on the evaluation case
+
+
+and we'll see that once the evaluation
+
+
+case is done, actually the case where
+
+
+we're learning Q hat star turns out to
+
+
+be pretty easy.
+
+
+Now, notice this is still not the same
+
+
+as the really big final question, which
+
+
+is how good is the final resulting
+
+
+policy because that thing just says is
+
+
+your estimate of Q hat star numerically
+
+
+close to Q star, but what you probably
+
+
+really want is is the true Q value of
+
+
+the policy Phat that you get from this
+
+
+is that close to Q star.
+
+
+That's kind of the final ultimate
+
+
+question, and we'll get to that as well.
+
+
+Turns out that that is also actually a
+
+
+fairly easy consequence of a of a good
+
+
+result for estimation. So, we'll focus
+
+
+on estimation for most of the proof, and
+
+
+then it will you'll see that these other
+
+
+really interesting questions turn out to
+
+
+be pretty simple at the end.
+
+
+Okay. So, that's the setup.
+
+
+Now,
+
+
+you might have noticed that one of the
+
+
+most mysterious parts of all of this is
+
+
+relating samples to errors. We didn't do
+
+
+that in the VI proof because in the VI
+
+
+proof we didn't have any samples. But
+
+
+now we're talking about samples, and
+
+
+this is where we really need to use a
+
+
+textbook to find a standard textbook
+
+
+result to get us started because
+
+
+relating samples to errors is actually
+
+
+uh a highly non- trivial uh kind of
+
+
+statistical thing to do. And what we
+
+
+need is we need a concentration
+
+
+inequality. So, a concentration
+
+
+inequality uh is basically some kind of
+
+
+inequality that tells us whenever we
+
+
+need to answer some question about how
+
+
+close a learned function is to a true
+
+
+function, how does the error scale with
+
+
+the number of samples that we used?
+
+
+So, here is what perhaps the most
+
+
+well-known and the simplest
+
+
+concentration inequality, which is
+
+
+Hoeffding's inequality.
+
+
+Um okay, this is a the textbook
+
+
+statement of Hoeffding's inequality, but
+
+
+I'll provide a little bit of
+
+
+interpretation for how you should read
+
+
+it. So, the textbook statement says that
+
+
+uh let's say that you have
+
+
+uh a bunch of samples
+
+
+uh
+
+
+for some variable. The samples are X1,
+
+
+X2, X3, X all the way out to Xn. So,
+
+
+let's say that uh I ask each of you how
+
+
+old you are, and I want to estimate the
+
+
+average age of people in the room,
+
+
+right? So, the X's are your answers to
+
+
+my question.
+
+
+And then I'm going to average them
+
+
+together to get X Xbar n. So, subscript
+
+
+n denotes that it's estimated with n
+
+
+samples. Superscript with the bar
+
+
+indicates that it's an average. So, I'm
+
+
+averaging together all the samples.
+
+
+And then what I want to know is this
+
+
+sample-based average x-bar-n,
+
+
+what is the probability
+
+
+that it is very far off from the true
+
+
+average mu?
+
+
+Now, intuitively,
+
+
+all of you hopefully realize that if n
+
+
+becomes really, really big, then x-bar-n
+
+
+is very close to mu.
+
+
+Like if I ask every single person in
+
+
+this room their age and I average that
+
+
+together, that is the average of your
+
+
+age. Uh
+
+
+but if I only ask like a couple of you,
+
+
+maybe I got lucky and I asked the right
+
+
+people and I have the right average, but
+
+
+maybe I got unlucky and the average of
+
+
+just a couple of those answers is very
+
+
+far away from the true average. So, what
+
+
+the concentration inequality quantifies
+
+
+is how likely am I to be very far off
+
+
+from the true mean.
+
+
+And Hoeffding's inequality says that the
+
+
+probability that your sample-wise
+
+
+average is greater than or equal to the
+
+
+true average plus epsilon,
+
+
+so epsilon is the amount of error, is
+
+
+less than or equal to the exponential of
+
+
+-2 * n * epsilon squared
+
+
+divided by the range of the
+
+
+uh numbers. So, if if the numbers are
+
+
+all between 0 and 1, then the
+
+
+denominator B plus minus B minus is just
+
+
+1. So, don't worry about the B's, that's
+
+
+just basically this the overall scale of
+
+
+the problem. You can just assume that
+
+
+that's 1 for now to keep it simple, and
+
+
+this tells you that the probability of
+
+
+making a mistake of the most epsilon is
+
+
+bounded by
+
+
+e to the -2
+
+
+* n * epsilon squared.
+
+
+Is this good news or bad news?
+
+
+I think this is very good news. Yeah,
+
+
+this is very, very good news because the
+
+
+error goes down exponentially as you
+
+
+increase the number of samples. That's
+
+
+very, very good. And this is why machine
+
+
+learning works because sample-based
+
+
+estimates of
+
+
+uh of these quantities actually have
+
+
+error that drops very rapidly. That's
+
+
+very, very good. If this wasn't true,
+
+
+then we would all be in a lot of trouble
+
+
+and you probably wouldn't be taking a
+
+
+course on machine learning because
+
+
+machine learning wouldn't work.
+
+
+Okay, so the way you can interpret it is
+
+
+if you estimate mu with n samples, then
+
+
+the probability you're off by by more
+
+
+than epsilon is at most
+
+
+two times e to the -2 n e squared
+
+
+divided by the range. And the reason for
+
+
+the two out front is because you can be
+
+
+wrong in the positive direction or in
+
+
+the negative direction.
+
+
+Now you can do all sorts of manipulation
+
+
+with this and you could equivalently
+
+
+say, "Okay, what if I want this
+
+
+probability to be delta?" Remember that
+
+
+when we started we said like, "Oh, I
+
+
+want the error to be less than epsilon
+
+
+with probability at most 1 - delta." So
+
+
+if I want the probability that I'm wrong
+
+
+to be bounded by delta, then I can just
+
+
+like plug in delta for the probability
+
+
+and solve like do a bunch of algebra and
+
+
+express this in terms of epsilon or
+
+
+in terms of um
+
+
+uh in terms of n. So if So if I try to
+
+
+manipulate this
+
+
+to express in terms of epsilon, well, I
+
+
+can take the log of both sides
+
+
+and then
+
+
+I can take the square root and all that
+
+
+stuff. I won't go through the algebra,
+
+
+it's not terribly interesting, but then
+
+
+you can write an expression in terms of
+
+
+epsilon. So now you can express you can
+
+
+have some function of delta and you say
+
+
+this this is
+
+
+the function of delta if I want the
+
+
+error to be
+
+
+bounded by epsilon. You can also do all
+
+
+the same algebraic manipulation and
+
+
+solve for n and then you can say things
+
+
+like I need at least this many samples,
+
+
+all that kind of kind of stuff. So
+
+
+uh
+
+
+the interesting one is expressing this
+
+
+in terms of epsilon and you'll notice
+
+
+that the expression in terms of epsilon,
+
+
+the n there appears in the denominator
+
+
+with a square root. So if you just want
+
+
+to know the relationship between epsilon
+
+
+and n, that's kind of a nice thing to do
+
+
+and then you can say, "Oh, my error
+
+
+scales as 1 over the square root of of
+
+
+n.
+
+
+Right? Because in that equation on the
+
+
+right-hand side, there's a bunch of
+
+
+terms that depend on like delta and B
+
+
+and so on, but the terms that depend on
+
+
+n appear in the denominator with a
+
+
+square root over them. So, that means
+
+
+that error scales as one over root n.
+
+
+And this is a This is generally uh how
+
+
+most statistical estimation is going to
+
+
+go. You're typically going to have error
+
+
+that goes as one over root n for most
+
+
+conventional statistical estimation
+
+
+problems. So, that's good. This is a
+
+
+very good thing. It means your error
+
+
+drops rapidly as you increase the number
+
+
+of samples.
+
+
+Okay. Now, um this is not quite the
+
+
+right tool for us. It's very close, but
+
+
+it's not quite right because we're not
+
+
+trying to estimate the average of
+
+
+everybody's age in the room. We're
+
+
+trying to estimate the probabilities of
+
+
+entering a state S prime.
+
+
+Okay? Which is a little bit different
+
+
+because probabilities
+
+
+uh are between zero and one, and they
+
+
+sum to one.
+
+
+So, we need a different kind of
+
+
+concentration inequality.
+
+
+Uh so, this is a discrete distribution,
+
+
+and we need to go back to our statistics
+
+
+textbook, and we need to find an
+
+
+appropriate concentration inequality for
+
+
+estimating probabilities rather than
+
+
+just sample averages. And fortunately,
+
+
+there is uh
+
+
+such a concentration inequality for
+
+
+discrete distributions. Uh it has a very
+
+
+similar form to Hoeffding's inequality,
+
+
+but it takes into account the fact that
+
+
+now we're not estimating the average of
+
+
+some continuous value, we're estimating
+
+
+the probabilities of
+
+
+uh a set of uh
+
+
+discrete events.
+
+
+So, this proof says that Sorry, this uh
+
+
+standard concentration inequality says
+
+
+that if you have uh a discrete random
+
+
+variable Z, and it takes on values
+
+
+between one and D,
+
+
+so, there are D possible values.
+
+
+In this case, there's uh uh D is the
+
+
+number of states.
+
+
+And they're distributed according to
+
+
+some unknown distribution little Q. So,
+
+
+little Q would be the true
+
+
+probabilities.
+
+
+Then, um
+
+
+if you have n samples, and you estimate
+
+
+this has nothing to do with the Q
+
+
+function, that's why it's a little Q.
+
+
+You estimate it using samples basically
+
+
+by counting the number of times you see
+
+
+each occurrence, then
+
+
+the uh you can bound the two norm and
+
+
+the one norm. We'll use the one norm
+
+
+result uh in uh in our analysis. So, the
+
+
+the one norm between the learned
+
+
+probabilities and the true
+
+
+probabilities, the probability that's
+
+
+greater than or equal to that expression
+
+
+root d * 1 / root n + epsilon is bounded
+
+
+by e to the negative n * epsilon
+
+
+squared.
+
+
+And this looks a little bit like
+
+
+Hoeffding's inequality, like it also has
+
+
+a e to the negative uh n * epsilon
+
+
+squared. It's just the expression for
+
+
+the error is a little bit different to
+
+
+account for the fact that now you have d
+
+
+separate values, but you know that they
+
+
+are between 0 and 1 and sum to 1.
+
+
+Okay?
+
+
+Um so, it's a stan- this is a standard
+
+
+concentration inequality, and we can do
+
+
+all the same stuff. You can plug in
+
+
+delta, you can solve for epsilon. You
+
+
+see that epsilon still scales as 1 /
+
+
+root n, so it's kind of morally it's
+
+
+very similar to Hoeffding's inequality,
+
+
+but just accounting for the fact that
+
+
+you're estimating probabilities now.
+
+
+Okay, and you can express it in terms of
+
+
+n and all the other good stuff.
+
+
+All right. So, what that means is that
+
+
+if we estimate P hat using samples,
+
+
+then the one norm between P hat of S
+
+
+prime and P of S prime is bounded by
+
+
+root d, and uh d here is the number of
+
+
+states, so it's really root of the
+
+
+cardinality of S
+
+
+* 1 / root n + epsilon.
+
+
+And this is true with probability 1 -
+
+
+delta.
+
+
+Now, this is not of course the the bound
+
+
+that we want. We want a bound on Q on on
+
+
+on the Q function. This gives So far, we
+
+
+have a bound on P. But then, what we'll
+
+
+do is we'll transform this bound on P
+
+
+into a bound on Q. So, let's get the
+
+
+bound on P squared away first, and then
+
+
+we'll deal with Q.
+
+
+Um in principle, this is actually enough
+
+
+to get us started. Uh in practice,
+
+
+uh going with just this version is going
+
+
+to lead to
+
+
+um
+
+
+all sorts of uh annoyances in terms of
+
+
+really long notation and so on. So,
+
+
+there's a little bit of simplification
+
+
+that I want to do here, which is not
+
+
+terribly insightful, and I'll gloss over
+
+
+it admittedly quickly, but it'll just
+
+
+simplify notation later. So, I want to
+
+
+get rid of that epsilon in there. I want
+
+
+to express this in terms of delta, so
+
+
+I'll I'll substitute it in the equation
+
+
+for delta.
+
+
+Um
+
+
+I I will end up with these two terms.
+
+
+The two terms look very similar. There's
+
+
+a square root of S over N plus a square
+
+
+root of S times log 1 over delta divided
+
+
+by N. And there's a little bit of
+
+
+algebra that you can do to basically
+
+
+just say this is roughly bounded by some
+
+
+constant times the square root of S log
+
+
+1 over delta divided by N. Don't worry
+
+
+about that constant. It's really just to
+
+
+avoid writing out long equations with a
+
+
+plus in them. So, you don't have to do
+
+
+this. You can keep the two terms, but
+
+
+for simplicity, you can just get rid of
+
+
+that.
+
+
+Okay.
+
+
+So,
+
+
+we'll come back to this, but roughly
+
+
+speaking, this is really not the
+
+
+interesting part because this is just
+
+
+standard statistic. This is just saying
+
+
+that my I can I can bound the error of
+
+
+learning my dynamics using samples, and
+
+
+that's the quantity I'm bounded by.
+
+
+But now, let's get to the really
+
+
+interesting RL part.
+
+
+And essentially, what we're going to be
+
+
+doing now is we're going to be trying to
+
+
+express our learned Q function in terms
+
+
+of our learned probabilities, and then
+
+
+substitute it in that bound in the or
+
+
+right for probabilities into an equation
+
+
+that can express
+
+
+uh error of the Q function. And that's
+
+
+the actual RL theory part. So, this is
+
+
+just basic statistics. What comes next
+
+
+is the RL theory.
+
+
+Okay. So, the next goal is to relate the
+
+
+error in P hat to the error in Q hat pi.
+
+
+And that's that's the most important
+
+
+part.
+
+
+And the basic tool for this is the one
+
+
+that we already saw. It's the It's our
+
+
+ability to to the Q function in terms of
+
+
+the the probabilities P. So, relating P
+
+
+to
+
+
+Q pi
+
+
+basically what we saw before. You can
+
+
+write down the Bellman equation,
+
+
+expand the expectation,
+
+
+write it out as matrix vector product,
+
+
+and this remember that the Q function is
+
+
+a vector of size SA, the reward function
+
+
+is a vector of size SA, P is a matrix,
+
+
+and V pi is a vector.
+
+
+And V pi in particular can be written
+
+
+itself as a matrix times Q pi, where
+
+
+that matrix capital pi just has the
+
+
+entries from the policy.
+
+
+Okay?
+
+
+So,
+
+
+uh then we can write Q pi equals R plus
+
+
+gamma P pi Q pi, where P pi is just P
+
+
+times capital pi. Okay? So, these are
+
+
+our matrix vector identities, and you'll
+
+
+notice that all these things are
+
+
+relating P and Q in various ways.
+
+
+So, here is uh
+
+
+the way to relate uh P pi and Q pi,
+
+
+and we'll do everything for a single pi
+
+
+for now. So, of course you can solve
+
+
+this and you can get Q pi equals I minus
+
+
+gamma P pi inverse times R, just like we
+
+
+saw before.
+
+
+And this is why we started by working on
+
+
+only policy evaluation, because when we
+
+
+work on policy evaluation, we can just
+
+
+forget about pi, just put it inside that
+
+
+P matrix, and
+
+
+uh just assume that that's a linear
+
+
+transition operator.
+
+
+Okay.
+
+
+So,
+
+
+these are these are our facts, and since
+
+
+we have uh P and P hat, P hat is our
+
+
+learned transition probabilities,
+
+
+uh now we can write Q pi, the true Q
+
+
+function, and Q hat pi, the learned Q
+
+
+function, side by side, uh and you see
+
+
+that the only thing that that
+
+
+distinguishes them is that the true Q
+
+
+function Q pi has I minus gamma P pi
+
+
+inverse, and the learned Q function Q
+
+
+hat has I minus gamma a hat pi inverse.
+
+
+Okay? That's the only difference.
+
+
+And basically these are the two things
+
+
+that we want to relate to each other.
+
+
+So, we want to somehow compare Q pi and
+
+
+Q hat pi.
+
+
+There is a a very famous lemma in RL
+
+
+theory that we used to do this. It's a
+
+
+very simple lemma to prove, so I will
+
+
+actually prove this one. It's called
+
+
+appropriately enough the simulation
+
+
+lemma. The reason it's called the
+
+
+simulation lemma is because it deals
+
+
+with how
+
+
+with what happens when instead of using
+
+
+the true dynamics P, you use the {quote}
+
+
+simulated dynamics P hat.
+
+
+And the simulation lemma
+
+
+says that the difference between Q pi
+
+
+and Q hat pi is
+
+
+gamma times I minus gamma P hat pi
+
+
+inverse
+
+
+times P minus P hat times V pi.
+
+
+Okay, this is a slightly cryptic fact,
+
+
+but
+
+
+one way you could interpret this is you
+
+
+know that I minus gamma P hat pi inverse
+
+
+is basically the operator that takes a
+
+
+reward function to a value function
+
+
+for the learned dynamics P hat.
+
+
+Okay? So, it's like whatever appears to
+
+
+the right of that, you can think of it
+
+
+as like a reward function, and that
+
+
+operator turns it into a value function.
+
+
+And the pseudo reward here is
+
+
+essentially the error of your dynamics P
+
+
+minus P hat times the value. So, it's
+
+
+like the value weighted dynamics error.
+
+
+So, one way you can intuitively
+
+
+interpret this is that the difference of
+
+
+the Q functions
+
+
+is itself like a value function, like a
+
+
+Q it's itself like a Q function that you
+
+
+get if you learn the Q function of the
+
+
+value weighted dynamics error.
+
+
+And it's kind of this actually to me at
+
+
+least it kind of makes sense because
+
+
+it's saying
+
+
+dynamics error is bad, but it's
+
+
+especially bad when it happens in states
+
+
+with high value.
+
+
+So, dynamics error in states with zero
+
+
+value kind of doesn't matter. Dynamics
+
+
+error in states with high value
+
+
+translates to a big difference in the
+
+
+resulting Q functions.
+
+
+Okay.
+
+
+So, this is a difference in
+
+
+probabilities and this is the true
+
+
+value.
+
+
+Uh and this is our evaluation operator.
+
+
+The evaluation operator for the learned
+
+
+dynamics.
+
+
+So, let's prove this.
+
+
+Uh
+
+
+here's how we're going to prove it.
+
+
+We're going to We're going to take Q pi
+
+
+minus Q hat pi and then for Q hat pi,
+
+
+we're going to substitute it in that
+
+
+expression at the top. So, we're going
+
+
+to replace Q hat pi with I minus gamma P
+
+
+hat pi inverse times R. Okay? That's
+
+
+just from from our expression at the
+
+
+top.
+
+
+And then what we're going to do is we're
+
+
+going to replace
+
+
+Q pi, we're going to We're going to
+
+
+multiply Q pi on the left-hand side by
+
+
+the identity matrix.
+
+
+And there's a particular choice of
+
+
+identity matrix we're going to choose
+
+
+which is I minus gamma
+
+
+P hat pi inverse times I minus gamma
+
+
+P pi hat. Okay? Because if you multiply
+
+
+a matrix inverse by itself, you get
+
+
+identity. So, you can always stick that
+
+
+in front of Q pi. And of course, the
+
+
+reason we did that is now we have two
+
+
+quantities that are both multiplied out
+
+
+front by I minus gamma
+
+
+uh P pi hat, so we can group them
+
+
+together.
+
+
+Okay?
+
+
+Uh now, we're not quite done yet because
+
+
+of course, we we don't want to relate Q
+
+
+pi to R, we want to relate uh Q pi um
+
+
+uh
+
+
+sorry, we we don't want to relate Q pi
+
+
+to R, we want to compare different uh
+
+
+transition probabilities. So, what we'll
+
+
+do is we'll replace the R on that
+
+
+right-hand side by I minus gamma P pi Q
+
+
+pi. Okay? So, that we got by just taking
+
+
+the that top left equation and moving
+
+
+the matrix over to the left-hand side.
+
+
+Okay?
+
+
+So, now we're getting very close to to
+
+
+what we want, right? Because now we see
+
+
+there is a P hat in in this equation,
+
+
+there's a P, they're multiplied by the
+
+
+same thing out front, and they're
+
+
+multiplied by the same thing on the on
+
+
+the right-hand side. So, on the right
+
+
+side for both terms, we have a Q pi. On
+
+
+the left side for both terms, we have I
+
+
+minus gamma uh P pi hat.
+
+
+Okay? So, we're going to start grouping
+
+
+these together. So, first let's take out
+
+
+the first matrix. So, we have I minus
+
+
+gamma uh P pi hat inverse times in
+
+
+parentheses
+
+
+uh those two middle terms, the
+
+
+difference of the two middle terms, and
+
+
+then on the on the right side, we have Q
+
+
+pi.
+
+
+And now these two middle terms, you see
+
+
+they both have an identity matrix. So,
+
+
+the identity matrices of course cancel
+
+
+out. Uh and we can take the gamma out
+
+
+front. So, we get this. We get gamma
+
+
+I minus gamma uh
+
+
+P hat pi inverse times the difference of
+
+
+the probabilities times Q pi.
+
+
+So, we're nearly there.
+
+
+Now, remember that we have this uh
+
+
+relationship that
+
+
+P
+
+
+capital pi, that's
+
+
+P pi, right?
+
+
+So, we can substitute that in there.
+
+
+And of course, the capital P matrix can
+
+
+be taken out.
+
+
+And capital uh capital pi times Q pi,
+
+
+that's just the value function.
+
+
+Right? Because capital pi is just a
+
+
+matrix that contains all the policy
+
+
+probabilities. So, if you take the
+
+
+expected value of the Q function under
+
+
+the policy, you get
+
+
+the value function.
+
+
+Okay.
+
+
+So, so we get this.
+
+
+So, that's the that's the proof of the
+
+
+lemma. It's not a terribly uh clever
+
+
+proof. It's just a bunch of algebraic
+
+
+manipulation.
+
+
+Uh and there's the result.
+
+
+Any questions about this proof?
+
+
+Okay. So, a few principles, a few kind
+
+
+of tools in our toolkit that we use for
+
+
+stuff like this.
+
+
+The relationship between P and Q, the
+
+
+stuff at the top of the slide.
+
+
+Basically, this was the hammer that we
+
+
+used to to write out the sproof. If we
+
+
+can relate Q to P in via this linear
+
+
+relationship, then we can substitute
+
+
+that in there, and we can go from an
+
+
+expression in terms of only Qs to an
+
+
+expression in terms of Ps.
+
+
+Uh
+
+
+that's really the main thing that we
+
+
+use. The rest is all basic linear
+
+
+algebra.
+
+
+There is a second uh
+
+
+lemma that we need. Uh and once we have
+
+
+the second lemma, then we'll be able to
+
+
+put these two together and get our
+
+
+result. The second lemma is actually uh
+
+
+a long-winded way to say something
+
+
+extremely simple.
+
+
+So,
+
+
+it states that given
+
+
+P pi and any vector
+
+
+little v,
+
+
+then you have the property that the
+
+
+infinity norm of
+
+
+I minus gamma P pi inverse times v
+
+
+is less than or equal to the infinity
+
+
+norm of the original vector divided by 1
+
+
+minus gamma.
+
+
+The reason that I said this is a very
+
+
+long-winded way to say something really
+
+
+obvious is that I minus gamma P pi
+
+
+inverse, that is policy evaluation.
+
+
+So, all this is saying is that if you
+
+
+run policy evaluation
+
+
+with a reward
+
+
+whose largest value is the infinity norm
+
+
+of v,
+
+
+then the largest value in your Q
+
+
+function will be the infinity norm of v
+
+
+divided by 1 minus gamma. That's That's
+
+
+basically that geometric series stuff
+
+
+from the before. It's basically a way to
+
+
+formalize this statement.
+
+
+times
+
+
+v is
+
+
+v
+
+
+over 1 minus gamma.
+
+
+Okay?
+
+
+Now, we we want to form like, you know,
+
+
+here I'm kind of just like pretending
+
+
+that the reward is always this number.
+
+
+In reality, I want to do I want to do
+
+
+this for real, so I have a slightly more
+
+
+involved proof, but it's a it's a fairly
+
+
+involved It's It's a somewhat involved
+
+
+proof of a very very obvious trivial
+
+
+fact.
+
+
+So,
+
+
+um
+
+
+basically, the Q function corresponding
+
+
+to a reward v is at most 1 over 1 minus
+
+
+gamma times larger.
+
+
+Okay, so basically this fact.
+
+
+I'll write out the proof. I think this
+
+
+part is not that insightful because the
+
+
+conclusion is a little bit obvious, but
+
+
+it's good to to be rigorous here. So
+
+
+here's how you do it.
+
+
+Let's say that little W is just
+
+
+shorthand notation for
+
+
+that
+
+
+that vector inside the left-hand side I
+
+
+minus gamma
+
+
+P inverse times V.
+
+
+Then
+
+
+the infinity norm of V by the definition
+
+
+of W is just the infinity norm of I
+
+
+minus gamma P
+
+
+times W, right? Because I minus gamma P
+
+
+times I minus gamma P inverse just
+
+
+cancels out. So that's a trivial
+
+
+equality.
+
+
+And then this is greater than or equal
+
+
+to
+
+
+the infinity norm of the first part
+
+
+identity times W minus the infinity norm
+
+
+of the second part gamma times P times
+
+
+W. Why? Well, this is just the triangle
+
+
+inequality. So the triangle inequality
+
+
+says that for every norm the norm of A
+
+
+minus B is greater than or equal to the
+
+
+norm of A minus the norm of B.
+
+
+So it's just triangle inequality.
+
+
+And
+
+
+now the second part here gamma times P
+
+
+pi W under the infinity norm,
+
+
+that's bounded by the infinity norm of W
+
+
+because you're multiplying it by a
+
+
+matrix that where the entries sum to one
+
+
+and every entry is between zero and one.
+
+
+So because of that you can't get an
+
+
+infinity norm that's larger than the
+
+
+infinity norm of the original matrix
+
+
+because if when you take a linear
+
+
+combination of a bunch of values with
+
+
+weights that sum to one, that linear
+
+
+combination can't be larger than any of
+
+
+the values you started with.
+
+
+So now you have the norm of W minus
+
+
+gamma times the norm of W, so that's
+
+
+just 1 minus gamma
+
+
+times the norm of W.
+
+
+So if you divide everything by one by 1
+
+
+minus gamma, then you get
+
+
+the infinity norm of V divided by 1
+
+
+minus gamma is greater than or equal to
+
+
+the infinity norm of W.
+
+
+And the infinity norm of W, that just
+
+
+the way we define W is literally just
+
+
+the left-hand side of that.
+
+
+Okay. So, this is this is basically just
+
+
+like a
+
+
+a triangle inequality sort of proof.
+
+
+It's not terribly exciting. It's not
+
+
+terribly interesting, but it's good to
+
+
+have the comfort of knowing that.
+
+
+And now we can just put these things
+
+
+together.
+
+
+So, we've got our
+
+
+uh
+
+
+result with one one over
+
+
+uh
+
+
+uh 1 minus gamma.
+
+
+We've got our simulation lemma.
+
+
+And now what we're basically going to do
+
+
+is we're going to substitute it in the
+
+
+uh
+
+
+that P minus P hat times V pi into the
+
+
+vector little V inside our second lemma.
+
+
+So, that tells us that
+
+
+Q pi minus Q hat pi, the infinity norm
+
+
+of that,
+
+
+uh
+
+
+that, by the simulation lemma, is equal
+
+
+to the infinity norm of gamma I minus
+
+
+gamma P inverse P minus P hat times V
+
+
+pi.
+
+
+And then using that
+
+
+that second lemma, the one that I have
+
+
+written at the top,
+
+
+that is bounded by
+
+
+gamma over 1 minus gamma of P minus P
+
+
+hat V pi. Okay?
+
+
+All right. So, that's just substituting
+
+
+that into the lemma at the top.
+
+
+And now we can do a little bit of
+
+
+manipulation on this and get to an error
+
+
+bound. So, first I'm going to
+
+
+uh
+
+
+replace P minus P hat by the worst case
+
+
+P minus P hat.
+
+
+Right? Because if I multiply V pi by P
+
+
+minus P hat, well, that's going to be
+
+
+less than or equal to what what I get if
+
+
+I multiply by the worst case error, the
+
+
+max over S and A.
+
+
+And now I need to get rid of that V pi
+
+
+infinity norm term. Um
+
+
+that's actually pretty easy because
+
+
+back to this fact,
+
+
+if you have some reward RT
+
+
+and uh you assume that your rewards are
+
+
+bounded by Rmax, then
+
+
+the values inside the value function,
+
+
+they're going to be at most 1 over 1
+
+
+minus gamma times Rmax. That's that
+
+
+whole geometric series thing all over
+
+
+again. So, this is a fact that we've
+
+
+seen many times already.
+
+
+So, if I really want to get rid of the
+
+
+infinity norm of V pi, I can say every
+
+
+entry in V pi can be at most 1 over 1
+
+
+minus gamma times the maximum possible
+
+
+reward.
+
+
+And for um simplicity, we'll just assume
+
+
+the rewards are bounded by 1. You can do
+
+
+that without loss of generality because
+
+
+of course in RL, if you multiply the
+
+
+rewards by any constant,
+
+
+the optimal policy doesn't change.
+
+
+So, without loss of generality, we can
+
+
+assume that the range of rewards uh
+
+
+that the rewards are bounded by 1. And
+
+
+that actually makes a lot of sense here
+
+
+if we didn't do this, we would just have
+
+
+a constant Rmax in front of everything,
+
+
+which you can think of as a reward
+
+
+scale.
+
+
+So,
+
+
+by assuming the rewards are bounded by
+
+
+1, it imposes a natural scale on the
+
+
+problem. But, if you didn't do this,
+
+
+then you just have an Rmax term and
+
+
+that's okay, too. Yes?
+
+
+>> Uh you also assumed that the Rmin is
+
+
+larger than -1, right?
+
+
+>> Yeah, conventionally you would assume
+
+
+that they're between 0 and 1
+
+
+uh and that keeps things simple. But
+
+
+again, you you can think of that Rmax,
+
+
+you can think of it as basically a
+
+
+scale.
+
+
+So, if you if your rewards are between 0
+
+
+and 2, then you get a multiplier of 2 in
+
+
+front of your error and so on. So, for
+
+
+now we'll do 1 because, you know, then
+
+
+everything cancels.
+
+
+Okay. So,
+
+
+that basically gets us another 1 over 1
+
+
+minus gamma term. So, notice that now
+
+
+the V's the V pi infinity norm goes
+
+
+away, but the the gamma over 1 minus
+
+
+gamma out front now is a gamma over 1
+
+
+minus gamma squared.
+
+
+Right? Because that squared term comes
+
+
+from the geometric series.
+
+
+And now we had before from our
+
+
+concentration inequality a bound on
+
+
+the one norm of the dynamics error that
+
+
+just came from our standard statistics.
+
+
+There is a little bit of a hitch. We
+
+
+can't directly substitute that thing
+
+
+into the inequality over there. Why?
+
+
+Well, because this is telling us the
+
+
+probability for a particular state and
+
+
+action.
+
+
+The thing up there is the error in the
+
+
+probabilities for the worst state and
+
+
+action.
+
+
+So, uh it's very, very close. It's not
+
+
+exactly correct. Uh you need to use
+
+
+something called the union bound to
+
+
+relate these two things. Basically, the
+
+
+union bound says, uh if you have a bound
+
+
+on the probability of a particular
+
+
+of each event in a set, what's the
+
+
+probability that all the events will
+
+
+obey that bound?
+
+
+Uh all it does in this case is just
+
+
+inflate the constant. So, uh
+
+
+I can almost substitute in there. I just
+
+
+replace the constant C with another
+
+
+constant C2. As to what C2 is,
+
+
+uh you get that from the union bound,
+
+
+but again, it's not an RL-specific fact.
+
+
+Kind of standard statistics stuff.
+
+
+We don't have to worry about that here,
+
+
+but if you want to understand this, you
+
+
+can um read up on the union bound.
+
+
+So, now we're basically done.
+
+
+So, we we took our bound on the
+
+
+probabilities of the transitions.
+
+
+Uh we substituted that in there using
+
+
+the union bound to get a different
+
+
+constant, and now we see that we've got
+
+
+our error bound. Yes?
+
+
+>> My understanding of union bound is that
+
+
+it's for computing like probability of
+
+
+this occurring and this and this.
+
+
+>> Yeah.
+
+
+>> So, we're adding up like more and
+
+
+>> Yeah.
+
+
+>> So, why is that showing up here?
+
+
+>> Oh, because um the uh the error which is
+
+
+the max over all the states and actions,
+
+
+the way that you can bound this is you
+
+
+can say, "Well, if the error is less
+
+
+than that amount for every single state
+
+
+and action,
+
+
+then that's bounding the max."
+
+
+So, uh yeah, so that's that's the the
+
+
+union bound.
+
+
+So, what we got after all of this
+
+
+adventure is a bound on the error
+
+
+between Q pi and Q pi hat,
+
+
+and we can look at this error and we can
+
+
+actually
+
+
+see a few interesting observations.
+
+
+First, we see that N appears in the
+
+
+denominator. That's good. That means
+
+
+that the more samples we take, the lower
+
+
+our error is. That's what we'd like to
+
+
+see.
+
+
+And it's a 1 over square root N
+
+
+scaling factor. So, that's pretty
+
+
+typical in learning theory. So, more
+
+
+samples, lower error with the error
+
+
+decreasing as 1 over root N.
+
+
+We also see that the error grows
+
+
+quadratically in the horizon.
+
+
+So, you got you have a 1 minus gamma
+
+
+squared term in
+
+
+in the denominator. So, the error grows
+
+
+quadratically in the horizon of the
+
+
+problem. That's
+
+
+not great.
+
+
+It's not too terrible, but it's not
+
+
+great.
+
+
+Um and each backup basically accumulates
+
+
+error. So, the longer your MDP is,
+
+
+meaning that the the closer gamma is to
+
+
+1,
+
+
+or the larger 1 over 1 minus gamma is,
+
+
+the more error you get.
+
+
+And that's actually pretty reasonable
+
+
+because if you imagine that you have
+
+
+some error in the dynamics, the more
+
+
+times you use that dynamics to backup
+
+
+your reward function, the more error
+
+
+you'd expect to get.
+
+
+So, you know, sad but true.
+
+
+Okay.
+
+
+Now, there are some
+
+
+uh other implications of this. So,
+
+
+this is the error for
+
+
+policy evaluation, meaning estimating
+
+
+the Q function for a particular policy
+
+
+pi. But now we had all those other
+
+
+questions we asked in the beginning,
+
+
+like
+
+
+if we wanted to use this to learn the
+
+
+optimal policy, how good would that how
+
+
+good would that policy be?
+
+
+So, here is a one question we could ask.
+
+
+What's the
+
+
+uh error between Q-star, the optimal Q
+
+
+function, and Q-hat-star,
+
+
+which is the optimal Q function that we
+
+
+estimate using our learned dynamics
+
+
+P-hat.
+
+
+Okay. So, we're going to use this
+
+
+property again. Um
+
+
+uh which is to say that the
+
+
+the difference between the maximums of
+
+
+two functions is bounded by the maximum
+
+
+of the difference. That's the same thing
+
+
+that we saw before. It's just supremum
+
+
+rather than maximum in this case.
+
+
+But that's the same thing.
+
+
+Uh
+
+
+and the reason that we want that
+
+
+property is because of course um
+
+
+Q star is the supremum over the set of
+
+
+policies of the Q function of those
+
+
+policies.
+
+
+Right? That's the that that's that's how
+
+
+that is basically the the the Q function
+
+
+of the policy with the best Q function.
+
+
+And Q hat star is the supremum over
+
+
+policies
+
+
+for
+
+
+the estimated Q function of that policy,
+
+
+right? So essentially, what is it saying
+
+
+is that if you're trying to find uh Q
+
+
+star or Q hat star, what you're really
+
+
+doing is you're searching over the the
+
+
+set of possible policies with respect to
+
+
+your policy evaluation operator. This is
+
+
+kind of an elegant way to abstract away
+
+
+the algorithm where we're basically
+
+
+saying we don't care what the algorithm
+
+
+is as long as that algorithm is
+
+
+maximizing the Q value of a policy using
+
+
+some policy evaluation procedure, you
+
+
+can express it as a supremum. So the
+
+
+true Q star is a supremum over policies
+
+
+in terms of the true policy evaluation Q
+
+
+pi and the
+
+
+Q hat star is a supremum over policies
+
+
+using your learned policy evaluation
+
+
+procedure.
+
+
+And then of course using that identity,
+
+
+we can say that this is bounded by the
+
+
+supremum over all policies of the error
+
+
+of the Q functions.
+
+
+And the error of the Q functions is of
+
+
+course bounded by our derivation up in
+
+
+the top left corner.
+
+
+So because we showed that Q pi minus Q
+
+
+hat pi is bounded by epsilon for all
+
+
+policies pi,
+
+
+then it's also bounded by epsilon for
+
+
+the supremum over that set.
+
+
+Which means that this is bounded by
+
+
+epsilon, yes.
+
+
+>> Why is it supremum as opposed to max?
+
+
+>> Um it's a it's a supremum over the set
+
+
+of policies.
+
+
+Right? So it's so it's not over
+
+
+um
+
+
+the states or actions, it's over
+
+
+policies.
+
+
+But it's yeah. Uh but it
+
+
+but the reason that this doesn't matter
+
+
+is because you can think of policy
+
+
+evaluation just a function applied to
+
+
+policies.
+
+
+Okay, so that's that's quite nice. And
+
+
+now we have the last question. And the
+
+
+last question is I think the most
+
+
+important one because this is basically
+
+
+saying what's the
+
+
+error
+
+
+of the actual policy that you get by
+
+
+running this procedure. And this
+
+
+is basically your measure of sub
+
+
+optimality.
+
+
+Okay, because Q pi hat star, that is the
+
+
+true Q function of the policy that you
+
+
+will get if you try to find the best
+
+
+policy using your approximate evaluation
+
+
+operator. So it is the true Q function
+
+
+of the policy learned by your algorithm.
+
+
+So the difference between Q star and Q
+
+
+pi hat star is the true difference in
+
+
+value between the best policy you could
+
+
+get and the policy that you've learned.
+
+
+That's basically how suboptimal you are.
+
+
+I think this is the question that really
+
+
+matters because this is saying if I were
+
+
+to run the policy that I got using my
+
+
+algorithm, how much less reward would I
+
+
+get than if I were to run the optimal
+
+
+policy?
+
+
+Okay? So this is in some sense the most
+
+
+important question and it turns out that
+
+
+with the work we've done so far, the
+
+
+most important question is not that
+
+
+difficult to answer.
+
+
+So what we're going to do is we're going
+
+
+to
+
+
+uh add zero inside this thing and the
+
+
+particular zero is minus Q hat pi hat
+
+
+star plus Q hat pi hat star. What is Q
+
+
+hat pi hat star? Q hat pi hat star is
+
+
+our estimated value of the best policy
+
+
+that we found using our estimator of the
+
+
+value. Okay? So we had our approximate
+
+
+way of doing policy evaluation. We used
+
+
+that to find the best policy we get,
+
+
+which is pi hat star and then we
+
+
+evaluated it to get Q hat pi hat star.
+
+
+And then of course, we can uh
+
+
+apply our our usual our usual thing. If
+
+
+you have the uh the norm of the sum of
+
+
+two terms, that's bounded by the the
+
+
+infinity norms of the two terms. That's
+
+
+just the same max thingy all over again.
+
+
+So, the
+
+
+s-
+
+
+uh the the sum of the max of two things
+
+
+is bounded by the max of the two things
+
+
+separately.
+
+
+Uh and now you'll notice that inside
+
+
+each of those terms,
+
+
+now we have a a Q minus Q hat kind of
+
+
+difference. And these are exactly the
+
+
+things that we know how to bound using
+
+
+our error bound.
+
+
+So,
+
+
+Q hat pi hat star, that's basically just
+
+
+Q hat star, right? It's the estimated
+
+
+value of the best policy we found using
+
+
+our value estimator. So, it's the
+
+
+supremum over policies of Q hat pi.
+
+
+And the second thing, well,
+
+
+these are the same exact policies. So,
+
+
+these are Q values for the same policy.
+
+
+Okay? It's Q of
+
+
+pi hat star minus Q hat pi hat star.
+
+
+So, we know from the
+
+
+topmost result that the difference in
+
+
+values for the same policy is bounded by
+
+
+epsilon. And we know from our second
+
+
+result that Q star minus Q hat star is
+
+
+bounded by epsilon. So, both of these
+
+
+things are bounded by epsilon, which
+
+
+means that the total suboptimality of
+
+
+your policy is bounded by two times
+
+
+epsilon.
+
+
+So, this is very good. Now, we know that
+
+
+if you use your
+
+
+approximate P hat
+
+
+to learn the best policy, meaning the
+
+
+policy that maximizes the estimated Q
+
+
+function according to your estimator,
+
+
+then the
+
+
+true Q value of that policy relative to
+
+
+the best true Q value you could get is
+
+
+bounded by two times epsilon.
+
+
+Okay. Any questions about this?
+
+
+Okay.
+
+
+So, now we have the last part of this,
+
+
+and this is the the bonus that I uh I
+
+
+would get to.
+
+
+Uh we just to analyze a little bit of
+
+
+model-free RL. Uh this part is going to
+
+
+be
+
+
+a little bit of a sketch like it's not
+
+
+going to land a quite so clean of a
+
+
+result, but it will show us how we can
+
+
+go beyond regular value iteration
+
+
+actually use some of the concepts that
+
+
+we had in the model-based proof to
+
+
+analyze essentially fitted Q iteration,
+
+
+an algorithm where we have
+
+
+sampling error and function
+
+
+approximation error.
+
+
+Okay.
+
+
+So, we need a again, we need some kind
+
+
+of abstract model of this procedure.
+
+
+So,
+
+
+the abstract model of uh value
+
+
+iteration, which we saw before, which
+
+
+you're going to extend to to to Q
+
+
+iteration, is that you have some
+
+
+operator uh Bellman operator that you
+
+
+apply to your value function or Q
+
+
+function. Since we're doing Q function
+
+
+instead of value functions, the operator
+
+
+is a little different. So, the operator
+
+
+is going to instead of having the max on
+
+
+the outside, the max is on the inside,
+
+
+just like we get in Q learning. So, the
+
+
+operator T now is defined as taking R
+
+
+plus gamma times the matrix P times the
+
+
+max over the actions for a particular Q
+
+
+function Q.
+
+
+So, this is basically implementing
+
+
+essentially Q learning or fitted Q
+
+
+iteration or sorry, not not fitted
+
+
+regular Q iteration in um matrix vector
+
+
+notation.
+
+
+So, this is exact Q iteration.
+
+
+Now, we need a model of approximate
+
+
+fitted Q iteration. So,
+
+
+when we do approximate fitted Q
+
+
+iteration, there are two additional bits
+
+
+of complexity.
+
+
+We we're going to do this using samples,
+
+
+which means that our backup is not
+
+
+exact.
+
+
+And second, we're going to have function
+
+
+approximation, which means that we are
+
+
+not representing the vector Q explicitly
+
+
+with an entry for every possible state
+
+
+and action, we're representing it with
+
+
+some function approximator.
+
+
+So, let's uh
+
+
+talk about Well, Well, express this
+
+
+first in one line, but then I'll explain
+
+
+what all the parts of that line mean.
+
+
+So, this is the the one-liner expression
+
+
+of one iteration of fitted Q iteration,
+
+
+but um I need to unpack this a little
+
+
+bit.
+
+
+So, first
+
+
+I had instead of using the exact Bellman
+
+
+operator T, I'm using a modified
+
+
+operator T hat.
+
+
+T hat basically accounts for the fact
+
+
+that when you run fitted Q iteration,
+
+
+you're not backing up the value function
+
+
+at all states and actions, you're
+
+
+backing it up using samples.
+
+
+And the way that you can conceptually
+
+
+think about samples is that for every
+
+
+possible state and action, you see it
+
+
+some number of times, you see it let's
+
+
+say n times, and the actual backup is
+
+
+not using the true probabilities, it's
+
+
+using the effective frequency with which
+
+
+you've seen each S' prime for that state
+
+
+and action.
+
+
+Now, there's a little bit of a catch
+
+
+here because you might see it zero
+
+
+times, and if you see it zero times,
+
+
+then you get like some number divided by
+
+
+zero, which is undefined. So, we're
+
+
+we'll just ignore that. We'll just
+
+
+pretend that you've seen everything at
+
+
+least once, but uh there's still uh
+
+
+error because you will not have seen it
+
+
+infinitely many times.
+
+
+So,
+
+
+that means that T hat times uh Q is
+
+
+defined as R hat plus gamma P hat times
+
+
+the max over A of Q, where these R hat
+
+
+and P hat represent the frequencies with
+
+
+which you've seen different rewards and
+
+
+different next states.
+
+
+So, uh R hat is just
+
+
+the
+
+
+sample average of the rewards that
+
+
+you've seen,
+
+
+and P hat is the sample average of the
+
+
+next states that you've seen.
+
+
+Now, crucially, these are not models.
+
+
+We're not explicitly learning P hat or R
+
+
+hat.
+
+
+It's just the effect of backing up the
+
+
+the Q function with a set of samples.
+
+
+So, we're assuming that uh
+
+
+we've seen everything at least once,
+
+
+but not infinitely many times. So, uh
+
+
+for every actual transition you've
+
+
+observed, you didn't observe a
+
+
+probability of that transition, you
+
+
+observed an actual sample from the
+
+
+transition.
+
+
+But, it turns out that you can abstract
+
+
+this away by just saying that you're
+
+
+going to multiply by some matrix, which
+
+
+is effectively like a model. It's just
+
+
+the algorithm under the hood is not
+
+
+actually constructing the model, but uh
+
+
+it's it's backing up uh these values
+
+
+uh
+
+
+not samples. But, then of course, if the
+
+
+same state and action is seen multiple
+
+
+times, the the average target from
+
+
+backing that up will be just the average
+
+
+of those.
+
+
+Okay. And then you have this uh uh
+
+
+projection uh thing. So,
+
+
+you're not directly setting the new Q
+
+
+function to be T hat times Q hat K,
+
+
+you're setting it to be some projection
+
+
+uh
+
+
+with with some norm, which is coming
+
+
+from the fact that you're learning a
+
+
+function approximator.
+
+
+Ordinarily, if you're doing mean squared
+
+
+error, this norm should be the two norm.
+
+
+Uh unfortunately, we know that this
+
+
+doesn't work under the two norm.
+
+
+So, we're going to cheat.
+
+
+We're going to say
+
+
+it's a it's the infinity norm.
+
+
+This is incorrect. This is not true.
+
+
+It's it's a fiction.
+
+
+And the reason that we have this fiction
+
+
+is because under the two norm, it
+
+
+doesn't work.
+
+
+It turns out that uh you can still
+
+
+derive something under the two norm, but
+
+
+it's going to be much less elegant and
+
+
+it's going to take me not uh 24 minutes,
+
+
+but uh several days. So, instead we're
+
+
+going to cheat. We're going to say we
+
+
+have this magic learning algorithm that
+
+
+instead of training your neural net with
+
+
+mean squared error, it trains it with
+
+
+the infinity norm.
+
+
+No such algorithm exists. It's a
+
+
+fiction. But,
+
+
+this fiction will allow us to derive
+
+
+some error bounds that actually give us
+
+
+some like reasonable intuition about how
+
+
+actual algorithms work.
+
+
+You'll notice this kind of stuff happens
+
+
+all the time in RL theory. So, apologies
+
+
+for that. Uh
+
+
+if you want somebody to blame, blame the
+
+
+authors of that textbook.
+
+
+Okay. So, uh
+
+
+here is the here are some questions. Uh
+
+
+so, one question is as the number of
+
+
+iterations of this procedure goes to
+
+
+infinity,
+
+
+what does the estimate of Q function Q
+
+
+hat K approach?
+
+
+And
+
+
+in particular, how far is it from Q star
+
+
+as a function of the different sources
+
+
+of error that I might incur? And I have
+
+
+two different sources of error. I have
+
+
+one source of error from the fact that
+
+
+I'm using T hat instead of T, and I have
+
+
+another source of error from the fact
+
+
+that I am projecting onto some function
+
+
+approximator.
+
+
+Okay? And these things are going to have
+
+
+some effect, and I can analyze the
+
+
+effect of each piece of this.
+
+
+Yes.
+
+
+Yeah, so the question is why do we need
+
+
+to estimate R hat? Um you don't have to.
+
+
+You could assume that R hat is equal to
+
+
+R. Uh in the most general case, in the
+
+
+case of stochastic rewards, uh you could
+
+
+you could have some error there. And
+
+
+you'll see that there's there will be an
+
+
+there will be a term that will pop up
+
+
+for that. If you really want to kind of
+
+
+do the thing we've been doing so far in
+
+
+assuming that the R Rs are deterministic
+
+
+and not stochastic, you can just set
+
+
+that term to zero.
+
+
+Okay. So, where are our our errors going
+
+
+to come from? They're going to come from
+
+
+two places.
+
+
+First, the fact that T is not equal to T
+
+
+hat. So, that's sampling error. That's
+
+
+basically the fact that you don't have
+
+
+an exact backup. You have an approximate
+
+
+backup using samples.
+
+
+And the second term
+
+
+uh the second source of error will come
+
+
+from the fact that you are projecting
+
+
+your Q function. So, Q hat K + 1 is not
+
+
+the approximate backup of QK. It's the
+
+
+backup of QK and then applying this
+
+
+argmin over the set of Q functions that
+
+
+you can actually represent.
+
+
+And you in general couldn't represent
+
+
+all Q functions.
+
+
+Okay. So, let's uh look at sampling
+
+
+error. Okay, so sampling error is the
+
+
+thing that happens because T is not
+
+
+equal to T hat.
+
+
+Okay? So, it's this thing.
+
+
+Um
+
+
+if you write out the difference between
+
+
+applying T hat to Q essay and applying T
+
+
+to Q essay, uh then you can you can try
+
+
+to understand what this uh what kind of
+
+
+problem this will cause. You basically
+
+
+get
+
+
+uh two terms. You get the difference of
+
+
+rewards and the difference of next
+
+
+values. And each of those two terms will
+
+
+contribute uh something to the overall
+
+
+error. So, you get R hat minus R and
+
+
+then you get the expectation under P hat
+
+
+minus the expectation under P.
+
+
+So, we can uh group these things
+
+
+together, uh split them up, and now it's
+
+
+clear that there's these two terms.
+
+
+The R hat difference is
+
+
+pretty simple. This is just the
+
+
+estimation error of a continuous random
+
+
+variable. This is like classic uh kind
+
+
+of Hoeffding's inequality stuff.
+
+
+So, this is quite straightforward to
+
+
+deal with. And here I just substituted
+
+
+in exactly the the Hoeffding's
+
+
+inequality multiplied by R max.
+
+
+The second term is
+
+
+a little bit more nuanced.
+
+
+But here I'm going to apply the other
+
+
+kind of concentration inequality that
+
+
+we've seen. So, I'll set I'll take this
+
+
+uh difference in probabilities and I'll
+
+
+say, "Well, a difference in
+
+
+probabilities is bounded by the absolute
+
+
+value of the difference in
+
+
+probabilities."
+
+
+And
+
+
+the uh
+
+
+sum over all the next states of the
+
+
+absolute value of the difference of
+
+
+probabilities times
+
+
+uh the max of the Q function is bounded
+
+
+by just taking the max outside. So, then
+
+
+I have the difference of probabilities
+
+
+times the infinity norm of the Q
+
+
+function.
+
+
+It's a fairly pessimistic bound, but it
+
+
+works.
+
+
+And then I just substituted in the other
+
+
+kind of Hoeffding the other kind of
+
+
+concentration inequality and just
+
+
+multiplied it by the infinity norm of Q.
+
+
+Okay. So, this is actually like a fairly
+
+
+straightforward procedure. All I'm doing
+
+
+is I'm saying, "Well, I have two two
+
+
+terms. I have a difference
+
+
+uh of between my estimated reward and
+
+
+the true reward, and that's just a
+
+
+continuous variable Hoeffding's
+
+
+inequality. And then I have a difference
+
+
+of probabilities where I have to
+
+
+manipulate it a little bit to go from a
+
+
+difference of probabilities times some
+
+
+unknown quantity to an absolute value of
+
+
+the difference of probabilities times
+
+
+some constant that doesn't depend on S
+
+
+and A. And the constant I'm going to use
+
+
+is of course the largest value I could
+
+
+possibly see, which is the infinity norm
+
+
+of Q.
+
+
+Okay.
+
+
+So, that's
+
+
+actually pretty simple.
+
+
+Uh I have these two errors.
+
+
+Uh and
+
+
+now this is uh point-wise. So, this is
+
+
+for all
+
+
+states and actions. So, for for for each
+
+
+state and action I have this bound. And
+
+
+what I want is I want to bound the error
+
+
+in the infinity norm over the states and
+
+
+actions. So, this is point-wise and now
+
+
+I want to do it over all for all of
+
+
+them. And this is going to be the same
+
+
+kind of union bound shenanigans, uh
+
+
+which again I won't go into too much
+
+
+detail. You can be a little careful by
+
+
+basically noting the fact that the
+
+
+second term, the term over the Q
+
+
+function, actually only depends on the
+
+
+next state. So, the dimensionality of it
+
+
+is effectively lower, but that's kind of
+
+
+a detail and we don't need to go into
+
+
+this. So, basically, if you want to know
+
+
+how you go from this to bounding the
+
+
+thing up top,
+
+
+it's uh union bound. And uh if you
+
+
+actually work through that, you just end
+
+
+up with two constants uh out front and
+
+
+some terms that scale with
+
+
+dimensionality, which is what you'd
+
+
+expect to see from union bound.
+
+
+All right.
+
+
+So, this is sampling error. And
+
+
+remember, sampling error, that's
+
+
+accounting for the fact that the Bellman
+
+
+backup operator is not the exact Bellman
+
+
+backup operator, it's this
+
+
+uh
+
+
+approximation that you get from the
+
+
+frequency with which you see each
+
+
+transition. And that shows up as error
+
+
+in the reward and error in the next
+
+
+state.
+
+
+Then you have the other source of error.
+
+
+And the other source of error comes from
+
+
+the fact that you are fitting your Q
+
+
+function. So, you're not using this
+
+
+uh backed up version directly, you have
+
+
+to project it onto the set of neural
+
+
+nets. And here we're going to make a
+
+
+fairly crude approximation. Uh
+
+
+we're going to basically say that
+
+
+you have a fitting algorithm that is
+
+
+good enough in the sense that it
+
+
+produces some
+
+
+uh
+
+
+bounded error in the infinity norm.
+
+
+So, this is this is an assumption. And
+
+
+remember how I said that we make some
+
+
+unreasonable assumptions so that we get
+
+
+to some result, and then we see what
+
+
+that result tells us about the method.
+
+
+So, the assumption that we're going to
+
+
+make is that
+
+
+the approximation error from using a
+
+
+neural net in place of the full table is
+
+
+some error epsilon.
+
+
+So, when we back up uh Q hat K, and then
+
+
+we fit it to get Q hat K + 1, we're
+
+
+inferring some epsilon K.
+
+
+Okay.
+
+
+Uh so, we'll analyze the exact backup
+
+
+operator for now, and we'll come back to
+
+
+the approximate uh backup later.
+
+
+All right. So, here is uh
+
+
+how we do this analysis. Uh
+
+
+if we want to understand the difference
+
+
+between uh Q hat uh
+
+
+K and Q star,
+
+
+we'll stick in that T times uh Q hat K
+
+
+minus 1, right? Because remember, there
+
+
+are our bound tells us how much error we
+
+
+incur at each step, at each iteration.
+
+
+And we're going to take many iterations.
+
+
+So, we stick in T times Q hat K minus 1,
+
+
+that's the previous iteration before K.
+
+
+And we get two terms. We get uh Q hat K
+
+
+minus T Q hat K minus 1, that's looking
+
+
+really good. That's kind of the the one
+
+
+iteration error. And then you get uh T Q
+
+
+hat K minus 1
+
+
+minus T Q star.
+
+
+Uh and the reason that you can put a T
+
+
+in front of Q star, of course, is
+
+
+because Q star is a fixed point.
+
+
+So, you can
+
+
+take or remove T in front of it as you
+
+
+please.
+
+
+Okay. So, this is now getting a lot
+
+
+closer to what you want to see. You have
+
+
+one term which is
+
+
+uh the error from one iteration, Q hat K
+
+
+minus T Q Q hat K minus 1, and you have
+
+
+a second term, which looks like a
+
+
+Bellman backup of two different Q
+
+
+functions.
+
+
+So, the first term is epsilon K minus
+
+
+one, that's from our assumption, and the
+
+
+second thing is looking an awful lot
+
+
+like the first thing, only at iteration
+
+
+K minus one, and with a Bellman backup
+
+
+operator in front of it.
+
+
+Now, we know that the backup is a
+
+
+contraction. In fact, it's a contraction
+
+
+for any transition operator.
+
+
+Uh so, that means that we can remove the
+
+
+T and put a gamma out front.
+
+
+And now we basically have a recursive
+
+
+relationship going on here, because we
+
+
+started with Q hat K minus Q star, and
+
+
+we ended up bounding it by epsilon K
+
+
+minus one plus gamma times Q hat K minus
+
+
+one minus Q star. So, we can just keep
+
+
+on rolling this thing uh backwards in
+
+
+time,
+
+
+and
+
+
+do it for K minus one. So, now you get
+
+
+gamma epsilon K minus two,
+
+
+and then you get a gamma squared for the
+
+
+previous iteration. Just keep going and
+
+
+going and going, and eventually you get
+
+
+this big series, which is essentially
+
+
+the sum
+
+
+uh over uh
+
+
+all of the iterations from I equals zero
+
+
+to K minus one of gamma to the I times
+
+
+the error
+
+
+plus the error at the very first uh
+
+
+iteration multiplied by gamma to the K.
+
+
+And so, now we're going to take many
+
+
+iterations of this algorithm, so K is
+
+
+going to become very, very large, which
+
+
+means the gamma to the K is going to
+
+
+become very small, so that initial
+
+
+condition doesn't really matter.
+
+
+That's why it doesn't matter how you
+
+
+initialize your value function, because
+
+
+eventually it's forgotten.
+
+
+And the errors are in general going to
+
+
+be different at different iterations,
+
+
+but we'll just bound that by using the
+
+
+worst error at the worst iteration.
+
+
+So then, if we take infinitely many
+
+
+iterations of this algorithm, it's just
+
+
+a sum over those gammas times the
+
+
+maximum error over all the iterations.
+
+
+Okay? So, this tells us that if we don't
+
+
+have sampling error, and we just have
+
+
+approximation error, then roughly
+
+
+speaking
+
+
+the total error is the geometric series
+
+
+1 over 1 minus gamma
+
+
+times the error at the worst iteration.
+
+
+Okay?
+
+
+So, that means that approximation error
+
+
+actually also scales with horizon,
+
+
+although for kind of a peculiar reason,
+
+
+which is
+
+
+roughly speaking because
+
+
+we incur a bit of error at every
+
+
+iteration of the algorithm and because
+
+
+the back back up operator is a
+
+
+contraction in gamma
+
+
+then we get a 1 minus gamma 1 over 1
+
+
+over 1 minus gamma term.
+
+
+So, this is the algebra, but if you want
+
+
+to build a little bit of intuition for
+
+
+what this means
+
+
+roughly speaking, this algebra is
+
+
+explaining the fact that when you have a
+
+
+little bit of error in fitting your Q
+
+
+function
+
+
+you then back up that Q function again
+
+
+and get more error.
+
+
+Right? Because if you think about the
+
+
+structure of fitted Q iteration
+
+
+algorithm, you fit a neural net to your
+
+
+Q function and then you use that neural
+
+
+net as a target. So, when you fit it,
+
+
+you have some error. When you use it as
+
+
+a target now it has a gamma multiplier
+
+
+in front of it and then you fit it again
+
+
+and you get more error.
+
+
+So, that's why uh the overall error
+
+
+after infinitely many iterations has a 1
+
+
+over 1 minus gamma term.
+
+
+The algebra explains kind of formally
+
+
+why that's the case, but the the
+
+
+intuition is that it's because you're
+
+
+backing up these slightly incorrect uh
+
+
+neural nets that have some fitting
+
+
+error, some approximation error.
+
+
+So, that's actually really cool because
+
+
+what this basically tells us is it's
+
+
+kind of a mathematical derivation that
+
+
+proves to us that our intuition about
+
+
+backing up slightly erroneous Q
+
+
+functions
+
+
+actually kind of makes sense. Admittedly
+
+
+under some weird assumptions on being
+
+
+able to do, you know, neural net fitting
+
+
+under the infinity norm and so on. So,
+
+
+there's some
+
+
+some slightly non-kosher stuff going on
+
+
+but a conclusion that is actually pretty
+
+
+sensible.
+
+
+Okay, any questions about approximation
+
+
+error.
+
+
+All right, so I haven't done the most
+
+
+important part, which is I haven't put
+
+
+these two things together, right? So, we
+
+
+separately talked about sampling error.
+
+
+We separately talked about approximation
+
+
+error. We derived some error bounds for
+
+
+both of them, but now of course the full
+
+
+algorithm has both sampling error and
+
+
+approximation error. So, we have to put
+
+
+these together.
+
+
+So, let's put them together.
+
+
+Um
+
+
+this is our sampling error, right? So,
+
+
+this is if we don't have a neural net,
+
+
+but we have samples. So, using T hat in
+
+
+place in place of T.
+
+
+And then this is our approximation
+
+
+error.
+
+
+So, this is a uh where these epsilons
+
+
+are how much Q hat K + 1 differs from
+
+
+the true backed-up version of Q hat K.
+
+
+And that's because of uh
+
+
+uh the the these errors in reality will
+
+
+come from both sampling error and
+
+
+approximation error.
+
+
+So, uh what we had uh derived before was
+
+
+that uh
+
+
+well, okay, so the this epsilon is
+
+
+defined as Q hat K - T Q hat K - 1,
+
+
+basically the error between the actual
+
+
+value function get at the next iteration
+
+
+and the backed-up version of the
+
+
+previous value function.
+
+
+So,
+
+
+let's uh try to analyze this thing and
+
+
+see if we can get that sampling error
+
+
+included in it.
+
+
+Right? So,
+
+
+Q hat K - T Q hat K - 1, the way we're
+
+
+going to introduce the approximate
+
+
+backup T hat is again as usual by
+
+
+subtracting and adding it because you
+
+
+can always add zero.
+
+
+And uh as usual you can split these
+
+
+things apart, so you can say that that
+
+
+error is bounded by Q hat K - T hat Q K
+
+
+- 1 plus
+
+
+T Q hat K uh - 1 - T Q K - 1, right? So,
+
+
+the second thing is uh looking an awful
+
+
+lot like our sampling error up above.
+
+
+So, that's basically the difference
+
+
+between using the true operator and the
+
+
+approximate operator, and the first
+
+
+thingy is an approximation error.
+
+
+So, all we have to do to put these two
+
+
+together is just
+
+
+take this thing and substitute that in
+
+
+there, and
+
+
+basically, now you you you you should
+
+
+see that
+
+
+you're going to get all those terms up
+
+
+there,
+
+
+and then
+
+
+they're going to be multiplied by 1 over
+
+
+1 minus gamma because of the compounding
+
+
+approximation errors.
+
+
+So, essentially, the way you can think
+
+
+about it is that the sampling error just
+
+
+gets added to the approximation error.
+
+
+Okay. So,
+
+
+the error compounds with horizon
+
+
+and uh over iterations due to sampling.
+
+
+Um
+
+
+why does it compound with horizon? What
+
+
+in the sampling error depends on the
+
+
+horizon?
+
+
+Any ideas?
+
+
+There isn't a 1 over 1 minus gamma on
+
+
+the first line, but it's kind of hiding
+
+
+in there. There's a term on the first
+
+
+line where it says sampling error that
+
+
+actually has a 1 over 1 minus gamma term
+
+
+in it.
+
+
+Any ideas what that is?
+
+
+Yeah.
+
+
+The infinity norm of Q, exactly.
+
+
+Because, remember, the value functions
+
+
+are on the order of 1 over 1 minus gamma
+
+
+times Rmax.
+
+
+So, there is actually a 1 over 1 minus
+
+
+gamma on that first line, and there's a
+
+
+1 over 1 minus gamma on the second line.
+
+
+So, when you put these things together,
+
+
+you will actually get a 1 over 1 minus
+
+
+gamma squared.
+
+
+Okay? It's because this thing is on the
+
+
+order of Rmax times 1 over 1 minus
+
+
+gamma.
+
+
+So, yes.
+
+
+So, you get a square when you put that
+
+
+inside the second line.
+
+
+Because on the second line, you have uh
+
+
+where it says approximation error, it's
+
+
+1 over 1 minus gamma times
+
+
+the error uh at each iteration, and the
+
+
+error at each iteration
+
+
+uh as you can see on the third line
+
+
+is has a sum of two terms, an
+
+
+approximation error for that iteration
+
+
+plus the difference in the transition
+
+
+operators.
+
+
+So, basically uh
+
+
+Let's see if
+
+
+this thing this thing right here. This
+
+
+thing right here is this thing here.
+
+
+Okay. So, that's basically the gist of
+
+
+it. I think from here uh
+
+
+you can uh all do the the back of the
+
+
+napkin thing to
+
+
+you know, put that in there and get a 1
+
+
+over 1 minus gamma squared. Uh what do
+
+
+we conclude from this? We conclude that
+
+
+when we run model-free
+
+
+fitted Q-iteration, we get a horizon
+
+
+term in our sampling error, and we get a
+
+
+horizon term in our approximation error.
+
+
+Uh and
+
+
+when we have both sources of error, then
+
+
+we have a horizon squared term. So,
+
+
+that's kind of nice, like errors
+
+
+compound from both sources, that agrees
+
+
+with our intuition.
+
+
+Um we have to do a lot of trickery to
+
+
+get here, including some
+
+
+unorthodox trickery that does not accord
+
+
+with reality, like assuming that we have
+
+
+a magic neural net training algorithm
+
+
+that trains neural nets to minimize the
+
+
+infinity norm, which is completely
+
+
+insane, by the way. That's like saying
+
+
+that you minimize the error of your
+
+
+neural net in the worst possible state,
+
+
+even if that state is not one of the
+
+
+states you sampled. That is not
+
+
+possible. No algorithm in the world
+
+
+works that way.
+
+
+Um there are uh more refined versions of
+
+
+this. There are more advanced results
+
+
+that can be derived with uh uh P-norms
+
+
+uh under some
+
+
+assumptions on the distribution of
+
+
+samples. So, in the worst case, you
+
+
+cannot make this work, but you can
+
+
+actually make some clever assumptions on
+
+
+the distribution of samples, basically
+
+
+assuming your samples cover the space in
+
+
+some clever way, and then you could
+
+
+actually derive these results for other
+
+
+P-norms, not just infinity norm, but
+
+
+that is far outside the scope of this
+
+
+course. So, if you want to learn about
+
+
+that, check out the um
+
+
+Aggarwal uh Jiang and Kakade and Sun
+
+
+textbook, which is linked at the bottom
+
+
+of the slide, rltheorybook.github.io.
+
+
+Uh and uh that's that's it for today.
+
+
+Any questions about this?
+
+
+Okay, then let's adjourn. As a reminder,
+
+
+next week we will have two review
+
+
+lectures. So, there's no new material
+
+
+next week.
+
+
+I welcome all of you to come to class,
+
+
+but you don't have to come to class. The
+
+
+class is there to help you study for the
+
+
+exam next week, and there will be
+
+
+sections to review for the exam, and
+
+
+there
+
+
+are practice problems that the TAs
+
+
+released just now that will allow you to
+
+
+practice for the exam. So, please spend
+
+
+the next week preparing for the exam,
+
+
+doing your homework, and doing your
+
+
+project, and then April 14th, the exam
+
+
+is out of the way. We have a few more
+
+
+lectures about some fun things to get
+
+
+you sort of inspired for your final
+
+
+project work, some guest lectures at the
+
+
+end of the class, and then some time for
+
+
+you to do your project. So, see you all
+
+
+next week.
+
+
+>> Sorry, I've got two questions.
+
+
+The one question is you mentioned
+
+
+there's a C here, but how could C not
+
+
+depend on
+
+
+>> Mhm.
+
+
+>> Mhm.
