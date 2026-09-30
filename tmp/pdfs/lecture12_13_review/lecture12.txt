@@ -1,0 +1,186 @@
+PAGE 1
+Variational Inference in RL
+CS 185/285
+Instructor: Sergey Levine
+UC Berkeley
+
+PAGE 2
+Part 1:
+Amortized variational inference
+PAGE 3
+Variational inference
+how?
+
+PAGE 4
+What’s the problem?
+
+PAGE 5
+Amortized variational inference
+how do we calculate this?
+PAGE 6
+Amortized variational inference
+look up formula for 
+entropy of a Gaussian
+can just use policy gradient!
+What’s wrong with this gradient?
+PAGE 7
+The reparameterization trick
+Is there a better way?
+most autodiff software (e.g., PyTorch) will compute this for you!
+PAGE 8
+Another way to look at it…
+this often has a convenient analytical 
+form (e.g., KL-divergence for Gaussians)
+
+PAGE 9
+Reparameterization trick vs. policy gradient
+• Policy gradient
+• Can handle both discrete and 
+continuous latent variables
+• High variance, requires multiple 
+samples & small learning rates
+• Reparameterization trick
+• Only continuous latent variables
+• Very simple to implement
+• Low variance
+
+PAGE 10
+Part 2:
+Generative models
+PAGE 11
+The variational autoencoder
+
+PAGE 12
+Using the variational autoencoder
+
+PAGE 13
+Example applications
+Representation learning
+Why is this a good idea?
+Higgins et al., 2017
+Sample algorithm
+This also provides a great way to use prior data!
+PAGE 14
+Conditional models
+
+PAGE 15
+Example applications
+Multimodal imitation learning
+
+PAGE 16
+Example applications
+Multimodal imitation learning
+
+PAGE 17
+Relationship to diffusion and flow matching
+conditional VAE
+ diffusion or flow
+reverse 
+(denoising) 
+process
+forward 
+(noising) 
+process
+diffusion can be thought of 
+as a hierarchical VAE
+PAGE 18
+State space models
+What is the prior?
+What is the decoder?
+What is the encoder?
+learned
+we’ll learn more about this when we 
+discuss model-based RL!
+PAGE 19
+Intermission
+PAGE 20
+Part 3:
+Control as inference
+PAGE 21
+Optimal Control as a Model of Human Behavior
+Mombaur et al. ‘09
+ Ziebart ‘08
+Li & Todorov ‘06
+optimize this to explain the data
+PAGE 22
+What if the data is not optimal?
+some mistakes matter more than others!
+behavior is stochastic
+but good behavior is still the most likely
+PAGE 23
+A probabilistic graphical model of decision making
+no assumption of optimal behavior!
+
+PAGE 24
+Why is this interesting?
+• Can model suboptimal behavior (important for inverse RL)
+• Can apply inference algorithms to solve control and 
+planning problems
+• Provides an explanation for why stochastic behavior might 
+be preferred (useful for exploration and transfer learning)
+PAGE 25
+Inference = planning
+how to do inference?
+
+PAGE 26
+Inference = planning
+how to do inference?
+
+PAGE 27
+Backward messages
+which actions are likely a priori
+(assume uniform for now)
+
+PAGE 28
+A closer look at the backward pass
+“optimistic” transition
+(not a good idea!)
+
+PAGE 29
+Backward pass summary
+
+PAGE 30
+The action prior
+remember this?
+what if the action prior is not uniform?
+(“soft max”)
+can always fold the action prior into the reward! uniform action prior 
+can be assumed without loss of generality
+PAGE 31
+Policy computation
+
+PAGE 32
+Policy computation with value functions
+
+PAGE 33
+Policy computation summary
+• Natural interpretation: better actions are more probable
+• Random tie-breaking
+• Analogous to Boltzmann exploration
+• Approaches greedy policy as temperature decreases
+
+PAGE 34
+Forward messages
+
+PAGE 35
+Forward/backward message intersection
+states with high probability of 
+reaching goal
+states with high probability of 
+being reached from initial state 
+(with high reward)
+state marginals
+PAGE 36
+Forward/backward message intersection
+states with high probability of 
+reaching goal
+states with high probability of 
+being reached from initial state 
+(with high reward)
+state marginals
+Li & Todorov, 2006
+PAGE 37
+Summary
+1. Probabilistic graphical model for optimal control
+2. Control = inference (similar to HMM, EKF, etc.)
+3. Very similar to dynamic programming, value iteration, etc. (but “soft”)

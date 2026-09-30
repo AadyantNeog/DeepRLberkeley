@@ -13,6 +13,8 @@ status: "complete"
 
 ## Lecture map
 
+**Assumptions and notation.** The discounted identities use a common initial-state distribution, common environment dynamics and rewards, bounded rewards, and $0\leq\gamma<1$. Finite-horizon analogues require time-indexed values with zero terminal continuation. Sections 2–3 sum discounted time steps explicitly; an average over normalized discounted occupancy requires the additional factor $1/(1-\gamma)$.
+
 | Section | Topic | Transcript coverage |
 |---:|---|---:|
 | 1 | Recap, two PPO approximations, and agenda | lines 1-862 |
@@ -86,6 +88,8 @@ Slides 5-7 show the policy-iteration loop and the full telescoping derivation of
 
 This identity is exact. The approximations enter only when its expectation under $p_{\pi'}$ is replaced with data from $p_\pi$ and when a finite-sample advantage estimate replaces $A^\pi$.
 
+To see the telescope, sum $r_t+\gamma V^\pi(s_{t+1})-V^\pi(s_t)$ with weights $\gamma^t$. All intermediate value terms cancel, leaving the return minus $V^\pi(s_0)$ plus a tail $\gamma^{T+1}V^\pi(s_{T+1})$ that vanishes for bounded values. Conditional expectation of each residual given $(s_t,a_t)$ equals $A^\pi(s_t,a_t)$. The common initial-state distribution then makes $\mathbb E[V^\pi(s_0)]=J(\pi)$.
+
 ## 3. Why an old-policy advantage is valid
 
 **Transcript coverage:** lines 1798-2238
@@ -120,6 +124,8 @@ Slide 8 highlights that the old-policy advantage is justified while the old-poli
 
 The surrogate and the true performance improvement agree to first order at $\pi'=\pi$. Their discrepancy grows with the state-distribution shift, which is why controlling policy distance supports repeated local optimization.
 
+Specifically, $\bar A(\pi)=0$ and its parameter gradient at the reference equals $\nabla J(\pi)$ when advantages and discount weighting are exact. The surrogate approximates $J(\pi')-J(\pi)$, not the absolute value $J(\pi')$. The performance-difference identity does **not** say that a candidate-policy score multiplied by the old advantage is the exact gradient at every candidate: differentiating the exact identity also accounts for the candidate's state-distribution dependence.
+
 ## 4. State-distribution change for deterministic policies
 
 **Transcript coverage:** lines 2239-2694
@@ -148,6 +154,8 @@ Slides 10-11 display the mixture decomposition and the $\epsilon t$ bound.
 
 This is a worst-case statement. In a mixing or forgiving environment, trajectories may reconverge, while the bound assumes that any first disagreement can keep them different forever.
 
+**Qualification to the mixture argument:** conditioning on “no disagreement” can bias which state paths remain, because disagreement probabilities may depend on the visited states. The conditioned no-disagreement component need not equal the unconditional reference state distribution. The displayed bound is nevertheless valid by coupling: start both trajectories at the same state, share transition randomness while actions agree, and bound the probability of any disagreement in the first $t$ actions by $1-(1-\epsilon)^t$. State disagreement can only occur after such an action disagreement.
+
 ## 5. Stochastic policies, coupling, and total variation
 
 **Transcript coverage:** lines 2695-3462
@@ -174,6 +182,8 @@ Slide 12 states the coupling lemma and carries the state-distribution bound into
 
 Total variation has an operational meaning: it is the smallest possible disagreement probability over all couplings of the two distributions. That is precisely the quantity the trajectory proof needs.
 
+Couple the actions while the two states still agree, using the uniform bound $\sup_sD_{\rm TV}(\pi'(\cdot\mid s),\pi(\cdot\mid s))\leq\epsilon$. After trajectories diverge, no action-agreement guarantee is needed. An average distance measured only on frequently visited states does not supply this uniform premise.
+
 ## 6. A conservative performance bound
 
 **Transcript coverage:** lines 3463-4698
@@ -193,6 +203,16 @@ Slide 13 shows the surrogate lower bound and labels the error scale. Earlier sli
 ### Additional explanation
 
 This is the conceptual origin of a trust region: maximize the empirical advantage surrogate, but restrict the policy movement so the omitted state-distribution term cannot dominate the expected gain.
+
+For a concrete bound, define $f(s)=\mathbb E_{a\sim\pi'}A^\pi(s,a)$ and suppose $|f(s)|\leq C$ everywhere. With the uniform per-state TV bound above,
+
+$$
+\left|J(\pi')-J(\pi)-\bar A(\pi')\right|
+\leq2C\sum_{t=0}^\infty\gamma^t\epsilon t
+=\frac{2C\gamma\epsilon}{(1-\gamma)^2}.
+$$
+
+This uses $|\mathbb E_pf-\mathbb E_qf|\leq2C D_{\rm TV}(p,q)$. It supplies a lower bound by subtracting the right-hand side from $\bar A$. A tighter argument uses $\mathbb E_{a\sim\pi}A^\pi(s,a)=0$ to make $C$ itself proportional to policy distance, producing the familiar quadratic-distance bound. Neither bound is a guarantee for arbitrary finite-batch PPO updates. See the [TRPO paper](https://arxiv.org/abs/1502.05477).
 
 ## Part II - Constraining policy updates
 
@@ -228,6 +248,8 @@ Slides 16-18 show Pinsker's inequality, the KL definition, and its sample estima
 ### Additional explanation
 
 KL is asymmetric. The lecture uses $D_{\mathrm{KL}}(\pi_{\mathrm{old}}\|\pi_{\mathrm{new}})$ because it can be estimated directly with old-policy actions. Different implementations sometimes constrain the reverse direction or a symmetric approximation.
+
+Pinsker applies at each state. A maximum-over-states KL constraint implies a uniform TV bound; the empirical **average** KL normally used in practice does not ensure the same bound at every state, especially unvisited ones. Natural logarithms give the displayed factor $1/2$. A finite-sample average of old-minus-new action log probabilities can even be negative although the population KL is nonnegative; analytic per-state KL, when available, avoids that action-sampling noise.
 
 ## 8. KL-penalty PPO and dual adaptation
 
@@ -272,6 +294,14 @@ Slides 19-22 give the constrained problem, Lagrangian, sample objective, and KL-
 ### Additional explanation
 
 An adaptive penalty is a soft constraint: it can temporarily violate the target. A hard trust-region solver instead computes a step designed to remain within the approximate constraint on every outer iteration.
+
+The multiplier must remain nonnegative. Use the projected update
+
+$$
+\beta\leftarrow\max\{0,\beta+\alpha_\beta(\widehat D_{\rm KL}-\epsilon)\}.
+$$
+
+The sign is consistent with minimizing the dual while maximizing the actor objective: excess KL increases the penalty. A negative multiplier would reward policy drift. Practical algorithms generally use a sampled average KL and incomplete neural optimization, so this adaptation does not by itself solve the theoretical uniformly constrained problem.
 
 ## Part III - Natural gradients and trust regions
 
@@ -348,6 +378,12 @@ This correction is isolated here rather than silently substituted into the trans
 
 The natural gradient is invariant to smooth reparameterizations in the ideal distribution-space geometry. It asks for a direction that changes the policy distribution efficiently, not one that merely moves far in raw parameter coordinates.
 
+The state weighting defining $F$ must match the KL being approximated and remain fixed at the reference policy. The equality between the KL Hessian and the expected score outer product holds under the usual regularity assumptions at that reference. A finite action-sampled empirical score matrix need not equal a finite-sample Hessian of log likelihood; using analytic action-distribution KL often gives a cleaner Fisher-vector product.
+
+For $x=F^{-1}g$, the quadratic cost of step $\alpha x$ is $\tfrac12\alpha^2x^\top Fx=\tfrac12\alpha^2g^\top F^{-1}g$, which explains the corrected denominator. If $g=0$, take no step. If $F$ is singular, use an appropriate pseudoinverse or a damped solve $(F+\eta I)x=g$ with $\eta>0$; do not divide by zero or a nonpositive curvature estimate. Damping changes the metric, and the actual sampled KL must still be checked.
+
+Reparameterization invariance describes the ideal infinitesimal direction under a smooth invertible change of coordinates. A finite Euler step, approximate solve, or coordinate-dependent damping need not be exactly invariant.
+
 ## 11. Natural-gradient intuition and TRPO
 
 **Transcript coverage:** lines 6958-7593
@@ -369,6 +405,8 @@ Slides 29-30 show the Gaussian toy problem and summarize TRPO's use of conjugate
 ### Additional explanation
 
 Conjugate gradient needs only a function that returns $Fv$. It builds an approximate solution in a Krylov subspace, which is why large neural policies can use second-order geometry without materializing a quadratic-size matrix.
+
+Matrix-free does not mean free: each iteration needs a Fisher-vector product over data, and convergence depends on conditioning and iteration count. Backtracking checks the nonlinear empirical KL and surrogate, because the quadratic/linear models are only local. If no candidate passes, retain the old policy. Passing these empirical checks does not certify monotonic improvement in true environment return.
 
 ## 12. Review and practical guidance
 
@@ -443,7 +481,8 @@ $$
 $$
 \mathcal L(\theta',\beta)
 =\bar A(\theta')
--\beta\left(D_{\mathrm{KL}}(\pi_\theta\|\pi_{\theta'})-\epsilon\right).
+-\beta\left(D_{\mathrm{KL}}(\pi_\theta\|\pi_{\theta'})-\epsilon\right),
+\qquad \beta\geq0.
 $$
 
 ### Natural-gradient trust-region step

@@ -13,6 +13,8 @@ status: "complete"
 
 ## Lecture map
 
+**Reading conventions.** Finite-horizon values depend on remaining time, even when the notation suppresses it. In implementation formulas, $m_t=0$ at a true task terminal and $m_t=1$ otherwise. A collection cutoff is not a terminal: bootstrap from its final observation before any environment reset. Exact infinite-horizon discounted claims assume bounded rewards and $0\leq\gamma<1$.
+
 | Section | Topic | Transcript coverage |
 |---:|---|---:|
 | 1 | REINFORCE recap and reward-to-go as a random variable | lines 1-408 |
@@ -100,6 +102,8 @@ The slides replace a sampled reward-to-go with $Q^\pi(s_t,a_t)$ and depict avera
 
 This lecture uses $Q$ in two connected roles: as the conditional expected return that would ideally weight a policy score, and later as a learned critic that approximates that conditional expectation.
 
+An on-policy Monte Carlo return is already unbiased for $Q^\pi(s_t,a_t)$ at every sample size. Convergence of its sample average is consistency, not the definition of asymptotic unbiasedness. Replacing one score-times-return term by its exact conditional expectation removes that term's future-rollout noise; a learned critic can introduce bias, and this does not prove a universal variance reduction for the whole time-summed gradient.
+
 ## 3. State-dependent baselines and advantage
 
 **Transcript coverage:** lines 815-1224
@@ -144,6 +148,8 @@ $$
 $$
 
 The baseline must be independent of the sampled action within this conditional expectation; it need not be globally constant across states.
+
+Treat the baseline as fixed in the actor derivative, even if actor and critic share parameters. Fitting a baseline using the very same action/return samples introduces statistical dependence that this population proof does not automatically cover. Also, $V^\pi$ is a useful baseline, not necessarily the exact minimum-variance baseline, which depends on the magnitudes of policy score gradients.
 
 ## 4. $Q^\pi$, $V^\pi$, $A^\pi$, and actor-critic anatomy
 
@@ -203,6 +209,10 @@ Slide 8 first shows the expectation exactly and then the one-next-state approxim
 
 The quantity $r_t+\gamma V(s_{t+1})-V(s_t)$ is often called a temporal-difference error. At this point in the lecture $\gamma$ has not yet been inserted, so the displayed version has $\gamma=1$.
 
+For the exact value and a sampled reward/transition,
+$\mathbb E[r_t+\gamma m_tV^\pi(s_{t+1})-V^\pi(s_t)\mid s_t,a_t]=A^\pi(s_t,a_t)$.
+One residual is a noisy sample of advantage, not the advantage itself. Substituting an approximate value generally changes that conditional expectation.
+
 ## 6. Monte Carlo value-function regression
 
 **Transcript coverage:** lines 1885-2523
@@ -260,7 +270,7 @@ Slide 11 calls the target bootstrapped. The transcript explicitly warns that neu
 
 ### Additional explanation
 
-Bootstrapping trades a long, noisy observed return for a short target containing the model’s own prediction. It lowers variance but makes the target nonstationary and couples approximation errors across states.
+Bootstrapping trades a long, noisy observed return for a short target containing the model’s own prediction. It can lower variance but makes the target nonstationary and couples approximation errors across states. Detach the entire target during critic regression; differentiating its bootstrap value would define a different update.
 
 ## 8. Discounting and infinite-horizon objectives
 
@@ -290,6 +300,18 @@ Slide 12 explicitly shows the absorbing-state construction and warns that $\gamm
 
 If rewards are bounded by $|r_t|\le R_{\max}$ and $\gamma<1$, then the infinite discounted sum is bounded by $R_{\max}/(1-\gamma)$. This is the technical reason discounting prevents the always-one example from diverging.
 
+For $J_\gamma=\mathbb E[\sum_{t=1}^\infty\gamma^{t-1}r_t]$, the exact trajectory gradient includes $\gamma^{t-1}$ outside each score-times-advantage term. Equivalently, define the normalized discounted occupancy
+
+$$
+d_\gamma^\pi(s)=(1-\gamma)\sum_{t=1}^\infty\gamma^{t-1}P_\pi(s_t=s).
+\qquad
+\nabla_\theta J_\gamma=\frac{1}{1-\gamma}
+\mathbb E_{s\sim d_\gamma^\pi,a\sim\pi_\theta}
+[\nabla_\theta\log\pi_\theta(a\mid s)A^\pi(s,a)].
+$$
+
+Uniformly averaging the time steps of an ordinary rollout is not automatically sampling this discounted occupancy. Implementations often omit the outside discount as a practical surrogate; distinguish that convention from the exact start-state objective. Undiscounted finite episodes are also valid; an infinite undiscounted sum requires additional assumptions or a different objective, such as average reward.
+
 ## 9. Time-invariant transition notation and policy-evaluation examples
 
 **Transcript coverage:** lines 3448-3829
@@ -314,7 +336,7 @@ Slides 13-14 identify TD-Gammon and AlphaGo and visualize the transition notatio
 
 ### Additional explanation
 
-With $1/0$ terminal reward, $V^\pi(s)=P_\pi(\text{win}\mid s)$. With $+1/-1$, $V^\pi(s)=2P_\pi(\text{win}\mid s)-1$ when draws are absent.
+With no intermediate rewards and an undiscounted, almost-surely terminating task, $1/0$ terminal rewards give $V^\pi(s)=P_\pi(\text{win}\mid s)$. With $+1/-1$, $V^\pi(s)=2P_\pi(\text{win}\mid s)-1$ when draws are absent. Discounting weights outcomes by their time of arrival, so these probability identities no longer hold as written.
 
 ## Part III - Basic actor-critic algorithms
 
@@ -349,6 +371,8 @@ Slide 16 presents the six-step batch algorithm. Its transition-only notation doe
 
 This algorithm is on-policy: after a meaningful actor update, old targets no longer evaluate the new policy exactly. The critic and actor learning schedules must therefore remain coordinated.
 
+A boundary-aware one-step implementation freezes a reference value prediction, forms $y_t=r_t+\gamma m_tV_{\rm ref}(s_{t+1})$, and uses $y_t-V_{\rm ref}(s_t)$ as a detached actor weight. The critic regresses toward detached $y_t$. At a true terminal the target is just $r_t$; at an external cutoff it still includes the final state's bootstrap value.
+
 ## 11. Online actor-critic and A3C
 
 **Transcript coverage:** lines 4418-4824
@@ -370,6 +394,8 @@ Slides 17-18 move from batch to single-transition online updates and note that p
 ### Additional explanation
 
 Two-time-scale analysis formalizes the intuition that one component should track the other. In practice, update ratios, learning rates, parallelism, and rollout length jointly control that tracking problem.
+
+A3C workers collect their own short rollouts and asynchronously apply updates to shared parameters; their gradients can be stale. It is not simply a synchronized minibatch of independent transitions. A2C is the synchronous related pattern. Temporal correlation affects variance and analysis, but lack of IID data alone does not make every online gradient update invalid.
 
 ## 12. Intermission Q&A and practical research advice
 
@@ -431,6 +457,15 @@ Slides 21-22 contrast the biased one-step critic estimator with the unbiased Mon
 
 The value network has two conceptually different uses: it can replace unobserved future return inside a bootstrapped Q estimate, which may bias the actor, or it can merely subtract a state-only control variate from an otherwise sampled return, which preserves the expected score gradient.
 
+If $e(s)=V_\phi(s)-V^\pi(s)$, then
+
+$$
+\mathbb E[\delta_t^\phi\mid s_t,a_t]-A^\pi(s_t,a_t)
+=\gamma\mathbb E[m_te(s_{t+1})\mid s_t,a_t]-e(s_t).
+$$
+
+The current-state error cancels in the expected score gradient as a baseline; the successor error generally depends on the action and does not cancel. Conversely, a complete Monte Carlo return minus an inaccurate fixed baseline can still give an unbiased policy gradient, even though it is not conditionally unbiased for the true advantage.
+
 ## 14. Eligibility traces and $n$-step returns
 
 **Transcript coverage:** lines 6067-6558
@@ -460,6 +495,8 @@ Slide 23 draws a cutoff between near-term sampled rewards and a value-function t
 
 Increasing $n$ reduces reliance on the critic but adds stochastic environment and policy outcomes. Thus $n$ controls where model error is exchanged for sampling noise.
 
+Count exactly $n$ rewards, from $r_t$ through $r_{t+n-1}$, before bootstrapping at $s_{t+n}$. If a boundary arrives after only $h<n$ transitions, use those $h$ rewards and $\gamma^h mV(s_{t+h})$. Never include rewards from the next reset episode. Bias and variance need not change monotonically with $n$ for an arbitrary imperfect critic.
+
 ## 15. Generalized advantage estimation
 
 **Transcript coverage:** lines 6559-7053
@@ -471,7 +508,7 @@ Rather than choosing one cutoff $n$, generalized advantage estimation combines a
 Define the one-step temporal-difference residual
 
 $$
-\delta_t=r_t+\gamma\widehat V_\phi(s_{t+1})-widehat V_\phi(s_t).
+\delta_t=r_t+\gamma\widehat V_\phi(s_{t+1})-\widehat V_\phi(s_t).
 $$
 
 Then the weighted mixture collapses to
@@ -495,13 +532,27 @@ Slide 24 credits Schulman, Moritz, Levine, Jordan, and Abbeel (2016) and writes 
 
 ### Additional explanation
 
-In a finite episode, the infinite sum terminates at the boundary. A backward recursion computes it efficiently:
+For a finite rollout, use separate masks for value bootstrapping and for continuation of the advantage trace:
 
 $$
-\widehat A_t^{\mathrm{GAE}}=\delta_t+\gamma\lambda\widehat A_{t+1}^{\mathrm{GAE}}.
+\delta_t=r_t+\gamma m_tV_{\rm ref}(s_{t+1})-V_{\rm ref}(s_t),
+\qquad
+\widehat A_t=\delta_t+\gamma\lambda c_t\widehat A_{t+1}.
 $$
 
-Terminal masking is essential so values are not propagated beyond a true terminal state.
+Here $c_t=1$ only when the next residual belongs to the same trajectory and is available in the rollout. At a true terminal, $m_t=c_t=0$. At an external time limit or rollout cutoff, use $m_t=1,c_t=0$: bootstrap from the final pre-reset observation but do not propagate a trace into a reset episode. If the time limit defines the task itself, it is a true terminal and remaining time belongs in the state.
+
+The equivalent finite mixture with $K$ available transitions is
+
+$$
+\widehat A_t^{\rm GAE}
+=(1-\lambda)\sum_{n=1}^{K-1}\lambda^{n-1}\widehat A_t^{(n)}
++\lambda^{K-1}\widehat A_t^{(K)}.
+$$
+
+The last weight absorbs the remaining mass. Using $(1-\lambda)$ on every term loses mass and fails at $\lambda=1$. The endpoints are one-step TD at $\lambda=0$, and the full available return minus the starting value at $\lambda=1$. The latter still depends on the endpoint critic if the rollout was truncated.
+
+For example, with rewards $(0,0,1)$, values $(0.2,0.4,0.6,0)$, $\gamma=1$, and a true terminal after reward 1, the residuals are $(0.2,0.2,0.4)$. At $\lambda=0.5$, backward recursion gives advantages $(0.4,0.4,0.4)$. At $\lambda=1$, the first advantage is $1-0.2=0.8$. See the [original GAE paper](https://arxiv.org/abs/1506.02438) for the estimator's derivation.
 
 ## 16. Policy gradient with GAE and advantage normalization
 
@@ -522,6 +573,8 @@ Slide 25 shows both the GAE actor update and explicit batch centering. Its yello
 ### Additional explanation
 
 Advantage normalization changes finite-batch scaling and can introduce small coupling between examples. It is a practical optimization device, not part of the exact policy-gradient theorem.
+
+A return-like critic target is $\widehat R_t=\widehat A_t^{\rm GAE}+V_{\rm ref}(s_t)$, computed before advantage normalization and then detached. Regressing the critic directly onto advantages would train it to predict the wrong quantity. Keep reference values and actor weights fixed while optimizing a given batch.
 
 ## Part V - Off-policy actor-critic
 
@@ -604,6 +657,8 @@ Slides 29-30 retain the replay-state mismatch as an unresolved approximation and
 
 The displayed actor expression is a surrogate gradient over the replay-state distribution, not an exact reconstruction of the original on-policy state-visitation gradient. Its effectiveness relies on coverage and function approximation, not on the earlier unbiased on-policy theorem.
 
+With the replay-state distribution and critic parameters fixed, it is the gradient of $\mathbb E_{s\sim D,a\sim\pi_\theta}[Q_\phi(s,a)]$. Do not additionally differentiate critic parameters through the actor loss or identify this fixed-critic objective with the exact start-state return.
+
 ## 20. Complete off-policy actor-critic and replay-buffer practice
 
 **Transcript coverage:** lines 8647-9000
@@ -642,11 +697,11 @@ The off-policy actor objective contains only differentiable objects held in the 
 For a Gaussian policy whose neural network produces mean and scale,
 
 $$
-\pi_\theta(a\mid s)=\mathcal N(\mu_\theta(s),\sigma_\theta(s)),
+\pi_\theta(a\mid s)=\mathcal N(\mu_\theta(s),\operatorname{diag}(\sigma_\theta(s)^2)),
 \qquad
 \epsilon\sim\mathcal N(0,I),
 \qquad
-a=\mu_\theta(s)+\sigma_\theta(s)\epsilon.
+a=\mu_\theta(s)+\sigma_\theta(s)\odot\epsilon.
 $$
 
 A Gaussian sample is thus a deterministic differentiable transformation of noise whose distribution is independent of $\theta$. Rewrite
@@ -655,7 +710,7 @@ $$
 \mathbb E_{a\sim\pi_\theta(\cdot\mid s)}[Q(s,a)]
 =
 \mathbb E_{\epsilon\sim\mathcal N(0,I)}
-[Q(s,\mu_\theta(s)+\sigma_\theta(s)\epsilon)].
+[Q(s,\mu_\theta(s)+\sigma_\theta(s)\odot\epsilon)].
 $$
 
 After sampling $\epsilon$, PyTorch, JAX, or another autograd system can backpropagate through Q, the sampled action, and the policy outputs. This **reparameterized gradient** uses $\partial Q/\partial a$ and has lower error than the score-function alternative in this setting.
@@ -666,7 +721,7 @@ The full reparameterized off-policy actor-critic keeps replay collection and Q t
 
 $$
 \widehat Q_\phi
-(s_i,\mu_\theta(s_i)+\sigma_\theta(s_i)\epsilon_i).
+(s_i,\mu_\theta(s_i)+\sigma_\theta(s_i)\odot\epsilon_i).
 $$
 
 The lecturer named soft actor-critic and TD3 as practical descendants. Strong implementations add Q-estimation techniques taught in later Q-learning lectures and, for SAC, entropy regularization. Deterministic-policy variants would also appear later.
@@ -677,7 +732,9 @@ Slides 31-33 show the progression from the score estimator to the reparameterize
 
 ### Additional explanation
 
-This is a pathwise derivative, the estimator family contrasted with likelihood-ratio gradients in Lecture 5. Moving the environment out of the differentiated expectation makes the lower-variance pathwise route available.
+This is a pathwise derivative, the estimator family contrasted with likelihood-ratio gradients in Lecture 5. Moving the environment out of the differentiated expectation makes an often lower-variance pathwise route available, though lower variance is not guaranteed for every problem.
+
+For a diagonal Gaussian, write $a=\mu_\theta(s)+\sigma_\theta(s)\odot\epsilon$ with $\epsilon\sim\mathcal N(0,I)$; its covariance is $\operatorname{diag}(\sigma_\theta^2)$, not $\sigma_\theta$ itself. For a full covariance use $a=\mu_\theta+L_\theta\epsilon$ with $\Sigma_\theta=L_\theta L_\theta^\top$. Freeze critic parameters during the actor step but preserve the derivative through the critic's action input. Detaching that action would destroy this pathwise gradient.
 
 ## Consolidated takeaways
 
@@ -688,16 +745,18 @@ This is a pathwise derivative, the estimator family contrasted with likelihood-r
 5. Monte Carlo value fitting averages noisy return labels through function approximation.
 6. Bootstrapping replaces a long sampled return with immediate reward plus a learned next-state value.
 7. Discounting controls infinite-horizon returns and changes the optimized objective.
-8. A one-step critic lowers variance but may bias the actor if the critic is wrong.
+8. A one-step critic can lower variance but may bias the actor if the critic is wrong.
 9. $n$-step returns and GAE interpolate between critic bias and Monte Carlo variance.
 10. GAE’s $\lambda$ changes the estimator; $\gamma$ changes the task objective.
 11. Advantage normalization is a practical optimizer heuristic, not part of the exact theorem.
-12. Replay improves sample efficiency but makes the data off-policy.
+12. Replay reuses data; when behavior differs from the current policy, the data are off-policy.
 13. A Q-critic lets current-policy actions be resampled at stored states and next states.
 14. The replay-state distribution remains mismatched and must retain sufficient fresh coverage.
-15. Reparameterization provides a lower-variance pathwise actor gradient for differentiable continuous policies.
+15. Reparameterization provides a pathwise actor gradient for differentiable continuous policies, often with lower variance than the score estimator.
 
 ## Key equations
+
+Use detached reference predictions for target construction. Here $m_t$ masks true terminals and $c_t$ stops traces at rollout boundaries; at a nonterminal cutoff $m_t=1,c_t=0$. Values at a true terminal are zero. See Section 8 for the exact discounted actor-gradient weighting.
 
 ### Value, Q, and advantage
 
@@ -715,13 +774,13 @@ $$
 ### One-step temporal-difference advantage
 
 $$
-\delta_t=r_t+\gamma\widehat V_\phi(s_{t+1})-widehat V_\phi(s_t).
+\delta_t=r_t+\gamma m_tV_{\rm ref}(s_{t+1})-V_{\rm ref}(s_t).
 $$
 
 ### Critic regression
 
 $$
-y_i=r_i+\gamma\widehat V_\phi(s_i'),
+y_i=r_i+\gamma m_iV_{\rm ref}(s_i'),
 \qquad
 L_V(\phi)=\frac{1}{2N}\sum_{i=1}^{N}
 (\widehat V_\phi(s_i)-y_i)^2.
@@ -738,32 +797,37 @@ $$
 ### $n$-step advantage
 
 $$
-\widehat A_t^{(n)}=
-\sum_{k=0}^{n-1}\gamma^k r_{t+k}
-+\gamma^n\widehat V_\phi(s_{t+n})
--\widehat V_\phi(s_t).
+\widehat A_t^{(h)}=
+\sum_{k=0}^{h-1}\gamma^k r_{t+k}
++\gamma^h m_{t+h-1}V_{\rm ref}(s_{t+h})
+-V_{\rm ref}(s_t),\qquad 1\leq h\leq n.
 $$
+
+Here $h$ is the actual number of transitions available before the boundary.
 
 ### Generalized advantage estimation
 
 $$
 \widehat A_t^{\mathrm{GAE}(\gamma,\lambda)}
-=\sum_{k=0}^{\infty}(\gamma\lambda)^k\delta_{t+k}
-=\delta_t+\gamma\lambda\widehat A_{t+1}^{\mathrm{GAE}(\gamma,\lambda)}.
+=\delta_t+\gamma\lambda c_t\widehat A_{t+1}^{\mathrm{GAE}(\gamma,\lambda)}.
 $$
+
+Without intervening boundaries, this expands into $\sum_{k\geq0}(\gamma\lambda)^k\delta_{t+k}$. The critic target is the raw advantage plus $V_{\rm ref}(s_t)$.
 
 ### Off-policy Q target
 
 $$
-y_i=r_i+\gamma
+y_i=r_i+\gamma m_i
 \mathbb E_{a'\sim\pi_\theta(\cdot\mid s_i')}
-[\widehat Q_\phi(s_i',a')].
+[Q_{\rm ref}(s_i',a')].
 $$
+
+Detach the whole target, including the sampled next action.
 
 ### Reparameterized actor objective
 
 $$
-a_\theta(s,\epsilon)=\mu_\theta(s)+\sigma_\theta(s)\epsilon,
+a_\theta(s,\epsilon)=\mu_\theta(s)+\sigma_\theta(s)\odot\epsilon,
 \qquad
 \epsilon\sim\mathcal N(0,I),
 $$

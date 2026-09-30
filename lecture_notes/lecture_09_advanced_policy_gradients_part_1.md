@@ -13,6 +13,8 @@ status: "complete"
 
 ## Lecture map
 
+**Review note.** Sections 4–5 distinguish the exact off-policy gradient from the local old-policy-advantage surrogate. This distinction is necessary: a prefix importance ratio cannot correct an ordinary old-policy future return, and an old-policy advantage does not give the exact candidate-policy gradient away from the reference policy.
+
 | Section | Topic | Transcript coverage |
 |---:|---|---:|
 | 1 | Why reuse data in policy gradients? | lines 1-585 |
@@ -48,6 +50,8 @@ Slides 2-4 summarize the basic policy-gradient loop, the appeal of GAE/Monte Car
 ### Additional explanation
 
 “Sample efficiency” here means improvement per environment interaction, not per unit of computation. A method can reuse data and become more sample-efficient while requiring more optimization work on each batch.
+
+The Monte Carlo unbiasedness statement assumes complete on-policy returns and a baseline independent of the sampled action in the relevant expectation. With $\lambda=1$ on a truncated rollout, an endpoint bootstrap remains; an inaccurate endpoint critic can still bias the gradient. PPO itself also introduces surrogate and clipping approximations.
 
 ## 2. Why repeated on-policy updates are invalid
 
@@ -117,26 +121,29 @@ The cancellation is one of the most useful properties of likelihood-ratio policy
 
 **Transcript coverage:** lines 1567-2244
 
-### What the lecturer said - transcript only
+### Lecture derivation, with corrected equations
 
 The lecturer re-derived the policy gradient with trajectories sampled from an older policy. Applying importance sampling to the usual likelihood-ratio expression yields a trajectory-weighted estimator. By causality, a reward at time $t$ cannot depend on actions taken after time $t$, so likelihood-ratio factors for future actions can be removed from that reward's term.
 
-In its causal form, a return contribution can be corrected using the product of policy ratios only through the relevant time step:
+The critical distinction is between the **time of a reward** and the **time of the action score**. Define $\rho_j=\pi_\theta(a_j\mid s_j)/\pi_{\rm old}(a_j\mid s_j)$ and $W_k=\prod_{j=1}^k\rho_j$. For $J_\gamma=\mathbb E_\theta[\sum_{k=1}^H\gamma^{k-1}r_k]$, the exact per-reward causal estimator is
 
 $$
-\nabla_\theta J(\theta)
-=
-\mathbb E_{\tau\sim p_{\mathrm{old}}}
-\left[
-\sum_t
-\left(\prod_{t'=1}^{t}
-\frac{\pi_\theta(a_{t'}\mid s_{t'})}
-{\pi_{\mathrm{old}}(a_{t'}\mid s_{t'})}
-\right)
-\nabla_\theta\log\pi_\theta(a_t\mid s_t)
-\widehat Q_t
-\right].
+\nabla_\theta J_\gamma(\theta)
+=\mathbb E_{\tau\sim p_{\rm old}}
+\left[\sum_{k=1}^H\gamma^{k-1}W_k r_k
+\sum_{t=1}^k\nabla_\theta\log\pi_\theta(a_t\mid s_t)\right].
 $$
+
+Each reward $r_k$ retains ratios through $k$, including intervening actions after an earlier score at $t<k$. Alternatively, after analytically averaging future rewards under the **candidate** policy,
+
+$$
+\nabla_\theta J_\gamma(\theta)
+=\mathbb E_{\tau\sim p_{\rm old}}
+\left[\sum_{t=1}^H\gamma^{t-1}W_t
+\nabla_\theta\log\pi_\theta(a_t\mid s_t)Q^{\pi_\theta}_t(s_t,a_t)\right].
+$$
+
+Replacing this $Q^{\pi_\theta}_t$ with an ordinary uncorrected return from the old-policy rollout is generally biased. A sampled future return needs its own continuation ratios.
 
 The on-policy formula is recovered when the policies are equal and every ratio is one.
 
@@ -144,44 +151,46 @@ The lecturer then motivated an approximation used in practice. If advantages are
 
 ### Source reconciliation
 
-Slides 8-9 develop the same derivation and explicitly use causality to remove future importance weights.
+Slides 8-9 motivate trajectory reweighting and causality. The equations above spell out the exact causal identity rather than reading a prefix ratio times an ordinary old-policy return as exact. Only ratios **after the reward being estimated** can be removed by causality.
 
 ### Additional explanation
 
 The exact causal estimator still contains products over time. It is unbiased under ideal assumptions, but each random ratio multiplies all earlier ones. That makes the estimator impractical for long horizons even before approximation error in the advantage is considered.
 
+For a two-step episode, the score at step 1 multiplied by reward $r_2$ needs $\rho_1\rho_2$: changing the policy at step 2 changes the expected reward. Weighting only by $\rho_1$ misses that change. With a single-step reward, there is no continuation mismatch.
+
 ## 5. State-distribution approximation and a multi-step algorithm
 
 **Transcript coverage:** lines 2245-2988
 
-### What the lecturer said - transcript only
+### Lecture derivation, with corrected equations
 
-Products of importance ratios can grow or shrink exponentially with horizon, producing extreme variance. An equivalent exact expression can be written with a marginal state-action ratio:
+Products of importance ratios can grow or shrink exponentially with horizon, producing extreme variance. An equivalent exact discounted expression can be written with a marginal state-action ratio. Here $d_\gamma^\pi=(1-\gamma)\sum_{t=1}^\infty\gamma^{t-1}P_\pi(s_t=\cdot)$ is normalized discounted occupancy:
 
 $$
-\nabla_\theta J(\theta)
-=
-\mathbb E_{s\sim d^{\pi_{\mathrm{old}}},\,a\sim\pi_{\mathrm{old}}}
+\nabla_\theta J_\gamma(\theta)
+=\frac{1}{1-\gamma}
+\mathbb E_{s\sim d_\gamma^{\pi_{\mathrm{old}}},\,a\sim\pi_{\mathrm{old}}}
 \left[
-\frac{d^{\pi_\theta}(s)}{d^{\pi_{\mathrm{old}}}(s)}
+\frac{d_\gamma^{\pi_\theta}(s)}{d_\gamma^{\pi_{\mathrm{old}}}(s)}
 \frac{\pi_\theta(a\mid s)}{\pi_{\mathrm{old}}(a\mid s)}
 \nabla_\theta\log\pi_\theta(a\mid s)
+A^{\pi_\theta}(s,a)
+\right].
+$$
+
+This exact gradient uses the **candidate-policy** advantage (or candidate $Q$ minus any valid state baseline). The state ratio is hard to calculate. Practical repeated-update methods instead hold the **old** advantage fixed and optimize the local surrogate
+
+$$
+S(\theta)=\frac{1}{1-\gamma}
+\mathbb E_{s\sim d_\gamma^{\pi_{\mathrm{old}}},a\sim\pi_{\mathrm{old}}}
+\left[
+\frac{\pi_\theta(a\mid s)}{\pi_{\mathrm{old}}(a\mid s)}
 A^{\pi_{\mathrm{old}}}(s,a)
 \right].
 $$
 
-The state-visitation ratio is hard to calculate. The practical approximation is to ignore it and retain only the one-step action probability ratio:
-
-$$
-\nabla_\theta J(\theta)
-\approx
-\mathbb E_{(s,a)\sim\pi_{\mathrm{old}}}
-\left[
-\frac{\pi_\theta(a\mid s)}{\pi_{\mathrm{old}}(a\mid s)}
-\nabla_\theta\log\pi_\theta(a\mid s)
-A^{\pi_{\mathrm{old}}}(s,a)
-\right].
-$$
+Its gradient is the same expectation with an additional $\nabla_\theta\log\pi_\theta(a\mid s)$ factor. The fixed scale $1/(1-\gamma)$ is often omitted in optimization. For finite horizons, use the corresponding time-indexed discounted sum instead.
 
 This is a first-order or local approximation: it is plausible only while the new and old policies remain close, because then their state distributions have not changed much.
 
@@ -189,11 +198,13 @@ The resulting multi-step algorithm stores the old policy probabilities with the 
 
 ### Source reconciliation
 
-Slides 9-11 show the exact state/action-marginal expression, cross out the state ratio as the practical approximation, and present the repeated-update algorithm.
+Slides 9-11 motivate the state/action-marginal expression and repeated updates after omitting the state ratio. An expression containing the old advantage should be read as a policy-improvement surrogate, not the exact gradient at every candidate policy. Lecture 10's performance-difference lemma explains why the old advantage is appropriate for that surrogate.
 
 ### Additional explanation
 
 Ignoring the state ratio is the central approximation behind this presentation of PPO. A ratio near one at sampled states is evidence of local action-distribution similarity, but it does not by itself prove that visitation distributions match everywhere.
+
+At $\theta=\theta_{\rm old}$, $S=0$ and $\nabla S=\nabla J_\gamma$ with exact advantages and consistent weighting. Thus $S$ is tangent to the **improvement** $J_\gamma(\theta)-J_\gamma(\theta_{\rm old})$; add $J_\gamma(\theta_{\rm old})$ if comparing values to total return. Away from the anchor, the gradients generally differ. Uniform rollout-time averaging is also not automatically discounted-occupancy sampling.
 
 ## Part II - Constraining how much a reused batch can change the policy
 
@@ -241,7 +252,7 @@ Slide 14 displays the clipped range and stresses that the reference policy is th
 
 ### Additional explanation
 
-Ratio clipping is a samplewise constraint, not a direct global distance bound. Some unsampled actions can still change, and the aggregate KL divergence should therefore be monitored in implementations.
+Ratio clipping modifies sample contributions to an objective; it does not constrain actual ratios to remain in the interval. Shared parameters and other loss terms can keep moving even sampled ratios beyond it, and unsampled actions can change too. Monitoring KL and optionally stopping inner updates early therefore provides information that clipping alone does not supply.
 
 ## 8. The asymmetric PPO clipped objective
 
@@ -276,6 +287,8 @@ Slide 15 plots the positive- and negative-advantage cases and shows why the $\mi
 
 The sign of the advantage is what reverses the safe clipping direction. Remembering the two cases is more informative than treating the `min` as an arbitrary implementation trick.
 
+For $\epsilon=0.2$ and $\widehat A=2$, a ratio of 1.4 contributes $\min(2.8,2.4)=2.4$; a ratio of 0.6 contributes $\min(1.2,1.6)=1.2$. For $\widehat A=-2$, ratio 0.6 contributes $-1.6$, while ratio 1.4 contributes $-2.8$. Bad-direction changes continue to be penalized. The objective is piecewise differentiable, with kinks at clipping boundaries, not everywhere differentiable. Its pessimism is relative to the unclipped surrogate, not a certified bound on true return. See the [PPO paper](https://arxiv.org/abs/1707.06347).
+
 ## 9. PPO in practice and closing Q&A
 
 **Transcript coverage:** lines 4276-4504
@@ -303,6 +316,8 @@ Slide 16 provides the complete PPO clipped algorithm and includes the optional e
 
 PPO remains an on-policy family in the broad sense: it reuses each fresh batch for several epochs, but it does not normally maintain a long-lived replay buffer containing data from many old policies.
 
+Store detached old log probabilities and compute each joint-action ratio as $\exp(\log\pi_\theta(a_t\mid s_t)-\log\pi_{\rm old}(a_t\mid s_t))$. Keep the denominator and actor advantages fixed across epochs. Compute the critic target from **unnormalized** GAE plus the rollout's reference value, then detach it; advantage normalization is only for the actor. Distinguish true-terminal masking from cutoff bootstrapping as in Lecture 6. Entropy and critic losses have their own coefficients and are not included inside the clipped minimum.
+
 ## Consolidated takeaways
 
 1. Plain policy-gradient updates are reliable but discard a batch after essentially one policy step.
@@ -311,7 +326,7 @@ PPO remains an on-policy family in the broad sense: it reuses each fresh batch f
 4. Exact trajectory or state-distribution corrections have prohibitive variance or are difficult to compute.
 5. Practical multi-step policy optimization keeps the one-step action ratio and assumes policy changes are local enough to ignore state-distribution shift.
 6. The old policy remains the fixed reference throughout all inner updates on a batch.
-7. Clipping trades unbiasedness for lower variance and controlled sample influence.
+7. Clipping changes the surrogate and limits favorable sample contributions; it does not enforce a hard ratio or KL bound.
 8. PPO's minimum creates the correct asymmetric plateau for positive and negative advantages.
 9. PPO combines the clipped actor objective with advantage estimation, critic regression, mini-batches, and often entropy regularization.
 

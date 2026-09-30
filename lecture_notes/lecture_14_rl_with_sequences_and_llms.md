@@ -63,6 +63,8 @@ The partition function couples all trajectories. Raising the reward of an expert
 
 Recovering a reward does not make the problem identifiable in general: many rewards can induce the same optimal behavior. Maximum entropy supplies a probabilistic preference for less arbitrary explanations, while architectural choices, regularization, and the demonstration distribution still determine which reward is recovered.
 
+As clarified in Lecture 13, a globally normalized $p_\psi(\tau)\propto p(\tau)e^{r_\psi(\tau)}$ is not generally the rollout distribution of a maximum-entropy policy under stochastic real dynamics. The claimed exact negative expectation must match the chosen IRL formulation. The displayed model also suppresses the action reference measure; include action-prior factors if using a nonuniform prior.
+
 ## 2. Practical inverse RL and importance sampling
 
 **Transcript coverage:** lines 512-958
@@ -93,6 +95,8 @@ Here $r_\psi(\tau)=\sum_t r_\psi(s_t,a_t)$. The slides confirm that the dynamics
 ### Additional explanation
 
 This is a standard bias-variance-computation trade-off. Fully solving the inner RL problem is expensive; partially updating the policy is cheaper but introduces distribution mismatch; importance sampling restores correctness in principle but may introduce severe variance. Long language or control sequences make the product-form likelihood ratio especially fragile, which motivates clipped ratios and near-on-policy updates later in the lecture.
+
+Self-normalized importance sampling is biased at finite sample size, even with exact behavior likelihoods. It is consistent under suitable support/integrability assumptions; it is not an exactly unbiased correction. The normalized target/proposal ratio tends to one if the distributions match, while unnormalized weights merely become equal. A finite policy update need not bring them closer monotonically.
 
 ## 3. Inverse RL as a two-player game
 
@@ -143,6 +147,8 @@ The transcript uses several approximate automatic transcriptions of GAN and disc
 ### Additional explanation
 
 The discriminator can be converted into different reward shapes, for example $-\log(1-D)$ or $\log D-\log(1-D)$. These choices may have the same ideal equilibrium but very different learning dynamics. The central invariant is that policy behavior is rewarded for becoming less distinguishable from expert behavior.
+
+These signs assume $D$ denotes expert probability. A state-action discriminator matches occupancies; it does not by itself enforce equality of all temporal correlations in full trajectories. For the structured density discriminator, numerator and denominator must be densities relative to the same base measure, with the partition constant absorbed into a learned offset if omitted. Merely writing $\exp(r)$ against an incompatible full rollout density does not establish an IRL equivalence.
 
 ## Part II - Reinforcement learning for language models
 
@@ -198,6 +204,8 @@ They also diagram the token-level state transition $s_{t+1}=(s_t,a_t)$. The two 
 ### Additional explanation
 
 The one-step view makes sequence-level policy gradients compact. The token-level view makes temporal credit assignment explicit. In implementation, a system often combines them: it samples a full response autoregressively, computes a sequence-level reward, and distributes an advantage or KL term across token log probabilities.
+
+Include the end-of-sequence action in the completion probability and mask padding. For an undiscounted terminal reward, the two formulations give the same expected-return objective. Adding token discounts, length normalization, or intermediate rewards can change it; averaging each response's log probabilities instead of summing them introduces length-dependent weighting.
 
 ## 7. Policy gradients for language models
 
@@ -264,6 +272,12 @@ The transcript's automatic "GA" rendering is reconciled to GAE from the slide he
 
 GRPO exchanges learned generalization for repeated sampling. A value network can predict a baseline for a prompt from previous training data, while a group baseline estimates it anew using several completions from that prompt. The latter saves value-model memory but consumes generation compute and can be noisy for small $K$.
 
+The actor loss excludes prompt tokens because they are not sampled policy actions. This does not prohibit training a **value** for the full prompt or its last position: it is a valid initial state with a future response return. Which positions receive value targets is an implementation choice requiring correct state/next-token alignment, not a consequence of the policy having chosen every token in a state's history.
+
+The formula shown is the centered group reward. Common GRPO versions also divide by the within-group reward standard deviation and use a clipped policy surrogate. This is not simply an unbiased REINFORCE baseline: including each completion in its own group mean multiplies the expected unnormalized score gradient by $(K-1)/K$ for independent on-policy completions of one prompt. A leave-one-out mean avoids that particular bias. Standard-deviation normalization adds further weighting and statistical dependence. Equal-reward groups give no centered task-reward signal.
+
+For GAE, use $\delta_t=r_t+\gamma m_tV(s_{t+1})-V(s_t)$ and $\hat A_t=\delta_t+\gamma\lambda c_t\hat A_{t+1}$. At true termination $m_t=c_t=0$; at a nonterminal collection cutoff $m_t=1,c_t=0$. Whether a generation-length cap is terminal depends on the task definition. Critic targets use raw GAE plus the reference value, before advantage normalization.
+
 ## 9. Reference-model regularization and PPO
 
 **Transcript coverage:** lines 4849-5399
@@ -290,6 +304,10 @@ and show the clipped PPO surrogate with the probability ratio between the curren
 ### Additional explanation
 
 The reference model is a behavioral prior, not the data-collection policy used in PPO's importance ratio. They can initially be the same checkpoint, but conceptually they have different roles: the old policy makes the gradient estimator usable for reused samples, while the reference supplies a long-lived constraint on linguistic behavior.
+
+For a completion sampled from the current policy, $\log\pi_\theta(a\mid s)-\log\pi_{\rm ref}(a\mid s)$ is a sample of the forward current-to-reference KL integrand; it can be negative on one completion. Its expectation is the nonnegative KL. It decomposes into a sum of token log ratios, with prefixes distributed under the current policy. Samples from an older policy require attention to that sampling mismatch.
+
+Do not subtract a detached **state-only exact KL scalar** from a score weight and expect its direct gradient: that scalar cancels as a baseline. Either differentiate the KL regularizer explicitly or use the appropriate sampled action log-ratio reward. PPO clipping separately controls a local surrogate and is not a hard KL bound; a reference penalty discourages reward exploitation but cannot guarantee its prevention.
 
 ## 10. Preference rewards and the Bradley-Terry model
 
@@ -373,6 +391,8 @@ Slides 40-47 depict the blind-spot and maze examples, define the failure of the 
 
 A POMDP separates two kinds of uncertainty: uncertainty because the environment state is hidden now, and uncertainty because the agent has not yet learned the environment. Information-gathering actions address the first. Exploration algorithms address the second. A real system can face both simultaneously.
 
+**Qualification:** stochasticity can be essential within the restricted class of stationary, memoryless observation-only policies. It is not generally required for an optimal full-history policy. Under standard finite-action discounted assumptions, the belief-state MDP admits a deterministic optimum. Remembering previous actions or time can solve examples that defeat a fixed deterministic observation-to-action map.
+
 ## 13. Learning with histories under partial observability
 
 **Transcript coverage:** lines 7400-7768
@@ -398,6 +418,8 @@ Slides 48-51 compare policy-gradient and value-based methods under partial obser
 ### Additional explanation
 
 Using the full history makes the mathematical state Markov but does not make learning easy. The representation must still extract the history features that predict future rewards. A recurrent or attention model is therefore an approximation to belief-state inference: it compresses the history into a statistic useful for action selection and value prediction.
+
+An observation-only conditional expected return can be defined for a particular policy and history distribution, but it need not obey a stationary observation-level Bellman optimality equation. A learned summary is not automatically sufficient; discarded information can still matter. This is why a recurrent critic should receive the relevant history as well as the actor.
 
 ## Consolidated takeaways
 
@@ -503,7 +525,7 @@ $$
 7. What computation does GRPO remove, and what additional sampling does it require?
 8. Why can preference optimization reward persuasion or flattery even when labels are collected correctly?
 9. When can process rewards help, and how can they become a misleading proxy?
-10. Why can a POMDP require a stochastic policy even when a fully observed MDP has a deterministic optimum?
+10. Why can randomization help a memoryless observation-only policy, while a belief-state policy can have a deterministic optimum?
 11. Why is exploration different from information gathering?
 12. In what formal sense is the complete history Markov?
 

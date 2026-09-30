@@ -83,6 +83,8 @@ for a probabilistic model. The slides label $\pi_\beta$ as the data-collection o
 
 "Model-based" refers to explicitly using a learned or known prediction model for decision making. Merely learning a representation of state is not sufficient unless predictions from that representation influence planning, policy learning, or value learning.
 
+Squared-error fitting estimates the conditional mean next state, which can be an impossible outcome in a multimodal environment: the mean of going left and going right may go through a wall. A useful learned simulator also needs rewards and termination rules, unless these are supplied externally. Video plausibility alone does not establish action-conditioned causal dynamics.
+
 ## 3. Failure modes, benefits, and problem categories
 
 **Transcript coverage:** lines 866-1512
@@ -144,6 +146,8 @@ $$
 
 Small policy updates shorten that loop by asking the model only local counterfactual questions before acquiring corrective evidence.
 
+This is a mitigation, not a coverage guarantee. Small average action KL on the dataset does not rule out a large change at a rare state or accumulated state-distribution shift over a long horizon. Iterative data aggregation resembles DAgger's distribution correction, but here the labels are environment transitions, not expert actions; its guarantees do not transfer automatically.
+
 ## 5. Decision making under predictive uncertainty
 
 **Transcript coverage:** lines 2395-3049
@@ -167,6 +171,8 @@ Slides 15-17 show predictive distributions whose mass overlaps a cliff and disti
 ### Additional explanation
 
 For nonlinear rewards, variance changes value through curvature and tail risk. A small probability of catastrophic failure can dominate a large probability of ordinary success. This is why propagating a distribution through the reward is qualitatively different from rolling out only the mean dynamics.
+
+For instance, if the next state is $-1$ or $+1$ with equal probability and $r(s)=s^2$, expected reward is 1 but reward at the mean is 0. With a concave reward the inequality reverses; there is no universal direction. Optimizing expected reward, a lower confidence bound, a worst case, or a tail-risk measure defines different control objectives.
 
 ## 6. Aleatoric and epistemic uncertainty
 
@@ -192,6 +198,16 @@ $$
 ### Additional explanation
 
 A stochastic next-state head primarily models aleatoric variation conditional on one fitted parameter vector. Epistemic uncertainty requires uncertainty across plausible parameter vectors, functions, or models. The two can coexist and should not be conflated.
+
+For a scalar prediction $Y$, the law of total variance makes the distinction explicit:
+
+$$
+\operatorname{Var}(Y\mid x,\mathcal D)
+=\mathbb E_{\theta\mid\mathcal D}\operatorname{Var}(Y\mid x,\theta)
++\operatorname{Var}_{\theta\mid\mathcal D}\mathbb E[Y\mid x,\theta].
+$$
+
+The first term is conditional outcome noise; the second is disagreement about the conditional mean. “Irreducible” is relative to the available inputs and model: adding a previously hidden explanatory variable can reduce apparent aleatoric noise.
 
 ## 7. Bayesian neural networks, ensembles, and truncated Q&A
 
@@ -227,6 +243,8 @@ Slide 22 only previews the next lecture. It contains no answer to the truncated 
 ### Additional explanation
 
 Random initialization ensembles work because neural-network training is nonconvex and stochastic: different members can converge to different functions that all fit the observed data. Their disagreement is a useful heuristic, not a calibrated Bayesian posterior. If all networks share the same architecture and biases, they may agree confidently on the same wrong extrapolation.
+
+Even a classical bootstrap ensemble is not automatically an exact Bayesian posterior. The point-mass mixture is a useful approximation, whose validity depends on how members are generated. In contrast, a Bayesian weight posterior specifies a prior and likelihood; its variational objective is $\mathbb E_{q_\phi(\theta)}[\sum_i\log p(y_i\mid x_i,\theta)]-D_{\rm KL}(q_\phi(\theta)\|p(\theta))$. The KL is charged once per dataset, so minibatch likelihood scaling matters.
 
 ## Consolidated takeaways
 

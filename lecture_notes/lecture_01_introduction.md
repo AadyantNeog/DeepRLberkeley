@@ -57,11 +57,13 @@ Slides 2-4 make the physical setup and data flow more precise: the example uses 
 
 ### Additional explanation
 
-This is “microscopic” because the example can be viewed as a nearly one-step decision: choose a grasp and observe an outcome. Full RL becomes more distinctive when actions change later observations over many time steps. Even here, two central RL difficulties are visible:
+This is “microscopic” because the example can be viewed as a nearly one-step decision: choose a grasp and observe an outcome. Full RL becomes more distinctive when actions change later observations over many time steps. Even here, three central RL difficulties are visible:
 
 - **Exploration:** the robot must try actions before it knows whether they work.
 - **Weak supervision:** a failure label says that the chosen grasp was bad, but not which grasp would have been good.
 - **Data-distribution change:** as the policy improves, it attempts different grasps and therefore creates a different training distribution.
+
+A single grasp with no action-dependent future episode is more precisely a **contextual bandit**. Learning a success predictor from logged trials and maximizing it can solve that special case; multi-step RL additionally handles how actions affect later opportunities.
 
 ## 2. What data-driven generative AI learns
 
@@ -82,6 +84,8 @@ Slide 6 represents these two statistical objectives as an unconditional model $p
 ### Additional explanation
 
 The contrast is about the training objective, not a claim that generative models merely memorize. Distribution modeling can produce broad generalization because predicting data well requires discovering reusable structure. Still, a likelihood-based objective asks the model to fit what occurred in the dataset. An RL objective instead scores consequences and can prefer an action that is rare or absent in the data if it achieves more reward.
+
+Preferring an unseen action is not evidence that it will work. Offline RL needs data coverage or defensible generalization assumptions; online exploration or a sufficiently accurate simulator can supply evidence about new behavior. Distribution modeling also learns compositional structure, so novelty is not exclusive to RL.
 
 ## 3. RL's psychological and optimization roots
 
@@ -282,6 +286,8 @@ Sequential dependence creates two distinct complications:
 
 In a fully observed Markov decision process, the current state contains all information from history needed to predict the future, given the next action. In a partially observed problem, the agent may need a history window, belief state, or recurrent model.
 
+The i.i.d. comparison is a common introductory setup, not a definition of supervised learning: supervised sequence models can learn from dependent data, and offline RL can use a fixed dataset from another policy. Independently reset trajectories are i.i.d. only when the behavior policy, environment, and initial-state distribution are also held fixed. Continuing RL need not have independent resets at all.
+
 ## 11. Policies, states, actions, and rewards
 
 **Transcript coverage:** lines 852-942
@@ -313,6 +319,15 @@ Slide 17 labels the environment feedback as consequences, observations/states, a
 The formulation depends on modeling choices. A dog's action could be “sit” at a high level or thousands of muscle activations at a low level. Neither is universally correct; the representation determines what the policy must learn and what dynamics remain hidden inside the environment.
 
 Reward is not a full instruction. It ranks outcomes through a scalar signal, leaving the algorithm to discover the action sequence that produces those outcomes.
+
+For precision, an MDP state satisfies
+
+$$
+p(s_{t+1},r_t\mid s_{1:t},a_{1:t})
+=p(s_{t+1},r_t\mid s_t,a_t).
+$$
+
+A camera frame is not automatically such a state: identical images can hide different velocities. History or an inferred belief can supply missing information. Finite-horizon policies may also need the remaining time as input.
 
 ## 12. Physical control and emergent game strategies
 
@@ -445,6 +460,8 @@ One practical synthesis is:
 
 This pretraining-plus-optimization pattern connects modern foundation models with sequential decision making.
 
+The data-versus-optimization contrast is motivational. Supervised learning itself uses optimization and can generalize beyond examples. RL supplies an outcome-based objective; it does not guarantee novelty, superiority to demonstrations, or recovery of outcomes unsupported by available experience.
+
 ## 17. The Bitter Lesson: learning and search
 
 **Transcript coverage:** lines 1341-1411
@@ -519,7 +536,7 @@ The target $y_i$ is supplied in the dataset.
 ### Reinforcement-learning trajectory
 
 $$
-\tau=(s_1,a_1,r_1,\ldots,s_T,a_T,r_T).
+\tau=(s_1,a_1,r_1,\ldots,s_T,a_T,r_T,s_{T+1}).
 $$
 
 The agent's action affects later states and rewards, so the samples within a trajectory are not independent.

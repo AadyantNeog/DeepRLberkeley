@@ -65,6 +65,8 @@ This transcript segment corresponds to slides 15 and earlier material in the sup
 
 Distillation trades training cost for deployment speed. The teacher expends many integration evaluations once to create targets; the student amortizes those trajectories into a direct noise-to-action map.
 
+Straight-looking paths alone do not make Euler exact: one step is exact when the initial velocity equals the entire required displacement, as for constant velocity along the path. Reflow trains a new flow using teacher-coupled noise/endpoints to straighten transport; a separate direct sampler can be distilled from those pairs. Reflow does not universally make a learned field exact in one step.
+
 ## 2. Action chunking
 
 **Transcript coverage:** lines 559-981
@@ -92,6 +94,8 @@ and cites Chi et al., *Diffusion Policy: Visuomotor Policy Learning via Action D
 ### Additional explanation
 
 Chunking is a temporal abstraction. It reduces the number of policy queries but also reduces feedback frequency. Executing only a prefix retains replanning while still using the longer prediction task as an auxiliary training signal.
+
+Executing one action still allows joint prediction to affect representation learning and action consistency; it only removes the reduction in policy-query frequency. Executing more actions trades faster inference and coherent plans against delayed feedback. These are empirical benefits, not a guarantee that the original $H^2$ bound improves by substituting a smaller horizon.
 
 ## 3. Recovery-focused demonstrations and augmentation
 
@@ -155,6 +159,8 @@ This material aligns with slides 24-32 of the prior deck. Slide 26 formalizes fi
 
 Relabeling converts every successful trajectory into supervision for the outcome it actually achieved. The learned policy can then share skills across goals, but it still inherits coverage limits: commanding a goal outside the relabeled goal distribution introduces a second form of shift.
 
+Achieved-endpoint labels need not come from originally successful attempts: a failed attempt at A may provide data for the endpoint B. They do not establish shortest paths, robust success, or optimal rewards; conditioning on lucky stochastic outcomes can bias the learned behavior.
+
 ## Part II - Markov decision processes and the RL objective
 
 ## 6. From imitation data to rewards and MDPs
@@ -178,6 +184,8 @@ Slides 1-4 of the Lecture 4 deck begin here. Slide 4 writes $r(s_t,a_t)$ and say
 ### Additional explanation
 
 Reward is a specification, while the policy is a solution. Sparse reward can clearly state the goal yet provide almost no local hint about which action improves the chance of reaching it.
+
+A complete control objective also specifies the initial-state distribution and a horizon, discount, or average-reward criterion. Rewards may depend on $(s,a,s')$ or be random; $r(s,a)$ often denotes their conditional mean. Model-based methods can use a known model as well as learn one, and RL can incorporate demonstrations rather than requiring their absence.
 
 ## 7. Markov chains and transition operators
 
@@ -248,6 +256,8 @@ for a POMDP, where $\mathcal E$ is the emission operator. The transcript calls i
 
 Fixing a policy removes the decision variable from the dynamics. The combined environment-policy system is then simply a stochastic process, allowing Markov-chain tools to analyze visitation and long-run reward.
 
+A stationary Markov policy induces a time-homogeneous chain. A time-dependent policy induces time-dependent transitions unless time is added to the state. A history-dependent POMDP controller requires its memory/history in the combined chain; latent environment state alone does not necessarily make the closed-loop process Markov.
+
 ## 9. Trajectory distributions and state marginals
 
 **Transcript coverage:** lines 2944-3318
@@ -274,6 +284,8 @@ The deck notes that $s'$ is shorthand for the next state. Its horizon indexing i
 ### Additional explanation
 
 Sampling avoids enumerating exponentially many trajectories. A Monte Carlo average is therefore the basic bridge between the mathematical expectation and an executable algorithm.
+
+Use $\tau=(s_1,a_1,\ldots,s_H,a_H,s_{H+1})$ for the displayed product: $H$ decisions produce $H+1$ states. Marginalizing out $s_{H+1}$ gives a trajectory ending in $(s_H,a_H)$.
 
 ## 10. The reinforcement-learning objective
 
@@ -310,7 +322,7 @@ Linearity of expectation rewrites expected total reward as a sum of expected per
 If there are $n$ states and $m$ actions, the marginal vector $\mu_t$ has $nm$ entries such as $p(s_t=1,a_t=1)$ and $p(s_t=1,a_t=2)$. A policy-specific transition matrix maps one tuple distribution to the next. A reward vector $\tilde r$ contains $r(s,a)$ in the same tuple order. The expected reward at time $t$ is the inner product $\mu_t^\top\tilde r$, and
 
 $$
-\mu_t=\mathcal T_\theta^{,t-1}\mu_1.
+\mu_t=\mathcal T_\theta^{t-1}\mu_1.
 $$
 
 Thus the finite-horizon objective can be written compactly with powers of the transition matrix. The lecturer stressed that real RL algorithms normally do not know this matrix; the representation is for theoretical analysis.
@@ -328,14 +340,14 @@ $$
 
 $$
 J(\theta)=\sum_{t=1}^{H}\mu_t^\top\tilde r
-=\left[\sum_{t=1}^{H}\mathcal T_\theta^{,t-1}\mu_1\right]^\top\tilde r.
+=\left[\sum_{t=1}^{H}\mathcal T_\theta^{t-1}\mu_1\right]^\top\tilde r.
 $$
 
 This slide rendering supplies the corrected formula that the transcript says was fixed but does not fully state.
 
 ### Additional explanation
 
-The formula exposes two ways $\theta$ matters: it changes the transition matrix of the combined policy-environment chain and therefore changes every future visitation marginal.
+The formula exposes two places where $\theta$ enters: the initial state-action distribution $\mu_{1,\theta}(s,a)=p(s_1=s)\pi_\theta(a\mid s)$, and the transition matrix $\mathcal T_\theta$. Thus $\mu_1$ also depends on $\theta$ even when the environment's initial-state distribution does not. Matrix powers assume a stationary policy; time-dependent policies require a product of time-indexed matrices.
 
 ## 12. Infinite horizon and stationary distributions
 
@@ -372,6 +384,16 @@ The transcript-only explanation informally equates ergodicity with mutual reacha
 
 Stationarity is a fixed point of distribution dynamics, not a state at which the physical system stops moving. Individual states continue changing even though their long-run probabilities remain constant.
 
+For a **finite** chain, a stationary probability vector always exists. Irreducibility gives uniqueness; aperiodicity additionally gives convergence of the ordinary marginals from every start. For example, deterministic alternation between two states has stationary distribution $(1/2,1/2)$, but its marginals oscillate. Time-averaged visitation can nevertheless converge. Disconnected closed classes admit multiple stationary distributions and mixtures of them, so long-run behavior can depend on the start. Infinite state spaces need additional recurrence/existence assumptions.
+
+The fixed-point equation must be accompanied by $\bar\mu\ge0$ and $\mathbf1^\top\bar\mu=1$. Discounted return is a different infinite-horizon objective:
+
+$$
+J_\gamma(\pi)=\mathbb E_\pi\sum_{t=1}^\infty\gamma^{t-1}r_t,\qquad 0\le\gamma<1.
+$$
+
+Bounded rewards make this sum finite without requiring stationarity or ergodicity. Do not use an undiscounted infinite reward sum as the value function for the average-reward objective.
+
 ## 13. Expectations, discontinuous rewards, and intermission Q&A
 
 **Transcript coverage:** lines 4468-5054
@@ -401,6 +423,8 @@ $$
 $$
 
 which is differentiable even though the outcome reward is discrete.
+
+Smoothness of the expected return still needs differentiable policy probabilities and conditions permitting differentiation under the expectation. A deterministic threshold policy can yield a nonsmooth objective; sampling alone is not a proof of smoothness. Low imitation loss also need not force visitation distributions to converge.
 
 ## Part III - Anatomy and families of RL algorithms
 
@@ -464,6 +488,15 @@ $$
 
 $Q^\pi$ separates the value of the first action from the policy used later. That makes it the natural object for asking whether replacing the current action improves upon following $\pi$ unchanged.
 
+Finite-horizon values are really $V_t^\pi(s)$ and $Q_t^\pi(s,a)$ because remaining time changes the return. With terminal value $V_{T+1}^\pi=0$,
+
+$$
+Q_t^\pi(s,a)=r(s,a)+\mathbb E[V_{t+1}^\pi(s')\mid s,a],
+\qquad V_t^\pi(s)=\mathbb E_{\pi_t}[Q_t^\pi(s,a)].
+$$
+
+The time-free notation assumes time is encoded in state or a stationary discounted formulation. Discounted backups multiply the successor value by $\gamma$.
+
 ## 16. Policy improvement from Q and V
 
 **Transcript coverage:** lines 6040-6270
@@ -481,9 +514,8 @@ Estimating $Q$ or $V$ belongs to the evaluation/modeling box; it does not itself
 Slide 25 writes the greedy update
 
 $$
-\pi'(a\mid s)=1
-\quad\text{if}\quad
-a\in\arg\max_{a'}Q^\pi(s,a'),
+\pi'(a\mid s)=\mathbf1[a=a^*(s)],
+\qquad a^*(s)\in\arg\max_{a'}Q^\pi(s,a'),
 $$
 
 and highlights $Q^\pi(s,a)-V^\pi(s)$ as the sign of whether an action is above average.
@@ -491,6 +523,8 @@ and highlights $Q^\pi(s,a)-V^\pi(s)$ as the sign of whether an action is above a
 ### Additional explanation
 
 The difference $A^\pi(s,a)=Q^\pi(s,a)-V^\pi(s)$ is called the advantage. It centers action quality relative to the policy’s own baseline at that state.
+
+Resolve ties by choosing one maximizer or distributing probability mass over them; assigning probability one to every maximizer is invalid. The policy-improvement theorem requires exact evaluation and improvement at every relevant state (and time for finite horizons). It guarantees nondecreasing value, not a strictly better initial return if improved states are never reached. A finite shared-network gradient step with approximate advantages has no automatic monotonic guarantee.
 
 ## 17. Four broad RL algorithm families
 
@@ -573,6 +607,8 @@ Slides 35-36 place methods on a qualitative spectrum from model-based deep RL an
 
 Off-policy reuse introduces its own distribution mismatch: the dataset may describe different behavior than the current policy. Importance weighting, conservative updates, or value-learning structure is typically needed to use that data safely.
 
+On-policy describes the relationship between the target policy and behavior distribution used by an estimator. Basic REINFORCE uses fresh batches; PPO uses several local surrogate updates per batch. Off-policy does not mean arbitrary data are sufficient: coverage and estimator assumptions still matter. There is no universal sample-efficiency ranking among these algorithm families.
+
 ## 21. Stability, convergence, and objective mismatch
 
 **Transcript coverage:** lines 7426-7776
@@ -621,7 +657,7 @@ These demonstrations preview two very different regimes: a small discrete action
 ## Consolidated takeaways
 
 1. The transcript begins by completing the previous imitation-learning lecture; the current RL deck begins only near line 1969.
-2. Flow matching generates actions by integrating an observation-conditioned vector field; reflow can distill many integration steps into one.
+2. Flow matching generates actions by integrating an observation-conditioned field; reflow and distillation can reduce sampling cost, with approximation error.
 3. Action chunks and recovery-focused data are powerful empirical tools for continuous-control imitation.
 4. Broad pretraining can supply coverage while narrow post-training specifies desired actions.
 5. An MDP consists of states, actions, dynamics, and reward; a POMDP adds observations and emissions.
@@ -633,7 +669,7 @@ These demonstrations preview two very different regimes: a small discrete action
 11. Discontinuous physical rewards can have smooth expectations in policy-induced probabilities.
 12. Most RL algorithms alternate data collection, return/model estimation, and policy improvement.
 13. $Q^\pi$ evaluates a chosen first action; $V^\pi$ averages $Q^\pi$ under the policy.
-14. Greedy or advantage-weighted policy updates improve behavior when values are accurate.
+14. Exact statewise policy improvement has a nondecreasing-value guarantee; approximate shared-network updates need additional care.
 15. Policy-gradient, value-based, actor-critic, and model-based methods make different compromises.
 16. Off-policy learning reuses data and is often sample efficient; on-policy learning collects fresh data after updates.
 17. Greater sample efficiency can require more computation and produce less stable optimization.
@@ -673,7 +709,7 @@ $$
 $$
 \mu_{t+1}=\mathcal T_\theta\mu_t,
 \qquad
-\mu_t=\mathcal T_\theta^{,t-1}\mu_1.
+\mu_t=\mathcal T_\theta^{t-1}\mu_1.
 $$
 
 ### Stationary average reward

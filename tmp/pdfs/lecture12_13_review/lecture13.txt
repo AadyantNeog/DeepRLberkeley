@@ -1,0 +1,163 @@
+PAGE 1
+Control as Variational Inference
+CS 185/285
+Instructor: Sergey Levine
+UC Berkeley
+
+PAGE 2
+Part 1:
+Control as inference recap
+PAGE 3
+A probabilistic graphical model of decision making
+no assumption of optimal behavior!
+
+PAGE 4
+Policy computation
+
+PAGE 5
+Summary
+1. Probabilistic graphical model for optimal control
+2. Control = inference (similar to HMM, EKF, etc.)
+3. Very similar to dynamic programming, value iteration, etc. (but “soft”)
+PAGE 6
+Part 2:
+Control as variational inference
+PAGE 7
+The optimism problem
+“optimistic” transition
+(not a good idea!)
+
+PAGE 8
+Addressing the optimism problem
+we want this
+but not this!
+
+PAGE 9
+Control via variational inference
+
+PAGE 10
+The variational lower bound
+
+PAGE 11
+Backward pass summary - variational
+
+PAGE 12
+Summary
+variants:
+For more details, see: Levine. (2018). Reinforcement Learning and Control as Probabilistic Inference: Tutorial and Review.
+
+PAGE 13
+Part 3:
+Maximum entropy RL algorithms
+PAGE 14
+Q-learning with soft optimality
+
+PAGE 15
+Policy gradient with soft optimality
+Recall:
+Policy gradient objective:
+it is very common to add an 
+entropy term to policy gradient
+entropy has a closed form 
+expression for most common 
+policy classes
+PAGE 16
+Soft actor-critic
+What if we want an actor-critic algorithm with soft optimality?
+replay buffer
+This is one of the most commonly used 
+off-policy actor-critic algorithms!
+ why?
+PAGE 17
+Part 4:
+Inverse reinforcement learning
+PAGE 18
+Inference = planning
+can we invert this, and learn a reward 
+function from demonstrations assuming that 
+the demonstrator uses this model?
+PAGE 19
+Why should we worry about learning rewards?
+The imitation learning perspective
+Standard imitation learning:
+• copy the actions performed by the expert
+• no reasoning about outcomes of actions
+Human imitation learning:
+• copy the intent of the expert
+• might take very different actions!
+PAGE 20
+Why should we worry about learning rewards?
+The reinforcement learning perspective
+what is the reward?
+
+PAGE 21
+Inverse reinforcement learning
+Infer reward functions from demonstrations
+by itself, this is an underspecified problem
+many reward functions can explain the same behavior
+PAGE 22
+Learning the optimality variable
+reward parameters
+
+PAGE 23
+The IRL partition function
+
+PAGE 24
+Estimating the gradient
+
+PAGE 25
+More efficient sample-based updates
+
+PAGE 26
+Importance sampling
+
+PAGE 27
+Update reward using
+samples & demos
+generate policy 
+samples from π
+update π w.r.t. reward
+policy π reward r
+guided cost learning algorithm
+policy π
+(Finn et al. ICML ’16)
+slides adapted from C. Finn
+
+PAGE 28
+Part 2:
+Adversarial imitation learning
+PAGE 29
+It looks a bit like a game…
+policy π
+
+PAGE 30
+Generative Adversarial Networks
+Goodfellow et al. ‘14
+Isola et al. ‘17Arjovsky et al. ‘17
+Zhu et al. ‘17
+
+PAGE 31
+Inverse RL as a GAN
+Finn*, Christiano* et al. “A Connection Between Generative Adversarial Networks, Inverse Reinforcement Learning, and Energy-Based Models.”
+
+PAGE 32
+Inverse RL as a GAN
+Finn*, Christiano* et al. “A Connection Between Generative Adversarial Networks, Inverse Reinforcement Learning, and Energy-Based Models.”
+
+PAGE 33
+Can we just use a regular discriminator?
+Ho & Ermon. Generative adversarial imitation learning.
+Pros & cons:
++ often simpler to set up optimization, fewer moving parts
+- discriminator knows nothing at convergence
+- generally cannot reoptimize the “reward”
+PAGE 34
+IRL as adversarial optimization
+robot attempt
+classifier
+Hausman, Chebotar, Schaal, Sukhatme, Lim
+Peng, Kanazawa, Toyer, Abbeel, Levine
+robot attempt
+reward function
+actually the 
+same thing!

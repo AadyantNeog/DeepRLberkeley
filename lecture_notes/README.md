@@ -4,6 +4,8 @@ This folder contains the completed notes for all 25 supplied lectures: 146,607 t
 
 For topic-by-topic cross-references to Sutton and Barto's *Reinforcement Learning: An Introduction* (second edition), see the [course-to-book reference guide](COURSE_TO_RLBOOK_REFERENCE.md).
 
+For a procedure-first catalog of every algorithmic recipe covered in the course, including notation, use conditions, assumptions, explicit steps, and limitations, see the [complete algorithm reference](ALL_ALGORITHMS.md).
+
 Every topic keeps its sources and interpretation separate:
 
 1. **What the lecturer said - transcript only:** a concise, faithful paraphrase of the supplied transcript, including qualifications, examples, questions, and logistics where they affect the record.

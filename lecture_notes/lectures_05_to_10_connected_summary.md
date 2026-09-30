@@ -124,6 +124,18 @@ $$
 
 The constant can be absorbed into the step size. With ordinary complete trajectories, the corresponding expression contains an outer $\gamma^t$. The lecture algorithms often suppress this weighting in their transition notation. **Precision point:** uniformly averaging rollout transitions is not literally identical to sampling the exact discounted occupancy. This guide distinguishes exact identities from the practical surrogates used in implementations.
 
+For $N$ complete episodes, the corresponding reward-to-go estimator is
+
+$$
+\hat g=\frac1N\sum_{i=1}^N\sum_t\gamma^t
+\nabla_\theta\log\pi_\theta(a_{i,t}\mid s_{i,t})
+(G_{i,t}-b_t(s_{i,t})).
+$$
+
+The discount **inside** $G_t$ measures reward delay relative to decision $t$; the outer $\gamma^t$ measures that decision's time relative to the episode start. For example, if only $r_1$ is nonzero, then $J=\gamma\mathbb E[r_1]$: both the time-0 and time-1 score contributions need a factor $\gamma$. At time 0 it comes from $G_0=\gamma r_1$; at time 1 it comes from the outer factor multiplying $G_1=r_1$. Dropping the outer factor changes the relative weighting of decisions, not merely the overall learning rate.
+
+With fixed-length trajectories, dividing by total transitions instead of episode count changes only a fixed scale. With variable episode lengths, total transition count is random and can correlate with the gradient sum, so dividing by it is not exactly the same unbiased per-episode estimator. Practical transition-averaged updates are common; their normalization and sampling convention should be explicit.
+
 The environment and reward mechanism are assumed independent of $\theta$. Rewards need to be observed; they need not be differentiable or available as a callable formula. The dog-training example in lecture 6 illustrates that distinction.
 
 ## 3. Lecture 5: policy gradients and REINFORCE
@@ -322,6 +334,8 @@ Holding $\hat A_t$ fixed is part of the estimator definition. In an implementati
 It is a **pseudo-loss** because its scalar value on a fixed batch is not the original expected-return objective. Its role is to construct the desired derivative. Improving its number by repeatedly optimizing an old batch is not yet a valid RL algorithm; lecture 9 addresses that problem.
 
 The main change from supervised action prediction is a per-example return weight. Use log probabilities or negative log likelihoods consistently with the optimizer sign. Detach weights so autograd does not introduce an unintended derivative through the critic or return calculation.
+
+For continuous actions, also detach the **sampled action** in this score-function loss. If $a=\mu_\theta+\sigma_\theta\epsilon$ remains connected while differentiating $\log\pi_\theta(a\mid s)$, autograd takes a total derivative through $a$ instead of the score at fixed $a$. For a Gaussian with fixed scale, those two mean derivatives cancel, incorrectly giving zero. Reparameterized actor learning in §4.13 intentionally keeps the action path, but differentiates Q as its objective instead.
 
 **Practical advice from the lecture:** use larger batches than in ordinary supervised learning, tune learning rates carefully, allow for noisy gradients, and consider an adaptive optimizer such as Adam. A correct likelihood-ratio derivation does not eliminate numerical tuning.
 
@@ -575,7 +589,32 @@ $$
 \hat A_t=\delta_t+\gamma\lambda\hat A_{t+1}.
 $$
 
-Reset the trace at an episode boundary. Bootstrap the final next-state value when the rollout is merely cut short. Continuation masks belong in both the TD residual and trace recursion.
+Use **two masks**, because bootstrapping and continuing a sampled trace answer different questions:
+
+$$
+\delta_t=r_t+\gamma m_t V_\phi(s_{t+1})-V_\phi(s_t),
+\qquad
+\hat A_t=\delta_t+\gamma\lambda c_t\hat A_{t+1}.
+$$
+
+| Boundary after step $t$ | Bootstrap mask $m_t$ | Trace mask $c_t$ | Reason |
+|---|---:|---:|---|
+| Ordinary step with the next step in this segment | 1 | 1 | Both value continuation and sampled continuation are available |
+| True terminal, including a task-defined horizon | 0 | 0 | The task's return ends |
+| External time limit followed by reset | 1 | 0 | The underlying task continues, but the next stored episode is unrelated |
+| End of the collected rollout segment | 1 | 0 | Bootstrap the unobserved tail; no further residual is in this segment |
+
+At truncation, $s_{t+1}$ must be the **final pre-reset observation**, not the reset observation. For example, with $r_t=1$, $\gamma=0.9$, $V(s_t)=2$, and final value 5, the residual is $1+0.9(5)-2=3.5$ at a collection cutoff, but $1-2=-1$ at true termination. Neither case may import the next episode's advantage. At an ordinary segment end, setting the artificial $\hat A_T=0$ is equivalent to stopping the trace.
+
+For a segment with $K$ remaining transitions, the finite mixture corresponding to this recursion is
+
+$$
+\hat A_t^{\mathrm{GAE}}
+=(1-\lambda)\sum_{n=1}^{K-1}\lambda^{n-1}\hat A_t^{(n)}
++\lambda^{K-1}\hat A_t^{(K)}.
+$$
+
+The longest available return receives all remaining weight. Simply dropping unavailable terms from the infinite mixture would lose that weight and would not implement finite-rollout GAE. For $K=1$, use just $\hat A_t^{(1)}$.
 
 For the actor update, the completed backward recursion produces stored numerical advantages. Those numbers are held fixed while differentiating the policy loss. For critic training, a return target such as $\hat A_t+V_{\mathrm{old}}(s_t)$ is also constructed first and detached. This separation matters because GAE defines a target estimator; it does not ask the actor optimizer to change the value predictions that were used to build that target.
 
@@ -897,6 +936,8 @@ $$
 
 $Q^*$ can have nonzero sampled TD-error variance. Zero sampled error on all covered transitions is a very strong sufficient condition, not a necessary property of an optimal Q in a stochastic world. Zero error on a finite dataset also does not establish optimality on unseen state-action pairs.
 
+There is a further distinction when differentiating the full residual. If Y uses the same trainable Q, its conditional variance also depends on the parameters. Minimizing the sampled squared error then minimizes the expected-residual square **plus a parameter-dependent variance term**. An unbiased gradient of the squared expected Bellman residual generally needs two conditionally independent next-state/reward samples for the same $(s,a)$, the *double-sampling problem*. Fixed-target semi-gradient regression avoids that particular gradient-estimation problem, though it does not guarantee convergence.
+
 Fitted Q-iteration solves a sequence of fixed-label regressions; it is not generally full gradient descent on a single Bellman-residual objective, and it does not directly maximize current-policy J at every iteration. Low regression loss alone cannot establish good behavior. This motivates the practical and theoretical cautions in lecture 8.
 
 ### 5.9 Exploration: behavior differs from deployment
@@ -1044,6 +1085,8 @@ $$
 
 **Steps:** store ordered segments or assemble them from replay; sum n rewards; bootstrap at the endpoint; train Q at the starting logged action; shorten at termination.
 
+Store the reward sum, actual segment length $h$, endpoint, and termination flag. Recompute the bootstrap with the current target network when the record is sampled; do not permanently store an old bootstrapped total as the label. If a time limit resets the environment before n steps, stop the reward window there, use $\gamma^h$, and bootstrap from the final pre-reset observation. Never stitch together two episodes.
+
 **Gain:** carry information about an outcome across n steps in one target. A small n, such as five in the lecturer's example, can be a useful compromise.
 
 **Off-policy limitation:** intermediate actions $a_{t+1}, \ldots , a_{t+n-1}$ were chosen by the behavior policy. Their rewards evaluate that intervening behavior rather than n−1 greedy target decisions. A final max does not correct the intervening mismatch. If exploratory choices are worse than greedy ones, this can bias targets downward relative to optimal continuation, but the sign is not universally guaranteed.
@@ -1125,6 +1168,8 @@ For a deterministic actor or a chosen action, evaluate the same minimum at that 
 **Gain/use:** especially useful in continuous-action Q-based actor–critic, where action maximization is itself learned.
 
 **Cost:** intentional pessimism and possible underestimation. Two similar critics may share the same error. “Clipped” here means minimum-of-estimates; it is unrelated to PPO ratio clipping or gradient clipping.
+
+The minimum is conservative **relative to the two predictions**, not a certified lower bound on the true value. If the true value is 5 and the critics predict 10 and 12, their minimum is still optimistic at 10. Also, the target minimum does not prescribe one universal actor loss: standard TD3 uses its first online critic for the actor; standard SAC uses the minimum.
 
 ### 6.11 Practical stabilization and diagnosis
 
@@ -1396,7 +1441,7 @@ Evaluate $\pi_{\mathrm{old}}$, hold its advantage estimates fixed, and optimize
 
 $$
 L_{\rm old}(\theta)
-=\mathbb E_{s\sim d^{\rm old},a\sim\pi_{\rm old}}
+=\frac1{1-\gamma}\mathbb E_{s\sim d^{\rm old},a\sim\pi_{\rm old}}
 [\rho_\theta(s,a)A^{\rm old}(s,a)],
 $$
 
@@ -1410,9 +1455,11 @@ Every distributional object on the right is anchored to the rollout policy: stat
 Its gradient on a fixed batch is
 
 $$
-\mathbb E_{\rm old}
+\frac1{1-\gamma}\mathbb E_{\rm old}
 [\rho_\theta\nabla_\theta\log\pi_\theta(a\mid s)A^{\rm old}(s,a)].
 $$
+
+The factor $1/(1-\gamma)$ matches the normalized occupancy defined in §2. Implementations often omit this constant; their surrogate gradient then matches $(1-\gamma)\nabla J$ at the reference. Strictly, $L_{\rm old}$ is tangent to **improvement** $J(\theta)-J(\theta_{\rm old})$; adding the constant $J(\theta_{\rm old})$ gives a surrogate tangent to J itself. With an unnormalized finite-horizon sum, the occupancy factor is unnecessary.
 
 **Algorithm:** collect a fresh batch; compute fixed advantages; save old log probabilities; perform several inner updates using current-to-old action ratios; collect a new batch.
 
@@ -1712,7 +1759,7 @@ $$
 
 The dual update is descent in $\beta$ for the maximization Lagrangian: $\frac{\partial\mathcal{L}}{\partial\beta}=-(K-\delta)$, so the displayed plus sign on violation is correct. The lecture allows incomplete actor optimization between multiplier updates.
 
-On old-policy samples, the penalty objective includes $+\beta\log\pi_\theta(a\mid s)$ up to constants, alongside $\rho \hat{A}$. This likelihood term pulls the policy back toward the old data.
+On old-policy samples, the penalty objective includes $+\beta\log\pi_\theta(a\mid s)$ up to constants, alongside the consistently scaled ratio-weighted advantage. With §7.7's normalized occupancy convention, that advantage term is $\rho\hat A/(1-\gamma)$. This likelihood term pulls the policy back toward the old data; rescaling the surrogate also requires rescaling the penalty coefficient if the same trade-off is intended.
 
 **Gains:** an interpretable movement target and a direct distribution-distance penalty; ordinary first-order optimization can still be used.
 
@@ -1760,7 +1807,7 @@ L_{\rm old}(\theta_{\rm old}+\Delta)
 \approx L_{\rm old}(\theta_{\rm old})+g^\top\Delta,
 $$
 
-where g is the ordinary on-policy policy gradient at the reference. Solve
+where g is the gradient of the consistently scaled surrogate (equal to the ordinary on-policy policy gradient at the reference under exact evaluation and occupancy weighting). Solve
 
 $$
 \max_\Delta g^\top\Delta
@@ -1782,6 +1829,8 @@ The constrained problem asks for the largest predicted surrogate increase $g^\to
 **Consequences:** ideal natural-gradient geometry is invariant under suitable smooth invertible reparameterizations. Damping, approximate Fisher estimates, finite steps, and incomplete solves qualify that ideal property.
 
 **Limits:** local Taylor approximations, potentially singular Fisher, costly linear algebra, noisy estimates, and a predicted KL budget that may not match actual nonlinear policy movement. It still needs valid advantage estimates and representative data.
+
+The closed-form boundary step assumes a positive curvature denominator and a nonzero gradient in the solvable subspace. If $g=0$, take no actor step instead of dividing by zero. If curvature is singular or numerically nonpositive, use a valid damped solve and constraint check or reject the step. Damping changes the quadratic metric, so use the chosen metric consistently when scaling.
 
 **Verified slide correction:** lecture-10 PDF pp. 28 and 30 display $\alpha=\sqrt{\frac{2\delta}{g^\top Fg}}$ alongside direction $F^{-1}g$. Substituting $\Delta = \alpha F^{-1}g$ into $\frac12\Delta^\top F\Delta$ yields denominator $g^\top F^{-1}g$. The normalization above is the consistent one. The existing lecture-10 notes correctly flag this issue for p. 28; it also appears on p. 30.
 
@@ -1993,7 +2042,7 @@ The same $\epsilon$ notation represents different things in different lectures. 
 ## 13. Precision notes and limits of source coverage
 
 1. **Slide page numbers:** this guide uses actual supplied PDF pages. For example, lecture 5's score derivation is on pp. 5–7; its baseline is on p. 17, not the different ranges named in portions of the existing notes.
-2. **Normalizations:** use the Monte Carlo $1/N$ or a consistent averaging convention. Omitting a constant changes gradient scale, not direction, but requires a matching step size.
+2. **Normalizations:** use the Monte Carlo $1/N$ or an explicit averaging convention. A fixed constant changes scale, but outer $\gamma^t$ weights and random episode-length denominators are not fixed constants. The discounted local surrogate in §7.7 includes $1/(1-\gamma)$ to match the normalized occupancy.
 3. **n-step indexing:** n rewards run from t through $t+n-1$, followed by value at $s_{t+n}$. Some lecture-6 slide displays use an inclusive $t+n$ reward upper bound with the same bootstrap state; the consistent n-step equations here avoid that extra reward.
 4. **Baseline proofs:** action independence is a population statement for a fixed conditional baseline. Self-including batch statistics and same-batch critic fitting require finite-sample qualifications.
 5. **GAE endpoints:** $\lambda$ = 1 gives critic-independent sampled future return only with a complete terminal episode or a correct tail. It remains a baseline at the current state.
@@ -2004,6 +2053,8 @@ The same $\epsilon$ notation represents different things in different lectures. 
 10. **Trust regions:** an average empirical KL check is weaker than a uniform per-state distance assumption. PPO clipping is weaker still as a literal distance constraint.
 11. **Lecture 8 cutoff:** the final slide discussion is available, but the transcript's truncated final audience question/answer is not reconstructed.
 12. **Named but deferred methods:** SAC's full entropy formulation, TD3's full recipe, Retrace's full derivation, prioritized replay, sophisticated exploration, successor-representation learning, offline-RL corrections, and model-based differentiable-rollout algorithms are mentioned or motivated here, not fully taught in these six lectures. This guide explains their relevant role without silently importing later lectures as though they had already been covered.
+13. **Boundary masks:** bootstrapping at a time-limit reset and continuing a GAE trace are different decisions; §4.10 gives separate masks and a numerical example.
+14. **Primary-paper checks:** estimator and method distinctions can be checked against [GAE](https://arxiv.org/abs/1506.02438), [TRPO](https://arxiv.org/abs/1502.05477), [PPO](https://arxiv.org/abs/1707.06347), and [TD3](https://arxiv.org/abs/1802.09477). These supplement the course account; implementation clarifications above are not claims that every detail was taught in the slides.
 
 ## 14. Topic-to-source map for a second reading
 

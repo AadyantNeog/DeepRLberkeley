@@ -151,6 +151,8 @@ Slide 15 summarizes the characterize-simulate-control sequence. The transcript e
 
 Let a simulator define a transition model $p(s_{t+1}\mid s_t,a_t)$. Optimizing a policy in that model approximately solves an inverse question: which sequence of actions makes the forward dynamics generate desirable states? The inverse need not have a closed-form expression.
 
+“Inverting a model” is an analogy for solving a constrained optimization problem. A dynamics model need not be invertible: some target states are unreachable, many controls can lead to the same state, and stochastic transitions prevent prescribing exact outcomes. Traditional control also uses numerical optimization, MPC, and robust/adaptive methods; it is not limited to hand-derived analytic controllers.
+
 ## 6. Simulator exploitation and domain randomization
 
 **Transcript coverage:** lines 1087-1347
@@ -177,7 +179,7 @@ $$
 \max_\theta\;\mathbb E_{\xi\sim p(\xi),\,\tau\sim p_{\theta,\xi}(\tau)}[R(\tau)],
 $$
 
-where $\xi$ indexes masses, friction, delays, or other simulator parameters. The guarantee is only as good as the coverage of $p(\xi)$; omitted failure modes remain exploitable.
+where $\xi$ indexes masses, friction, delays, or other simulator parameters. This optimizes average performance under the training distribution, not a worst-case robustness guarantee. Even a represented but rare failure mode can be sacrificed to improve the average. Coverage, weighting, simulator fidelity, and optimization quality all matter; omitted failure modes remain exploitable.
 
 ## 7. Anything simulatable is controllable: AlphaGo as an example
 
@@ -201,6 +203,8 @@ Slides 16-17 state the simulation-control principle and show AlphaGo. The transc
 
 Self-play solves a special modeling problem: the most important changing component of a competitive environment is the opponent. Training against a population of prior policies makes that component endogenous to learning.
 
+The slogan “anything simulatable is controllable” is not a controllability theorem. Accurate simulation permits evaluating candidate behavior but does not ensure reachability, tractable search, adequate exploration, or reliable optimization. Self-play also need not converge to a strong equilibrium without suitable game/learning conditions.
+
 ## 8. LLM sandboxes, verification, and simulation-to-real systems
 
 **Transcript coverage:** lines 1546-1758
@@ -220,6 +224,8 @@ Slides 18-20 connect RL for LLMs, simulation-to-real robots, and the claim that 
 ### Additional explanation
 
 The bottleneck is often not generating candidate actions but building a trustworthy evaluator. Code tests, game rules, and formal proofs provide unusually crisp reward channels; social outcomes are delayed, ambiguous, and affected by unobserved human state.
+
+Passing tests is evidence for the properties those tests cover, not general program correctness. A proof checker validates a formal statement within its assumptions; it does not establish that the statement captured the intended task. Sandbox realism and verifier quality remain separate from optimization success.
 
 ## 9. Real-world RL and Moravec's paradox
 
@@ -243,6 +249,8 @@ Slides 21-23 use the chess/Go photographs and quotations associated with Moravec
 
 Tasks with compact rules can still require enormous search, but computation can scale against that search. Open-ended perception and action instead require the system to infer which rules and exceptions are relevant in the first place.
 
+Historical correction: Deep Blue won a game against Kasparov in 1996, but Kasparov won that match. Deep Blue won the rematch in **1997**. See [IBM's Deep Blue history](https://www.ibm.com/history/deep-blue). The 1996 wording above preserves the lecture account and should not be learned as the match-victory date.
+
 ## 10. Easy universes, hard universes, and the limits of written rules
 
 **Transcript coverage:** lines 1945-2133
@@ -262,6 +270,8 @@ Slides 24-26 develop the remote-ship example and the easy-universe/hard-universe
 ### Additional explanation
 
 “Easy” here does not mean small or computationally cheap. It means *closed*: the variables, laws, and success criteria are sufficiently specified. A hard universe is open to unmodeled events, so correctness cannot be reduced to optimization inside a fixed specification.
+
+The easy/hard-universe terminology is the lecturer's informal modeling distinction, not a complexity classification. Compact known rules can still define computationally intractable problems, and physical control can remain difficult even with accurate equations.
 
 ## 11. Open-world messiness and autonomous discovery
 
@@ -307,6 +317,8 @@ Slides 25-27 contrast current AI and human adaptability, then list goal specific
 ### Additional explanation
 
 This is a distinction between maximizing expected return in a stationary experiment and maintaining **viability** during learning. In the latter, exploration has an irreversible cost, so safety and resetability are part of the learning problem rather than external conveniences.
+
+These are motivating research judgments rather than impossibility results about other learning paradigms. Supervised models can generalize and planning/search can optimize consequences; RL is one framework for combining experience and sequential utility. A survival reward is mathematically definable even when safe learning from repeated failure is impossible.
 
 ## 13. Continual learning, resets, and prior experience
 
@@ -358,6 +370,8 @@ $$
 
 This replaces an external reset operator with learned transition competence.
 
+A recovery repertoire only replaces resets inside states from which some available behavior can recover. An object dropped out of reach or an irreversible failure can still require external intervention; reset-free training is not equivalent to unlimited autonomous recoverability.
+
 ## 15. The real world as its own simulator and the universal-learning view
 
 **Transcript coverage:** lines 2944-3231
@@ -377,6 +391,8 @@ Slides 30-32 close the real-world perspective and open the universal-learning pe
 ### Additional explanation
 
 The universal-learning claim is not that every current ML pipeline should literally be replaced with online RL. It is that decision quality supplies a more general final criterion than resemblance to data, while prediction, imitation, and modeling can remain components inside the decision learner.
+
+Direct real-world samples avoid simulator mismatch for the situations actually observed. They still leave sampling error, partial observability, nonstationarity, and learned-model/value error. Neither RL nor large datasets guarantee a policy better than every demonstrated behavior; unsupported actions remain uncertain, particularly offline.
 
 ## 16. Large low-quality datasets and the limitation of estimating $p(x)$
 
@@ -427,6 +443,8 @@ Slides 34-35 move from the purpose of brains and machine learning to the proposa
 
 Prediction becomes decision-making once an output changes what happens next. The relevant loss is then not merely classification error but the downstream cost of false positives, false negatives, delays, and subsequent actions.
 
+Decision theory also includes one-step supervised decisions and contextual bandits. Viewing a prediction through downstream utility does not by itself require a multi-step RL algorithm; sequential RL becomes necessary when present actions affect later states, information, or opportunities.
+
 ## 18. A universal RL recipe and the dialogue-agent example
 
 **Transcript coverage:** lines 3622-3852
@@ -451,6 +469,8 @@ Slides 36-37 show the diverse-data recipe and contrast a targeted tutoring quest
 ### Additional explanation
 
 The multi-turn objective values information-gathering actions. An early question may have little immediate reward but improve later teaching decisions by reducing uncertainty about the student's knowledge.
+
+A single response can be a contextual-bandit action at the conversation level while token generation is a multi-step process inside that action. Multi-turn dialogue adds user responses and information gathering between assistant actions. The choice of action granularity determines the horizon.
 
 ## 19. Model-based RL for multi-turn dialogue
 
@@ -504,6 +524,8 @@ The lecture's unifying lesson is a constraint-to-method mapping:
 | Real world | safe interaction and resets | direct but expensive experience | sample efficiency, robustness, continual learning |
 | Universal learning | high-quality supervision | vast mixed-quality experience | multi-task abstraction and utility-directed adaptation |
 
+The dialogue examples illustrate a mechanism, not proof that shorter or more interactive responses are always better. Evaluation should measure later learning or task success on the intended user distribution; unnecessary questions can also reduce utility. The proposed universal recipe is a research perspective, not a general convergence or performance guarantee.
+
 ## Slide-only closing reflections
 
 Slides 41-44 were visually inspected. They supplement the spoken synthesis with a broader claim that learning may be the basis of intelligence; a “cake” analogy in which prediction supplies much of the representational substance; and several sources of learning signal, including self-supervised prediction, imitation and cultural knowledge, and long-horizon value propagation. The last slide advises researchers to choose the right problems, remain optimistic under uncertainty, change a problem statement when it blocks progress, take applications seriously, and combine ambitious aims with small initial steps.
@@ -534,7 +556,7 @@ These details are slide-derived and are not attributed to the lecturer's spoken 
 
    Control searches for actions whose forward consequences produce desirable states.
 
-2. **Robust optimization across randomized simulators**
+2. **Expected-return optimization across randomized simulators**
 
    $$
    \max_\theta\;

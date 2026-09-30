@@ -70,6 +70,8 @@ Slides 5-9 depict reward-based filtering, generalization, and trajectory stitchi
 
 Stitching is primarily a value-propagation idea. Bellman backups can pass the value of reaching $C$ backward through transitions ending at $B$. It succeeds only if the connecting states and relevant actions are represented well enough for the critic to evaluate them reliably.
 
+The joining point must be the same relevant **Markov state**, not just a similar image. Hidden differences such as velocity, inventory, or remaining time can make two apparently matching segments incompatible. Stitching does not create evidence for an action missing from the data.
+
 ## 3. Formal objective and counterfactual queries
 
 **Transcript coverage:** lines 1303-1725
@@ -104,6 +106,8 @@ The behavior policy need not be known as a normalized density.
 ### Additional explanation
 
 Offline RL is an identification problem as well as an optimization problem. Two environments can agree on every transition in the dataset yet disagree about an unseen action. Without assumptions such as coverage, smoothness, or conservatism, no algorithm can know which counterfactual is correct.
+
+The standard MDP argument assumes the recorded state contains the information needed to determine reward and transition distributions. If the behavior policy used hidden information that also affects outcomes, observed $P(s'\mid s,a)$ can fail to describe an intervention on action $a$. Policy constraints alone do not resolve that hidden-confounding problem. Historical data may also come from a mixture of policies rather than one stationary $\pi_\beta$.
 
 ## Part II - Why ordinary deep RL breaks offline
 
@@ -253,6 +257,8 @@ $$
 
 Ignoring the constant behavior entropy, minimizing it is behavioral cloning. Reverse KL requires samples from $\pi_\theta$ and behavior density values at those samples, which is precisely where behavior-model errors can matter.
 
+Behavior samples suffice to estimate the **gradient** of forward KL with respect to $\theta$; they do not automatically give its numerical value because the behavior entropy is unknown. Mode covering/seeking are tendencies under restricted function classes, not universal guarantees. With full-support Gaussians, finite reverse KL does not prevent actions in extremely low-density regions.
+
 ## Slide-only continuation after the transcript truncation
 
 The following points are present on slides 24-25 but are not attributed to the missing spoken continuation:
@@ -271,6 +277,10 @@ which penalizes only behavior-impossible actions and permits any action within s
 
 ## Consolidated takeaways
 
+**Clarification of the slide-only LLM comparison:** use explicit KL arguments rather than the labels “forward” and “reverse.” RLHF commonly penalizes $D_{\rm KL}(\pi_\theta\|\pi_{\rm ref})$, while PPO's old-to-new trust-region diagnostic can use $D_{\rm KL}(\pi_{\rm old}\|\pi_\theta)$. These are distinct distributions and roles; neither makes all LLM regularization a behavior-to-policy forward KL.
+
+Literal support is also weaker than reliable finite-data coverage. A Gaussian behavior model has nonzero density everywhere, but its far tails may be completely unsupported by useful observations. Policy regularization in practice aims for adequate density and value reliability, not just mathematical nonzero probability.
+
 1. Offline RL learns from a fixed dataset and cannot use new interaction to correct policy-induced errors.
 2. Reward-based filtering, function approximation, and Bellman stitching can improve over average behavior in the dataset.
 3. Improvement requires counterfactual predictions, but unsupported counterfactuals are not identifiable without assumptions.
@@ -282,6 +292,8 @@ which penalizes only behavior-impossible actions and permits any action within s
 
 ## Key equations
 
+Here $m=0$ at a true terminal and $m=1$ otherwise. Detach the complete Bellman target; at external truncation, retain the final pre-reset state's bootstrap.
+
 ### Offline policy objective
 
 $$
@@ -292,7 +304,7 @@ $$
 ### Offline Bellman target
 
 $$
-y=r+\gamma\mathbb E_{a'\sim\pi_\theta(\cdot\mid s')}
+y=r+\gamma m\mathbb E_{a'\sim\pi_\theta(\cdot\mid s')}
 [Q_{\bar\phi}(s',a')].
 $$
 

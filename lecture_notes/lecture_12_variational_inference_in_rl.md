@@ -13,6 +13,8 @@ status: "complete"
 
 ## Lecture map
 
+**Notation after review.** $p_0(a\mid s)$ denotes a normalized action prior. The probability-message and policy equations retain this prior explicitly; unweighted soft-value conventions and their constant offsets are explained in Sections 12–13.
+
 | Section | Topic | Transcript coverage |
 |---:|---|---:|
 | 1 | Recap: the per-data-point variational algorithm | lines 1-403 |
@@ -71,7 +73,7 @@ Instead, share one **function**. An inference network with parameters $\phi$ map
 
 $$
 q_\phi(z\mid x)
-=\mathcal N\bigl(\mu_\phi(x),\sigma_\phi(x)\bigr).
+=\mathcal N\bigl(\mu_\phi(x),\operatorname{diag}(\sigma_\phi(x)^2)\bigr).
 $$
 
 Every data point gets different posterior parameters, but all are produced by one fixed-size neural network. The decoder $p_\theta(x\mid z)$ and inference model $q_\phi(z\mid x)$ are trained jointly.
@@ -109,7 +111,7 @@ This estimator handles discrete or continuous $z$, but it has high variance and 
 For a Gaussian, a lower-variance alternative is the reparameterization trick:
 
 $$
-z=\mu_\phi(x)+\epsilon\sigma_\phi(x),
+z=\mu_\phi(x)+\sigma_\phi(x)\odot\epsilon,
 \qquad \epsilon\sim\mathcal N(0,I).
 $$
 
@@ -124,6 +126,8 @@ Slides 6-7 contrast the score-function estimator with reparameterization and not
 ### Additional explanation
 
 The score-function estimator observes only how changing probability changes sampled outcomes. The pathwise estimator also uses the local derivative of the outcome with respect to the sample, which usually supplies much richer information per draw.
+
+For a diagonal Gaussian, $\sigma$ is a standard-deviation vector and sampling means $z=\mu_\phi(x)+\sigma_\phi(x)\odot\epsilon$; covariance is $\operatorname{diag}(\sigma_\phi(x)^2)$. Pathwise gradients often have lower variance, but this is not universal. The score identity displayed above assumes the integrand has no explicit $\phi$ dependence; otherwise add its direct derivative. Reparameterization must preserve the gradient through $z$, unlike a score-function implementation.
 
 ## 4. The practical ELBO and VAE computation graph
 
@@ -164,6 +168,12 @@ D_{\mathrm{KL}}(q\|p)
 $$
 
 This formula is additional detail; the lecturer advised looking it up rather than deriving it in class.
+
+The reconstruction term is a log **likelihood**, not automatically squared error. Squared error corresponds to a fixed-variance Gaussian decoder; a Bernoulli decoder produces binary cross-entropy. Learned variances require their normalization terms too.
+
+With $q(x,z)=p_{\rm data}(x)q_\phi(z\mid x)$ and aggregate posterior $q(z)$,
+$\mathbb E_xD_{\rm KL}(q(z\mid x)\|p(z))=I_q(X;Z)+D_{\rm KL}(q(z)\|p(z))$.
+This explains the information pressure and prior matching separately. A powerful decoder can ignore $z$ and still model the data well: posterior collapse does not necessarily mean that all output modeling fails. Neither meaningful disentanglement nor complete prior coverage is guaranteed.
 
 ## 5. Variational autoencoders as generative models
 
@@ -268,6 +278,8 @@ Slide 17 explicitly labels diffusion a hierarchical VAE and includes the DDPM/fl
 
 This interpretation does not mean every diffusion implementation literally trains a conventional two-network VAE. It says the diffusion objective can be derived as variational inference in a model with a chain of latent variables.
 
+In a DDPM, the forward noising chain is the fixed variational distribution $q(x_{1:T}\mid x_0)$; the generative prior is $p(x_T)$ and the learned reverse chain defines $p_\theta(x_{0:T})$. These are different objects. Common simplified denoising losses reweight terms of the variational bound and need not equal the exact ELBO. Flow matching has a related generative interpretation but its usual vector-field regression loss is not automatically a VAE ELBO.
+
 ## 9. State-space models and intermission
 
 **Transcript coverage:** lines 4717-5104
@@ -277,7 +289,7 @@ This interpretation does not mean every diffusion implementation literally train
 To model partial observability, treat an entire observation trajectory as $x$ and an entire latent-state trajectory as $z$. Use a structured prior
 
 $$
-p(z_{1:T})=p(z_1)\prod_t p_\theta(z_{t+1}\mid z_t,a_t),
+p_\theta(z_{1:T}\mid a_{1:T-1})=p(z_1)\prod_{t=1}^{T-1} p_\theta(z_{t+1}\mid z_t,a_t),
 $$
 
 a factorized observation decoder
@@ -290,8 +302,8 @@ $$
 and an inference model such as
 
 $$
-q_\phi(z_{1:T}\mid o_{1:T})
-=\prod_tq_\phi(z_t\mid o_{1:t}).
+q_\phi(z_{1:T}\mid o_{1:T},a_{1:T-1})
+=\prod_{t=1}^{T}q_\phi(z_t\mid o_{1:t},a_{1:t-1}).
 $$
 
 The learned latent transition is a dynamics model; a transformer could infer the current latent from observation history. The lecturer said this flexible VAE construction would be revisited in model-based RL.
@@ -305,6 +317,8 @@ Slides 18-19 show the structured state-space model and mark the intermission.
 ### Additional explanation
 
 This is often called a sequential VAE or latent state-space model. Unlike an image VAE, its prior encodes temporal coherence and action-conditioned dynamics.
+
+The transition product runs from $t=1$ to $T-1$. Actions must be conditioned on throughout the model and inference notation: for example $q_\phi(z_t\mid o_{1:t},a_{1:t-1})$. The product of these per-time factors is a restrictive variational family, not the exact joint filtering posterior; conditioned latent states can remain correlated. A history encoder is not guaranteed to recover a sufficient Markov state merely because it is trained with reconstruction.
 
 ## Part II - Control as probabilistic inference
 
@@ -344,7 +358,7 @@ Slides 20-24 introduce control as inference, the optimality graphical model, the
 
 ### Additional explanation
 
-Adding a constant to every finite-horizon reward changes the unnormalized trajectory density by a common factor and therefore does not change the conditioned distribution. This is why the nonpositive-reward requirement can be met by shifting rewards.
+Adding a constant to every reward preserves the conditioned distribution when all compared trajectories have the same number of reward terms. A finite upper reward bound permits shifting rewards to be nonpositive. With policy-dependent episode lengths, the factor depends on trajectory length and the shift can change preferences. Alternatively, exponentiated rewards can be treated as unnormalized potentials rather than literal Bernoulli probabilities.
 
 ## 11. Inference queries and backward-message recursion
 
@@ -412,7 +426,7 @@ $$
 For a uniform action prior,
 
 $$
-V_t(s_t)=\log\int\exp(Q_t(s_t,a_t))\,da_t,
+V_t(s_t)=\log\int p_0(a_t\mid s_t)\exp(Q_t(s_t,a_t))\,da_t,
 $$
 
 which the lecturer called a “soft max” (two words), or log-sum-exp in a discrete action space. Exponentiation emphasizes large values; at a high scale the largest value dominates, so the expression approaches a hard maximum. When values are small in scale, it behaves more like an average.
@@ -445,7 +459,15 @@ Slides 28-30 show the log-space recursion, mark the stochastic-transition term �
 
 ### Additional explanation
 
-For a scale parameter $\alpha$, the normalized soft maximum is $\alpha\log\int\exp(Q/\alpha)da$. As $\alpha\to0$, it approaches $\max_a Q$ under standard regularity conditions.
+**Normalization correction.** With a normalized action prior $p_0(a\mid s)$, exact log messages satisfy
+
+$$
+V_t(s)=\log\int p_0(a\mid s)e^{Q_t(s,a)}\,da.
+$$
+
+For $K$ discrete actions and a uniform prior, this is $\log\sum_a e^{Q_t(s,a)}-\log K$. The lecture's unweighted log-sum-exp convention absorbs that constant into the value/reward convention; it must not be mixed with literal probability messages. A uniform probability density does not exist on all of $\mathbb R^d$. An unweighted continuous integral instead requires an integrable $e^Q$ and a specified reference measure.
+
+For temperature $\alpha>0$, define $V_\alpha=\alpha\log\int p_0(a\mid s)e^{Q/\alpha}da$. It approaches the best supported action value as $\alpha\to0$ under appropriate regularity. For bounded $Q$, it approaches $\mathbb E_{p_0}Q$ as $\alpha\to\infty$. The unweighted discrete version instead includes the additive term $\alpha\log K$.
 
 ## 13. Policy extraction, temperature, and numerical details
 
@@ -458,15 +480,15 @@ The policy is obtained by Bayes' rule. Past optimality variables can be removed 
 $$
 \pi(a_t\mid s_t)
 =p(a_t\mid s_t,\mathcal O_{1:T}=1)
-=\frac{\beta_t(s_t,a_t)}{\beta_t(s_t)}.
+=p_0(a_t\mid s_t)\frac{\beta_t(s_t,a_t)}{\beta_t(s_t)}.
 $$
 
 In log space,
 
 $$
 \pi(a_t\mid s_t)
-=\exp\bigl(Q_t(s_t,a_t)-V_t(s_t)\bigr)
-=\exp(A_t(s_t,a_t)).
+=p_0(a_t\mid s_t)\exp\bigl(Q_t(s_t,a_t)-V_t(s_t)\bigr)
+=p_0(a_t\mid s_t)\exp(A_t(s_t,a_t)).
 $$
 
 Thus the highest-advantage action is most probable and less advantageous actions become exponentially less probable. The lecturer said this was a natural probabilistic account of small mistakes.
@@ -475,7 +497,7 @@ A temperature $\alpha$ controls sharpness:
 
 $$
 \pi(a\mid s)
-=\exp\left(\frac{1}{\alpha}(Q(s,a)-V(s))\right).
+=p_0(a\mid s)\exp\left(\frac{1}{\alpha}(Q(s,a)-V_\alpha(s))\right).
 $$
 
 Equal-value actions are tied randomly. The result is analogous to Boltzmann exploration, and as $\alpha\to0$ it approaches a greedy policy.
@@ -488,9 +510,18 @@ A question about a practical policy-gradient implementation was deferred. The le
 
 Slides 31-33 derive the ratio of backward messages, express the policy as exponential advantage, and summarize the temperature and Boltzmann connection.
 
+The equations above retain the action prior explicitly to stay consistent with literal probability messages. The slide's prior-free forms use an absorbed-constant convention; Section 12 explains the conversion.
+
 ### Additional explanation
 
-$V(s)$ is exactly the log normalizer that makes $\exp(Q-V)$ integrate or sum to one. It is simultaneously a soft value and a partition function in log space.
+Under the unweighted convention, $V_\alpha(s)=\alpha\log\int e^{Q(s,a)/\alpha}da$ normalizes $\exp((Q-V_\alpha)/\alpha)$. For literal backward probability messages with a normalized action prior, the correct extraction is
+
+$$
+\pi(a\mid s)=p_0(a\mid s)\frac{\beta_t(s,a)}{\beta_t(s)}
+=p_0(a\mid s)e^{Q_t(s,a)-V_t(s)}.
+$$
+
+For general temperature the exponent becomes $(Q-V_\alpha)/\alpha$. The prior factor cannot be dropped while retaining the prior-weighted definition of $V$. In this setting $Q-V$ is a soft advantage; unlike ordinary $Q^\pi-V^\pi$, its expectation under the soft policy need not be zero.
 
 ## 14. Forward messages, state marginals, and summary
 
@@ -527,10 +558,14 @@ Slides 34-37 give the forward recursion, show the forward/backward “cone” in
 
 Forward-backward inference is needed when state occupancy itself matters, as in inverse reinforcement learning. Computing only a policy does not directly provide the normalized probability of every intermediate state under the optimality-conditioned trajectory model.
 
+More explicitly, with $\alpha_1=p(s_1)$,
+$\alpha_{t+1}(s')\propto\int\alpha_t(s)p_0(a\mid s)e^{r(s,a)}p(s'\mid s,a)\,ds\,da$.
+Normalize after each step. Multiplying by the backward message incorporates future evidence. Under stochastic dynamics, this posterior state marginal is generally **not** the visitation distribution obtained by executing the extracted policy with unchanged real dynamics; Lecture 13 repairs that control mismatch.
+
 ## Consolidated takeaways
 
 1. Amortized inference replaces one variational parameter vector per datum with one network $q_\phi(z\mid x)$.
-2. Score-function gradients are general but high variance; reparameterized gradients are low variance when a differentiable continuous path exists.
+2. Score-function gradients are broadly applicable; reparameterized gradients often reduce variance when a differentiable continuous path exists.
 3. A VAE optimizes reconstruction likelihood minus posterior/prior KL.
 4. The KL makes prior samples meaningful and encourages compressed latent factors.
 5. VAEs can provide RL representations, multimodal conditional policies, or structured latent dynamics.
@@ -555,7 +590,7 @@ $$
 ### Reparameterization
 
 $$
-z=\mu_\phi(x)+\epsilon\sigma_\phi(x),
+z=\mu_\phi(x)+\sigma_\phi(x)\odot\epsilon,
 \qquad\epsilon\sim\mathcal N(0,I).
 $$
 
@@ -582,13 +617,13 @@ Q_t(s_t,a_t)=r(s_t,a_t)
 $$
 
 $$
-V_t(s_t)=\log\int e^{Q_t(s_t,a)}\,da.
+V_t(s_t)=\log\int p_0(a\mid s_t)e^{Q_t(s_t,a)}\,da.
 $$
 
 ### Policy and state marginal
 
 $$
-\pi(a\mid s)=e^{Q(s,a)-V(s)},
+\pi(a\mid s)=p_0(a\mid s)e^{Q(s,a)-V(s)},
 \qquad
 p(s_t\mid\mathcal O_{1:T}=1)\propto\alpha_t(s_t)\beta_t(s_t).
 $$

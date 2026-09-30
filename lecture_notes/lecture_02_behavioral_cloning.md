@@ -119,6 +119,15 @@ The transcript’s “baset” and “Markoff” are transcription errors; the c
 
 The Markov property is a modeling criterion, not a claim that the physical world forgets its history. It says that the chosen state representation already summarizes the relevant history. Observations can be non-Markov even when the latent state is Markov.
 
+In controlled dynamics the precise condition includes the chosen action:
+
+$$
+p(s_{t+1},r_t\mid s_{1:t},a_{1:t})
+=p(s_{t+1},r_t\mid s_t,a_t).
+$$
+
+The slide's state-only independence follows after fixing a memoryless policy and integrating its actions. It need not hold under an arbitrary history-dependent controller unless the controller's memory is included in the state.
+
 ## 4. Full observability and valid state design
 
 **Transcript coverage:** lines 1324-1686
@@ -142,7 +151,7 @@ There are two separate tests for a state representation:
 1. **Predictive sufficiency:** does it make the dynamics Markov?
 2. **Decision usefulness:** does it preserve information needed to choose a high-quality action?
 
-A coarse state can have a well-defined stochastic transition while still discarding information that would improve control.
+A conditional distribution can be fitted to almost any coarse observation, but its existence does **not** prove the Markov property. For example, current price alone may leave history informative about the next price. A decision-sufficient state must preserve reward information as well as transition information; a constant representation can evolve trivially while discarding everything needed to choose rewarding actions.
 
 ## 5. Demonstration trajectories and behavioral cloning
 
@@ -223,6 +232,14 @@ For the special case $\Sigma(o_t)=I$, the slide writes the log-likelihood as pro
 
 The output family determines what behaviors the policy can represent. A single Gaussian is convenient but cannot faithfully represent several distinct valid actions. Fixed-variance regression can therefore average incompatible demonstrations, while richer distributions can retain multiple modes.
 
+For fixed identity covariance,
+
+$$
+\log\pi_\theta(a\mid o)=-\tfrac12\|a-\mu_\theta(o)\|^2-\tfrac d2\log(2\pi).
+$$
+
+Thus maximizing likelihood is equivalent to minimizing squared error. Learned covariance also contributes a log-determinant penalty and must be positive definite; a diagonal model still needs positive variances, usually enforced through a log-scale parameterization. Flow matching and diffusion usually use their own tractable training losses, not this direct Gaussian likelihood.
+
 ## Part II - Why naive behavioral cloning can fail
 
 ## 8. Why small imitation errors can compound
@@ -273,6 +290,8 @@ Slides 15-18 credit Bojarski et al. (2016) for the NVIDIA example and diagram th
 ### Additional explanation
 
 The three-camera construction approximates data the car would see after a small deviation without deliberately placing the deployed car in danger. It works when the likely perturbations and their corrective labels are known, but it is not a universal defense against arbitrary off-distribution states.
+
+A $1/\sqrt N$ rate typically describes an estimation/generalization term under specified capacity and sampling assumptions, not guaranteed decay of total prediction error to zero. Correlated frames also need not provide $N$ independent examples.
 
 ## 10. Distributional shift in behavioral cloning
 
@@ -362,6 +381,8 @@ $$
 
 The cost is deliberately simple: it compares imitation accuracy rather than task reward. This isolates the distribution-shift mechanism. A later RL objective may care that some deviations are harmless and others catastrophic.
 
+This zero-one loss is appropriate for discrete actions and a deterministic expert. For a continuous stochastic policy, exact equality to one demonstrated real vector usually has probability zero; use an appropriate continuous loss or divergence and a corresponding stability analysis.
+
 ## 13. Tightrope worst case: quadratic error
 
 **Transcript coverage:** lines 4514-4914
@@ -420,7 +441,7 @@ To bound total mistakes, the state expectation is expanded as a sum and $p_{\mat
 
 ### Source reconciliation
 
-Slides 28-31 show the exact decomposition
+Slides 28-31 display the following heuristic decomposition, which is not generally exact under the stated assumption (see the corrected proof below)
 
 $$
 p_{\pi_\theta}(s_t)=(1-\epsilon)^t p_{\mathrm{train}}(s_t)
@@ -438,6 +459,28 @@ and the per-step bound $\epsilon+2\epsilon t$. The slide cites Ross et al., *A R
 ### Additional explanation
 
 The proof separates what supervised learning controls from what distribution shift leaves uncontrolled. Total variation is useful because for a bounded cost it directly limits how much an expectation can change between two distributions.
+
+**Corrected coupling proof.** The displayed mixture in the lecture is a heuristic, not an identity implied by average expert-distribution error. Write $d_t^*$ for the expert's state distribution at time $t$ and assume $\mathbb E_{s\sim d_t^*}[e(s)]\le\epsilon$ at every time, where $e(s)=1-\pi_\theta(\pi^*(s)\mid s)$. Start expert and learner in the same sampled state and use shared transition randomness while their actions agree. Continue the expert rollout after a disagreement.
+
+The probability that the *first* disagreement is at step $k$ is at most $\mathbb E_{d_k^*}[e(s)]$: the first-disagreement event is a subset of the event that a learner action sampled at the expert's step-$k$ state disagrees. A union bound over the $t-1$ actions before $s_t$ therefore gives
+
+$$
+D_{\mathrm{TV}}(d_t^*,d_t^\pi)
+\le \Pr(\text{some disagreement before }t)
+\le \min\{1,(t-1)\epsilon\}.
+$$
+
+Conditioning on no disagreement can change the distribution of expert states: states where the learner is accurate are overrepresented among surviving trajectories. Thus the conditional no-error distribution cannot generally be replaced by the unconditional $d_t^*$. Nor does an average error bound imply independent constant-rate errors or survival probability $(1-\epsilon)^t$. A *uniform conditional* error bound gives survival **at least** $(1-\epsilon)^{t-1}$, but still does not justify that mixture identity.
+
+For $f(s)=\mathbb E_{a\sim\pi}[c(s,a)]\in[0,1]$, the sharper bounded-expectation inequality is $|\mathbb E_p f-\mathbb E_q f|\le D_{\mathrm{TV}}(p,q)$ (the lecture's $2D_{\mathrm{TV}}$ is a valid looser bound). Hence
+
+$$
+J_{\mathrm{imit}}(\pi)
+\le \sum_{t=1}^H\min\{1,t\epsilon\}
+\le \min\left\{H,\frac{\epsilon H(H+1)}2\right\}.
+$$
+
+This proves the intended $O(\epsilon H^2)$ upper bound without the invalid mixture. Quadratic growth describes the small-error regime; the count can never exceed $H$. These are population assumptions, not guarantees obtained merely from a low training-set loss.
 
 ## 15. Why the bound is pessimistic and how recovery helps
 
@@ -483,6 +526,8 @@ Slides 35-36 name the algorithm **DAgger: Dataset Aggregation** and list the loo
 ### Additional explanation
 
 DAgger is interactive imitation learning. Its guarantee comes from supervising the states the learner visits, not from changing the supervised loss. The new authority it requires is an expert or oracle that can label learner-induced states.
+
+**What DAgger guarantees.** Expert labels alone are insufficient: the policy class must fit them adequately, and the supervised updates must satisfy the online-learning/no-regret assumptions. The analysis controls average learner-distribution loss over iterations and supports a suitable mixture or selected iterate; it does not automatically guarantee the final neural-network checkpoint or convergence of visitation distributions. If the deployed policy's average disagreement on its *own* states is $\epsilon$, its expected disagreement count is $H\epsilon$. Translating disagreement into excess task cost additionally needs a bound on the expert's cost-to-go sensitivity to a wrong action, often related to recoverability. See the [original DAgger analysis](https://proceedings.mlr.press/v15/ross11a.html).
 
 ## 17. DAgger labeling assumptions and implementation Q&A
 
@@ -601,25 +646,25 @@ J_{\mathrm{imit}}(\pi_\theta)=
 [c(s_t,a_t)].
 $$
 
-### Visitation-distribution decomposition
+### Valid coupling bound
 
 $$
-p_{\pi_\theta,t}(s)=
-(1-\epsilon)^t p_{\mathrm{train}}(s)
-+\left[1-(1-\epsilon)^t\right]p_{\mathrm{mistake}}(s).
+D_{\mathrm{TV}}(d_t^*,d_t^\pi)\le\min\{1,(t-1)\epsilon\}.
 $$
+
+Here $t=1$ is the shared initial state; the average expert-distribution error is at most $\epsilon$ at each time. An exact unconditional no-error mixture is not required.
 
 ### Total variation and the behavioral-cloning bound
 
 $$
 D_{\mathrm{TV}}(p,q)=\frac12\sum_s|p(s)-q(s)|,
 \qquad
-D_{\mathrm{TV}}(p_{\mathrm{train}},p_{\pi_\theta,t})\le\epsilon t,
+D_{\mathrm{TV}}(d_t^*,d_t^\pi)\le\min\{1,(t-1)\epsilon\},
 $$
 
 $$
 J_{\mathrm{imit}}(\pi_\theta)
-\le\sum_{t=1}^{H}(\epsilon+2\epsilon t)
+\le\min\left\{H,\epsilon H(H+1)/2\right\}
 =O(\epsilon H^2).
 $$
 

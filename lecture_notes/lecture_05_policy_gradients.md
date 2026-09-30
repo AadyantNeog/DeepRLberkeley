@@ -13,6 +13,8 @@ status: "complete"
 
 ## Lecture map
 
+**Reading conventions.** This lecture initially uses a fixed finite horizon $H$ and an undiscounted sum of rewards. For a finite-horizon MDP, values and policies may depend on time; include the remaining time in the state when suppressing that index. The transcript sections preserve the lecture account; the additional explanations supply qualifications needed to use the formulas correctly.
+
 | Section | Topic | Transcript coverage |
 |---:|---|---:|
 | 1 | Opening logistics and why begin with policy gradients | lines 1-267 |
@@ -104,6 +106,8 @@ Slide 7 depicts the broken computational path through the environment. Slide 8 n
 
 The environment still affects the eventual gradient estimate through which trajectories it generates. What disappears is the need to know or differentiate its transition function.
 
+A black-box environment blocks the full pathwise derivative through the rollout. This does not mean that every possible derivative is zero: a differentiable reward could supply a direct action derivative, for example, while still omitting the action's effect on later states and rewards. The score-function derivation accounts for the full change in the trajectory distribution without differentiating the environment.
+
 ## 4. Likelihood-ratio derivation of the policy gradient
 
 **Transcript coverage:** lines 853-1267
@@ -148,6 +152,8 @@ Mathematically, linearity alone does not guarantee that differentiation may pass
 
 The identity is also called the **score-function estimator**. It replaces a derivative through a sample with a derivative of that sample’s log probability.
 
+The usual derivation also assumes suitable common support and that rewards have no explicit dependence on $\theta$ other than through the trajectory. An explicitly parameter-dependent reward would contribute its own derivative.
+
 ## 5. Removing unknown dynamics from the gradient
 
 **Transcript coverage:** lines 1268-1519
@@ -191,6 +197,8 @@ Slides 11-12 visually strike out the initial-state and transition-model score te
 ### Additional explanation
 
 The simplification requires that environment dynamics and the initial-state distribution do not themselves change as a differentiable function of the policy parameter. Their statistical effect remains encoded in the sampled states.
+
+Inside $\nabla_\theta\log p_\theta(\tau)$, the realized states and actions are held fixed. This is why the dynamics terms have zero parameter derivative even though changing the policy will change which states occur on the next rollout.
 
 ## 6. Monte Carlo estimation and REINFORCE
 
@@ -247,6 +255,8 @@ $$
 $$
 
 where $C$ is constant with respect to the mean parameters when $\Sigma$ is fixed. Autograd should be applied to the sampled action’s log probability, with the return treated as a weight rather than differentiated through the rollout.
+
+For the mean, $\nabla_\mu\log\pi(a\mid s)=\Sigma^{-1}(a-\mu)$. A positive return weight therefore pulls the mean toward the sampled action; a negative weight pushes it away. If covariance is learned, the Gaussian normalization term, including $-\tfrac12\log\det\Sigma$, is no longer constant.
 
 ## 8. Trial-and-error interpretation and temporal credit assignment
 
@@ -315,6 +325,8 @@ Slides 17-18 show the preset-position example and list the three principal mis-c
 
 The estimator can be unbiased and still be practically unusable: unbiasedness constrains its average over repeated datasets, while variance determines how noisy any one affordable dataset is. This distinction is central throughout policy-gradient design.
 
+Adding a constant to every reward preserves action preferences when every trajectory has the same number of reward terms (or the same infinite discounted constant stream). It can change the task when episode length depends on the policy: a positive per-step offset can reward staying alive longer. Subtracting an action-independent baseline from a gradient weight is a different operation and does not change the reward objective.
+
 ## 11. Constant baselines for variance reduction
 
 **Transcript coverage:** lines 3544-4107
@@ -346,6 +358,15 @@ Slides 19-20 present the centered-return estimator and the zero-expectation proo
 ### Additional explanation
 
 The proof above only covers a baseline independent of the sampled trajectory/action in the relevant expectation. Later, a state-dependent baseline is allowed because, conditional on a state, it does not depend on the sampled action. Care is also needed when estimating the baseline from the same finite batch: the clean population identity and a particular finite-sample implementation are related but not identical claims.
+
+For example, let $z_i=\nabla_\theta\log p_\theta(\tau_i)$ and use the mean return of the same $N$ independent episodes, $\bar R=N^{-1}\sum_iR_i$. Then
+
+$$
+\mathbb E\!\left[\frac1N\sum_i z_i(R_i-\bar R)\right]
+=\left(1-\frac1N\right)\nabla_\theta J.
+$$
+
+Each episode partly subtracts its own return, so this particular estimator has a finite-batch bias (and is zero when $N=1$). A baseline from independent data, or the mean of the other episodes, avoids that self-inclusion effect. A good baseline reduces noise; it need not equal the exact value to preserve the population score-gradient identity.
 
 ## 12. Causality and reward-to-go
 
@@ -383,6 +404,18 @@ $$
 $$
 
 Reward-to-go fixes only one kind of irrelevant credit. A late reward may still depend weakly on a particular early action, so long-horizon variance remains.
+
+The causal argument is conditional: given the history before $a_t$, earlier rewards are fixed and $\mathbb E[\nabla_\theta\log\pi_\theta(a_t\mid s_t)\mid\text{history}]=0$. Their expected gradient contribution is therefore zero. This is the justification, rather than a claim that a shorter sum always has smaller magnitude or guarantees lower total-gradient variance for every problem.
+
+For the discounted objective $J_\gamma=\mathbb E[\sum_{t=1}^H\gamma^{t-1}r_t]$, define $G_t=\sum_{k=t}^H\gamma^{k-t}r_k$. Its exact trajectory gradient is
+
+$$
+\nabla_\theta J_\gamma
+=\mathbb E\!\left[\sum_{t=1}^H\gamma^{t-1}
+\nabla_\theta\log\pi_\theta(a_t\mid s_t)(G_t-b_t(s_t))\right].
+$$
+
+There are two discounts: one inside the return and one outside the score term. The outside factor disappears only under an appropriate discounted state-sampling convention, or when $\gamma=1$.
 
 ## 13. The weighted supervised pseudo-loss
 
@@ -430,6 +463,10 @@ The final slides summarize the policy-gradient estimator and point to the next l
 ### Additional explanation
 
 Useful diagnostics include the distribution of episode returns, reward-to-go weights, gradient norms, policy entropy, and the change in action log probabilities after an update. A loss curve alone is not a reliable performance metric because the pseudo-loss changes with newly sampled on-policy data.
+
+Implementation checks: detach the sampled action if it was produced by a differentiable sampling operation, as well as the return/advantage weight. Keep the policy's parameter-to-log-probability computation differentiable, including its recurrent computation when using history. Sum log probabilities over joint-action components and mask padded time steps.
+
+Average episode gradient sums over the number of episodes. Dividing by the total number of transitions instead introduces a random, policy-dependent denominator when episode lengths vary; it is not the same unbiased estimator. A sampled gradient step need not improve return on every iteration, even when its expectation is correct.
 
 ## Consolidated takeaways
 

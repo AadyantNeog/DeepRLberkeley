@@ -15,6 +15,8 @@ status: "source-incomplete"
 
 ## Lecture map
 
+**Equation conventions.** Formulas in the lecture omit terminal masks for readability. In implementation, $m=0$ at a true terminal and $m=1$ otherwise; multiply each bootstrap by $m$ and detach the complete target. At an external time limit, use the final pre-reset observation with $m=1$. If the horizon is part of the task, treat its end as terminal and include remaining time in the state. Boundary-aware study equations appear below.
+
 | Section | Topic | Transcript coverage |
 |---:|---|---:|
 | 1 | Recap: epsilon-greedy Q-learning and replay | lines 1-217 |
@@ -54,6 +56,8 @@ Slides 2-3 write the target as $y_i=r_i+\gamma\max_{a'}Q_\phi(s_i',a')$ and the 
 
 Replay changes the data distribution seen by an update: the learner trains on a mixture of experience produced by several earlier versions of the behavior policy. This reuse is one reason Q-learning can be much more sample-efficient than an on-policy method, but it also means the target and the sampled data are both nonstationary.
 
+Random replay sampling reduces temporal correlation; it does not make the stored data an IID sample from the current policy or repair missing state-action coverage.
+
 ## 2. Why Q-learning is not ordinary gradient descent
 
 **Transcript coverage:** lines 218-598
@@ -73,6 +77,8 @@ Slide 4 explicitly marks the target branch with “no gradient,” while slide 5
 ### Additional explanation
 
 Stopping the gradient makes the update a **semi-gradient**. It treats the bootstrap value as a temporary label even though that label depends on the parameters globally. This distinction is central to the “deadly triad”: function approximation, bootstrapping, and off-policy data can interact in ways that ordinary supervised-learning intuition does not predict.
+
+Full differentiation of a sampled squared TD error is not generally gradient descent on the squared **expected** Bellman residual either: it also differentiates the conditional variance of the sampled target. See Lecture 7, Section 11, for the decomposition and double-sampling issue.
 
 ## 3. Target networks and the DQN family
 
@@ -102,6 +108,8 @@ Slides 6-8 show the hard copy every 10,000 steps and the Polyak formula. The coe
 ### Additional explanation
 
 The target network introduces a second time scale. The online estimator is allowed to fit a nearly fixed target, while the target estimator tracks it slowly. If the target changes too quickly, training can chase its own errors; if it changes too slowly, value information propagates sluggishly.
+
+Specify whether a target-update period counts environment transitions or learner updates. These units differ whenever the UTD ratio differs from one; a quoted period cannot be copied safely without its unit.
 
 ## 4. The practical Q-learning process
 
@@ -145,6 +153,8 @@ Slide 12 defines the UTD ratio as training updates divided by environment steps.
 ### Additional explanation
 
 At high UTD, the critic changes substantially while the replay distribution barely changes. Techniques used in high-UTD algorithms commonly target critic overfitting, Q-value bias, or ensemble uncertainty rather than treating more updates as automatically beneficial.
+
+With minibatch size $B$ and UTD ratio $u$, approximately $Bu$ replay examples are processed per new transition. This is distinct from $u$ optimizer updates. One vectorized environment step can produce many transitions, so count all of them in the denominator.
 
 ## 6. Multi-step targets and value propagation
 
@@ -203,6 +213,8 @@ Slides 15-17 show learning curves and the max/Jensen argument. Slide 16 identifi
 
 The bias does not require every Q-value to be too high. It arises because one noisy estimate is used both to **select** an action and to **evaluate** that selected action. Decoupling those roles is the key idea behind double estimators.
 
+The inequality is non-strict: identical noise shared across actions, for example, need not produce a positive selection bias. If individual estimates are already biased downward, their maximum can still be below the true optimal value despite this upward selection effect.
+
 ## 8. Double Q-learning and clipped double Q-learning
 
 **Transcript coverage:** lines 3442-4674
@@ -238,6 +250,8 @@ Slides 18-20 distinguish true double Q-learning, practical Double DQN, and clipp
 ### Additional explanation
 
 Double DQN reduces correlation between selection and evaluation only partially because the networks share training history. Clipped double critics are more conservative: an action must look good to both critics to receive a high target.
+
+The minimum is conservative relative to its two inputs; it is **not** a certified lower bound on the true value. If both critics overestimate, their minimum can also overestimate. “Double” also does not imply statistically independent estimates after shared training.
 
 ## 9. Practical implementation and debugging advice
 
@@ -313,6 +327,10 @@ Slides 27-28 present DDPG in exactly these two interpretations.
 ### Additional explanation
 
 Because the actor is optimized against the learned critic, it can discover actions where critic error is high. This is why clipped double critics and target-policy smoothing became important descendants of the same family.
+
+For DDPG, use $y=r+\gamma mQ_{\bar\phi}(s',\mu_{\bar\theta}(s'))$ and stop gradients through both target networks. The actor maximizes $\mathbb E_{s\sim D}Q_\phi(s,\mu_\theta(s))$: freeze critic parameters but differentiate through its action input. This replay-state objective is a practical fixed-critic surrogate, not an exact start-state policy gradient for arbitrary replay distributions. Exploration noise is used during collection; the target actor itself is deterministic in basic DDPG.
+
+As a later-algorithm distinction, [TD3](https://arxiv.org/abs/1802.09477) uses the minimum of two critics in its target but normally the first critic for its actor update; SAC commonly uses a minimum in the actor objective too. The minimum is not automatically inserted into every actor loss.
 
 ## Part III - What theory does and does not guarantee
 
@@ -392,13 +410,15 @@ Slides 33-36 explicitly state that composition of the Bellman contraction and pr
 
 This analysis explains why supervised-learning metrics alone cannot certify stability. The learner is not fitting a fixed ground-truth function: its current approximation changes the target operator that generates the next training problem.
 
+The non-expansiveness claim for least-squares projection requires a closed convex set, such as a linear function space, in the same weighted Euclidean norm. Neural-network function classes are generally nonconvex; their projection may be nonunique and need not even have that property. Thus the mismatched-norm argument illustrates one failure mechanism, rather than granting neural regression its own contraction guarantee.
+
 ## Consolidated takeaways
 
 1. Deep Q-learning uses semi-gradient regression against targets generated by a delayed copy of the critic.
 2. Target networks slow target motion; replay buffers reuse and decorrelate experience.
 3. Data collection, critic updates, and target updates have separate rates, summarized partly by the UTD ratio.
 4. Multi-step returns propagate reward faster but sacrifice the clean one-step off-policy property.
-5. Maximization of noisy estimates causes systematic overestimation.
+5. Maximization creates upward selection bias relative to the maximum of the estimates' means; other approximation errors can still make the net value error negative.
 6. Double DQN separates action selection from evaluation; clipped double Q deliberately adds pessimism.
 7. Learning curves, exploration schedules, robust losses, Q-value calibration, and multiple seeds are important practical diagnostics.
 8. Continuous-action Q-learning needs an optimizer; DDPG amortizes that optimizer with a deterministic actor.
@@ -410,7 +430,7 @@ This analysis explains why supervised-learning metrics alone cannot certify stab
 ### One-step DQN target
 
 $$
-y=r+\gamma\max_{a'}Q_{\bar\phi}(s',a'),
+y=r+\gamma m\max_{a'}Q_{\bar\phi}(s',a'),
 \qquad
 \mathcal L(\phi)=\frac12\bigl(Q_\phi(s,a)-y\bigr)^2,
 $$
@@ -426,14 +446,17 @@ $$
 ### $n$-step target
 
 $$
-y_t^{(n)}=\sum_{k=0}^{n-1}\gamma^k r_{t+k}
-+\gamma^n\max_aQ_{\bar\phi}(s_{t+n},a).
+y_t^{(h)}=\sum_{k=0}^{h-1}\gamma^k r_{t+k}
++\gamma^h m_{t+h-1}\max_aQ_{\bar\phi}(s_{t+h},a),
+\qquad 1\leq h\leq n.
 $$
+
+Use the actual number $h$ of available transitions before a boundary. Store the discounted reward sum, endpoint, $h$, and terminal flag in replay, then recompute the bootstrap using the current target network when sampling. Storing a complete numerical target would freeze a stale bootstrap. Intermediate rewards reflect behavior-policy actions, so an uncorrected multi-step target generally does not apply the optimal Bellman operator repeatedly. Downward bias is possible with poor intermediate actions, but the net error has no universal sign.
 
 ### Double DQN target
 
 $$
-y=r+\gamma Q_{\bar\phi}
+y=r+\gamma m Q_{\bar\phi}
 \left(s',\arg\max_{a'}Q_\phi(s',a')\right).
 $$
 

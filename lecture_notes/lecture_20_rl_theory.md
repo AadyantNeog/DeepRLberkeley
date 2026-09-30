@@ -15,6 +15,8 @@ status: "source-incomplete"
 
 ## Lecture map
 
+**Standing assumptions.** These bounds concern a finite stationary discounted MDP with $0\leq\gamma<1$, bounded rewards, and independent oracle samples at every state-action pair. $N$ denotes samples **per pair** in the model-estimation analysis, so the total is $N|\mathcal S||\mathcal A|$. Matrix formulas use column value vectors and row-stochastic transition matrices. Course dates and logistics below are historical transcript content.
+
 | Section | Topic | Transcript coverage |
 |---:|---|---:|
 | 1 | Logistics and what an RL guarantee asks | lines 1-1017 |
@@ -179,6 +181,8 @@ $$
 $$
 
 Each power propagates a signal another step through the Markov chain. This is why a one-step modeling error can influence many future rewards.
+
+For a row-stochastic matrix, the induced infinity norm of this nonnegative inverse is exactly $1/(1-\gamma)$, since every row sums to that amount. Individual entries need not have that size. With terminal states removed the matrix can be substochastic and the same quantity remains an upper bound.
 
 ## 4. Value iteration as a contraction
 
@@ -384,6 +388,18 @@ Slides 15-17 provide the matrix dimensions, the full algebra of the simulation l
 
 The lemma is called a simulation lemma because it compares returns in two MDPs that differ in their dynamics. Its factorization cleanly separates the one-step discrepancy $(P-\widehat P)V^\pi$ from the repeated propagation performed by the inverse Bellman operator.
 
+The displayed identity assumes the **same reward function** in both MDPs. If rewards are estimated too, the pseudo-reward becomes
+$(r-\widehat r)+\gamma(P-\widehat P)V^\pi$.
+Consequently, with $\|r-\widehat r\|_\infty\leq\eta_r$, maximum row-wise transition $L_1$ error $\eta_P$, and $|r|\leq R_{\max}$,
+
+$$
+\|Q^\pi-\widehat Q^\pi\|_\infty
+\leq\frac{\eta_r}{1-\gamma}
++\frac{\gamma R_{\max}\eta_P}{(1-\gamma)^2}.
+$$
+
+Here $L_1$ distance is twice total variation; keep that factor consistent when comparing statements.
+
 ## 9. From transition error to value error
 
 **Transcript coverage:** lines 5851-6435
@@ -444,6 +460,8 @@ $$
 
 This inversion makes the cost of long horizons especially visible. It is a consequence of this proof and setup, not a universal lower bound for every RL problem.
 
+The union bound replaces a single-pair failure probability with approximately $\delta/(|\mathcal S||\mathcal A|)$ inside logarithms. Multiplying the displayed per-pair count by $|\mathcal S||\mathcal A|$ gives a total sufficient count of roughly $\widetilde O(|\mathcal S|^2|\mathcal A|/((1-\gamma)^4\epsilon^2))$ for this loose proof with unit reward scale. More refined analyses can improve it; “sufficient” does not mean necessary or optimal.
+
 ## 10. Optimal values and the learned policy
 
 **Transcript coverage:** lines 6436-6975
@@ -483,6 +501,10 @@ Slide 20 shows both implications and labels the final two terms as comparing the
 ### Additional explanation
 
 This is a standard “optimization plus estimation” argument. The learned policy may exploit errors in the empirical model, but uniform accuracy prevents any policy—including that data-dependent one—from looking much better in the model than it truly is.
+
+Uniformity here follows from an event bounding **all transition rows**, together with the value bound valid for every policy. No union bound over an uncountable policy class is needed. A high-probability claim for one prespecified policy alone would not justify selecting a policy after seeing the data.
+
+The same two-error argument directly gives $\|V^*-V^{\widehat\pi^*}\|_\infty\leq2\epsilon$ when each policy's state values are uniformly within $\epsilon$ between models. This is the deployment-relevant comparison, including the learned policy's first action.
 
 ## 11. Fitted Q-iteration: sampling and approximation error
 
@@ -544,11 +566,13 @@ Hoeffding bounds the reward term. The transition term is controlled by $\lVert\w
 $$
 \lVert\widehat TQ-TQ\rVert_\infty
 \le
-2R_{\max}c_1
-\sqrt{\frac{\log(|\mathcal S||\mathcal A|/\delta)}{2N}}
-+c_2\lVert Q\rVert_\infty
-\sqrt{\frac{\log(|\mathcal S|/\delta)}{N}}.
+c_1 R_{\max}
+\sqrt{\frac{\log(4|\mathcal S||\mathcal A|/\delta)}{N}}
++c_2\gamma\lVert Q\rVert_\infty
+\sqrt{\frac{|\mathcal S|+\log(4|\mathcal S||\mathcal A|/\delta)}{N}}.
 $$
+
+This corrected uniform bound makes the transition-dimension and discount factors explicit. An equivalent looser bound can use $|\mathcal S|\log(4|\mathcal S||\mathcal A|/\delta)$ in the transition numerator. A dimension-free constant cannot hide the missing next-state factor in an $L_1$ transition-estimation argument.
 
 To isolate approximation error, the lecture temporarily made the strong assumption
 
@@ -581,7 +605,7 @@ $$
 \limsup_{k\to\infty}
 \lVert\widehat Q_k-Q^*\rVert_\infty
 \le
-\frac{\max_k\epsilon_k}{1-\gamma}.
+\frac{\sup_k\epsilon_k}{1-\gamma}.
 $$
 
 Intuitively, every iteration uses a slightly wrong current network to create new targets and then fits those targets imperfectly. Errors are discounted, but new ones continually enter and compound over the horizon.
@@ -629,6 +653,12 @@ $$
 $$
 
 This template reappears throughout approximate dynamic programming. What changes between theorems is how the one-step error is measured and what coverage or function-class assumptions make it small.
+
+The quantity $\|\widehat Q_{k+1}-T\widehat Q_k\|_\infty$ measures **total** one-step error unless sampling error has been set to zero; approximation/optimization error alone is measured relative to $\widehat T\widehat Q_k$. Use a supremum over bounded $\epsilon_k$ if their maximum is not attained.
+
+The same-data learned $\widehat Q_k$ is random and data dependent. Applying Hoeffding as if its target were a fixed independent function is not valid without extra work. The uniform transition-row bound above avoids this problem and applies to every bounded $Q$ simultaneously. One still needs bounded iterates (for example, clipping to an appropriate value range); arbitrary neural fitted iterates are not automatically bounded by $R_{\max}/(1-\gamma)$.
+
+Mean-squared error on the dataset does not control infinity-norm error at rarely visited pairs. Results that use data-weighted norms need coverage/concentrability assumptions and suitable function-class approximation properties. See the [RL theory textbook](https://rltheorybook.github.io/) referenced in the lecture.
 
 ## 12. Closing logistics and truncated Q&A
 
@@ -688,7 +718,7 @@ The unfinished exchange should not be treated as course content. If a fuller rec
    \lVert Q^\pi-\widehat Q^\pi\rVert_\infty
    \lesssim
    \frac{\gamma}{(1-\gamma)^2}
-   \sqrt{\frac{|\mathcal S|\log(1/\delta)}{N}}.
+   \sqrt{\frac{|\mathcal S|\log(2|\mathcal S||\mathcal A|/\delta)}{N}}.
    $$
 
 5. **Approximate-backup recursion**

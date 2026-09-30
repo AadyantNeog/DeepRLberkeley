@@ -13,6 +13,8 @@ status: "complete"
 
 ## Lecture map
 
+**Equation conventions.** Analytic Bellman equations below use an absorbing terminal state with value zero. In code, use $y=r+\gamma m\max_{a'}Q_{\rm ref}(s',a')$, where $m=0$ at a true terminal and $m=1$ otherwise, and detach the entire target. At a collection cutoff, bootstrap from the final pre-reset observation. Finite-horizon values require a time index or remaining time in the state.
+
 | Section | Topic | Transcript coverage |
 |---:|---|---:|
 | 1 | Removing the actor: Q-learning from off-policy actor-critic | lines 1-502 |
@@ -49,12 +51,12 @@ For a small enumerable discrete action space, such as four Atari buttons, a sepa
 $$
 \pi_Q(a\mid s)=
 \begin{cases}
-1,&a\in\arg\max_{a'}Q(s,a'),\\
+1,&a=a^*(s),\\
 0,&\text{otherwise},
 \end{cases}
 $$
 
-with a tie-breaking convention understood. Under this policy, the expectation over the next action becomes a maximum. Delete the actor-gradient and actor-update steps; the target becomes
+where $a^*(s)$ is one selected maximizer under a fixed tie-breaking convention. Under this policy, the expectation over the next action becomes a maximum. Delete the actor-gradient and actor-update steps; the target becomes
 
 $$
 y_i=r(s_i,a_i)+\gamma\max_{a'}Q_\theta(s_i',a').
@@ -69,6 +71,8 @@ Slides 2-4 visually cross out the actor update and replace the current-policy ex
 ### Additional explanation
 
 The policy still exists behaviorally even though it has no independent parameters. It is a deterministic computation derived from Q, so improving Q changes both evaluation and action selection.
+
+Choose one maximizer $a^*(s)$ using a fixed tie-breaking rule. The deterministic policy assigns probability one to that selected action, not probability one to every tied maximizer.
 
 ## 2. Initial Q-learning Q&A and the second derivation
 
@@ -89,6 +93,8 @@ The successor-representation reference and buffer-capacity discussion are transc
 ### Additional explanation
 
 Q is not a full dynamics model because it collapses all possible futures into expected discounted return for a specified continuation policy. Successor representations retain more predictive structure by separating expected future state occupancy from rewards.
+
+**Correction to the replay Q&A:** a buffer of capacity one does not by itself make Q-learning on-policy. Even on the newest transition, its bootstrap follows a greedy target policy while an epsilon-greedy behavior policy can choose another action. Buffer age and behavior/target-policy agreement are separate issues. A successor representation measures expected discounted visit counts, not simply the probability of ever reaching a state; repeated visits can make a count exceed one.
 
 ## Part II - Policy iteration and dynamic programming
 
@@ -158,6 +164,8 @@ $$
 
 when the inverse exists. Iterative evaluation avoids forming that inverse and generalizes more naturally to later approximate methods.
 
+Here $V$ is a column vector and $P^\pi_{ss'}=P(s'\mid s,\pi)$ is row-stochastic. For a finite discounted MDP, $\gamma<1$ ensures the inverse exists. A column-stochastic convention requires transposing the transition matrix.
+
 ## 5. Tabular policy iteration and value iteration
 
 **Transcript coverage:** lines 1468-1770
@@ -191,6 +199,8 @@ Slides 8-9 show greedy policy extraction as selecting highlighted cells from a Q
 ### Additional explanation
 
 Policy iteration performs substantial evaluation for one fixed policy before improving it. Value iteration performs a greedy optimality backup at every sweep, effectively interleaving evaluation and improvement.
+
+This is an algorithmic difference, not merely the removal of an explicit policy table. Exact policy iteration evaluates each policy to its fixed point; value iteration usually changes the implicit greedy policy before such evaluation finishes. Both can be implemented with or without storing a separate policy.
 
 ## Part III - Fitted value iteration
 
@@ -231,6 +241,8 @@ Slides 10-12 show the image-space state count, label it the curse of dimensional
 
 Fitted methods separate a target-computation phase from a regression phase. The target should be treated as fixed during each supervised fit even though it was created from an earlier network estimate.
 
+The image-count example should use **256** values for an 8-bit channel (0 through 255). A $200\times200$ RGB array therefore has $256^{120000}$ possible encodings. The dimensionality argument is unchanged.
+
 ## 7. Q-evaluation and fitted Q-iteration
 
 **Transcript coverage:** lines 2149-2535
@@ -269,6 +281,8 @@ Slide 13’s central contrast is that a Q-function can test next actions without
 
 The Q-network acts as a learned counterfactual evaluator over actions at a given next state. The environment supplies one transition for the logged current action; the network supplies comparable predictions for all candidate continuation actions.
 
+For stochastic-policy evaluation the continuation is $\mathbb E_{a'\sim\pi(\cdot\mid s')}Q^\pi(s',a')$; writing $Q^\pi(s',\pi(s'))$ assumes a deterministic policy. Fitted Q-iteration instead uses a maximum to seek $Q^*$. During learning, its current approximation need not equal the actual return of its current greedy policy.
+
 ## 8. Function-approximation caveats and Q-network forms
 
 **Transcript coverage:** lines 2536-2757
@@ -290,6 +304,8 @@ Slide 13 explicitly lists “works even for off-policy samples” and “only on
 ### Additional explanation
 
 The guarantee is lost not merely because a neural network has approximation error. Bootstrapped targets depend on the network being updated, so projection by regression and the Bellman optimality operator interact in ways that need not contract.
+
+Fitted methods are still interpretable as approximate fixed-point iterations. What is absent is a general contraction or convergence guarantee for the projected update, not the existence of a fixed-point formulation.
 
 ## 9. The full fitted Q-iteration recipe and its schedules
 
@@ -372,6 +388,18 @@ Slide 17 labels $\mathcal E$ as an error and states that zero error implies the 
 
 The fitted algorithm normally treats the right-hand Q inside each target as fixed during a regression phase. Directly differentiating both sides of the displayed residual would define a different optimization procedure from the alternating target-and-fit recipe.
 
+Distinguish the **expected Bellman residual** from the displayed **sampled squared TD error**. Let $Y_Q=r+\gamma m\max_{a'}Q(s',a')$ and $(\mathcal T^*Q)(s,a)=\mathbb E[Y_Q\mid s,a]$. Then
+
+$$
+\mathbb E[(Q(s,a)-Y_Q)^2\mid s,a]
+=(Q(s,a)-(\mathcal T^*Q)(s,a))^2
++\operatorname{Var}(Y_Q\mid s,a).
+$$
+
+Even $Q^*$ can have positive sampled squared error because rewards and transitions are stochastic. Zero **expected Bellman residual at every state-action pair** identifies $Q^*$ in the discounted finite MDP; zero loss on a finite dataset does not. For example, a terminal reward equally likely to be 0 or 2 has $Q^*=1$ but expected squared TD error 1.
+
+Differentiating the sampled squared error through the target also differentiates its variance term. To estimate the gradient of the squared expected residual without that extra term generally requires two independent successor samples conditional on the same $(s,a)$, the double-sampling problem. Semi-gradient Q-learning avoids that optimization problem by treating the target as fixed.
+
 ## 12. Online Watkins Q-learning as a limiting schedule
 
 **Transcript coverage:** lines 3463-3599
@@ -402,6 +430,8 @@ $$
 
 Its target is still bootstrapped and nonstationary even though only one transition is used.
 
+The tabular convergence theorem needs a finite stationary MDP, bounded rewards, $\gamma<1$, infinitely many visits to every relevant state-action pair, and per-pair learning rates satisfying $\sum_k\alpha_k=\infty$ and $\sum_k\alpha_k^2<\infty$. Its update is $Q(s,a)\leftarrow Q(s,a)+\alpha[y-Q(s,a)]$. Replacing the table with shared neural-network parameters does not inherit this theorem.
+
 ## 13. Exploration: greedy, epsilon-greedy, and Boltzmann policies
 
 **Transcript coverage:** lines 3600-4218
@@ -415,7 +445,7 @@ The simplest default is epsilon-greedy. With probability $1-\epsilon$, take the 
 $$
 \pi_\epsilon(a\mid s)=
 \begin{cases}
-1-\epsilon,&a\in\arg\max_{a'}Q(s,a'),\\
+1-\epsilon,&a\text{ is the selected greedy action},\\
 \epsilon/(|\mathcal A|-1),&\text{otherwise}.
 \end{cases}
 $$
@@ -442,6 +472,10 @@ Slide 19 writes the two behavior policies and explicitly postpones deeper explor
 
 A temperature parameter is often included as $\exp(Q(s,a)/T)$, but the slide and transcript present the proportional softmax without introducing $T$. That extra parameter is therefore not attributed to the lecturer here.
 
+The displayed epsilon-greedy convention requires at least two actions and one selected greedy action. Another common convention explores uniformly over **all** actions; then the selected greedy action has probability $1-\epsilon+\epsilon/|\mathcal A|$ and every other action has $\epsilon/|\mathcal A|$. State which convention is used.
+
+Boltzmann exploration trusts the learned value scale. An incorrectly low value can suppress a useful action, and an incorrectly high value can favor a dangerous one; the softmax is not a safety guarantee. Compute it with numerically stable logits rather than exponentiating very large raw values.
+
 ## 14. Replay-buffer Q-learning and the instability warning
 
 **Transcript coverage:** lines 4219-4357
@@ -466,6 +500,8 @@ Slide 20 gives the three-line replay algorithm but places two prominent warnings
 
 The central unresolved issue is that the network both generates and chases moving bootstrap targets while the sampled distribution is off-policy. The following lecture’s engineering techniques are part of the practical algorithm, not cosmetic improvements.
 
+The lecture's strong failure warning is practical advice, not a theorem that every unstabilized neural Q-learning run must fail. Conversely, replay and target networks improve practice without guaranteeing convergence in every environment.
+
 ## Consolidated takeaways
 
 1. With a small discrete action space, an actor can be replaced by greedy action selection from Q.
@@ -479,11 +515,11 @@ The central unresolved issue is that the network both generates and chases movin
 9. A discrete Q-network can output all action values in one forward pass.
 10. Fitted Q-iteration’s data size, target-refresh schedule, and regression-step count define materially different algorithms.
 11. The method is off-policy because the logged transition remains valid conditional on $(s,a)$ while the max evaluates the new greedy continuation.
-12. Zero Bellman error identifies $Q^*$, but nonzero error does not map simply to policy return.
+12. Zero expected Bellman residual everywhere identifies $Q^*$; stochastic sampled TD errors can remain nonzero even at $Q^*$.
 13. Online Watkins Q-learning is the one-sample, one-target, one-gradient-step limit of fitted Q-iteration.
 14. Exploration must prevent a premature deterministic greedy policy from restricting data coverage.
 15. Epsilon-greedy and Boltzmann exploration randomize actions but do not solve hard state-space exploration.
-16. Naive neural replay-buffer Q-learning is unstable; the next lecture’s stabilization methods are required in practice.
+16. Naive neural replay-buffer Q-learning can be unstable; the next lecture develops practical stabilization methods.
 
 ## Key equations
 
@@ -514,13 +550,13 @@ $$
 ### Fitted Q-iteration target and loss
 
 $$
-y_i=r_i+\gamma\max_{a'}Q_{\bar\theta}(s_i',a'),
+y_i=r_i+\gamma m_i\max_{a'}Q_{\bar\theta}(s_i',a'),
 \qquad
 L(\theta)=\frac{1}{2N}\sum_{i=1}^{N}
 (Q_\theta(s_i,a_i)-y_i)^2,
 $$
 
-where $\bar\theta$ denotes the parameter snapshot used to form fixed regression targets during one fit.
+where $\bar\theta$ denotes the parameter snapshot used to form fixed, detached regression targets during one fit, and $m_i$ masks true terminals.
 
 ### Bellman optimality equation
 
@@ -536,7 +572,7 @@ $$
 \theta\leftarrow\theta-\alpha
 \nabla_\theta Q_\theta(s_i,a_i)
 \left(Q_\theta(s_i,a_i)-
-\left[r_i+\gamma\max_{a'}Q_\theta(s_i',a')\right]
+\left[r_i+\gamma m_i\max_{a'}Q_\theta(s_i',a')\right]
 \right).
 $$
 
@@ -572,14 +608,14 @@ $$
 - **Q-learning:** a value-based method that learns Q and obtains its policy by greedy action selection.
 - **Replay distribution:** the empirical distribution $\beta$ represented by stored transitions.
 - **Tabular representation:** storing a separate scalar or action index for every discrete state or state-action pair.
-- **Value iteration:** applying Bellman optimality backups directly without storing a separate policy.
+- **Value iteration:** repeatedly applying Bellman optimality backups, interleaving greedy improvement with partial evaluation.
 - **Watkins Q-learning:** the classic online one-transition form of Q-learning.
 
 ## Self-check questions
 
 1. Under what action-space condition can the actor be removed from actor-critic?
 2. Why does the expected next Q-value become a max under the implicit policy?
-3. How does replay capacity one change the on-/off-policy character of Q-learning?
+3. Why can Q-learning remain off-policy even with replay capacity one?
 4. In what limited sense can Q be viewed as a predictive world model?
 5. Distinguish policy evaluation, policy improvement, and policy iteration.
 6. Which assumptions allow tabular dynamic programming to avoid sampling entirely?

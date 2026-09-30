@@ -13,6 +13,8 @@ status: "complete"
 
 ## Lecture map
 
+**Implementation convention.** In every Bellman target, mask true terminals with $m=0$, use $m=1$ otherwise, and detach the full target. External rollout cutoffs retain a bootstrap from the final pre-reset state. Critic parameters and advantage weights are held fixed during actor fitting.
+
 | Section | Topic | Transcript coverage |
 |---:|---|---:|
 | 1 | Offline-RL recap | lines 1-190 |
@@ -142,6 +144,8 @@ and illustrate actor-only and reward/target placements. BRAC refers to behavior-
 
 Putting a penalty in reward changes the learned notion of long-term value: the critic anticipates future departures from behavior. Putting it only in the actor constrains the current update while the critic may still estimate an unconstrained return. With exact optimization the formulations can be related, but approximation error makes the distinction practical.
 
+These placements are not generally equivalent even with exact optimization unless the critic definition and policy-evaluation objective are adjusted consistently. A one-state regularized improvement step and an objective penalizing every future policy decision solve different problems. Divergences in dataset-based objectives are normally averaged over sampled states, not guaranteed uniformly over every state.
+
 ## 5. Actor-critic with behavioral cloning
 
 **Transcript coverage:** lines 1709-2077
@@ -178,7 +182,7 @@ The two expectations use different actions at the same sampled states. This matt
 
 The lecturer derived an implicit policy constraint. Optimize expected Q subject to a reverse-KL constraint from the behavior policy. The optimal nonparametric policy is proportional to the behavior policy multiplied by an exponentiated advantage. The value baseline may be subtracted because it does not change relative action probabilities at a fixed state.
 
-Directly normalizing or sampling from this policy is inconvenient. Instead, use behavior-policy samples and fit a parametric actor by weighted maximum likelihood. Each dataset action receives weight $\exp(A(s,a)/\lambda)$. The unknown normalizer cancels in the projection objective.
+Directly normalizing or sampling from this policy is inconvenient. Instead, use behavior-policy samples and fit a parametric actor by weighted maximum likelihood. Each dataset action receives weight $\exp(A(s,a)/\lambda)$. The practical objective drops the state-dependent normalizer; this is not generally an exact cancellation for a shared actor, as explained below.
 
 This gives advantage-weighted regression (AWR) and, in an actor-critic form, advantage-weighted actor critic (AWAC). Train Q with offline targets, obtain or approximate a state value, compute dataset advantages, and perform weighted behavioral cloning.
 
@@ -207,6 +211,10 @@ $$
 ### Additional explanation
 
 As $\lambda$ decreases, weights concentrate on the highest-advantage samples and effective sample size falls. As $\lambda$ increases, weights flatten and the actor approaches ordinary behavioral cloning. Weight clipping or normalization is often used to control variance, though it changes the exact projection.
+
+**Normalizer correction:** $Z(s)$ does not generally cancel from a forward-KL projection averaged over states. The exact normalized projection weights are $e^{A(s,a)/\lambda}/Z(s)$. Omitting $Z(s)$ reweights states; it preserves a separate unrestricted per-state optimum, but can change the optimum of a shared parametric actor. Subtracting a state baseline leaves the normalized target policy unchanged, yet can also change cross-state weights in the unnormalized regression objective.
+
+The reverse-KL solution follows from maximizing $\mathbb E_\pi Q-\lambda D_{\rm KL}(\pi\|\pi_\beta)$ at each state. This derivation does not mean AWR and AWAC have identical critic estimation: AWAC uses off-policy actor-critic evaluation, while AWR's return/value fitting can differ.
 
 ## 7. Implicit Q-learning
 
@@ -264,6 +272,12 @@ The slide equation resolves the transcript's verbal ambiguity about which side r
 
 For $\tau>1/2$, positive residuals $Q-V>0$ receive weight $\tau$ and pull $V$ upward more strongly than negative residuals pull it downward. Unlike a sample maximum, the expectile changes smoothly with every supported action and is less sensitive to a single noisy high estimate.
 
+For equally likely values $-10$ and $+10$, the upper expectile is $V=20\tau-10$; at $\tau=0.8$, it is 6, not the 80th percentile (which is 10). It remains sensitive to squared-error outliers. A finite $\tau<1$ produces a soft preference among dataset actions; it is not exactly a hard maximum over a density-thresholded set $\Omega(s)$.
+
+IQL avoids **explicit actor-generated action queries** in critic targets. Function approximation still generalizes across nearby states and can be wrong, and the extracted actor can produce OOD actions. High expectiles are applied to estimates of expected action value, not directly to lucky one-transition returns; the Q regression averages transition randomness. This separation is central to the method.
+
+The [original IQL paper](https://arxiv.org/abs/2110.06169) derives this separation between action selection through expectiles and ordinary transition averaging.
+
 ## Part III - Pessimistic critics
 
 ## 8. Pessimism and conservative Q-learning
@@ -309,6 +323,10 @@ For discrete actions, substituting $\mu^*$ produces $\log\sum_a\exp Q(s,a)$. The
 ### Additional explanation
 
 CQL penalizes the critic where an optimizer is likely to look, not uniformly over the entire action space. The data-action subtraction is essential: without it, the trivial solution of making every Q-value extremely negative would satisfy pessimism but destroy useful ranking.
+
+More precisely, the subtraction removes the incentive for a uniform downward shift from the **conservative regularizer**: $\log\sum_a e^{Q_a-c}-\mathbb E_\beta[Q_a-c]$ is unchanged by $c$. The Bellman regression term still anchors the overall scale, so sending all values to $-\infty$ does not minimize the complete squared-error objective.
+
+Log-sum-exp is the optimum of $\mathbb E_\mu Q+\mathcal H(\mu)$, not of $\mathbb E_\mu Q$ alone after substitution. For continuous actions, an integral requires a reference measure and proposals with adequate support; Monte Carlo importance weights divide by proposal density, and taking the log introduces finite-sample bias. CQL lower-bound results require their stated sampling, regularization, and approximation assumptions; a trained neural critic is not automatically a certified pointwise lower bound.
 
 ## Part IV - From offline pretraining to online improvement
 
@@ -376,13 +394,15 @@ Slide 29 labels this construction IDQL and diagrams a behavior-policy generator 
 
 Best-of-$N$ improves monotonically with more samples under a fixed, correctly ranked candidate distribution, but its compute grows linearly with $N$. Selection also amplifies Q-estimation error among the samples, though restricting candidates to behavior-like actions reduces the severity of that optimizer's curse.
 
+The monotonic statement is about expected selected score (or a nested set of candidates), not every independent run's actual return. If a desirable region has proposal probability $p$, the chance of at least one candidate there is $1-(1-p)^N$. Best-of-$N$ is sample-and-rank, not exact rejection sampling from a prescribed target density. The [IDQL paper](https://arxiv.org/abs/2304.10573) also discusses weighted policy extraction; the lecture's greedy selector is a particular extraction choice.
+
 ## 12. FQL: distilling a flow behavior model into an actor
 
 **Transcript coverage:** lines 7484-7837
 
 ### What the lecturer said - transcript only
 
-The second approach trains a flow model by behavioral cloning, but deploys a simpler Gaussian actor. Write the flow's output as a function of state and base noise $z$. Feed the same $z$ to the actor. For each $z$, regularize the actor toward the action the flow model would have generated while also maximizing Q.
+The second approach trains a flow model by behavioral cloning, but deploys a simpler one-step actor. The spoken explanation calls it Gaussian; the important correction is that Gaussian input noise does not require Gaussian output actions. Write the flow's output as a function of state and base noise $z$. Feed the same $z$ to the actor. For each $z$, regularize the actor toward the action the flow model would have generated while also maximizing Q.
 
 The actor therefore distills a multimodal behavior model but shifts its outputs toward higher-value actions. Because the final actor is simple and reparameterizable, its expected Q can be optimized with the same machinery as SAC without backpropagating through the flow sampler for the Q term.
 
@@ -401,6 +421,18 @@ with a supervised term that matches the behavior-flow action generated from the 
 ### Additional explanation
 
 The shared noise turns distribution matching into paired distillation: each latent code identifies a particular behavior mode, so the actor is not asked to average unrelated modes. The Q term can move each paired output toward a locally better action.
+
+**FQL architecture correction:** the distilled actor is an expressive one-step mapping $a=g_\theta(s,z)$ with Gaussian **input noise**. Its output distribution need not be Gaussian; a nonlinear mapping can remain multimodal. This distinction is explicit in the [FQL paper](https://arxiv.org/abs/2502.02538).
+
+With a fixed flow teacher $g_{\rm flow}$, a representative actor loss is
+
+$$
+L_{\rm actor}(\theta)=
+\mathbb E_{s,z}\!\left[-Q_\phi(s,g_\theta(s,z))
++\lambda\|g_\theta(s,z)-\operatorname{stopgrad}(g_{\rm flow}(s,z))\|^2\right].
+$$
+
+Freeze critic parameters but differentiate its action input; no Q gradient is needed through the teacher's iterative sampler. The shared-noise pairing is a coupling that encourages distributional proximity, not a guarantee that every noise coordinate has an identifiable semantic mode.
 
 ## 13. Diffusion steering and deferred material
 
@@ -479,7 +511,7 @@ $$
 
 $$
 \mathcal L_Q=
-\mathbb E_{\mathcal D}[(r+\gamma V(s')-Q_\phi(s,a))^2].
+\mathbb E_{\mathcal D}[(\operatorname{stopgrad}(r+\gamma mV(s'))-Q_\phi(s,a))^2].
 $$
 
 ### Conservative Q-learning regularizer

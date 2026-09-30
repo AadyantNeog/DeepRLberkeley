@@ -98,6 +98,8 @@ Slides 5-6 display the context-conditioned objective and the efficiency/pretrain
 
 The outer distribution $p(\omega)$ is part of the problem specification: it expresses which tasks matter and how frequently. Multi-task performance is therefore not one scalar notion independent of task weighting.
 
+The shared-transition formulation assumes tasks differ in reward/context but have compatible state/action semantics and dynamics. General multi-task MDPs can also have task-dependent initial states or transition kernels; retain those dependencies when defining the augmented process.
+
 ## 3. Transfer and where prior knowledge can live
 
 **Transcript coverage:** lines 809-1309
@@ -146,6 +148,8 @@ Slides 10-11 show the joint-MDP reduction and the three-step implementation. The
 
 The reduction proves representational equivalence, not equal learning difficulty. An algorithm can solve the augmented MDP in principle while still suffering severe optimization interference in practice.
 
+Observed task context that remains fixed within a rollout can be included in the Markov state. When task identity is hidden, a policy needs inference from experience; this is a partially observed/meta-RL problem rather than an ordinary fully observed context-conditioned MDP.
+
 ## 5. Ray interference and the relabeling remedy
 
 **Transcript coverage:** lines 1568-2200
@@ -170,6 +174,8 @@ Slides 12-13 show the RL-versus-supervised interference plots and the context-re
 
 Relabeling works only when a stored physical transition is meaningful across tasks. It is natural for different destinations in one world, but a Breakout frame is not a valid Montezuma's Revenge transition.
 
+Relabeling must recompute task-dependent **termination**, as well as reward, and retain time/horizon information where needed. Shared observations do not suffice when tasks change physical dynamics. A logged action remains fixed data; changing the goal does not make that action an on-policy sample for the new goal.
+
 ## 6. Task distributions and relabeling as data augmentation
 
 **Transcript coverage:** lines 2201-2467
@@ -190,7 +196,7 @@ Slide 13 provides the context-resampling actor-critic template. The transcript a
 
 ### Additional explanation
 
-There are two distributions to distinguish: the evaluation task distribution defines what “good overall performance” means, while the training/curriculum distribution controls optimization. Changing the second can help, but it implicitly importance-weights learning relative to the first.
+There are two distributions to distinguish: the evaluation task distribution defines what “good overall performance” means, while the training/curriculum distribution controls optimization. Changing the second can help optimization, but without correction it changes task weighting in the objective. To estimate the original task expectation from $q(\omega)$, use $p(\omega)/q(\omega)$ where support permits. A curriculum may deliberately optimize a different weighting; that is distinct from an unbiased estimate of the evaluation objective.
 
 ## 7. Goal-conditioned RL and sparse goal rewards
 
@@ -222,7 +228,7 @@ $$
 r(s,a,g)=-\mathbf 1[s\ne g].
 $$
 
-Exact equality is unsuitable for floating-point continuous states, so a tolerance is common. Adding or subtracting a constant from every reward does not change the optimal behavior, which makes the success-reward and step-cost conventions closely related.
+Exact equality is unsuitable for floating-point continuous states, so a tolerance is common. Adding a constant preserves policy ordering for fixed-length returns, or continuing discounted returns where it adds the same $c/(1-\gamma)$. It can change ordering when reward accumulation stops at a policy-dependent terminal time. Success rewards and step costs are therefore not generally equivalent.
 
 With $\gamma=1$ and termination at the goal, the step-cost value has the appealing interpretation of negative expected time-to-goal. One reward definition covers every goal, and a neural policy may generalize zero-shot to unseen but structurally similar goals.
 
@@ -235,6 +241,8 @@ Slides 14-16 define goal-conditioned policies, list reward choices, and cite ear
 ### Additional explanation
 
 Goal-conditioned value functions are universal value functions: one network represents values for a family of reward functions indexed by $g$.
+
+For a precise hitting-time convention, charge $-1$ for each action taken before the first arrival at $g$, including the action that enters it, then terminate. If $\tau_g$ is the number of those actions and $\mathbb E_\pi\tau_g<\infty$, then $V^\pi(s,g)=-\mathbb E_\pi\tau_g$ at $\gamma=1$. A one-time $+1$ reward on goal entry instead maximizes success probability at $\gamma=1$ and is indifferent to arrival time among certain successes. Unreachable goals can give infinite hitting time; finite-horizon truncation or $\gamma<1$ changes the exact interpretation.
 
 ## 8. Hindsight relabeling, off-policy learning, and goal geometry
 
@@ -253,17 +261,17 @@ Relabeling requires an off-policy algorithm. Changing $g$ changes the augmented 
 With $r=-1$ until termination, $\gamma=1$, and $V(g,g)=0$,
 
 $$
-V(s,g)=
+V^\pi(s,g)=
 \begin{cases}
--1+\mathbb E[V(s',g)],&s\ne g,\\
+-1+\mathbb E_{a\sim\pi(\cdot\mid s,g),\,s'\sim P}[V^\pi(s',g)],&s\ne g,\\
 0,&s=g.
 \end{cases}
 $$
 
-The negative value is expected time to goal and behaves like a distance. It is not symmetric because MDP dynamics need not be reversible—an egg can be scrambled but not necessarily unscrambled—so it is a quasimetric. It obeys a triangle-style inequality:
+The negative **optimal** value, under the conditions explained below, is minimum expected time to goal and behaves like a directed distance. It is not symmetric because MDP dynamics need not be reversible—an egg can be scrambled but not necessarily unscrambled—so it is a quasimetric. It obeys a triangle-style inequality:
 
 $$
-V(s,g)\ge V(s,w)+V(w,g)
+V^*(s,g)\ge V^*(s,w)+V^*(w,g)
 $$
 
 under the negative-distance sign convention (equivalently, positive time-to-goal obeys the usual $d(s,g)\le d(s,w)+d(w,g)$).
@@ -277,6 +285,12 @@ Slides 17-19 show hindsight relabeling, the off-policy loop, and the triangle re
 ### Additional explanation
 
 Hindsight relabeling densifies reward without fabricating transitions. It changes only which reward function evaluates the already observed dynamics.
+
+**Two different hindsight biases.** Changing the goal frequencies changes the training objective. Separately, choosing a goal from the realized future can select favorable transition noise: although physical dynamics are goal-independent, the relabeled dataset may satisfy $p_{\mathcal D}(s'\mid s,a,g)\ne P(s'\mid s,a)$. For example, relabeling only successful lottery outcomes as the desired goal hides losing outcomes. Mixing commanded goals back in does not generally eliminate this stochastic selection bias, and merely choosing an off-policy algorithm does not correct it. See [USHER](https://arxiv.org/abs/2207.01115).
+
+**When the triangle inequality holds.** The displayed policy-evaluation equation alone does not imply it. Define $d^*(s,g)=\inf_\pi\mathbb E_\pi\tau_g=-V^*(s,g)$ for a proper shortest-path problem. If a policy can reach waypoint $w$ and then switch to a policy reaching $g$, that feasible concatenation proves $d^*(s,g)\le d^*(s,w)+d^*(w,g)$. Use infinite values for unreachable pairs; finite distances need finite hitting-time assumptions. An arbitrary fixed goal-conditioned policy can be needlessly slow to $g$ and need not satisfy this inequality. Approximate neural values also need not satisfy it.
+
+The optimal backup is $V^*(s,g)=\max_a[-1+\mathbb E_P V^*(s',g)]$ for $s\ne g$, with $V^*(g,g)=0$. This differs from the policy-averaged evaluation backup above.
 
 ## 9. Intermission and goal-conditioned values as models
 
@@ -307,6 +321,8 @@ Slides 20-23 mark the intermission and begin the policy-evaluation rearrangement
 ### Additional explanation
 
 A one-step model answers “what happens next?” A successor representation answers “which states will occupy my discounted future if I continue with this policy?”
+
+A reachability/time-to-goal function is model-like, but generally does not identify the full one-step stochastic transition law. Successor predictions below are specific to a continuation policy; they are not arbitrary-action world simulators.
 
 ## 10. Successor representations
 
@@ -360,6 +376,8 @@ Slides 24-26 display the normalization, inner-product value identity, and recurs
 ### Additional explanation
 
 The representation separates dynamics and policy from reward. Once $\mu^\pi$ is known, evaluating the same policy under a new state reward is only an inner product.
+
+**Normalization convention.** Standard successor counts use $M^\pi(s,i)=\mathbb E_\pi\sum_{k\ge0}\gamma^k\mathbf1[S_{t+k}=i]$, whereas this section uses $\mu^\pi=(1-\gamma)M^\pi$. Accordingly $V^\pi=M^\pi r=\mu^\pi r/(1-\gamma)$. The normalized geometric time has $\Pr(K=k)=(1-\gamma)\gamma^k$ for $k=0,1,\ldots$, so it includes the current state. With terminal states, include a zero-reward absorbing continuation to retain total mass one; dropping post-terminal visits instead gives a sub-probability measure.
 
 ## 11. Successor features
 
@@ -417,7 +435,7 @@ $$
 Q^\pi(s,a)=\psi^\pi(s,a)^\top w.
 $$
 
-The original successor representation is the special case where $\phi(s)$ is a one-hot state vector. The lecture assumes the designer supplies or learns the features; the framework itself does not choose them.
+With one-hot $\phi(s)$, these unnormalized successor features equal the standard successor counts $M^\pi$, or $\mu^\pi/(1-\gamma)$ under the preceding section's normalized convention. The lecture assumes the designer supplies or learns the features; the framework itself does not choose them.
 
 ### Source reconciliation
 
@@ -426,6 +444,8 @@ Slides 27-28 derive the linear reward/value relation and show state and state-ac
 ### Additional explanation
 
 Successor features factor transfer into two questions: what events can happen under a policy, represented by $\psi^\pi$, and how valuable are those events for the current task, represented by $w$.
+
+The identities require reward to be linear in the chosen features. For transition rewards use matching features $\phi(s,a,s')$ and expected discounted sums of those same features. If reward approximation has uniform error at most $\eta$, its fixed-policy discounted value error is at most $\eta/(1-\gamma)$. Reusing successor features without reevaluation assumes the same dynamics and continuation policy; changing reward is the part handled by the new weights.
 
 ## 12. Rapid transfer and generalized policy improvement
 
@@ -469,6 +489,8 @@ Slides 29-30 contrast one-step improvement with the multi-policy maximum and cit
 ### Additional explanation
 
 Generalized policy improvement is a library-based analogue of transfer: pretraining supplies multiple predictive “what I can accomplish” maps, and a new reward selects among them.
+
+With exact Q-values, shared dynamics, bounded discounted rewards, and exact action maximization, GPI guarantees a policy at least as good as each base policy for the new reward. It evaluates all candidate actions under all base continuation policies; it does not merely choose among the actions each base actor emits. Approximate successor features, fitted reward weights, and approximate maximization weaken this guarantee. Transfer quality depends on both feature coverage and the policy library. See [Successor Features for Transfer in Reinforcement Learning](https://arxiv.org/abs/1606.05312).
 
 ## 13. Continuous successor representations by classification
 
@@ -521,6 +543,20 @@ Slides 31-33 present continuous successor classification, the Bayes odds identit
 
 This is contrastive density-ratio estimation: classification is used because estimating a normalized high-dimensional continuous density directly is difficult, whereas distinguishing conditional futures from marginal states can be practical.
 
+The displayed odds assume equal positive/negative class priors and compatible support. With positive prior $\rho$, odds instead equal $\frac{\rho}{1-\rho}\frac{p^\pi(s_f\mid s,a)}{p(s_f)}$. Omit the marginal only when comparing actions for the **same** candidate goal; it cannot generally be dropped when integrating across goals to reconstruct an arbitrary reward value.
+
+Distinguish a future-only successor measure from the current-inclusive one:
+
+$$
+\mu_+^\pi(\cdot\mid s,a)
+=(1-\gamma)\sum_{k=0}^\infty\gamma^k
+\Pr_\pi(S_{t+1+k}\in\cdot\mid s,a),
+\qquad
+\mu^\pi(\cdot\mid s,a)=(1-\gamma)\delta_s+\gamma\mu_+^\pi(\cdot\mid s,a).
+$$
+
+Sampling strictly later positives estimates the first object after normalization. The full measure includes a current-state atom, which in continuous spaces is not an ordinary density; later dynamics can also be singular. The density-ratio derivation requires a common dominating measure/support. Future samples from old replay trajectories follow their behavior continuation, not automatically the current $\pi$; a recursive off-policy method needs a derived correction/backup.
+
 ## 14. Options and practical hierarchical RL
 
 **Transcript coverage:** lines 7367-8131
@@ -558,7 +594,17 @@ Slides 34-40 cover classical options, fixed-duration skill hierarchies, goals, a
 
 ### Additional explanation
 
-Fixed-duration context switching turns hierarchy into ordinary multi-task RL at the low level and a semi-Markov decision process at the high level. Its practical appeal is modularity: each layer can use familiar algorithms.
+Fixed-duration context switching yields a high-level MDP at decision boundaries with discount $\gamma^K$. Variable option durations give a semi-Markov decision process. Its practical appeal is modularity: each layer can use familiar algorithms.
+
+The displayed option backup is a target, not an exact replacement for a stochastic Q estimate. For observed duration $h$, use
+
+$$
+y=\sum_{k=0}^{h-1}\gamma^k r_{t+k}
++\gamma^h m\max_{o'\in\mathcal O(s_{t+h})}Q_{\mathrm{target}}(s_{t+h},o'),
+\qquad Q(s_t,o_t)\leftarrow Q(s_t,o_t)+\eta[y-Q(s_t,o_t)].
+$$
+
+Here $m=0$ at environment termination; ending an option alone does not terminate the environment. Maximize over options available at that state. In the general options formalism, $\beta_o(s)$ is a termination probability, not necessarily a deterministic set. If the low-level policies keep changing, the high-level transition law changes too, so old option replay is not automatically valid. Good options can help, but arbitrary discovered options offer no guaranteed efficiency gain. Retaining primitive actions preserves the original policy possibilities.
 
 ## Slide-only appendix: meta-learning material not reached
 
@@ -580,7 +626,7 @@ These concepts are not attributed to the lecturer's spoken Lecture 24 account.
 - Generalist training can improve efficiency and transfer knowledge through policies, values, models, or representations.
 - Context relabeling is a task-aware data-augmentation method; its validity depends on shared transition semantics and off-policy learning.
 - Goal-conditioned RL turns arbitrary achieved future states into training goals, greatly densifying sparse reward.
-- Goal values behave like directed distances and can support waypoint planning and structural auxiliary losses.
+- Optimal proper hitting-time values define directed distances; arbitrary policy values and approximate learned values need not obey the triangle inequality.
 - Successor representations predict discounted future occupancy; successor features factor task reward from policy-dependent future features.
 - A library of successor features supports generalized policy improvement on a new linear reward.
 - Continuous successor densities can be learned through future-versus-marginal classification.
@@ -597,8 +643,8 @@ These concepts are not attributed to the lecturer's spoken Lecture 24 account.
 2. **Goal-conditioned step-cost value**
 
    $$
-   V(s,g)=-1+\mathbb E[V(s',g)]\quad(s\ne g),
-   \qquad V(g,g)=0.
+   V^*(s,g)=\max_a\{-1+\mathbb E_P[V^*(s',g)\mid s,a]\}\quad(s\ne g),
+   \qquad V^*(g,g)=0.
    $$
 
 3. **Successor representation**
@@ -630,12 +676,14 @@ These concepts are not attributed to the lecturer's spoken Lecture 24 account.
    =\frac{p^\pi(s_f\mid s,a)}{p(s_f)}.
    $$
 
-7. **Option backup**
+   These odds assume balanced classes and the specified future-sampling distribution.
+
+7. **Option target and sampled update**
 
    $$
-   Q(s_t,o_t)
-   \leftarrow\sum_{k=0}^{h-1}\gamma^k r_{t+k}
-   +\gamma^h\max_{o'}Q(s_{t+h},o').
+   y=\sum_{k=0}^{h-1}\gamma^k r_{t+k}
+   +\gamma^h m\max_{o'\in\mathcal O(s_{t+h})}Q_{\mathrm{target}}(s_{t+h},o'),
+   \qquad Q(s_t,o_t)\leftarrow Q(s_t,o_t)+\eta[y-Q(s_t,o_t)].
    $$
 
 ## Glossary
@@ -645,8 +693,8 @@ These concepts are not attributed to the lecturer's spoken Lecture 24 account.
 - **Relabeling:** Re-evaluating stored experience under a different task context.
 - **Goal-conditioned policy:** Policy that receives a desired goal in addition to current state.
 - **Hindsight relabeling:** Treating achieved future states as alternative goals for failed trajectories.
-- **Quasimetric:** Distance-like function that need not be symmetric.
-- **Successor representation:** Discounted future-state occupancy distribution for a policy.
+- **Quasimetric:** Nonnegative directed distance satisfying a triangle inequality, without requiring symmetry; unreachable pairs may need infinite distance.
+- **Successor representation:** Expected discounted future-state counts for a policy; multiplying by $1-\gamma$ gives the normalized occupancy convention used here.
 - **Successor feature:** Discounted future expectation of a feature vector.
 - **Generalized policy improvement:** Statewise choice of the best action suggested by multiple evaluated policies.
 - **Density-ratio classification:** Estimating a conditional density relative to a marginal through classifier odds.
@@ -659,9 +707,9 @@ These concepts are not attributed to the lecturer's spoken Lecture 24 account.
 2. Why can the first easy task learned interfere with harder tasks?
 3. Distinguish the evaluation task distribution from a curriculum distribution.
 4. When is context relabeling semantically invalid?
-5. Why should hindsight replay retain some commanded-goal failures?
+5. Why retain some commanded-goal failures, and why does mixing them in not generally remove stochastic hindsight bias?
 6. Why must relabeled goal learning be off-policy?
-7. In what sense is a goal-conditioned value a directed distance?
+7. Under which optimality and hitting-time assumptions does a goal-conditioned value define a directed distance?
 8. Derive $V^\pi(s)=\mu^\pi(s)^\top r/(1-\gamma)$.
 9. Why do the same weights $w$ recover value from successor features?
 10. Why is greedy improvement from one policy's successor features not generally optimal?

@@ -58,6 +58,8 @@ where $u$ is an ensemble-disagreement or other epistemic-uncertainty score. The 
 
 Model-based offline RL compounds two optimizer's curses: the policy can exploit errors in both the transition model and the critic trained on model output. Short rollouts limit temporal accumulation; uncertainty penalties and conservative values limit spatial departure from the data. None replaces the need for coverage assumptions.
 
+A reward penalty yields a provable pessimistic model only when its uncertainty score controls the relevant model error with suitable constants. Ensemble disagreement is usually a heuristic proxy. COMBO's model-versus-data conservative objective does not require a perfect classifier that first labels each synthetic transition OOD; its distributional penalty provides that pressure.
+
 ## Part II - Why exploration is difficult
 
 ## 2. Sparse rewards and temporally extended discovery
@@ -105,6 +107,8 @@ Slides 7-9 state the exploration/exploitation definitions, show the restaurant/a
 ### Additional explanation
 
 Exploration has instrumental value: novelty is useful only because the resulting information can improve later reward. A novelty-seeking policy that never converts knowledge into exploitation can perform poorly even if it visits every state.
+
+Exploration need not mean a literally untried action: repeated measurements of a noisy familiar arm can be informative. The useful target is reducible uncertainty about decisions, not novelty for its own sake.
 
 ## 4. Tractability spectrum and reward shaping
 
@@ -191,6 +195,12 @@ $$
 
 Optimism converts uncertainty into a temporary reward advantage. Sampling an uncertain arm reduces its uncertainty, so the bonus naturally decays unless its empirical reward remains competitive.
 
+The uncertainty bonus concerns uncertainty about the arm's **mean**, not the irreducible standard deviation of individual rewards. A stochastic arm does not deserve endless exploration solely because its outcomes remain noisy.
+
+The displayed regret is random and can be negative on a lucky run. The usual expected pseudo-regret is
+$\mathbb E[\operatorname{Reg}(H)]=\sum_a\Delta_a\mathbb E[N_H(a)]$,
+where $\Delta_a=\mu^*-\mu_a$. This is nonnegative. Bayes-optimality additionally averages over a chosen prior and horizon; it is not identical to a frequentist worst-case regret criterion.
+
 ## 7. UCB count bonuses and logarithmic regret
 
 **Transcript coverage:** lines 2990-3394
@@ -221,6 +231,8 @@ and states $\operatorname{Reg}(H)=O(\log H)$. The transcript's automatic "haftin
 ### Additional explanation
 
 The displayed formula is undefined at $N(a)=0$, so an implementation initially pulls every arm or treats an untried arm's bonus as infinite. Logarithmic regret is gap dependent; constants worsen when the best and second-best arms have nearly equal mean reward.
+
+For stationary independent bounded-reward arms with fixed positive suboptimality gaps, a typical bound is $O(\sum_{a:\Delta_a>0}\log H/\Delta_a)$. It is not a gap-independent $O(\log H)$ guarantee uniformly over all bandits; worst-case minimax regret scales on the order of $\sqrt{KH}$ for $K$ arms. An anytime UCB implementation uses the current round $t$ inside $\log t$ and counts from previous rounds; a known-horizon version may use $H$.
 
 ## Part IV - Exploration bonuses for deep RL
 
@@ -293,6 +305,12 @@ The update must increase the assigned probability, $p_{\theta'}(s_i)>p_\theta(s_
 
 Pseudo-counts measure learning progress as much as raw familiarity. A highly generalizing model may increase a state's probability very little because related states already trained it; that produces a large pseudo-count and small novelty bonus. A poorly trained density model can violate the probability-increase condition and yield unstable counts.
 
+These equations use **probability masses** in $[0,1]$, not arbitrary continuous density values, which may exceed one. A continuous density cannot be substituted unchanged into $1-p_{\theta'}(s)$. Discretization or another calibrated construction is needed. An exponentiated VAE ELBO is also not automatically a normalized state-probability model.
+
+For example, old probability $0.2$ and recoding probability $3/11$ give $\hat n=10$ and $\hat N=2$, exactly matching two visits in ten observations. Finite positive counts require $0<p<p'<1$; no increase gives an infinite/undefined limit, and a decrease gives invalid negative counts. The recoding update must be a defined one-observation learning step; arbitrary retraining schedules change the quantity.
+
+See the [original pseudo-count paper](https://arxiv.org/abs/1606.01868) for the learning-positive density-model construction.
+
 ## 10. CTS density estimation and random network distillation
 
 **Transcript coverage:** lines 4094-4387
@@ -322,6 +340,8 @@ with either $f^*(s,a)=s'$ for dynamics prediction or $f^*=f_\phi$ for a fixed ra
 
 RND avoids explicit density estimation, but prediction error is only a heuristic for visitation. Error can remain high because the predictor lacks capacity, can fall on unseen states through generalization, and can change as optimization proceeds. Observation normalization and control of intrinsic-reward scale are therefore important in practice.
 
+Dynamics-prediction error is a related curiosity bonus, **not RND itself**. Stochastic next states can keep dynamics error high forever—the noisy-TV problem—even when the transition distribution is well learned. RND's fixed deterministic target removes that particular target-noise source, but distractor observations, generalization, and forgetting can still distort its novelty signal. Train only the predictor, keep the target fixed, and avoid interpreting prediction error as a calibrated epistemic confidence bound. The “most widely used” claim records the lecturer's assessment rather than a timeless ranking.
+
 ## Consolidated takeaways
 
 1. Model-based offline RL uses pessimistic uncertainty or conservative-value penalties to prevent policies from exploiting learned dynamics.
@@ -330,7 +350,7 @@ RND avoids explicit density estimation, but prediction error is only a heuristic
 4. Bayes-optimal exploration is tractable only in small problems; deep RL borrows principles from bandits and tabular MDPs heuristically.
 5. A repeated bandit can be treated as a POMDP whose hidden state is the fixed vector of arm reward probabilities.
 6. Regret compares an exploring learner with an omniscient best-arm policy.
-7. UCB adds an uncertainty bonus to empirical reward and attains logarithmic regret in the analyzed bandit setting.
+7. UCB attains gap-dependent logarithmic expected regret for stationary bounded-reward bandits; this is not a uniform deep-RL guarantee.
 8. Literal counts fail in image and continuous spaces, motivating density-based familiarity and pseudo-counts.
 9. Pseudo-counts convert a density model's probability increase after one observation into an effective count.
 10. RND replaces density estimation with prediction error against a fixed random target network.
@@ -424,7 +444,7 @@ where the target-network parameters $\phi$ remain fixed and random.
 9. How do $p_\theta(s)$ and $p_{\theta'}(s)$ determine a pseudo-count?
 10. What condition is needed for the pseudo-count to be positive?
 11. Why does the density model need evaluable likelihood but not good samples?
-12. What are two possible RND-style target functions, and why does fixed random targeting work at all?
+12. How does dynamics-prediction curiosity differ from RND, and why can irreducible transition noise mislead the former?
 
 ## Source coverage checklist
 

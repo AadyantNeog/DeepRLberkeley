@@ -114,6 +114,8 @@ Slides 5-7 provide the entropy, KL, mutual-information, and conditional-entropy 
 
 Mutual information requires two complementary properties: the predicted variable must vary globally, and it must be predictable conditionally. Either term alone is insufficient for diverse, identifiable behavior.
 
+**Discrete versus continuous entropy.** For finite discrete variables, $0\le H(X)\le\log|\mathcal X|$, and deterministic $Y=f(X)$ gives $H(Y\mid X)=0$. Continuous variables use *differential* entropy, which can be negative and changes with units: $h(cX)=h(X)+d\log|c|$. A deterministic continuous relation can make the joint distribution singular and mutual information infinite; do not substitute a zero conditional differential entropy into that case. The KL definition of mutual information remains the safer general definition. Entropy measures how probability is distributed, not just whether the support contains many points.
+
 ## 4. State marginals and empowerment
 
 **Transcript coverage:** lines 977-1474
@@ -132,7 +134,7 @@ $$
 
 indicates broad coverage. The maximum-entropy distribution over a finite unconstrained set is uniform, although MDP dynamics and fixed initial states often make uniform visitation impossible.
 
-Empowerment is an information-theoretic notion of control authority. In its one-step form,
+Empowerment is an information-theoretic notion of control authority. The lecture's shorthand for its one-step information term is
 
 $$
 I(A_t;S_{t+1})
@@ -150,6 +152,17 @@ Slide 8 defines the state marginal, its entropy, and action-next-state empowerme
 ### Additional explanation
 
 Empowerment is not task reward. It prefers states with options and controllability, which may be a useful generic prior but may also favor behavior irrelevant to a particular downstream goal.
+
+The policy-specific marginal is $d_t^\pi(s)=\Pr_\pi(S_t=s)$. A time-homogeneous environment does not make this distribution time-independent. State-coverage objectives must specify a distribution, such as the normalized finite-time average $H^{-1}\sum_{t=1}^H d_t^\pi$, a discounted occupancy, or a stationary distribution when one exists. Replay usually mixes policies and times and is not exactly the current policy's marginal.
+
+**Precise empowerment.** At a fixed current state $s$, the one-step channel capacity is
+
+$$
+\mathcal E(s)=\max_{\nu(a\mid s)}I_\nu(A;S'\mid S=s)
+=\max_\nu\left[H_\nu(S'\mid S=s)-H_\nu(S'\mid A,S=s)\right].
+$$
+
+An existing policy's conditional mutual information is a value for that input distribution, not necessarily the maximum. Omitting conditioning on the current state can mistake state-action correlations for control authority. Multi-step empowerment similarly uses a specified action sequence or feedback protocol and a later state. Stochastic outcomes help only when the agent can distinguishably influence their distribution. See [Empowerment—an Introduction](https://arxiv.org/abs/1310.1863).
 
 ## 5. From action empowerment to latent skills
 
@@ -177,6 +190,8 @@ Slides 9-10 introduce skill-conditioned policies and state-region diversity. The
 ### Additional explanation
 
 The skill is temporally extended because one $z$ is normally held fixed for an episode or segment while the low-level policy produces many primitive actions.
+
+Keep the skill fixed over the intended episode or skill segment. Resampling it independently at every primitive step learns a different control interface and can destroy temporal coherence.
 
 ## 6. Diversity Is All You Need-style skill learning
 
@@ -210,6 +225,14 @@ Slides 10-12 illustrate the discriminator loop and example behaviors. The method
 
 The intrinsic reward is nonstationary because the discriminator learns while the policy learns. Unlike GAN training, their objectives align, but the coupled optimization can still be unstable.
 
+For skill prior $p(z)$ and the chosen joint distribution of skills and visited states,
+
+$$
+I(Z;S)\ge\mathbb E_{z,s}\left[\log q_\phi(z\mid s)-\log p(z)\right].
+$$
+
+The gap is $\mathbb E_s D_{\mathrm{KL}}(p(z\mid s)\|q_\phi(z\mid s))$, so a learned discriminator optimizes a **lower bound**, not necessarily the exact mutual information. The complete intrinsic reward is $\log q_\phi(z\mid s)-\log p(z)$. With a fixed uniform prior and fixed-length rollouts the omitted prior term is constant. DIAYN additionally encourages action entropy, typically through SAC, to allow varied behavior within distinguishable skills. See [DIAYN](https://arxiv.org/abs/1802.06070).
+
 ## 7. Mutual-information objective and geometric failure modes
 
 **Transcript coverage:** lines 2321-2812
@@ -240,6 +263,8 @@ Slide 13 writes the exact $I(Z;S)$ decomposition. The transcript contributes the
 
 Mutual information is invariant to how far apart perfectly distinguishable clusters are. Metric-aware objectives add information that pure classification discards.
 
+For $K$ uniformly sampled skills, $I(Z;S)\le\log K$. Tiny disjoint state clusters can already attain this maximum, so distinguishable skills need not cover a large region or be useful downstream. Mutual information is invariant to invertible relabelings of the state; metric distance is additional structure, not something the MI objective automatically rewards.
+
 ## 8. Goal-conditioned empowerment
 
 **Transcript coverage:** lines 2813-3292
@@ -264,7 +289,7 @@ $$
 I(G;S)=\mathcal H(G)-\mathcal H(G\mid S).
 $$
 
-The classifier tries to infer which goal was commanded from the reached state. The easiest way for the policy to make the goal predictable is to reach it quickly and reliably.
+The classifier tries to infer which goal was commanded from the reached state. Reaching a goal is one way to make it predictable from the reached state, but the mutual-information objective alone does not require goal equality or fast arrival; see the counterexample below.
 
 The difficult term is now $\mathcal H(G)$. Latent IDs can be sampled uniformly by construction, but goals must be valid states. In a game, random pixel arrays are almost never reachable frames. The learner therefore needs a generative model $p(g)$ that covers achievable states broadly. This turns part of goal discovery into a generative-modeling problem and leaves room for domain-specific design.
 
@@ -282,7 +307,7 @@ Slides 14-16 replace $z$ with $g$, write the mutual-information objective, and s
 
 ### Additional explanation
 
-The fixed reward can be viewed as an extremely restricted discriminator: it assumes the commanded goal is the reached state only when they match. This sacrifices adaptive classification for a stable, stationary objective.
+**Predictability is not goal achievement.** With two equally likely commands, suppose “left” always reaches right and “right” always reaches left. The command is perfectly recoverable from the outcome, so $I(G;S)=\log 2$, while goal-success probability is zero. A fixed equality or distance reward grounds what each command means. Speed additionally requires a suitable time-dependent objective, discount, or step cost.
 
 ## 9. Fixed goal rewards and Skew-Fit
 
@@ -319,7 +344,19 @@ Slide 17 gives the Skew-Fit loop and weighted likelihood, with $w(g)=p_\psi(g)^\
 
 ### Additional explanation
 
-Reweighting cannot create arbitrary invalid images because training examples still come only from reached states. It changes density within the empirical support, not the support itself.
+Reweighting selects only valid visited examples in the empirical training objective. A fitted neural generator can nevertheless assign probability outside that support and generate invalid or unreachable goals; valid training examples do not guarantee valid generated samples.
+
+An identity discriminator does not literally give the binary reward: $\log\mathbf1[g=s]$ is zero for a match and $-\infty$ otherwise. A precise finite-$K$ analogy uses
+
+$$
+q_\eta(g\mid s)=
+\begin{cases}1-\eta,&g=s,\\ \eta/(K-1),&g\ne s,\end{cases}
+\quad 0<\eta<(K-1)/K.
+$$
+
+Then $\log q_\eta=b+a\mathbf1[g=s]$ with $a>0$. This is an affine success score, equivalent over fixed-length comparisons, not the log of a hard identity. Continuous goals require a normalized density/kernel and a reference measure; equality and tolerance rewards should not be called exact mutual-information objectives without those details.
+
+If the replay goal density is $d(g)$, weighted likelihood fits a target proportional to $d(g)p_\psi(g)^\alpha$. For $\alpha=-1$ this is uniform only when $p_\psi=d$ on the relevant support (and that support has finite reference volume). Freeze the weighting model during the fit and stabilize tiny densities; VAE likelihood estimates, clipping, and model error make the practical update approximate. The [Skew-Fit paper](https://proceedings.mlr.press/v119/pong20a.html) gives convergence under explicit regularity assumptions, not for arbitrary generative models.
 
 ## 10. Reweighting, frontier goals, and closing
 
@@ -342,6 +379,8 @@ Slide 18 shows Go-Explore and representation/abstraction examples. The transcrip
 ### Additional explanation
 
 Frontier sampling is curriculum construction: choose goals that are reachable enough to train on but far enough from familiar experience to expand coverage.
+
+In original Go-Explore, the exploration phase can return to an archived state by restoring a simulator snapshot; a later robustification phase trains behavior that tolerates environment randomness. Learned goal-conditioned return mechanisms are possible variants, not a prerequisite of the original method. Frontier novelty alone does not guarantee reachability or useful skills. See [Go-Explore](https://arxiv.org/abs/1901.10995).
 
 ## Consolidated takeaways
 
@@ -372,15 +411,14 @@ Frontier sampling is curriculum construction: choose goals that are reachable en
 3. **One-step empowerment**
 
    $$
-   I(A_t;S_{t+1})
-   =\mathcal H(S_{t+1})-\mathcal H(S_{t+1}\mid A_t).
+   \mathcal E(s)=\max_{\nu(a\mid s)}I_\nu(A;S'\mid S=s).
    $$
 
 4. **Skill discovery**
 
    $$
    I(Z;S)=\mathcal H(Z)-\mathcal H(Z\mid S),
-   \qquad r(s,z)=\log q_\phi(z\mid s).
+   \qquad r(s,z)=\log q_\phi(z\mid s)-\log p(z).
    $$
 
 5. **Goal discovery**
@@ -402,7 +440,7 @@ Frontier sampling is curriculum construction: choose goals that are reachable en
 - **State marginal:** Time-aggregated state-visitation distribution induced by a policy.
 - **Entropy:** Information-theoretic measure of distributional breadth or uncertainty.
 - **Mutual information:** Reduction in uncertainty about one variable obtained from knowing another.
-- **Empowerment:** Mutual information between an agent's choices and resulting states; a measure of control authority.
+- **Empowerment:** Maximum mutual information between choices and outcomes conditional on a fixed current state, under a specified control horizon/protocol.
 - **Skill-conditioned policy:** Low-level policy that additionally receives a persistent skill identifier.
 - **Discriminator:** Classifier predicting which skill or goal produced a state.
 - **DIAYN:** Diversity Is All You Need, a mutual-information skill-discovery method.

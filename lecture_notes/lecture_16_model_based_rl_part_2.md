@@ -97,6 +97,8 @@ Slides 7-10 diagram open-loop plans, closed-loop policy trees, and the repeated 
 
 MPC's feedback frequency controls a trade-off. Replanning more often is robust but computationally costly. Executing longer chunks is cheaper but allows prediction errors to accumulate before correction.
 
+MPC still solves an open-loop problem inside each replan; it does not generally value future information as a full policy-tree solution would. Replanning can correct disturbances but does not guarantee stability, constraint satisfaction, or global optimality without further assumptions. A short horizon may need a terminal value or terminal constraint to avoid myopic decisions.
+
 ## 4. Random shooting, CEM, and planning families
 
 **Transcript coverage:** lines 1355-2128
@@ -118,6 +120,8 @@ Slides 11-15 visually specify random shooting and the CEM loop. The Gaussian upd
 ### Additional explanation
 
 CEM improves sample efficiency relative to uniform random shooting by adapting where it samples. A factorized Gaussian still cannot represent multiple disjoint promising plans well; elite selection may collapse prematurely to one local mode. MPC partially mitigates imperfect long-horizon optimization because only a prefix is executed.
+
+Planning dimension is action dimension multiplied by horizon, not action dimension alone. Respect action bounds, retain a nonzero exploration scale, and distinguish the number of candidate sequences from the number of stochastic rollouts used to score each one. The lecture's dimensional ranges are examples, not hard algorithmic limits.
 
 ## 5. Planning with epistemic uncertainty
 
@@ -148,6 +152,8 @@ $$
 
 while preserving temporal correlation within a sampled model. A pessimistic planner could replace the mean with a lower quantile or worst-case aggregation.
 
+Holding model parameters fixed preserves **epistemic** uncertainty about a persistent world. Fresh transition noise should still be sampled at each step for aleatoric stochasticity. Resampling model indices per step is a different approximation to predictive mixtures, rather than a faithful draw from a posterior over fixed dynamics. The displayed expectation also includes transition noise when individual models are stochastic.
+
 ## Part II - Learning a policy from a learned model
 
 ## 6. Policy learning through a model
@@ -170,16 +176,19 @@ Slides 19-21 compare the score-function gradient with a pathwise derivative thro
 
 ### Additional explanation
 
-The pathwise derivative for a deterministic reparameterized rollout contains products such as
+For an open-loop sequence with later actions held fixed, the pathwise derivative contains products of state Jacobians. With a feedback policy $a_j=\pi_\theta(s_j)$, the appropriate closed-loop Jacobian is instead
 
 $$
-\frac{\partial s_{t+k}}{\partial a_t}
-=\prod_{j=t+1}^{t+k-1}
-\frac{\partial f(s_j,a_j)}{\partial s_j}
-\frac{\partial f(s_t,a_t)}{\partial a_t},
+A_j=\frac{\partial f}{\partial s}(s_j,a_j)
++\frac{\partial f}{\partial a}(s_j,a_j)
+\frac{\partial\pi_\theta}{\partial s}(s_j),
+\qquad
+\frac{d s_{t+k}}{d a_t}
+=A_{t+k-1}\cdots A_{t+1}
+\frac{\partial f}{\partial a}(s_t,a_t),
 $$
 
-which explains why its numerical behavior resembles backpropagation through a long recurrent network.
+with an identity product when $k=1$. Later Jacobians multiply on the left. This explains why long-rollout differentiation resembles backpropagation through a recurrent network. Policy-parameter gradients additionally include direct parameter effects at every action. Both score and pathwise estimators optimize the **learned** model's return; unbiased sampling in that model does not remove model bias relative to the real environment.
 
 ## 7. Compounding error and short branched rollouts
 
@@ -200,6 +209,8 @@ Slides 22-24 illustrate long-rollout drift, truncated initial-state rollouts, an
 ### Additional explanation
 
 If one-step total-variation error is bounded by $\epsilon$, state-distribution deviation can grow roughly linearly with time, and summing reward error across the horizon can yield quadratic $O(\epsilon H^2)$ return error. Short branches reduce the effective $H$ in that bound.
+
+This reasoning assumes bounded rewards, the same initial distribution and policy, and a suitable uniform or visitation-weighted transition-error bound. Small training MSE alone does not establish those assumptions. Short branches trade model error for reliance on a bootstrap critic and real-state coverage; they do not eliminate long-horizon reasoning.
 
 ## 8. Dyna-style algorithms and parallel training
 
@@ -276,8 +287,8 @@ Slides 30-32 show the ELBO schematically as
 
 $$
 \mathbb E_q\!\left[
-\log p(s_1)+\sum_t\log p(s_{t+1}\mid s_t,a_t)
-+\sum_t\log p(o_t\mid s_t)-\log q(s_{1:T}\mid o_{1:T},a_{1:T-1})
+\log p(s_1)+\sum_{t=1}^{T-1}\log p(s_{t+1}\mid s_t,a_t)
++\sum_{t=1}^{T}\log p(o_t\mid s_t)-\log q(s_{1:T}\mid o_{1:T},a_{1:T-1})
 \right].
 $$
 
@@ -286,6 +297,8 @@ The slide diagrams distinguish smoothing, filtering, and single-observation enco
 ### Additional explanation
 
 Smoothing is useful during offline training because future frames disambiguate an earlier hidden state. A deployed controller cannot use unseen future observations, so it ultimately needs a filtering or predictive state. Some systems train with smoothing and distill into a filter.
+
+The product of per-time filtering factors is a variational approximation; it does not equal the exact joint posterior merely because every factor sees a history. Transition expectations must use the chosen joint distribution for consecutive latents. Generative transitions run over $t=1,\ldots,T-1$ and observation terms over $t=1,\ldots,T$.
 
 ## 11. Deterministic encoders as a practical simplification
 
@@ -299,7 +312,7 @@ $$
 s_t=g_\psi(o_t).
 $$
 
-Its entropy is effectively a constant, so the objective reduces to fitting latent dynamics and reconstructing observations, optionally with a reward-prediction loss. This is close to an ordinary autoencoder augmented with temporal prediction.
+The lecture treats its entropy as effectively constant and motivates fitting latent dynamics and reconstructing observations, optionally with a reward-prediction loss. This is close to an ordinary autoencoder augmented with temporal prediction. For continuous point-mass encoders, the entropy argument is only a heuristic; see the correction below.
 
 The simplification is easy to implement and can produce useful low-dimensional representations for Q-learning. It is not a faithful probabilistic treatment of a POMDP: it cannot represent uncertainty over hidden state, and one observation may be insufficient. Nevertheless, useful practical systems occupy a continuum between this deterministic baseline and fully stochastic smoothing models.
 
@@ -310,6 +323,8 @@ Slide 33 shows the deterministic encoding and its reduced training objective. It
 ### Additional explanation
 
 The deterministic model is best viewed as representation learning with a dynamics regularizer. Its success depends on whether the observation itself is close enough to Markov or whether the encoder architecture receives enough temporal context to infer missing state.
+
+**Entropy correction:** a Dirac encoder in a continuous latent space does not have an ordinary finite differential entropy that can be dropped as a harmless constant. Its KL to a nonsingular continuous prior is generally infinite. Reconstruction and latent-prediction losses are a separate practical objective, not a finite exact ELBO obtained by substituting a point mass. A fixed-small-variance limit can motivate related losses but requires treating divergent constants and scales explicitly.
 
 ## 12. Actor-critic with learned representations
 
@@ -330,6 +345,8 @@ Slides 34-36 diagram the replay-to-model and replay-to-actor-critic paths, follo
 ### Additional explanation
 
 Skipping the decoder during imagined rollouts saves compute and avoids compounding pixel-level generation error. A decoder can still be valuable during representation training because reconstruction discourages the encoder from discarding observation information too early.
+
+If the encoder changes, previously stored latent vectors can become stale; storing observations/history and re-encoding them avoids mixing incompatible representations. A latent imagined rollout also needs a reward and continuation/termination model. Stop bootstrap gradients and distinguish true terminal states from externally truncated rollouts just as in ordinary actor-critic.
 
 ## 13. Model classes, sample-compute trade-offs, and examples
 
@@ -397,8 +414,8 @@ $$
 $$
 \mathcal L=
 \mathbb E_q\!\left[
-\log p(s_1)+\sum_t\log p(s_{t+1}\mid s_t,a_t)
-+\sum_t\log p(o_t\mid s_t)-\log q(s_{1:T}\mid o_{1:T},a_{1:T-1})
+\log p(s_1)+\sum_{t=1}^{T-1}\log p(s_{t+1}\mid s_t,a_t)
++\sum_{t=1}^{T}\log p(o_t\mid s_t)-\log q(s_{1:T}\mid o_{1:T},a_{1:T-1})
 \right].
 $$
 
@@ -413,10 +430,10 @@ trained with reconstruction, latent-transition, and optionally reward-prediction
 ### One-step Dyna-style value target
 
 $$
-y=r+\gamma\max_{a'}Q_{\bar\phi}(s',a'),
+y=r+\gamma m\max_{a'}Q_{\bar\phi}(s',a'),
 $$
 
-where $(s,a,r,s')$ may be real or generated by the learned model.
+where $(s,a,r,s')$ may be real or generated by the learned model, $m$ masks true termination, and the full target is detached. Model-generated termination is itself an estimate and can be wrong.
 
 ## Glossary
 

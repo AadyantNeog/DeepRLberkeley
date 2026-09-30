@@ -78,6 +78,8 @@ This segment aligns with Lecture 21 slides 17-18, not with the opening of the Le
 
 The approximation trades bias for variance. Full-trajectory importance sampling is correct but often unusable; the one-step ratio is stable enough to optimize provided the update is kept local.
 
+The importance identity requires target support to be covered by behavior support and a fixed target policy for the usual unbiased-estimator statement. Variance can grow severely but need not do so in every problem. An exact candidate-policy gradient needs candidate-policy future values as well as the correct visitation distribution. Reusing old-policy advantages with a one-step ratio defines a local surrogate; it is not made exact merely by repairing the state ratio.
+
 ## 2. PPO importance-ratio clipping
 
 **Transcript coverage:** lines 168-339
@@ -124,6 +126,8 @@ Lecture 21 slides 19-20 show the clipping rule and the positive-versus-negative-
 
 The minimum makes the surrogate pessimistic. Whenever clipping would make a proposed update look better than its raw ratio does, PPO keeps the worse value.
 
+Clipping is pessimistic relative to the **unclipped sampled surrogate**, not a certified lower bound on true return. It does not enforce a hard ratio or KL constraint: shared parameters, unsampled actions, and other loss terms can still move the policy beyond the interval.
+
 ## 3. PPO implementation and KL-constrained derivation
 
 **Transcript coverage:** lines 340-926
@@ -148,7 +152,7 @@ J(\theta')-J(\theta)
 \left[\sum_t\gamma^t A^{\pi_\theta}(s_t,a_t)\right].
 $$
 
-The old policy's value is a constant with respect to $\theta'$, so replacing a new-policy advantage with the old-policy advantage changes the objective by a harmless constant relationship rather than a crude approximation.
+This is an exact performance-difference identity under **new-policy trajectories**; it follows by telescoping old value terms, not by freely substituting old advantages into a new-policy score-function gradient. Differentiating the identity includes how the new policy changes the whole trajectory distribution.
 
 The remaining mismatch is between new-policy states $p_{\theta'}(s_t)$ and old-policy states $p_\theta(s_t)$. For deterministic policies, the same coupling proof as behavioral cloning says that if action disagreement probability is at most $\epsilon$, state-distribution TV grows no faster than $\epsilon t$. For stochastic policies, a maximal coupling constructs a joint distribution whose marginals are the two policies and whose actions agree with probability at least $1-\epsilon$ whenever their TV is at most $\epsilon$. This reduces the stochastic case to the same no-disagreement argument.
 
@@ -169,6 +173,12 @@ This material aligns with Lecture 21 slides 21-28. One transcript rendering spel
 ### Additional explanation
 
 PPO's core contract is: reuse a batch, but make only a locally trustworthy change before collecting new data. Clipping and KL penalties are two approximate trust-region mechanisms.
+
+For the displayed discounted identity, index time from $t=0$, or use $\gamma^{t-1}$ if time starts at 1. Replacing new state visitation by old visitation yields a surrogate whose gradient **matches at the old policy** with exact advantages and consistent discount weighting; away from that anchor it generally differs.
+
+Uniform per-state TV control supports the coupling bound. Empirical mean KL over old states does not itself imply this uniform condition, so practical PPO does not inherit an unconditional monotonic-improvement theorem. Keep any KL penalty multiplier nonnegative.
+
+Freeze old log probabilities, the reference value estimates used to form targets, and actor advantages for the batch. A standard target is raw GAE plus the reference value; standardize a separate copy for the actor, not the critic target. Finite-batch normalization is a useful heuristic, not an exact unbiased-baseline argument.
 
 ## 4. Online actor-critic and correlated samples
 
@@ -202,6 +212,8 @@ This discussion aligns with Lecture 21 slides 29-30. The Lecture 22 deck begins 
 ### Additional explanation
 
 Parallel workers reduce temporal correlation without waiting to accumulate a long sequential minibatch from a single environment. Replay buffers provide a different decorrelation mechanism and enable data reuse.
+
+A3C uses asynchronous workers with local rollout updates to shared parameters; synchronous aggregation is A2C. Correlated samples are not automatically biased or invalid, but reduce effective sample size and can destabilize optimization. One-step TD advantages have correct conditional expectation with the true value function; approximate bootstrapping can bias the actor update. Critic regression holds its target fixed.
 
 ## 5. $n$-step returns and generalized advantage estimation
 
@@ -246,6 +258,18 @@ This segment aligns with Lecture 21 slides 31-33, which visualize the bias-varia
 
 GAE is an eligibility-trace computation for policy-gradient advantages. Its recursive implementation is efficient: scan backward with $A_t=\delta_t+\gamma\lambda A_{t+1}$.
 
+The bias/variance trends are heuristics, not monotonic laws. Deterministic transitions alone do not imply zero rollout variance: a stochastic policy or random initial state can still create it. A finite rollout with $\lambda=1$ yields a bootstrapped return unless it ends at a true terminal.
+
+For implementation, separate the bootstrap mask $m_t$ from trace continuation $c_t$:
+
+$$
+\delta_t=r_t+\gamma m_tV_{\mathrm{ref}}(s_{t+1})-V_{\mathrm{ref}}(s_t),
+\qquad
+\widehat A_t=\delta_t+\gamma\lambda c_t\widehat A_{t+1}.
+$$
+
+At a true terminal, $m_t=c_t=0$. At an external rollout cutoff, bootstrap from the final **pre-reset** observation ($m_t=1$) but stop the trace ($c_t=0$). For $K$ remaining transitions, the finite mixture weights are $(1-\lambda)\lambda^{n-1}$ for $n<K$ and $\lambda^{K-1}$ for the final $K$-step estimate; the last weight collects the remaining mass.
+
 ## 6. Off-policy actor-critic and reparameterization
 
 **Transcript coverage:** lines 1242-1331
@@ -274,6 +298,8 @@ This is the final segment corresponding to Lecture 21 slide 34. The transcript's
 ### Additional explanation
 
 One-step off-policy bootstrapping separates the observed transition from the current policy: the environment supplies $(s,a,r,s')$, while the learner chooses how to value actions after $s'$.
+
+For a diagonal Gaussian, reparameterization is $a=\mu_\theta(s)+\sigma_\theta(s)\odot\epsilon$. Freeze critic parameters during the actor update while preserving the action derivative through the critic. Optimizing replay-state $Q_\phi(s,\pi_\theta(s))$ is a fixed-critic surrogate; it is not automatically the exact gradient of start-state return. Logged one-step transitions remain valid only for the same Markov dynamics/reward; multi-step behavior returns need suitable policy corrections.
 
 ## 7. Q-learning, target networks, Double Q, and DDPG
 
@@ -329,6 +355,8 @@ This is where the spoken review begins using the Lecture 22 deck, primarily slid
 ### Additional explanation
 
 The target network stabilizes temporal targets; Double Q addresses maximization bias. They solve different problems even though practical Double DQN often uses the same pair of current and target networks for both.
+
+Use a deterministic tie rule for argmax. Include a true-terminal mask in every target, and detach the target network evaluation. Double DQN typically reduces maximization bias; correlated estimators do not guarantee its removal. Neither a target network nor Double Q alone guarantees convergence.
 
 ## 8. Why fitted value iteration need not converge
 
@@ -424,6 +452,14 @@ Slides 11-18 show Jensen's derivation, the ELBO/KL identity, amortization, repar
 
 The two ELBO terms balance reconstruction and latent regularity. The decoder should explain each datum from its sampled latent, while the approximate posterior should not drift arbitrarily far from the prior.
 
+The ELBO identity is
+
+$$
+\log p_\theta(x)=\mathcal L(\theta,q)+D_{\mathrm{KL}}(q(z)\|p_\theta(z\mid x)).
+$$
+
+Increasing the lower bound can reduce its gap while the evidence decreases; evidence monotonicity needs the stronger exact-EM conditions. The derivation needs compatible support and finite expectations. A continuous deterministic decoder is a singular conditional distribution and cannot simply be inserted as an ordinary finite log density into the Gaussian VAE formula. In reparameterization, $\sigma$ denotes standard deviation, not variance.
+
 ## 10. Structured state-space models
 
 **Transcript coverage:** lines 1981-2072
@@ -458,6 +494,8 @@ This discussion aligns with slide 19. A visually similar state-space slide is re
 
 The learned latent dynamics provide a compact predictive state. The encoder is needed during training and inference from observations; planning or value learning can operate on latent transitions once the state is inferred.
 
+A latent representation that reconstructs observations is not thereby a sufficient Markov state. Predictive learning encourages sufficiency but does not guarantee it. A deployed encoder/filter must use only information available at decision time; a training posterior that sees future observations cannot be used unchanged for online control.
+
 ## 11. Control as inference and maximum-entropy RL
 
 **Transcript coverage:** lines 2073-2434
@@ -490,8 +528,8 @@ with a state message obtained by integrating actions. Their recursive equations 
 
 $$
 \pi(a_t\mid s_t)
-=\exp(Q_t(s_t,a_t)-V_t(s_t))
-=\exp(A_t(s_t,a_t)).
+=p_0(a_t\mid s_t)\exp(Q_t(s_t,a_t)-V_t(s_t)),
+\quad V_t(s)=\log\int p_0(a\mid s)e^{Q_t(s,a)}\,da.
 $$
 
 The direct probabilistic recursion is overly optimistic under stochastic transitions: a high-value lucky next state dominates a log-expectation-exp. In hindsight, inference can explain success either through a good action or a lucky transition. The lecturer's lottery example illustrated why that is a bad *plan*: observing sudden wealth may make a winning ticket a plausible explanation, but buying a ticket is not a reliable strategy.
@@ -499,16 +537,16 @@ The direct probabilistic recursion is overly optimistic under stochastic transit
 Variational control corrects this by choosing
 
 $$
-q(s_{1:T},a_{1:T})
+q(s_{1:T+1},a_{1:T})
 =p(s_1)
-\prod_t p(s_{t+1}\mid s_t,a_t)q(a_t\mid s_t).
+\prod_{t=1}^T p(s_{t+1}\mid s_t,a_t)q(a_t\mid s_t).
 $$
 
 It forces initial-state and transition factors to match the real MDP and leaves only the controllable action distribution free. When inserted into the ELBO, matching environment terms cancel and the objective becomes
 
 $$
 \mathbb E_q\left[
-\sum_t r(s_t,a_t)+\mathcal H(q(a_t\mid s_t))
+\sum_t\left[r(s_t,a_t)+\mathcal H(q(\cdot\mid s_t))\right]
 \right].
 $$
 
@@ -521,6 +559,14 @@ Slides 20-28 contain the graphical model, backward messages, policy computation,
 ### Additional explanation
 
 “Soft” does not mean approximate here. It means that maximization is entropy-regularized, producing a stochastic Boltzmann policy rather than a hard argmax.
+
+**Prior and normalization.** A proper probability model needs an action prior $p_0(a\mid s)$ in $p(\tau)$. The corrected posterior above retains it; equal Q-values imply equal posterior action probabilities only when their prior weights are equal. Keeping the environment factors fixed gives the objective
+
+$$
+\mathbb E_q\sum_t\left[r(s_t,a_t)-\log\frac{q(a_t\mid s_t)}{p_0(a_t\mid s_t)}\right].
+$$
+
+Uniform $p_0$ on a fixed finite action set yields reward plus entropy up to a fixed per-step constant, explaining the lecture shorthand. There is no proper uniform probability on all of $\mathbb R^d$. The usual unweighted continuous maximum-entropy objective is a separate entropy convention, not a normalized uniform prior on an unbounded space. Shifting rewards to be nonpositive preserves fixed-length preferences but can change preferences when episode lengths vary.
 
 ## 12. Soft actor-critic, inverse RL, and adversarial imitation
 
@@ -570,6 +616,8 @@ Slides 29-33 show SAC, the partition-function gradient, the GAN connection, and 
 
 Maximum-entropy inverse RL matches occupancy distributions, not just individual actions. That is the source of its dynamics awareness and also of its computational expense.
 
+The displayed partition-function gradient samples the globally reward-reweighted trajectory distribution. Under stochastic dynamics, this posterior changes the distribution of lucky transitions (and potentially initial states); it is not generally the rollout distribution of a dynamics-preserving SAC policy. Maximum causal entropy formulations handle that distinction. GAIL with a state-action discriminator matches the corresponding occupancy distributions, not necessarily full trajectories. A balanced discriminator is $1/2$ on matched support, not necessarily everywhere outside observed support. SAC targets also require terminal masks.
+
 ## 13. RLHF and model-based RL review
 
 **Transcript coverage:** lines 2654-2810
@@ -610,6 +658,8 @@ RLHF is on slide 34. After the intermission marker, the spoken model-based discu
 
 Branched rollouts use the model where it is most reliable: for short local predictions from real states. They trade synthetic-data volume against compounding model bias.
 
+Ensemble disagreement is an imperfect epistemic-uncertainty estimate: members can agree and all be wrong. Sampling one model for a rollout represents a persistent possible world; resampling a model each step represents different uncertainty. Fresh transition noise models aleatoric randomness. Receding-horizon planning restores feedback by replanning after observations; short imagined rollouts limit but do not eliminate model bias.
+
 ## Slide-only appendix: material not reached
 
 Slides 43-73 of the Lecture 22 deck were not discussed in the supplied transcript. For source completeness, they contain recap material on:
@@ -624,12 +674,12 @@ These slides are not represented as spoken Lecture 22 material.
 
 ## Consolidated takeaways
 
-- Exact trajectory importance sampling is unbiased but its variance grows catastrophically with horizon.
+- Exact trajectory importance sampling is unbiased under support and fixed-target assumptions, but its variance can grow severely with horizon.
 - PPO uses a biased one-step surrogate and keeps it trustworthy through clipping or a KL-based local constraint.
 - GAE combines all $n$-step estimators with exponential weights to navigate bias versus variance.
 - Off-policy actor-critic and Q-learning reuse replay data; Q-functions allow actions from old policies to be evaluated without an action importance ratio.
 - Q-learning is actor-critic with an implicit argmax actor; Double Q reduces maximization bias, while target networks stabilize regression.
-- Bellman contraction plus function projection does not guarantee nonlinear fitted-value convergence because the contractions use different norms.
+- Bellman contraction does not guarantee fitted-value convergence: convex projection uses a different norm, and nonlinear neural fitting need not even be nonexpansive.
 - Variational inference converts an intractable latent marginal likelihood into a tractable lower bound and supports latent dynamics models.
 - Control as inference yields entropy-regularized RL; SAC implements its soft Bellman structure.
 - Inverse RL learns from demonstrations, RLHF learns from preferences, and both alternate reward learning with policy optimization.
@@ -654,16 +704,20 @@ These slides are not represented as spoken Lecture 22 material.
 3. **Generalized advantage estimation**
 
    $$
-   \widehat A_t^{\mathrm{GAE}}
-   =\sum_{l\ge0}(\gamma\lambda)^l
-   \left(r_{t+l}+\gamma V_{t+l+1}-V_{t+l}\right).
+   \delta_t=r_t+\gamma m_tV_{\mathrm{ref}}(s_{t+1})-V_{\mathrm{ref}}(s_t),
+   \qquad
+   \widehat A_t=\delta_t+\gamma\lambda c_t\widehat A_{t+1}.
    $$
+
+   Here $m_t$ permits bootstrapping and $c_t$ permits continuation into the next stored transition; see Section 5 for terminal and cutoff handling.
 
 4. **DQN target**
 
    $$
-   y=r+\gamma\max_{a'}Q_{\bar\theta}(s',a').
+   y=r+\gamma m\max_{a'}Q_{\bar\theta}(s',a').
    $$
+
+   $m=0$ at true termination and $m=1$ otherwise; the regression target is held fixed.
 
 5. **Variational lower bound**
 
@@ -677,7 +731,7 @@ These slides are not represented as spoken Lecture 22 material.
 
    $$
    \max_\pi\mathbb E_\pi\left[
-   \sum_t r(s_t,a_t)+\alpha\mathcal H(\pi(\cdot\mid s_t))
+   \sum_t\left[r(s_t,a_t)+\alpha\mathcal H(\pi(\cdot\mid s_t))\right]
    \right].
    $$
 

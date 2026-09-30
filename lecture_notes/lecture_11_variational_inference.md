@@ -136,6 +136,10 @@ Slides 8-9 present the expected log-likelihood idea and identify posterior calcu
 
 The posterior combines the prior plausibility of a latent with how well that latent explains the observation. Variational inference replaces this hard posterior calculation with optimization over a manageable family.
 
+In EM, the posterior in this expectation is computed using **old** model parameters and held fixed during the model update:
+$Q(\theta\mid\theta_{\rm old})=\mathbb E_{p_{\theta_{\rm old}}(z\mid x)}[\log p_\theta(x,z)]$.
+Differentiating through a posterior that changes with $\theta$ would be a different objective. The expected complete-data log likelihood by itself is not equal to the marginal log likelihood.
+
 ## Part II - The variational lower bound
 
 ## 5. Choosing a tractable variational approximation
@@ -155,6 +159,8 @@ Slides 10-11 introduce the variational-inference section and label the Gaussian 
 ### Additional explanation
 
 The chosen set of $q$ distributions is called the **variational family**. Its expressiveness determines an approximation gap, while its structure determines how easy inference and optimization are.
+
+When $\sigma$ denotes a standard deviation, write a scalar Gaussian as $\mathcal N(\mu,\sigma^2)$ or a diagonal multivariate Gaussian as $\mathcal N(\mu,\operatorname{diag}(\sigma^2))$. A Gaussian approximation is convenient, but exact inference is already tractable for some latent models; latent variables do not automatically make every posterior intractable.
 
 ## 6. Deriving the evidence lower bound with Jensen's inequality
 
@@ -211,6 +217,10 @@ Slide 12 contains the full Jensen derivation. Its exported page contains overlap
 
 The ELBO is a surrogate objective with two jobs: fit the generative model and make the approximate posterior useful enough that the surrogate remains close to the evidence.
 
+The equality inserting $q/q$ assumes $q(z)>0$ wherever the joint has positive mass. If $q$ omits a region, the expectation integrates only over its support; Jensen still gives a lower bound, but that first equality must become an inequality. Conversely, mass under $q$ where the joint is zero gives an ELBO of $-\infty$. The useful finite identities assume compatible measures and integrability.
+
+For a nonnegative unbiased estimator $\widehat p(x)$, Jensen gives $\mathbb E[\log\widehat p(x)]\leq\log p(x)$: the log-estimator bias is downward, and zeros can make it infinite.
+
 ## 7. Entropy and KL divergence
 
 **Transcript coverage:** lines 2506-2999
@@ -243,6 +253,8 @@ Slides 13-14 define entropy and KL and use drawings to illustrate the expected-l
 ### Additional explanation
 
 For $D_{\mathrm{KL}}(q\|p)$, expectations are taken under $q$. If $q$ places mass where $p$ is tiny, the penalty is large. Regions that only $p$ covers do not contribute directly, which is associated with the mode-seeking behavior of this KL direction.
+
+For continuous variables this is **differential entropy**: it can be negative and changes under rescaling coordinates. KL remains nonnegative and is invariant to a common invertible coordinate change. “Mode seeking” describes a common effect of a restricted variational family, not a theorem that reverse KL always selects exactly one mode.
 
 ## 8. The ELBO gap and optimization of the posterior
 
@@ -289,6 +301,8 @@ There are two different optimization effects:
 
 This motivates alternating or simultaneous updates.
 
+Increasing an ELBO does not generally guarantee increasing the evidence: the gap can shrink while the evidence falls. Exact EM avoids this issue by starting its model update with a tight bound. More generally, if the old gap is $g$, a bound increase greater than $g$ guarantees an evidence increase; a smaller increase alone does not.
+
 ## 9. Coordinate optimization, EM, scaling, and closing Q&A
 
 **Transcript coverage:** lines 3559-3934
@@ -318,6 +332,8 @@ Slides 17-18 show the alternating optimization procedure and the $N$-dependent p
 ### Additional explanation
 
 The next step is amortization: replace a separate $(\mu_i,\sigma_i)$ with one inference network that maps each $x_i$ to its posterior parameters. That idea belongs to Lecture 12 and is stated here only as orientation, not as missing transcript content.
+
+Exact EM uses the exact posterior in the E-step and increases the expected complete-data log likelihood in the M-step, giving nondecreasing data likelihood under the usual assumptions. Restricted variational EM instead increases a lower bound. A finite stochastic gradient step is not guaranteed to increase even that bound or decrease posterior KL on every iteration. Per-example variational parameters can be minibatched; their disadvantages are storage and new-example inference cost, rather than mathematical incompatibility with minibatches.
 
 ## Consolidated takeaways
 

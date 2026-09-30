@@ -72,6 +72,8 @@ Slides 4-7 contrast the Markov policy $\pi_\theta(a_t\mid o_t)$ with the history
 
 History helps when observations are partial or the demonstrator’s action depends on remembered context. Sharing the encoder across time preserves a fixed parameter count, while the sequence model handles a variable number of encoded frames.
 
+For general partial observability, use the information available before acting, $h_t=(o_{1:t},a_{1:t-1})$, and possibly past rewards if they reveal hidden state. Observation-only history is a restricted shorthand. A policy that conditions on only the immediately preceding token is a bigram next-token model; a unigram model ignores previous tokens.
+
 ## 3. History, optimality, and state sufficiency Q&A
 
 **Transcript coverage:** lines 238-358
@@ -91,6 +93,8 @@ The slide deck does not add notation beyond the policy forms in slide 4. The tra
 ### Additional explanation
 
 History has a bias-variance-style tradeoff. It can remove ambiguity caused by partial observability, but it also creates a much larger space of possible input sequences. The right question is whether the information gain reduces prediction error enough to offset the harder generalization problem.
+
+The memoryless-optimum statement assumes a standard fully observed MDP with suitable existence conditions, such as finite state/action spaces and bounded discounted rewards. In finite-horizon problems the policy may depend on time, or equivalently on an augmented state containing remaining time. In a POMDP, a belief over latent state is a sufficient information state under the model.
 
 ## 4. History-induced shift and causal confusion
 
@@ -134,6 +138,8 @@ Slide 8 asks the question but does not print the answer; the answer above is tra
 
 DAgger exposes the model to histories caused by its own decisions and obtains expert labels there. It can therefore reveal cases where the dashboard cue is present without the action it appeared to predict in expert-only data.
 
+**What DAgger guarantees.** Expert labels alone are insufficient: the policy class must fit them adequately, and the supervised updates must satisfy the online-learning/no-regret assumptions. The analysis controls average learner-distribution loss over iterations and supports a suitable mixture or selected iterate; it does not automatically guarantee the final neural-network checkpoint or convergence of visitation distributions. If the deployed policy's average disagreement on its *own* states is $\epsilon$, its expected disagreement count is $H\epsilon$. Translating disagreement into excess task cost additionally needs a bound on the expert's cost-to-go sensitivity to a wrong action, often related to recoverability. See the [original DAgger analysis](https://proceedings.mlr.press/v15/ross11a.html).
+
 ## 6. Multimodal expert behavior
 
 **Transcript coverage:** lines 732-793
@@ -151,6 +157,8 @@ Slide 9 shows the multimodal action histogram whose two side modes would be aver
 ### Additional explanation
 
 The problem is not randomness itself; it is representing several coherent choices. A policy should sample one complete mode. Averaging actions is safe only when intermediate actions are also valid.
+
+Squared-error training puts the predicted mean between modes. Sampling a fitted Gaussian instead of taking its mean does not repair the distribution: it can still put substantial probability on unsafe intermediate actions. Even a correct multimodal one-step model can switch left/right plans across time; history, a persistent latent plan, or action chunks can help maintain coherence.
 
 ## 7. Autoregressive discretization
 
@@ -184,6 +192,8 @@ The displayed action is $(0.1,1.2,-0.3)^\top$, used only to illustrate component
 ### Additional explanation
 
 Autoregressive factorization moves complexity from output width to sampling time. It represents cross-dimensional correlation exactly in principle, but later dimensions cannot be produced in parallel.
+
+The $Kd$ count is the number of logits evaluated along a sampled action, not a guarantee of linear parameter count for every possible joint distribution. Representing arbitrary dependencies can still require a very complex network. Teacher forcing computes training predictions in parallel with a causal mask; ordinary ancestral inference samples components sequentially.
 
 ## 8. Latent noise for continuous multimodal actions
 
@@ -289,6 +299,15 @@ The slide samples $t\sim p(t)$, with $p(t)=\mathcal U(0,1)$ as the example.
 
 Each conditional straight-line flow is easy to supervise. Averaging these conditional velocity targets yields a single marginal velocity field whose density evolution matches the desired data path; this is the mathematical result behind the lecturer’s curved-path intuition.
 
+The regression target is a sample-specific velocity, not the value of the optimal marginal field for every pair:
+
+$$
+v^*(x,\tau,o)
+=\mathbb E[x_1-x_0\mid x_\tau=x,\tau,o].
+$$
+
+This conditional expectation minimizes squared loss. Different training pairs can pass through the same region with different targets, so the network learns their conditional average. Integrating that field follows the marginal probability path under the usual regularity assumptions; it does not recover each training pair's straight line. Finite data, imperfect fitting, and numerical integration introduce approximation error. See [Flow Matching for Generative Modeling](https://arxiv.org/abs/2210.02747).
+
 ## 12. Flow-matching policy implementation begins
 
 **Transcript coverage:** lines 1626-1652
@@ -329,13 +348,15 @@ $$
 -\left(a_t^{(j)}-a_{t,0}^{(j)}\right)\right\|^2.
 $$
 
-The parameters are updated by gradient descent on this loss.
+The parameters are updated by gradient descent on this loss. Training samples intermediate points directly; it does not need to integrate the ODE through every training example.
 
 ### B. Action chunking and diffusion-policy case study
 
 Slides 16-17 contrast one-step actions with sampling a block $a_{t:t+K}$ conditioned on $o_t$, executing the block, then observing again at $t+K+1$. The deck calls chunking a small detail that helps substantially and cites Chi et al., *Diffusion Policy: Visuomotor Policy Learning via Action Diffusion* (2023/2024 labeling across the deck). The examples show manipulation tasks including pushing a T-shaped object, moving objects, and food handling.
 
 Slide 18 shows a larger system labeled $\pi_0$ that combines visual-language pretraining, language and joint-angle inputs, a roughly 50-step action chunk, and flow matching across multiple robot embodiments.
+
+In receding-horizon execution, the policy can execute a shorter prefix than the predicted block and then observe again. The inclusive notation $a_{t:t+K}$ contains $K+1$ actions; a length-$K$ chunk is $a_{t:t+K-1}$. Joint prediction can still help when only one action is executed, although it then gives no reduction in policy-query frequency.
 
 ### C. Narrow versus broad data
 
@@ -361,13 +382,15 @@ Slides 27-29 summarize *Learning Latent Plans from Play*: collect broad play int
 
 Slide 30 describes iterated supervised goal reaching: begin with a random policy, collect data under random goals, treat achieved outcomes as demonstrations for the goals actually reached, improve the policy, and repeat. Slide 31 shows large-scale goal-conditioned navigation across several robot platforms and cites Shah et al., *GNM: A General Navigation Model to Drive Any Robot* (2022), with 60 hours in the shown aggregate table. Slide 32 connects the same hindsight principle to Hindsight Experience Replay, noting that its RL interpretation will make more sense after off-policy value-based methods.
 
+Hindsight labels say what happened, not that the actions were optimal or reliably cause that endpoint. Goal-conditioned cloning can copy detours and lucky stochastic outcomes; success on unseen commanded goals is not guaranteed. See Lecture 24 for the additional selection bias that can arise in stochastic hindsight replay.
+
 ## Consolidated takeaways
 
 1. Better model fit reduces the $\epsilon$ factor in behavioral cloning’s worst-case error.
 2. Human experts can be non-Markovian because they use memory and have bounded rationality.
 3. History can resolve partial observability but enlarges the space in which distribution shift can occur.
 4. Causal confusion arises when a policy relies on an effect of an earlier action as if it caused the current expert action.
-5. DAgger fixes causal-confusion shift in principle, though pathological correlations may require much data.
+5. DAgger can mitigate causal confusion under adequate expert labeling, policy capacity, and online-learning assumptions; it does not universally eliminate it.
 6. Multimodal expert behavior demands a policy that samples one coherent mode rather than averaging modes.
 7. Autoregressive discretization represents a joint high-dimensional action distribution with linear-size per-dimension outputs.
 8. Continuous generative policies use random input to select among action modes.
@@ -407,7 +430,7 @@ $$
 
 $$
 x_\tau=\tau x_1+(1-\tau)x_0,\qquad
-v^*(x_\tau,\tau)=x_1-x_0.
+u_{\mathrm{target}}=x_1-x_0,\qquad v^*(x,\tau)=\mathbb E[x_1-x_0\mid x_\tau=x,\tau].
 $$
 
 ### Observation-conditioned policy loss
@@ -421,7 +444,7 @@ $$
 
 ## Glossary
 
-- **Action chunking:** predicting and executing a block of consecutive actions before observing again.
+- **Action chunking:** jointly predicting a block of actions, then executing all or a prefix before replanning.
 - **Autoregressive discretization:** sequentially sampling discretized action components conditioned on earlier sampled components.
 - **Bounded rationality:** the limitation that an expert cannot recompute a globally optimal decision from all current information at every instant.
 - **Causal confusion:** reliance on a correlated effect of prior behavior as though it were a cause of the desired current action.
@@ -452,7 +475,7 @@ $$
 12. Distinguish environment time from flow time.
 13. Describe forward-Euler sampling from a learned flow.
 14. How are $x_0$, $x_1$, and $x_\tau$ sampled or constructed during training?
-15. Why do contradictory straight-line supervision targets yield curved generated paths?
+15. Why is the optimal marginal velocity a conditional expectation rather than each sampled pair's displacement?
 16. What portion of this lecture is missing from the transcript, and how is it separated in these notes?
 
 ## Source coverage checklist

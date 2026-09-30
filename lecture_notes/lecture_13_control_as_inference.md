@@ -15,6 +15,8 @@ status: "source-incomplete"
 
 ## Lecture map
 
+**Conventions.** Finite-horizon policies and values may depend on time. The unweighted soft Bellman formulas use entropy relative to the stated action measure and require a finite partition integral. With a normalized action prior $p_0$, the objective is reward minus $D_{\rm KL}(\pi\|p_0)$, and the corresponding Gibbs policy includes the factor $p_0$. See Lecture 12 for the normalization distinction.
+
 | Section | Topic | Transcript coverage |
 |---:|---|---:|
 | 1 | Recap: control as inference | lines 1-315 |
@@ -136,7 +138,7 @@ $$
 =
 \mathbb E_{\tau\sim q}
 \left[
-\sum_t r(s_t,a_t)-\log q(a_t\mid s_t)
+\sum_t \left(r(s_t,a_t)-\log q(a_t\mid s_t)\right)
 \right]
 $$
 
@@ -158,6 +160,12 @@ Slide 10 shows the cancellation and explicitly notes the $T-1$ endpoint correcti
 ### Additional explanation
 
 The cancellation is why the method both enforces correct dynamics and remains model-free. The fixed environment terms are present in the sampling distribution but absent from the objective's likelihood ratio.
+
+The sum must enclose **both** reward and log probability:
+$\mathcal L=\mathbb E_q[\sum_{t=1}^T(r_t-\log q(a_t\mid s_t))]$.
+With a nonuniform action prior the surviving term is instead
+$r_t-\log(q(a_t\mid s_t)/p_0(a_t\mid s_t))$.
+A uniform prior contributes a constant only when action-space size/volume and horizon are fixed. Policy entropy at an absorbing terminal must not keep accruing after the task ends.
 
 ## 5. Soft dynamic programming without transition optimism
 
@@ -202,6 +210,8 @@ $V_\alpha(s)=\alpha\log\int e^{Q(s,a)/\alpha}da$.
 
 The Gibbs identity follows from rewriting the objective as a constant minus a KL divergence between $q(a)$ and the normalized $e^{f(a)}$ distribution.
 
+For example, with two actions of values 0 and 1 and temperature 1, the unweighted soft value is $\log(1+e)\approx1.313$ and their probabilities are approximately $(0.269,0.731)$. The soft value exceeds the hard maximum because it includes entropy; it is not merely the mean task return.
+
 ## 6. Why maximum-entropy control can help
 
 **Transcript coverage:** lines 2441-2592
@@ -219,6 +229,8 @@ Slide 12 contains the theoretical summary; the robustness and exploration discus
 ### Additional explanation
 
 Maximum entropy is not the same as maximizing randomness regardless of reward. The optimization seeks the most random policy among policies that still obtain high return, with the reward/entropy tradeoff set by temperature.
+
+At a positive fixed temperature it may trade some task return for entropy, rather than only breaking ties among task-optimal policies. Robust-control interpretations require a specified uncertainty set and objective; entropy alone does not guarantee safety or robustness to arbitrary dynamics changes.
 
 ## Part II - Maximum-entropy RL algorithms
 
@@ -241,6 +253,8 @@ Slides 13-15 introduce maximum-entropy algorithms, soft Q-learning, and entropy-
 ### Additional explanation
 
 Soft Q-learning requires a tractable partition integral. Soft actor-critic avoids evaluating that integral directly by representing a policy that approximately samples the high-Q distribution.
+
+Adding only the derivative of entropy at sampled current states to an ordinary reward-only policy gradient is a common heuristic. The exact entropy-regularized return also includes how actions change future state visits and future entropy, which is why soft critics account for future entropy.
 
 ## 8. Soft actor-critic
 
@@ -280,6 +294,10 @@ Slide 16 gives the SAC update sequence. The transcript first recaps ordinary act
 ### Additional explanation
 
 Modern SAC commonly uses two critics and the smaller target estimate, inheriting clipped double Q-learning from Lecture 8. That detail is part of common implementations but was not the focus of this transcript segment.
+
+Use a true-terminal mask $m$ in $y=r+\gamma m[\min_jQ_{\bar\phi_j}(s',a')-\alpha\log\pi_\theta(a'\mid s')]$ and detach the complete target. Bootstrap at an external rollout cutoff using the final pre-reset state. For the actor, freeze critic parameters but preserve derivatives through the sampled action and log density. Squashed Gaussian policies require the change-of-variables correction for their action log density.
+
+The SAC soft $Q$ excludes the current action's entropy and includes future entropy; the actor adds current entropy explicitly. For a target entropy $\mathcal H_{\rm target}$, temperature should rise when measured entropy is below target and fall when it is above target; parameterizing $\alpha=e^\eta$ keeps it positive.
 
 ## Part III - Beginning inverse reinforcement learning
 
@@ -342,6 +360,8 @@ Slides 21-22 show reward ambiguity and the maximum-likelihood optimality model. 
 
 Soft optimality does not make the reward fully identifiable. Potential-based shaping and constant shifts can preserve behavior. It supplies a likelihood principle and uses stochastic frequencies, but inductive bias or regularization is still needed.
 
+Those invariances require their boundary conditions. A constant per-step shift is trajectory independent only for equal lengths (or an appropriately defined continuing discounted objective). Potential shaping telescopes to a trajectory-independent term only with suitable initial/terminal conditions; arbitrary shaping need not preserve a globally normalized finite-trajectory likelihood.
+
 ## 11. The IRL partition-function gradient
 
 **Transcript coverage:** lines 3925-4293
@@ -380,6 +400,8 @@ Slide 23 derives the partition-function gradient and slide 24 labels its expert 
 
 For a linear reward $r_\psi(s,a)=\psi^\top f(s,a)$, the gradient is exactly expert feature counts minus current-policy feature counts. The neural-reward form generalizes “features” to $\nabla_\psi r_\psi$.
 
+**Important scope correction:** the negative expectation derived here is under the **globally normalized trajectory model** $p_\psi(\tau)\propto p(\tau)e^{r_\psi(\tau)}$. Under stochastic transitions this posterior generally changes the distribution of luck. Executing a maximum-causal-entropy policy, such as a converged SAC policy, preserves the real dynamics and does not generally sample that posterior. The two should not be identified without extra assumptions, such as deterministic transitions and a fixed initial state. Maximum causal entropy supplies a dynamics-respecting IRL formulation with its own derivation. This is the same distinction that motivated the first half of this lecture; see the [control-as-inference review](https://arxiv.org/abs/1805.00909).
+
 ## 12. A correct but expensive nested algorithm
 
 **Transcript coverage:** lines 4294-4474
@@ -399,6 +421,8 @@ Slide 24 contains the sample estimator and nested maximum-entropy RL idea. The s
 ### Additional explanation
 
 The computational bottleneck is a moving negative-sample distribution: every reward change changes which trajectories should be sampled. The slide-only methods below reuse and adapt policy samples more efficiently.
+
+Thus the nested algorithm is exact only for a matching trajectory/control formulation and an exact inner solution. With stochastic dynamics, simply substituting SAC samples into the displayed global partition-function gradient does not make it exact. Learned critics, incomplete inner optimization, and finite sampling introduce further approximation.
 
 ## Slide-only appendix: material after the transcript truncation
 
@@ -430,6 +454,8 @@ $$
 
 It states that each policy update under the current reward brings the proposal closer to the target soft-optimal distribution.
 
+**Importance-sampling qualifications.** Here $\pi(\tau)$ means the full rollout density, including dynamics, not merely one action probability. A nonuniform action prior contributes $\prod_t p_0(a_t\mid s_t)$ to the numerator after cancellation. Self-normalized weights are generally biased for finite $M$, though consistent under support and integrability conditions. Compute them from log weights for numerical stability. Policy improvement need not monotonically improve proposal quality on each finite update, and a dynamics-constrained policy may not represent the exact posterior at all.
+
 ### B. Guided cost learning
 
 Slide 27 labels the alternating procedure **guided cost learning** (Finn et al., ICML 2016). Starting from a policy and human demonstrations, it generates policy samples, updates a learned reward with importance-weighted policy samples and demonstrations, then updates the policy under that reward. The slide depicts a robotic manipulation application.
@@ -456,6 +482,8 @@ Slide 33 asks whether one can use an ordinary binary neural-network discriminato
 
 Slide 34 compares a maximum-entropy IRL reward model with an ordinary classifier and says the two adversarial processes are closely related. It shows humanoid multi-skill imitation and motion-imitation examples.
 
+GAIL usually matches discounted state-action **occupancies**, not unrestricted full-trajectory distributions. With $D$ defined as expert probability, rewards such as $\log D$ or $-\log(1-D)$ reward expert-like behavior; reversing the label convention reverses the appropriate formula. At exact matching with equal class priors, $D=1/2$ on matched support, so the classifier alone generally does not recover a transferable task reward.
+
 ## Consolidated takeaways
 
 1. Exact optimality-conditioned inference is optimistic under stochastic dynamics because it conditions transition outcomes on observed success.
@@ -467,8 +495,8 @@ Slide 34 compares a maximum-entropy IRL reward model with an ordinary classifier
 7. Soft Q-learning, entropy-regularized policy gradient, and SAC are direct algorithmic realizations.
 8. SAC includes current entropy in the actor and future entropy in critic targets.
 9. IRL learns a reward that makes expert trajectories likely under a soft-optimal model.
-10. The IRL likelihood gradient is expert reward-gradient statistics minus current-policy statistics.
-11. Solving a full RL problem after every reward step is correct but impractical.
+10. The global IRL likelihood gradient is expert statistics minus trajectory-model statistics; these are not always ordinary policy-rollout statistics.
+11. Nested RL/reward fitting is expensive and requires a consistent causal or trajectory formulation to be exact.
 12. The unspoken slide continuation introduces importance sampling, guided cost learning, and adversarial imitation/GAIL as more efficient alternatives.
 
 ## Key equations
@@ -496,7 +524,7 @@ $$
 ### SAC target and actor objective
 
 $$
-y=r+\gamma\left(Q_{\bar\phi}(s',a')-\alpha\log\pi_\theta(a'\mid s')\right),
+y=r+\gamma m\left(Q_{\bar\phi}(s',a')-\alpha\log\pi_\theta(a'\mid s')\right),
 $$
 
 $$
